@@ -80,6 +80,7 @@ font-weight: 100;
     position: absolute;
     top: 16px;
     right: 20px;    
+    cursor: pointer;
 }
 .subsection .help{
     font-size: 20px;
@@ -88,5 +89,36 @@ font-weight: 100;
     position: absolute;
     top: 16px;
     right: 90px;
+    cursor: pointer;
 }
+
+.forgot-password span{
+    color: #3c009d;
+    cursor: pointer;
+}
+
+.submit-container{
+display: flex;
+gap :30px;
+margin: 60px auto;
+}
+
+.submit{
+    font-size: 19px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 220px;
+    height: 59px;
+    color: #FFFF;
+    background: #3c009d;
+    border-radius: 50px;
+    cursor: pointer;
+}
+
+ .gray{
+    background: #eaeaea;
+    color: #676767;
+ }
 
