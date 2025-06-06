@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import logo from './ExerlyLogo.jpg';
 import LoginSignup from './Components/LoginSignup/LoginSignup';
 import './App.css';
 
