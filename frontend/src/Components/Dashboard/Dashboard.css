@@ -1,0 +1,32 @@
+
+.stats-grid {
+  margin-top: 55px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  justify-items: center;
+}
+
+.stats-card {
+  background-color: #eaeaea;
+  border-radius: 13px;
+  width: 280px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 100px;
+}
+
+.stats-card-label {
+  font-size: 19px;
+  color: #797979;
+}
+
+.stats-card-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #3c009d;
+  margin-top: 10px;
+}

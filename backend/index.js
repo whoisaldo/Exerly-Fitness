@@ -1,47 +1,48 @@
-const express = require('express');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const sqlite3 = require('sqlite3').verbose();
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const app = express();
-const port = 3001;
+const Dashboard = () => {
+  const [stats, setStats] = useState([]);
+  const navigate = useNavigate();
 
-app.use(cors());
-app.use(express.json());
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // no token → send back to login
+      return navigate('/');
+    }
+    // fetch dashboard data with the token…
+    fetch('/api/dashboard-data', {
+      headers: { Authorization: 'Bearer ' + token }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          // token invalid/expired → force logout
+          handleLogout();
+        } else {
+          return res.json();
+        }
+      })
+      .then(data => data && setStats(data))
+      .catch(() => handleLogout());
+  }, [navigate]);
 
-// SQLite setup
-const db = new sqlite3.Database('./users.db', (err) => {
-  if (err) return console.error(err.message);
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    password TEXT
-  )`);
-});
+  const handleLogout = () => {
+    // 1. Remove the JWT
+    localStorage.removeItem('token');
+    // 2. Redirect to login
+    navigate('/');
+  };
 
-// Signup
-app.post('/signup', async (req, res) => {
-  const { name, email, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [name, email, hashed], function(err) {
-    if (err) return res.status(400).json({ message: "Email already exists" });
-    res.json({ message: "Signup successful" });
-  });
-});
+  return (
+    <div className="container">
+      {/* … your header and stats grid … */}
+      <button className="submit" onClick={handleLogout}>
+        Logout
+      </button>
+      {/* … */}
+    </div>
+  );
+};
 
-// Login
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-    if (!user) return res.status(400).json({ message: "User not found" });
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ message: "Invalid password" });
-
-    const token = jwt.sign({ id: user.id }, "SECRET_KEY", { expiresIn: "1h" });
-    res.json({ message: "Login successful", token });
-  });
-});
-
-app.listen(port, () => console.log(`🚀 Server running on http://localhost:${port}`));
+export default Dashboard;
