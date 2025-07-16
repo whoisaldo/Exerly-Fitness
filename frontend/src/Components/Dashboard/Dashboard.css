@@ -20,8 +20,11 @@
 }
 
 .stats-card-label {
-  font-size: 19px;
-  color: #797979;
+  font-size: 25px;
+  color: #000;
+  font-weight: bold;  
+  font-style: oblique;
+  
 }
 
 .stats-card-value {
