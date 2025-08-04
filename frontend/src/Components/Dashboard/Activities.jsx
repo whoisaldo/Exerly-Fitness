@@ -1,54 +1,47 @@
-// frontend/src/Components/Dashboard/Calories.jsx
+// frontend/src/Components/Dashboard/Activities.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
-import './Calories.css';
+import './Calories.css';  // re-use the form styles
 
-export default function Calories() {
+export default function Activities() {
   const [entries, setEntries] = useState([]);
   const [form, setForm]       = useState({
     activity:     '',
     duration_min: '',
-    calories:     '',
-    protein:      '',
-    sugar:        ''
+    calories:     ''
   });
   const navigate = useNavigate();
 
-  // Load existing entries
+  // Load existing activities
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    fetch('http://localhost:3001/api/calories', {
+    fetch('http://localhost:3001/api/activities', {
       headers: { Authorization: 'Bearer ' + token }
     })
-      .then(res => {
-        if (res.status === 401) {
-          navigate('/'); throw new Error('Unauthorized');
-        }
-        if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-        return res.json();
+      .then(r => {
+        if (r.status === 401) { navigate('/'); throw new Error('Unauthorized'); }
+        if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
+        return r.json();
       })
-      .then(data => {
-        if (Array.isArray(data)) setEntries(data);
-        else setEntries([]);
-      })
+      .then(data => Array.isArray(data) ? setEntries(data) : setEntries([]))
       .catch(() => setEntries([]));
   }, [navigate]);
 
-  // Update form state
+  // Handle form fields
   const handleChange = e =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Submit new macro entry
+  // Submit a new activity
   const handleSubmit = async e => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    const res = await fetch('http://localhost:3001/api/calories', {
+    const res = await fetch('http://localhost:3001/api/activities', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,16 +50,14 @@ export default function Calories() {
       body: JSON.stringify({
         activity:     form.activity,
         duration_min: form.duration_min,
-        calories:     form.calories,
-        protein:      form.protein,
-        sugar:        form.sugar
+        calories:     form.calories
       })
     });
 
     if (res.ok) {
       const entry = await res.json();
       setEntries([entry, ...entries]);
-      setForm({ activity:'', duration_min:'', calories:'', protein:'', sugar:'' });
+      setForm({ activity:'', duration_min:'', calories:'' });
     } else if (res.status === 401) {
       navigate('/');
     } else {
@@ -80,7 +71,7 @@ export default function Calories() {
         <button className="submit" onClick={() => navigate('/dashboard')}>
           Back
         </button>
-        <div className="text">Nutrition Tracker</div>
+        <div className="text">Activity Tracker</div>
         <div className="underline"></div>
       </div>
 
@@ -103,43 +94,24 @@ export default function Calories() {
         <input
           name="calories"
           type="number"
-          placeholder="Calories"
+          placeholder="Calories Burned"
           value={form.calories}
           onChange={handleChange}
           required
         />
-        <input
-          name="protein"
-          type="number"
-          placeholder="Protein (g)"
-          value={form.protein}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="sugar"
-          type="number"
-          placeholder="Sugar (g)"
-          value={form.sugar}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit">Log</button>
+        <button type="submit">Log Activity</button>
       </form>
 
       <div className="stats-grid">
         {!Array.isArray(entries) ? (
           <p>Loading…</p>
         ) : entries.length === 0 ? (
-          <p>No entries yet.</p>
+          <p>No activities logged yet.</p>
         ) : (
           entries.map(e => (
             <div key={e.id} className="stats-card">
               <div className="stats-card-label">{e.activity}</div>
               <div className="stats-card-value">{e.calories} kcal</div>
-              <div className="stats-card-label">
-                {e.protein}g Protein, {e.sugar}g Sugar
-              </div>
               <div className="stats-card-label">
                 {e.duration_min} min on {e.entry_date}
               </div>

@@ -1,67 +1,65 @@
+// frontend/src/Components/LoginSignup/LoginSignup.jsx
 import React, { useState } from 'react';
 import './LoginSignup.css';
-import user_icon from '../Assets/person.png';
-import email_icon from '../Assets/email.png';
+import user_icon     from '../Assets/person.png';
+import email_icon    from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
-import exerly_logo from '../Assets/ExerlyLogo.jpg';
+import exerly_logo   from '../Assets/ExerlyLogo.jpg';
 import { useNavigate } from 'react-router-dom';
 
 const LoginSignup = () => {
-  const [action, setAction] = useState("Sign Up");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [action,  setAction]  = useState('Sign Up');
+  const [username, setUsername] = useState('');
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSignup = async () => {
     try {
-      const response = await fetch('/signup', {
+      const res = await fetch('http://localhost:3001/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: username, email, password })
       });
-
-      const data = await response.json();
+      const data = await res.json();
       alert(data.message);
-      if (response.ok) {
-        setAction("Login");
-      }
+      if (res.ok) setAction('Login');
     } catch (err) {
-      alert("Signup failed");
+      alert('Signup failed');
       console.error(err);
     }
   };
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('/login', {
+      const res = await fetch('http://localhost:3001/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-
-      const data = await response.json();
+      const data = await res.json();
       if (data.token) {
-        alert("Login successful!");
+        localStorage.setItem('token', data.token);
+        alert('Login successful!');
         navigate('/dashboard');
       } else {
         alert(data.message);
       }
     } catch (err) {
-      alert("Login failed");
+      alert('Login failed');
       console.error(err);
     }
   };
 
   return (
-    <div className='container'>
+    <div className="container">
       <div className="logo-wrapper">
-        <img src={exerly_logo} alt="Exerly Logo" className="exerly-logo" />
+        <img src={exerly_logo} alt="Logo" className="exerly-logo" />
       </div>
 
       <div className="header">
         <div className="text">{action}</div>
-        <div className='underline'></div>
+        <div className="underline"></div>
       </div>
 
       <div className="subsection">
@@ -69,15 +67,15 @@ const LoginSignup = () => {
         <div className="about">About</div>
       </div>
 
-      <div className='inputs'>
-        {action === "Login" ? null : (
+      <div className="inputs">
+        {action === 'Login' ? null : (
           <div className="input">
             <img src={user_icon} alt="" />
             <input
               type="text"
               placeholder="Name"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={e => setUsername(e.target.value)}
             />
           </div>
         )}
@@ -88,7 +86,7 @@ const LoginSignup = () => {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
           />
         </div>
 
@@ -98,12 +96,12 @@ const LoginSignup = () => {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
           />
         </div>
       </div>
 
-      {action === "Sign Up" ? null : (
+      {action === 'Login' && (
         <div className="forgot-password">
           Forgot Password? <span>Click Here!</span>
         </div>
@@ -113,24 +111,18 @@ const LoginSignup = () => {
         <div
           className="submit"
           onClick={() => {
-            if (action === "Sign Up") {
-              handleSignup();
-            } else {
-              setAction("Sign Up");
-            }
+            if (action === 'Sign Up') handleSignup();
+            else setAction('Sign Up');
           }}
         >
-          Sign up
+          Sign Up
         </div>
 
         <div
           className="submit gray"
           onClick={() => {
-            if (action === "Login") {
-              handleLogin();
-            } else {
-              setAction("Login");
-            }
+            if (action === 'Login') handleLogin();
+            else setAction('Login');
           }}
         >
           Login

@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// frontend/src/Components/Dashboard/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate }           from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 
-// Demo data with routes
-const placeholderStats = [
-  { label: 'Total Workouts', value: 36, route: '/dashboard/workouts' },
-  { label: 'Calories Burned', value: '1,560 kcal', route: '/dashboard/calories' },
-  { label: 'Active Goals', value: 3, route: '/dashboard/goals' },
-  { label: 'Hours Worked Out', value: 43, route: '/dashboard/hours' },
-];
-
-const Dashboard = () => {
-  const [stats] = useState(placeholderStats);
+export default function Dashboard() {
+  const [stats, setStats] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return navigate('/');
+    fetch('http://localhost:3001/api/dashboard-data', {
+      headers: { Authorization: 'Bearer ' + token }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          navigate('/'); throw new Error('Unauthorized');
+        }
+        return res.json();
+      })
+      .then(data => setStats(data))
+      .catch(console.error);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -26,23 +35,17 @@ const Dashboard = () => {
         <div className="text">Dashboard</div>
         <div className="underline"></div>
         <div className="text">Welcome Ali!</div>
-        <button className="submit" onClick={handleLogout}>
-          Logout
-        </button>
+        <button className="submit" onClick={handleLogout}>Logout</button>
       </div>
 
       <div className="stats-grid">
         {stats.map(({ label, value, route }) => (
           <Link to={route} key={label} className="stats-card">
-            <div>
-              <div className="stats-card-label">{label}</div>
-              <div className="stats-card-value">{value}</div>
-            </div>
+            <div className="stats-card-label">{label}</div>
+            <div className="stats-card-value">{value}</div>
           </Link>
         ))}
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

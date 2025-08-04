@@ -1,0 +1,26 @@
+/* form layout */
+.calorie-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .calorie-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 200px;
+  }
+  
+  .calorie-form button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #3c009d;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
