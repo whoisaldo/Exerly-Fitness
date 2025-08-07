@@ -4,6 +4,8 @@ import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 import './Calories.css';  // re-use the form styles
+const BASE_URL = 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com';
+
 
 export default function Activities() {
   const [entries, setEntries] = useState([]);
@@ -19,7 +21,7 @@ export default function Activities() {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    fetch('http://localhost:3001/api/activities', {
+    fetch(`${BASE_URL}/api/activities`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(r => {
@@ -41,8 +43,8 @@ export default function Activities() {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    const res = await fetch('http://localhost:3001/api/activities', {
-      method: 'POST',
+    const res = await fetch(`${BASE_URL}/api/activities`, {
+        method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization:  'Bearer ' + token

@@ -4,6 +4,7 @@ import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 import './Calories.css';  // reuse form styles
+const BASE_URL = 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com';
 
 export default function Food() {
   const [entries, setEntries] = useState([]);
@@ -15,7 +16,7 @@ export default function Food() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
-    fetch('http://localhost:3001/api/food', {
+    fetch(`${BASE_URL}/api/food`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(r => r.json())
@@ -31,7 +32,7 @@ export default function Food() {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    const res = await fetch('http://localhost:3001/api/food', {
+    const res = await fetch(`${BASE_URL}/api/food`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

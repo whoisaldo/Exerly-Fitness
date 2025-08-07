@@ -4,6 +4,8 @@ import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 import './Calories.css';
+const BASE_URL = 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com';
+
 
 export default function Calories() {
   const [entries, setEntries] = useState([]);
@@ -21,7 +23,7 @@ export default function Calories() {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    fetch('http://localhost:3001/api/calories', {
+    fetch(`${BASE_URL}/api/calories`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(res => {
@@ -48,7 +50,7 @@ export default function Calories() {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
-    const res = await fetch('http://localhost:3001/api/calories', {
+    const res = await fetch(`${BASE_URL}/api/calories`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

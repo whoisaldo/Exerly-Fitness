@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate }           from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
+const BASE_URL = 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com';
+
 
 export default function Dashboard() {
   const [stats, setStats] = useState([]);
@@ -11,7 +13,7 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
-    fetch('http://localhost:3001/api/dashboard-data', {
+    fetch(`${BASE_URL}/api/dashboard-data`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(res => {
