@@ -5,7 +5,7 @@ const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
 
 const app    = express();
-const SECRET = 'replace_this_with_a_real_secret';
+const SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 app.use(cors());
 app.use(express.json());
