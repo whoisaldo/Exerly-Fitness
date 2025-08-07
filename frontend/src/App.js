@@ -1,7 +1,7 @@
 // frontend/src/App.js
 import React from 'react';
 import Credits from './Components/Credits';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 import LoginSignup from './Components/LoginSignup/LoginSignup';
 import Dashboard   from './Components/Dashboard/Dashboard';

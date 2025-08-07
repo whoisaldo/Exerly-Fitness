@@ -18,7 +18,7 @@ const LoginSignup = () => {
 
   const handleSignup = async () => {
     try {
-      const res = await fetch('http://localhost:3001/signup', {
+      const res = await fetch('https://powerful-citadel-83317-b198c7aed44f.herokuapp.com/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: username, email, password })
@@ -34,7 +34,7 @@ const LoginSignup = () => {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch('http://localhost:3001/login', {
+      const res = await fetch('https://powerful-citadel-83317-b198c7aed44f.herokuapp.com/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -68,7 +68,6 @@ const LoginSignup = () => {
         <div className="help">Help</div>
         <div className="about">About</div>
         <Link to="/credits" className="credits">Credits</Link>
-
       </div>
 
       <div className="inputs">
