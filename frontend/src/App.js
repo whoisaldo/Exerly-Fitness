@@ -1,5 +1,6 @@
 // frontend/src/App.js
 import React from 'react';
+import Credits from './Components/Credits';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import LoginSignup from './Components/LoginSignup/LoginSignup';
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/dashboard/food"           element={<Food />} />
         <Route path="/dashboard/goals"          element={<Goals />} />
         <Route path="/dashboard/hours"          element={<Hours />} />
+        <Route path="/credits"                  element={<Credits />} />
       </Routes>
     </Router>
   );

@@ -5,7 +5,9 @@ import user_icon     from '../Assets/person.png';
 import email_icon    from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
 import exerly_logo   from '../Assets/ExerlyLogo.jpg';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; //
+
+
 
 const LoginSignup = () => {
   const [action,  setAction]  = useState('Sign Up');
@@ -65,6 +67,8 @@ const LoginSignup = () => {
       <div className="subsection">
         <div className="help">Help</div>
         <div className="about">About</div>
+        <Link to="/credits" className="credits">Credits</Link>
+
       </div>
 
       <div className="inputs">

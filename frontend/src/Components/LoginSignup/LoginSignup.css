@@ -73,7 +73,7 @@ font-size: 19px;
 font-weight: 100;
 }
 
-.subsection .about{
+.subsection .about {
     font-size: 20px;
     font-weight: 700;
     color: #3c009d;
@@ -81,8 +81,9 @@ font-weight: 100;
     top: 16px;
     right: 20px;    
     cursor: pointer;
-}
-.subsection .help{
+  }
+  
+  .subsection .help {
     font-size: 20px;
     font-weight: 700;
     color: #3c009d;
@@ -90,7 +91,19 @@ font-weight: 100;
     top: 16px;
     right: 90px;
     cursor: pointer;
-}
+  }
+  
+  .subsection .credits {
+    font-size: 20px;
+    font-weight: 700;
+    color: #3c009d;
+    position: absolute;
+    top: 16px;
+    right: 140px;
+    cursor: pointer;
+  }
+  
+
 
 .forgot-password span{
     color: #3c009d;
