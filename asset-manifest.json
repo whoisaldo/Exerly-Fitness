@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/Exerly-Fitness/static/css/main.4593c0fe.css",
-    "main.js": "/Exerly-Fitness/static/js/main.d76f3793.js",
+    "main.js": "/Exerly-Fitness/static/js/main.b842f0c2.js",
     "static/js/453.1046b0ad.chunk.js": "/Exerly-Fitness/static/js/453.1046b0ad.chunk.js",
     "static/media/ExerlyLogo.jpg": "/Exerly-Fitness/static/media/ExerlyLogo.d6f640bb7569f41c9b25.jpg",
     "index.html": "/Exerly-Fitness/index.html",
     "main.4593c0fe.css.map": "/Exerly-Fitness/static/css/main.4593c0fe.css.map",
-    "main.d76f3793.js.map": "/Exerly-Fitness/static/js/main.d76f3793.js.map",
+    "main.b842f0c2.js.map": "/Exerly-Fitness/static/js/main.b842f0c2.js.map",
     "453.1046b0ad.chunk.js.map": "/Exerly-Fitness/static/js/453.1046b0ad.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.4593c0fe.css",
-    "static/js/main.d76f3793.js"
+    "static/js/main.b842f0c2.js"
   ]
 }
