@@ -54,30 +54,28 @@ const LoginSignup = () => {
 
   return (
     <div className="container">
-      <div className="header-section">
-        <div className="logo-wrapper">
-          <img src={exerly_logo} alt="Exerly Logo" className="exerly-logo" />
-        </div>
-        <div className="header">
-          <h1 className="text">{action === 'Sign Up' ? 'Create Account' : 'Welcome Back'}</h1>
-          <div className="underline"></div>
-        </div>
+      {/* Logo */}
+      <div className="logo-wrapper">
+        <img src={exerly_logo} alt="Exerly Logo" className="exerly-logo" />
       </div>
 
+      {/* Header */}
+      <div className="header">
+        <div className="text">
+          {action === 'Sign Up' ? 'Create Account' : 'Welcome Back'}
+        </div>
+        <div className="underline" />
+      </div>
+
+      {/* Links */}
       <div className="subsection">
         <Link to="/credits" className="credits">Credits</Link>
         <div className="about">About</div>
         <div className="help">Help</div>
       </div>
 
-      <form
-        className="form-inputs"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (action === 'Sign Up') handleSignup();
-          else handleLogin();
-        }}
-      >
+      {/* Form Inputs */}
+      <div className="inputs">
         {action !== 'Login' && (
           <div className="input">
             <img src={user_icon} alt="User Icon" />
@@ -112,30 +110,32 @@ const LoginSignup = () => {
             required
           />
         </div>
+      </div>
 
-        {action === 'Login' && (
-          <div className="forgot-password">
-            Forgot Password? <span>Click Here!</span>
-          </div>
-        )}
-
-        <div className="submit-container">
-          <button
-            type="submit"
-            className={`submit ${action === 'Login' ? 'gray' : ''}`}
-          >
-            {action}
-          </button>
-
-          <button
-            type="button"
-            className={`submit toggle ${action === 'Login' ? '' : 'gray'}`}
-            onClick={() => setAction(action === 'Login' ? 'Sign Up' : 'Login')}
-          >
-            {action === 'Login' ? 'Switch to Sign Up' : 'Switch to Login'}
-          </button>
+      {/* Forgot Password */}
+      {action === 'Login' && (
+        <div className="forgot-password">
+          Forgot Password? <span>Click Here!</span>
         </div>
-      </form>
+      )}
+
+      {/* Action Buttons */}
+      <div className="submit-container">
+        <button
+          type="button"
+          className={`submit ${action === 'Login' ? 'gray' : ''}`}
+          onClick={action === 'Sign Up' ? handleSignup : handleLogin}
+        >
+          {action}
+        </button>
+        <button
+          type="button"
+          className={`submit gray`}
+          onClick={() => setAction(action === 'Login' ? 'Sign Up' : 'Login')}
+        >
+          {action === 'Login' ? 'Switch to Sign Up' : 'Switch to Login'}
+        </button>
+      </div>
     </div>
   );
 };

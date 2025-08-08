@@ -5,6 +5,7 @@ import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 
 const BASE_URL = process.env.REACT_APP_API_URL;
+
 // Safe-ish JWT decode (no deps)
 function decodeJWT(token) {
   try {
@@ -56,26 +57,25 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container dashboard-container">
+    <div className="dashboard-page">
       {/* Hero Header */}
-      <header className="dash-hero">
+      <header className="header">
         <div className="dash-hero-left">
-          <div className="dash-badge">Exerly</div>
-          <h1 className="dash-title">Dashboard</h1>
+          <div className="text">Dashboard</div>
+          <div className="underline"></div>
           <p className="dash-subtitle">
             {firstName ? `Welcome, ${firstName}!` : 'Welcome back!'} Let’s keep the streak alive.
           </p>
         </div>
         <div className="dash-hero-right">
-          <button className="btn-ghost" onClick={() => navigate('/credits')}>Credits</button>
-          <button className="btn-primary" onClick={handleLogout}>Logout</button>
+          <button className="submit gray" onClick={() => navigate('/credits')}>Credits</button>
+          <button className="submit" onClick={handleLogout}>Logout</button>
         </div>
       </header>
 
       {/* Stats Grid */}
       <section className="stats-grid">
         {loading ? (
-          // Skeletons
           Array.from({ length: 5 }).map((_, i) => (
             <div className="stats-card skeleton" key={i}>
               <div className="sk-line sk-1"></div>
@@ -89,9 +89,7 @@ export default function Dashboard() {
         ) : (
           stats.map(({ label, value, route }) => (
             <Link to={route} key={label} className="stats-card">
-              <div className="stats-card-top">
-                <span className="stats-chip">{label}</span>
-              </div>
+              <div className="stats-card-label">{label}</div>
               <div className="stats-card-value">{value}</div>
               <div className="stats-card-cta">Open →</div>
             </Link>

@@ -1,45 +1,79 @@
-/* form layout */
+/* === Dark Glassmorphic Tracker Form === */
 .calorie-form {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
   margin: 24px auto;
-  padding: 20px;
+  padding: 24px;
   max-width: 800px;
-  background-color: #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
 }
 
 .calorie-form input {
-  padding: 12px 16px;
-  border: 1px solid #d0d0d0;
-  border-radius: 10px;
-  width: 220px;
+  flex: 1 1 220px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
   font-size: 16px;
-  background-color: #f9f9f9;
-  transition: border-color 0.3s;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.calorie-form input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .calorie-form input:focus {
-  border-color: #3c009d;
+  border-color: #a29bfe;
+  background-color: rgba(255, 255, 255, 0.15);
   outline: none;
-  background-color: #fff;
 }
 
 .calorie-form button {
-  padding: 12px 20px;
+  flex: 1 1 120px;
+  padding: 14px 0;
   border: none;
-  border-radius: 10px;
-  background-color: #3c009d;
-  color: #fff;
+  border-radius: 8px;
+  background: linear-gradient(to right, #8e44ad, #6c5ce7);
+  color: #ffffff;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .calorie-form button:hover {
-  background-color: #29006f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.5);
+}
+
+/* Shared skeleton loader lines */
+.skeleton .sk-line {
+  height: 12px;
+  width: 80%;
+  margin: 8px auto;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Empty state */
+.empty-card {
+  flex: 1 1 100%;
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: #cfc3fc;
 }
