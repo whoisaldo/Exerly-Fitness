@@ -7,7 +7,10 @@ const jwt     = require('jsonwebtoken');
 const app    = express();
 const SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://whoisaldo.github.io'
+}));
+
 app.use(express.json());
 
 // In-memory stores
