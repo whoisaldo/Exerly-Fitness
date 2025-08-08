@@ -25,6 +25,7 @@ function decodeJWT(token) {
 
 export default function Dashboard() {
   const [stats, setStats] = useState([]);
+  const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -46,7 +47,19 @@ export default function Dashboard() {
         if (res.status === 401) { navigate('/'); throw new Error('Unauthorized'); }
         return res.json();
       })
-      .then(data => setStats(Array.isArray(data) ? data : []))
+      .then(data => {
+        // Build stats cards array
+        setStats([
+          { label:'Total Workouts',    value: data.workoutCount,            route:'/dashboard/activities' },
+          { label:'Calories Burned',   value:`${data.totalBurned} kcal`,    route:'/dashboard/activities' },
+          { label:'Calories Consumed', value:`${data.totalConsumed} kcal`, route:'/dashboard/food' },
+          { label:'Sleep (hrs)',       value:`${data.totalSleepHours}h`,     route:'/dashboard/hours' },
+          { label:'Maintenance',       value:`${data.maintenance} kcal`,     route:'/dashboard/profile' },
+          { label:'Net',               value:`${data.net >= 0 ? '+' : ''}${data.net} kcal`, route:'/dashboard' },
+        ]);
+        // Save recent log entries
+        setRecent(data.recent || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [navigate, token]);
@@ -96,6 +109,23 @@ export default function Dashboard() {
           ))
         )}
       </section>
+      {/* Today’s Log */}
+      <div className="log-panel">
+        <h3 className="log-title">Today’s Log</h3>
+        <ul className="log-list">
+          {recent.map((e,i) => (
+            <li key={i} className={`log-entry ${e.type}`}>
+              <span className="log-icon">
+                {e.type === 'food' ? '+' : e.type === 'activity' ? '−' : '💤'}
+              </span>
+              <span className="log-value">
+                {e.type === 'sleep' ? e.label : `${Math.abs(e.calories)} kcal`}
+              </span>
+              <span className="log-label">{e.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
