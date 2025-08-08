@@ -4,8 +4,7 @@ import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 import './Calories.css';  // reuse form styles
-const BASE_URL = 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com';
-
+const BASE_URL = process.env.REACT_APP_API_URL;
 export default function Food() {
   const [entries, setEntries] = useState([]);
   const [form, setForm]       = useState({

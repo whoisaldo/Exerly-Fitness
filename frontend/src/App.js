@@ -10,6 +10,7 @@ import Activities  from './Components/Dashboard/Activities';
 import Food        from './Components/Dashboard/Food';
 import Goals       from './Components/Dashboard/Goals';
 import Hours       from './Components/Dashboard/Hours';
+import Sleep from './Components/Dashboard/Sleep';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/dashboard/goals"          element={<Goals />} />
         <Route path="/dashboard/hours"          element={<Hours />} />
         <Route path="/credits"                  element={<Credits />} />
+        <Route path="/dashboard/sleep"          element={<Sleep />} />
       </Routes>
     </Router>
   );
