@@ -1,18 +1,11 @@
 // frontend/src/Components/Dashboard/Dashboard.jsx
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 
 const BASE_URL = process.env.REACT_APP_API_URL;
-// Comma-separated admin email list from env
-const ADMIN_EMAILS = (process.env.REACT_APP_ADMIN_EMAILS || '')
-  .toLowerCase()
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
 
-// Safe-ish JWT decode (no deps)
+// Enhanced JWT decoder
 function decodeJWT(token) {
   try {
     const base64Url = token.split('.')[1];
@@ -33,10 +26,11 @@ export default function Dashboard() {
   const [stats, setStats] = useState([]);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');
-  // Decode once and reuse across the component
   const payload = useMemo(() => (token ? decodeJWT(token) : null), [token]);
 
   const firstName = useMemo(() => {
@@ -44,32 +38,47 @@ export default function Dashboard() {
     return name.trim().split(' ')[0] || '';
   }, [payload]);
 
-  const email   = payload?.email?.toLowerCase() || '';
-  const isAdmin = !!payload?.is_admin || ADMIN_EMAILS.includes(email);
+  const email = payload?.email?.toLowerCase() || '';
+  const isAdmin = !!payload?.is_admin || 
+    (process.env.REACT_APP_ADMIN_EMAILS || '')
+      .toLowerCase()
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .includes(email);
 
   const cards = useMemo(() => (
     isAdmin
-      ? [...stats, { label: 'Admin', value: 'Open', route: '/dashboard/admin' }]
+      ? [{ label: 'Admin', value: 'Open', route: '/dashboard/admin', icon: '👑', color: 'admin' }, ...stats]
       : stats
   ), [stats, isAdmin]);
 
-  const fetchDashboard = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) { navigate('/'); return; }
+  const fetchDashboard = useCallback(async (showRefreshing = false) => {
+    if (!token) { 
+      navigate('/'); 
+      return; 
+    }
 
+    if (showRefreshing) setRefreshing(true);
+    
     try {
+      setError('');
       const headers = { Authorization: 'Bearer ' + token };
-      // Hit both new endpoints together
+      
       const [dashRes, recentRes] = await Promise.all([
         fetch(`${BASE_URL}/api/dashboard-data?t=${Date.now()}`, { headers, cache: 'no-store' }),
-        fetch(`${BASE_URL}/api/recent?t=${Date.now()}`,          { headers, cache: 'no-store' }),
+        fetch(`${BASE_URL}/api/recent?t=${Date.now()}`, { headers, cache: 'no-store' }),
       ]);
 
-      if (dashRes.status === 401 || recentRes.status === 401) { navigate('/'); return; }
-      if (!dashRes.ok) throw new Error(`dashboard-data HTTP ${dashRes.status}`);
+      if (dashRes.status === 401 || recentRes.status === 401) { 
+        navigate('/'); 
+        return; 
+      }
+      
+      if (!dashRes.ok) throw new Error(`Dashboard data failed: ${dashRes.status}`);
 
-      const dashRaw   = await dashRes.json();
-      let   recentRaw = recentRes.ok ? await recentRes.json() : [];
+      const dashRaw = await dashRes.json();
+      let recentRaw = recentRes.ok ? await recentRes.json() : [];
 
       // Normalize dashboard totals
       let totals = {
@@ -90,81 +99,148 @@ export default function Dashboard() {
           return m ? Number(m[0]) : 0;
         };
         totals = {
-          workoutCount:     pick('workout'),
-          totalBurned:      pick('burned'),
-          totalConsumed:    pick('consumed'),
-          totalSleepHours:  pick('sleep'),
-          maintenance:      pick('maintenance'),
-          net:              pick('net'),
+          workoutCount: pick('workout'),
+          totalBurned: pick('burned'),
+          totalConsumed: pick('consumed'),
+          totalSleepHours: pick('sleep'),
+          maintenance: pick('maintenance'),
+          net: pick('net'),
         };
       } else {
         // New object shape from backend
         totals = {
-          totalBurned:     Number(dashRaw.totalBurned ?? 0),
-          workoutCount:    Number(dashRaw.workoutCount ?? 0),
-          totalConsumed:   Number(dashRaw.totalConsumed ?? 0),
+          totalBurned: Number(dashRaw.totalBurned ?? 0),
+          workoutCount: Number(dashRaw.workoutCount ?? 0),
+          totalConsumed: Number(dashRaw.totalConsumed ?? 0),
           totalSleepHours: Number(dashRaw.totalSleepHours ?? 0),
-          maintenance:     Number(dashRaw.maintenance ?? 0),
-          net:             Number(dashRaw.net ?? 0),
+          maintenance: Number(dashRaw.maintenance ?? 0),
+          net: Number(dashRaw.net ?? 0),
         };
       }
 
-      // Robust fallback for Today’s Log if /api/recent empty or failed
+      // Robust fallback for Today's Log
       let recentList = Array.isArray(recentRaw) ? recentRaw : [];
       if (!recentList || recentList.length === 0) {
         const [actsRes, foodRes, sleepRes] = await Promise.all([
           fetch(`${BASE_URL}/api/activities`, { headers, cache: 'no-store' }),
-          fetch(`${BASE_URL}/api/food`,       { headers, cache: 'no-store' }),
-          fetch(`${BASE_URL}/api/sleep`,      { headers, cache: 'no-store' }),
+          fetch(`${BASE_URL}/api/food`, { headers, cache: 'no-store' }),
+          fetch(`${BASE_URL}/api/sleep`, { headers, cache: 'no-store' }),
         ]);
+        
         const [acts, foods, sleeps] = await Promise.all([
           actsRes.ok ? actsRes.json() : Promise.resolve([]),
           foodRes.ok ? foodRes.json() : Promise.resolve([]),
           sleepRes.ok ? sleepRes.json() : Promise.resolve([]),
         ]);
-        const today = new Date().toISOString().slice(0,10);
+        
+        const today = new Date().toISOString().slice(0, 10);
 
         const foodsToday = (Array.isArray(foods) ? foods : [])
           .filter(f => f.entry_date === today)
-          .map(f => ({ type:'food', calories:Number(f.calories)||0, label: `${f.name} • ${f.calories} kcal`, ts: f.id || 0 }));
+          .map(f => ({ 
+            type: 'food', 
+            calories: Number(f.calories) || 0, 
+            label: `${f.name} • ${f.calories} calories`, 
+            ts: f.id || 0,
+            icon: '🍽️'
+          }));
 
         const actsToday = (Array.isArray(acts) ? acts : [])
           .filter(a => a.entry_date === today)
-          .map(a => ({ type:'activity', calories: -(Number(a.calories)||0), label: `${a.activity} • ${a.calories} kcal`, ts: a.id || 0 }));
+          .map(a => ({ 
+            type: 'activity', 
+            calories: -(Number(a.calories) || 0), 
+            label: `${a.activity} • ${a.calories} calories`, 
+            ts: a.id || 0,
+            icon: '💪'
+          }));
 
         const sleepsToday = (Array.isArray(sleeps) ? sleeps : [])
           .filter(s => s.entry_date === today)
-          .map(s => ({ type:'sleep', calories: 0, label: `${s.hours}h ${s.quality || ''}`.trim(), ts: s.id || 0 }));
+          .map(s => ({ 
+            type: 'sleep', 
+            calories: 0, 
+            label: `${s.hours}h ${s.quality || ''}`.trim(), 
+            ts: s.id || 0,
+            icon: '😴'
+          }));
 
         recentList = [...foodsToday, ...actsToday, ...sleepsToday]
-          .sort((a,b) => (b.ts || 0) - (a.ts || 0))
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0))
           .slice(0, 20);
       }
 
       setStats([
-        { label:'Total Workouts',    value: `${totals.workoutCount}`,              route:'/dashboard/activities' },
-        { label:'Calories Burned',   value: `${totals.totalBurned} kcal`,          route:'/dashboard/activities' },
-        { label:'Calories Consumed', value: `${totals.totalConsumed} kcal`,        route:'/dashboard/food' },
-        { label:'Sleep (hrs)',       value: `${totals.totalSleepHours}h`,          route:'/dashboard/sleep' },
-        { label:'Maintenance',       value: `${totals.maintenance} kcal`,          route:'/dashboard/profile' },
-        { label:'Net',               value: `${totals.net >= 0 ? '+' : ''}${totals.net} kcal`, route:'/dashboard' },
+        { 
+          label: 'Total Workouts', 
+          value: `${totals.workoutCount}`, 
+          route: '/dashboard/activities',
+          icon: '💪',
+          color: 'workout'
+        },
+        { 
+          label: 'Calories Burned', 
+          value: `${totals.totalBurned} calories`, 
+          route: '/dashboard/activities',
+          icon: '🔥',
+          color: 'burned'
+        },
+        { 
+          label: 'Calories Consumed', 
+          value: `${totals.totalConsumed} calories`, 
+          route: '/dashboard/food',
+          icon: '🍽️',
+          color: 'consumed'
+        },
+        { 
+          label: 'Sleep (hrs)', 
+          value: `${totals.totalSleepHours}h`, 
+          route: '/dashboard/sleep',
+          icon: '😴',
+          color: 'sleep'
+        },
+        { 
+          label: 'Goals', 
+          value: 'Set & Track', 
+          route: '/dashboard/goals',
+          icon: '🎯',
+          color: 'goals'
+        },
+        { 
+          label: 'Maintenance', 
+          value: `${totals.maintenance} calories`, 
+          route: '/dashboard/profile',
+          icon: '⚖️',
+          color: 'maintenance'
+        },
+        { 
+          label: 'Net vs. Maint.', 
+          value: `${totals.net >= 0 ? '+' : ''}${totals.net} calories`, 
+          route: '/dashboard',
+          icon: '📊',
+          color: totals.net >= 0 ? 'positive' : 'negative'
+        },
       ]);
+      
       setRecent(recentList);
     } catch (err) {
-      console.error('dashboard fetch failed:', err);
+      console.error('Dashboard fetch failed:', err);
+      setError('Failed to load dashboard data. Please try again.');
       setStats([
-        { label:'Total Workouts',    value: '0',          route:'/dashboard/activities' },
-        { label:'Calories Burned',   value: '0 kcal',     route:'/dashboard/activities' },
-        { label:'Calories Consumed', value: '0 kcal',     route:'/dashboard/food' },
-        { label:'Sleep (hrs)',       value: '0h',         route:'/dashboard/sleep' },
-        { label:'Maintenance',       value: '0 kcal',     route:'/dashboard/profile' },
-        { label:'Net',               value: '+0 kcal',    route:'/dashboard' },
+        { label: 'Total Workouts', value: '0', route: '/dashboard/activities', icon: '💪', color: 'workout' },
+        { label: 'Calories Burned', value: '0 calories', route: '/dashboard/activities', icon: '🔥', color: 'burned' },
+        { label: 'Calories Consumed', value: '0 calories', route: '/dashboard/food', icon: '🍽️', color: 'consumed' },
+        { label: 'Sleep (hrs)', value: '0h', route: '/dashboard/sleep', icon: '😴', color: 'sleep' },
+        { label: 'Goals', value: 'Set & Track', route: '/dashboard/goals', icon: '🎯', color: 'goals' },
+        { label: 'Maintenance', value: '0 calories', route: '/dashboard/profile', icon: '⚖️', color: 'maintenance' },
+        { label: 'Net vs. Maint.', value: '+0 calories', route: '/dashboard', icon: '📊', color: 'positive' },
       ]);
       setRecent([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
   useEffect(() => {
     fetchDashboard();
@@ -189,19 +265,26 @@ export default function Dashboard() {
     if (!window.confirm("Reset today's entries? This cannot be undone.")) {
       return;
     }
+    
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
 
     try {
+      setRefreshing(true);
       const res = await fetch(`${BASE_URL}/api/reset-today`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token }
       });
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
       await fetchDashboard();
+      setError('');
     } catch (e) {
       console.error('Reset failed', e);
-      alert('Failed to reset today. Try again.');
+      setError('Failed to reset today. Please try again.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -210,71 +293,164 @@ export default function Dashboard() {
     navigate('/');
   };
 
+  const handleRefresh = () => {
+    fetchDashboard(true);
+  };
+
   return (
     <div className="dashboard-page">
-      {/* Hero Header */}
-      <header className="header">
-        <div className="dash-hero-left">
-          <div className="text">Dashboard</div>
-          <div className="underline"></div>
-          <p className="dash-subtitle">
-            {firstName ? `Welcome, ${firstName}!` : 'Welcome back!'} Let’s keep the streak alive.
-          </p>
+      {/* Enhanced Header */}
+      <header className="dashboard-header">
+        <div className="header-left">
+          <div className="welcome-section">
+            <h1 className="welcome-title">Welcome back, {firstName || 'Fitness Warrior'}! 💪</h1>
+            <p className="welcome-subtitle">Let's crush today's fitness goals together</p>
+          </div>
         </div>
-        <div className="dash-hero-right">
-          <button className="submit gray" onClick={() => navigate('/credits')}>Credits</button>
-          {isAdmin && (
-            <button className="submit gray" onClick={() => navigate('/dashboard/admin')}>
-              Admin
+        
+        <div className="header-right">
+          <div className="header-actions">
+            <button 
+              className={`action-btn refresh-btn ${refreshing ? 'loading' : ''}`}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Refresh Data"
+            >
+              {refreshing ? <div className="spinner"></div> : '🔄'}
             </button>
-          )}
-          <button className="submit gray" onClick={fetchDashboard}>Refresh</button>
-          <button className="submit gray" onClick={handleResetToday}>Reset Today</button>
-          <button className="submit" onClick={handleLogout}>Logout</button>
+            
+            <button 
+              className="action-btn credits-btn"
+              onClick={() => navigate('/credits')}
+              title="Credits"
+            >
+              Credits
+            </button>
+            
+            {isAdmin && (
+              <button 
+                className="action-btn admin-btn"
+                onClick={() => navigate('/dashboard/admin')}
+                title="Admin Panel"
+              >
+                👑 Admin
+              </button>
+            )}
+            
+            <button 
+              className="action-btn reset-btn"
+              onClick={handleResetToday}
+              disabled={refreshing}
+              title="Reset Today's Data"
+            >
+              Reset Today
+            </button>
+            
+            <button 
+              className="action-btn logout-btn"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Stats Grid */}
-      <section className="stats-grid">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div className="stats-card skeleton" key={i}>
-              <div className="sk-line sk-1"></div>
-              <div className="sk-line sk-2"></div>
+      {/* Error Message */}
+      {error && (
+        <div className="error-banner">
+          <span className="error-text">{error}</span>
+          <button className="error-close" onClick={() => setError('')}>×</button>
+        </div>
+      )}
+
+      {/* Enhanced Stats Grid */}
+      <section className="stats-section">
+        <h2 className="section-title">Today's Overview</h2>
+        <div className="stats-grid">
+          {loading ? (
+            Array.from({ length: 7 }).map((_, i) => (
+              <div className="stats-card skeleton" key={i}>
+                <div className="skeleton-icon"></div>
+                <div className="skeleton-content">
+                  <div className="skeleton-line skeleton-title"></div>
+                  <div className="skeleton-line skeleton-value"></div>
+                </div>
+              </div>
+            ))
+          ) : cards.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <h3 className="empty-title">No data yet</h3>
+              <p className="empty-description">
+                Start logging your workouts, food, and sleep to see your insights here.
+              </p>
+              <div className="empty-actions">
+                <Link to="/dashboard/activities" className="empty-btn">Log Workout</Link>
+                <Link to="/dashboard/food" className="empty-btn">Log Food</Link>
+                <Link to="/dashboard/sleep" className="empty-btn">Log Sleep</Link>
+                <Link to="/dashboard/goals" className="empty-btn">Set Goals</Link>
+              </div>
             </div>
-          ))
-        ) : cards.length === 0 ? (
-          <div className="empty-card">
-            No data yet — log a workout or food entry to see your insights.
-          </div>
-        ) : (
-          cards.map(({ label, value, route }) => (
-            <Link to={route} key={label} className="stats-card">
-              <div className="stats-card-label">{label}</div>
-              <div className="stats-card-value">{value}</div>
-              <div className="stats-card-cta">Open →</div>
-            </Link>
-          ))
-        )}
+          ) : (
+            cards.map(({ label, value, route, icon, color }) => (
+              <Link to={route} key={label} className={`stats-card ${color}`}>
+                <div className="card-icon">{icon}</div>
+                <div className="card-content">
+                  <h3 className="card-label">{label}</h3>
+                  <div className="card-value">{value}</div>
+                </div>
+                <div className="card-arrow">→</div>
+              </Link>
+            ))
+          )}
+        </div>
       </section>
 
-      {/* Today’s Log */}
-      <div className="log-panel">
-        <h3 className="log-title">Today’s Log</h3>
-        <ul className="log-list">
-          {recent.map((e,i) => (
-            <li key={i} className={`log-entry ${e.type}`}>
-              <span className="log-icon">
-                {e.type === 'food' ? '+' : e.type === 'activity' ? '−' : '💤'}
-              </span>
-              <span className="log-value">
-                {e.type === 'sleep' ? e.label : `${Math.abs(e.calories)} kcal`}
-              </span>
-              <span className="log-label">{e.label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Enhanced Today's Log */}
+      <section className="log-section">
+        <div className="section-header">
+          <h2 className="section-title">Today's Activity Log</h2>
+          <span className="log-count">{recent.length} entries</span>
+        </div>
+        
+        <div className="log-container">
+          {recent.length === 0 ? (
+            <div className="empty-log">
+              <div className="empty-log-icon">📝</div>
+              <p className="empty-log-text">No activities logged today</p>
+              <p className="empty-log-subtext">Start your day by logging your first activity!</p>
+              <div className="empty-actions">
+                <Link to="/dashboard/activities" className="empty-btn">Log Workout</Link>
+                <Link to="/dashboard/food" className="empty-btn">Log Food</Link>
+                <Link to="/dashboard/sleep" className="empty-btn">Log Sleep</Link>
+                <Link to="/dashboard/goals" className="empty-btn">Set Goals</Link>
+              </div>
+            </div>
+          ) : (
+            <div className="log-timeline">
+              {recent.map((entry, index) => (
+                <div key={`${entry.type}-${index}`} className={`log-entry ${entry.type}`}>
+                  <div className="entry-icon">{entry.icon}</div>
+                  <div className="entry-content">
+                    <div className="entry-label">{entry.label}</div>
+                    <div className="entry-meta">
+                      {entry.type === 'sleep' ? (
+                        <span className="entry-time">{entry.label}</span>
+                      ) : (
+                        <span className={`entry-calories ${entry.calories >= 0 ? 'positive' : 'negative'}`}>
+                          {entry.calories >= 0 ? '+' : ''}{entry.calories} calories
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
