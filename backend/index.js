@@ -355,21 +355,21 @@ app.get('/api/recent', authenticate, async (req, res) => {
     // Get all logs for today for each type, with a source field
     const [activities, food, sleep] = await Promise.all([
       dbQuery(
-        `SELECT id, activity as name, duration_min, calories, entry_date, created_at, 'activity' as type, id as entry_id, null as protein, null as sugar, null as hours, null as quality
+        `SELECT id, activity, duration_min, calories, entry_date, created_at, 'activity' as type
          FROM activities
          WHERE email=$1 AND entry_date=(now() AT TIME ZONE 'utc')::date
          ORDER BY id DESC`,
         [email]
       ),
       dbQuery(
-        `SELECT id, name, null as duration_min, calories, entry_date, created_at, 'food' as type, id as entry_id, protein, sugar, null as hours, null as quality
+        `SELECT id, name, calories, entry_date, created_at, 'food' as type
          FROM food
          WHERE email=$1 AND entry_date=(now() AT TIME ZONE 'utc')::date
          ORDER BY id DESC`,
         [email]
       ),
       dbQuery(
-        `SELECT id, null as name, null as duration_min, null as calories, entry_date, created_at, 'sleep' as type, id as entry_id, null as protein, null as sugar, hours, quality
+        `SELECT id, hours, quality, entry_date, created_at, 'sleep' as type
          FROM sleep
          WHERE email=$1 AND entry_date=(now() AT TIME ZONE 'utc')::date
          ORDER BY id DESC`,

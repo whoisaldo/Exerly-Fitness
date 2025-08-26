@@ -79,6 +79,8 @@ export default function Dashboard() {
 
       const dashRaw = await dashRes.json();
       let recentRaw = recentRes.ok ? await recentRes.json() : [];
+      
+
 
       // Normalize dashboard totals
       let totals = {
@@ -118,9 +120,49 @@ export default function Dashboard() {
         };
       }
 
-      // Robust fallback for Today's Log
-      let recentList = Array.isArray(recentRaw) ? recentRaw : [];
-      if (!recentList || recentList.length === 0) {
+             // Process recent logs from backend
+       let recentList = [];
+       if (Array.isArray(recentRaw) && recentRaw.length > 0) {
+         // Process the data from /api/recent endpoint
+         recentList = recentRaw.map(entry => {
+                       // Add safety checks for entry
+            if (!entry || typeof entry !== 'object') {
+              return null;
+            }
+           
+           if (entry.type === 'food') {
+             return {
+               type: 'food',
+               calories: Number(entry.calories) || 0,
+               label: `${entry.name || 'Unknown Food'} • ${entry.calories || 0} calories`,
+               ts: entry.id || 0,
+               icon: '🍽️'
+             };
+           } else if (entry.type === 'activity') {
+             return {
+               type: 'activity',
+               calories: -(Number(entry.calories) || 0),
+               label: `${entry.activity || 'Unknown Activity'} • ${entry.calories || 0} calories`,
+               ts: entry.id || 0,
+               icon: '💪'
+             };
+           } else if (entry.type === 'sleep') {
+             return {
+               type: 'sleep',
+               calories: 0,
+               label: `${entry.hours || 0}h ${entry.quality || ''}`.trim(),
+               ts: entry.id || 0,
+               icon: '😴'
+             };
+           }
+           
+                       return null;
+         }).filter(Boolean); // Remove any null entries
+         
+         // Sort by timestamp
+         recentList.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+       } else {
+        // Fallback: fetch individual endpoints if /api/recent is empty
         const [actsRes, foodRes, sleepRes] = await Promise.all([
           fetch(`${BASE_URL}/api/activities`, { headers, cache: 'no-store' }),
           fetch(`${BASE_URL}/api/food`, { headers, cache: 'no-store' }),
