@@ -16,6 +16,7 @@ import MaintenanceNotice from './Components/MaintenanceNotice';
 import MaintenanceHistory from './Components/MaintenanceHistory';
 import StatusCheck from './Components/StatusCheck';
 import AdminStatusChecker from './Components/AdminStatusChecker';
+import MaintenanceIcon from './Components/MaintenanceIcon';
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -77,6 +78,7 @@ export default function App() {
   return (
     <Router>
       <div className="app">
+        <MaintenanceIcon />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LoginSignup />} />

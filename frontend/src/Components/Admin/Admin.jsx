@@ -27,9 +27,25 @@ export default function Admin() {
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [apiHealth, setApiHealth] = useState(null);
 
   const token = localStorage.getItem('token') || '';
   const me = useMemo(() => decodeJWT(token) || {}, [token]);
+
+  // Fetch API health status
+  const fetchApiHealth = useCallback(async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/health`);
+      const data = await response.json();
+      setApiHealth(data);
+    } catch (error) {
+      setApiHealth({
+        status: 'unhealthy',
+        error: 'Failed to connect to API',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [BASE_URL]);
 
   // Load users list (admin-only)
   useEffect(() => {
@@ -45,6 +61,9 @@ export default function Admin() {
 
     setUsersLoading(true);
     setError('');
+    
+    // Fetch API health status
+    fetchApiHealth();
 
     fetch(`${BASE_URL}/api/admin/users`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -220,6 +239,66 @@ export default function Admin() {
           <button className="message-close" onClick={clearMessages}>×</button>
         </div>
       )}
+
+      {/* API Status Section */}
+      <section className="admin-status-section">
+        <div className="status-header">
+          <h3>System Status</h3>
+          <button className="refresh-status-btn" onClick={fetchApiHealth}>
+            🔄 Refresh
+          </button>
+        </div>
+        <div className="status-grid">
+          <div className="status-card">
+            <div className="status-label">API Health</div>
+            <div className={`status-value ${apiHealth?.status === 'healthy' ? 'healthy' : 'unhealthy'}`}>
+              {apiHealth ? (
+                <>
+                  <span className="status-icon">
+                    {apiHealth.status === 'healthy' ? '🟢' : '🔴'}
+                  </span>
+                  {apiHealth.status?.toUpperCase() || 'UNKNOWN'}
+                </>
+              ) : (
+                '🟡 LOADING'
+              )}
+            </div>
+          </div>
+          
+          <div className="status-card">
+            <div className="status-label">Database</div>
+            <div className={`status-value ${apiHealth?.database?.status === 'connected' ? 'healthy' : 'unhealthy'}`}>
+              {apiHealth?.database ? (
+                <>
+                  <span className="status-icon">
+                    {apiHealth.database.status === 'connected' ? '🟢' : '🔴'}
+                  </span>
+                  {apiHealth.database.status?.toUpperCase() || 'UNKNOWN'}
+                </>
+              ) : (
+                '🟡 LOADING'
+              )}
+            </div>
+          </div>
+          
+          <div className="status-card">
+            <div className="status-label">Uptime</div>
+            <div className="status-value">
+              {apiHealth?.uptime ? 
+                `${Math.floor(apiHealth.uptime / 3600)}h ${Math.floor((apiHealth.uptime % 3600) / 60)}m` : 
+                'N/A'
+              }
+            </div>
+          </div>
+          
+          <div className="status-card">
+            <div className="status-label">Memory</div>
+            <div className="status-value">
+              {apiHealth?.memory ? `${apiHealth.memory.used}` : 'N/A'}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* User Selection Toolbar */}
       <section className="admin-toolbar">
