@@ -30,6 +30,9 @@ const Credits = () => {
           >
             GitHub Repo
           </a>
+          <Link to="/maintenance-history" className="maintenance-link">
+            Maintenance History
+          </Link>
         </div>
 
         <p className="credits-description">

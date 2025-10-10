@@ -13,6 +13,7 @@ import Profile     from './Components/Dashboard/Profile';
 import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
 import MaintenanceNotice from './Components/MaintenanceNotice';
+import MaintenanceHistory from './Components/MaintenanceHistory';
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -78,6 +79,7 @@ export default function App() {
           {/* Public Routes */}
           <Route path="/" element={<LoginSignup />} />
           <Route path="/credits" element={<Credits />} />
+          <Route path="/maintenance-history" element={<MaintenanceHistory />} />
           
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
