@@ -12,6 +12,7 @@ import Sleep       from './Components/Dashboard/Sleep';
 import Profile     from './Components/Dashboard/Profile';
 import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
+import MaintenanceNotice from './Components/MaintenanceNotice';
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -60,6 +61,16 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  // Show maintenance notice on GitHub Pages deployment
+  // To disable: remove this check or set REACT_APP_MAINTENANCE=false
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const maintenanceMode = process.env.REACT_APP_MAINTENANCE !== 'false' && isGitHubPages;
+
+  // Show maintenance notice if enabled
+  if (maintenanceMode) {
+    return <MaintenanceNotice />;
+  }
+
   return (
     <Router>
       <div className="app">
