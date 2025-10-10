@@ -6,12 +6,12 @@ export default function MaintenanceNotice() {
     <div className="maintenance-overlay">
       <div className="maintenance-container">
         <div className="maintenance-icon">🔧</div>
-        <h1 className="maintenance-title">Under Maintenance</h1>
+        <h1 className="maintenance-title">Scheduled Maintenance</h1>
         <p className="maintenance-message">
           We're currently routing our database to a different cloud service for improved performance and reliability.
         </p>
         <p className="maintenance-submessage">
-          The app will be back online shortly. Thank you for your patience!
+          Expected to be back online by <strong>October 11th, 2025</strong>. Thank you for your patience!
         </p>
         <div className="maintenance-status">
           <div className="status-indicator"></div>
