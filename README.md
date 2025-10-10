@@ -67,7 +67,7 @@ A modern, full-stack fitness tracking application built with React.js, Node.js, 
 ### **Prerequisites**
 - Node.js (v16 or higher)
 - npm or yarn
-- PostgreSQL database
+- ✨ **No database setup needed for local dev!** (Uses SQLite automatically)
 
 ### **Installation**
 
@@ -205,6 +205,18 @@ Exerly-Fitness/
 - **CSS Optimization** - Minified and optimized stylesheets
 
 ## 🌟 **Recent Updates**
+
+### **v2.1 - Feature Enhancements (October 2025)**
+- 🗑️ **Delete functionality** for Activities, Food, and Sleep entries
+- 📊 **Macro distribution charts** with visual progress bars
+- 🎯 **Goals progress display** on dashboard with completion tracking
+- 💾 **SQLite support** for local development (no setup needed!)
+- ⚙️ **Smart API routing** (auto-detects local vs production)
+- ✅ **Confirmation messages** for all save/delete operations
+- 🔥 **Intensity levels** for activities with color coding
+- 🛌 **Bedtime/wake time tracking** for sleep entries
+- 🍽️ **Complete macro tracking** (protein, carbs, fat, sugar)
+- 📈 **Real-time progress** calculations and visualizations
 
 ### **v2.0 - Complete Frontend Revamp**
 - ✨ Modern glassmorphism design

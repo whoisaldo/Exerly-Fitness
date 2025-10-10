@@ -2,8 +2,9 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 // Enhanced JWT decoder
 function decodeJWT(token) {
@@ -28,6 +29,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [goals, setGoals] = useState(null);
+  const [goalsProgress, setGoalsProgress] = useState(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');
@@ -284,9 +287,62 @@ export default function Dashboard() {
     }
   }, [navigate, token]);
 
+  const fetchGoals = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [goalsRes, dashDataRes] = await Promise.all([
+        fetch(`${BASE_URL}/api/goals`, { headers: { Authorization: 'Bearer ' + token } }),
+        fetch(`${BASE_URL}/api/dashboard-data`, { headers: { Authorization: 'Bearer ' + token } })
+      ]);
+      
+      if (goalsRes.ok) {
+        const goalsData = await goalsRes.json();
+        setGoals(goalsData);
+        
+        // Calculate progress if we have dashboard data
+        if (dashDataRes.ok) {
+          const dashData = await dashDataRes.json();
+          const progress = {};
+          
+          // Weekly workouts progress (from today's workout count)
+          if (goalsData.weekly_workouts) {
+            progress.weeklyWorkouts = {
+              current: dashData.workoutCount || 0,
+              goal: goalsData.weekly_workouts,
+              percentage: Math.min(100, ((dashData.workoutCount || 0) / goalsData.weekly_workouts) * 100)
+            };
+          }
+          
+          // Daily calories progress
+          if (goalsData.daily_calories) {
+            progress.dailyCalories = {
+              current: dashData.totalConsumed || 0,
+              goal: goalsData.daily_calories,
+              percentage: Math.min(100, ((dashData.totalConsumed || 0) / goalsData.daily_calories) * 100)
+            };
+          }
+          
+          // Sleep hours progress
+          if (goalsData.sleep_hours) {
+            progress.sleepHours = {
+              current: dashData.totalSleepHours || 0,
+              goal: goalsData.sleep_hours,
+              percentage: Math.min(100, ((dashData.totalSleepHours || 0) / goalsData.sleep_hours) * 100)
+            };
+          }
+          
+          setGoalsProgress(progress);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching goals:', err);
+    }
+  }, [token]);
+
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+    fetchGoals();
+  }, [fetchDashboard, fetchGoals]);
 
   useEffect(() => {
     const onFocus = () => fetchDashboard();
@@ -449,6 +505,83 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      {/* Goals Progress Section */}
+      {goalsProgress && Object.keys(goalsProgress).length > 0 && (
+        <section className="goals-progress-section" style={{ margin: '30px 0', padding: '25px', background: 'white', borderRadius: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 className="section-title" style={{ margin: 0 }}>🎯 Goals Progress</h2>
+            <Link to="/dashboard/goals" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+              Manage Goals →
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {goalsProgress.weeklyWorkouts && (
+              <div style={{ padding: '15px', background: '#f9fafb', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>💪 Weekly Workouts</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>
+                    {goalsProgress.weeklyWorkouts.current} / {goalsProgress.weeklyWorkouts.goal}
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '10px', background: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    width: `${goalsProgress.weeklyWorkouts.percentage}%`, 
+                    height: '100%', 
+                    background: goalsProgress.weeklyWorkouts.percentage >= 100 ? '#10b981' : '#3b82f6',
+                    transition: 'width 0.3s ease'
+                  }}></div>
+                </div>
+                <div style={{ marginTop: '5px', fontSize: '12px', color: '#6b7280', textAlign: 'right' }}>
+                  {goalsProgress.weeklyWorkouts.percentage.toFixed(0)}% Complete
+                </div>
+              </div>
+            )}
+            {goalsProgress.dailyCalories && (
+              <div style={{ padding: '15px', background: '#f9fafb', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>🔥 Daily Calories</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>
+                    {goalsProgress.dailyCalories.current} / {goalsProgress.dailyCalories.goal}
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '10px', background: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    width: `${goalsProgress.dailyCalories.percentage}%`, 
+                    height: '100%', 
+                    background: goalsProgress.dailyCalories.percentage >= 100 ? '#10b981' : '#f59e0b',
+                    transition: 'width 0.3s ease'
+                  }}></div>
+                </div>
+                <div style={{ marginTop: '5px', fontSize: '12px', color: '#6b7280', textAlign: 'right' }}>
+                  {goalsProgress.dailyCalories.percentage.toFixed(0)}% Complete
+                </div>
+              </div>
+            )}
+            {goalsProgress.sleepHours && (
+              <div style={{ padding: '15px', background: '#f9fafb', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>😴 Sleep Hours</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>
+                    {goalsProgress.sleepHours.current}h / {goalsProgress.sleepHours.goal}h
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '10px', background: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    width: `${goalsProgress.sleepHours.percentage}%`, 
+                    height: '100%', 
+                    background: goalsProgress.sleepHours.percentage >= 100 ? '#10b981' : '#8b5cf6',
+                    transition: 'width 0.3s ease'
+                  }}></div>
+                </div>
+                <div style={{ marginTop: '5px', fontSize: '12px', color: '#6b7280', textAlign: 'right' }}>
+                  {goalsProgress.sleepHours.percentage.toFixed(0)}% Complete
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Enhanced Today's Log */}
       <section className="log-section">

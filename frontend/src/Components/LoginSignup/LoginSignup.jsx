@@ -5,8 +5,9 @@ import email_icon    from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
 import exerly_logo   from '../Assets/ExerlyLogo.jpg';
 import { useNavigate, Link } from 'react-router-dom';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 const LoginSignup = () => {
   const [action, setAction] = useState('Sign Up');

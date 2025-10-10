@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Profile() {
   const navigate = useNavigate();

@@ -4,7 +4,9 @@ import { useNavigate }                from 'react-router-dom';
 import '../LoginSignup/LoginSignup.css';
 import './Dashboard.css';
 import './Calories.css';
-const BASE_URL = process.env.REACT_APP_API_URL;
+import API_CONFIG from '../../config';
+
+const BASE_URL = API_CONFIG.BASE_URL;
 export default function Calories() {
   const [entries, setEntries] = useState([]);
   const [form, setForm]       = useState({

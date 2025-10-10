@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Activities.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Activities() {
   const [entries, setEntries] = useState([]);
@@ -70,7 +71,9 @@ export default function Activities() {
         body: JSON.stringify({
           activity: form.activity,
           duration_min: form.duration_min,
-          calories: form.calories
+          calories: form.calories,
+          intensity: form.intensity,
+          type: form.type
         })
       });
 
@@ -84,7 +87,7 @@ export default function Activities() {
           intensity: 'Moderate', 
           type: 'Cardio' 
         });
-        // Show success message or toast
+        alert('✅ Activity logged successfully!');
       } else if (res.status === 401) {
         navigate('/');
       } else {
@@ -97,6 +100,28 @@ export default function Activities() {
       alert('Error saving activity data');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this activity?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/api/activities/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        setEntries(entries.filter(entry => entry.id !== id));
+        alert('✅ Activity deleted successfully!');
+      } else {
+        alert('Error deleting activity');
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      alert('Error deleting activity');
     }
   };
 
@@ -306,8 +331,27 @@ export default function Activities() {
                       <span className="activity-icon">{getActivityIcon(entry.activity)}</span>
                       {entry.activity}
                     </div>
-                    <div className="entry-intensity" style={{ color: getIntensityColor('Moderate') }}>
-                      ⚡ Moderate
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {entry.intensity && (
+                        <div className="entry-intensity" style={{ color: getIntensityColor(entry.intensity) }}>
+                          ⚡ {entry.intensity}
+                        </div>
+                      )}
+                      <button 
+                        onClick={() => handleDelete(entry.id)}
+                        className="delete-btn"
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '5px 12px',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   </div>
                   <div className="entry-details">

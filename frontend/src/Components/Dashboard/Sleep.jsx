@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Sleep.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Sleep() {
   const [entries, setEntries] = useState([]);
@@ -65,7 +66,9 @@ export default function Sleep() {
         },
         body: JSON.stringify({
           hours: form.hours,
-          quality: form.quality
+          quality: form.quality,
+          bedtime: form.bedtime,
+          wakeTime: form.wakeTime
         })
       });
 
@@ -73,7 +76,7 @@ export default function Sleep() {
         const entry = await res.json();
         setEntries([entry, ...entries]);
         setForm({ hours: '', quality: 'Good', bedtime: '', wakeTime: '' });
-        // Show success message or toast
+        alert('✅ Sleep logged successfully!');
       } else if (res.status === 401) {
         navigate('/');
       } else {
@@ -86,6 +89,28 @@ export default function Sleep() {
       alert('Error saving sleep data');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this sleep entry?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/api/sleep/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        setEntries(entries.filter(entry => entry.id !== id));
+        alert('✅ Sleep entry deleted successfully!');
+      } else {
+        alert('Error deleting sleep entry');
+      }
+    } catch (error) {
+      console.error('Error deleting sleep:', error);
+      alert('Error deleting sleep entry');
     }
   };
 
@@ -278,12 +303,36 @@ export default function Sleep() {
                     <div className="entry-quality" style={{ color: getSleepQualityColor(entry.quality) }}>
                       {getSleepQualityIcon(entry.quality)} {entry.quality}
                     </div>
-                    <div className="entry-date">{entry.entry_date}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div className="entry-date">{entry.entry_date}</div>
+                      <button 
+                        onClick={() => handleDelete(entry.id)}
+                        className="delete-btn"
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '5px 12px',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                   <div className="entry-hours">
                     <span className="hours-value">{entry.hours}</span>
                     <span className="hours-unit">hours</span>
                   </div>
+                  {(entry.bedtime || entry.wake_time) && (
+                    <div style={{ marginTop: '8px', fontSize: '14px', color: '#6b7280' }}>
+                      {entry.bedtime && <span>🌙 Bedtime: {entry.bedtime}</span>}
+                      {entry.bedtime && entry.wake_time && <span style={{ margin: '0 10px' }}>•</span>}
+                      {entry.wake_time && <span>☀️ Wake: {entry.wake_time}</span>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

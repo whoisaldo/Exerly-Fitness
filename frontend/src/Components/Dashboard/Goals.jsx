@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './Goals.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Goals() {
   const navigate = useNavigate();
@@ -18,6 +19,37 @@ export default function Goals() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return navigate('/');
+
+        const res = await fetch(`${BASE_URL}/api/goals`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Object.keys(data).length > 0) {
+            setGoals({
+              dailyCalories: data.daily_calories || '',
+              weeklyWorkouts: data.weekly_workouts || '',
+              dailySteps: data.daily_steps || '',
+              weeklyWeight: data.weekly_weight || '',
+              sleepHours: data.sleep_hours || '',
+              waterIntake: data.water_intake || ''
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching goals:', err);
+      }
+    };
+
+    fetchGoals();
+  }, [navigate]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setGoals(prev => ({ ...prev, [name]: value }));
@@ -28,14 +60,29 @@ export default function Goals() {
     setLoading(true);
     
     try {
-      // Here you would typically save to your backend
-      // For now, we'll simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      const token = localStorage.getItem('token');
+      if (!token) return navigate('/');
+
+      const res = await fetch(`${BASE_URL}/api/goals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify(goals)
+      });
+
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else if (res.status === 401) {
+        navigate('/');
+      } else {
+        alert('Error saving goals');
+      }
     } catch (err) {
       console.error('Failed to save goals:', err);
+      alert('Error saving goals');
     } finally {
       setLoading(false);
     }

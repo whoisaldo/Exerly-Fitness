@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Food.css';
+import API_CONFIG from '../../config';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Food() {
   const [entries, setEntries] = useState([]);
@@ -82,7 +83,7 @@ export default function Food() {
           fat: '', 
           mealType: 'Snack' 
         });
-        // Show success message or toast
+        alert('✅ Food logged successfully!');
       } else if (res.status === 401) {
         navigate('/');
       } else {
@@ -95,6 +96,28 @@ export default function Food() {
       alert('Error saving food data');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this food entry?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/api/food/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        setEntries(entries.filter(entry => entry.id !== id));
+        alert('✅ Food entry deleted successfully!');
+      } else {
+        alert('Error deleting food entry');
+      }
+    } catch (error) {
+      console.error('Error deleting food:', error);
+      alert('Error deleting food entry');
     }
   };
 
@@ -179,6 +202,43 @@ export default function Food() {
                 <div className="stat-icon">🥑</div>
                 <div className="stat-value">{stats.totalFat}g</div>
                 <div className="stat-label">Total Fat</div>
+              </div>
+            </div>
+
+            {/* Macro Progress Bars */}
+            <div style={{ marginTop: '30px', padding: '20px', background: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <h3 style={{ marginBottom: '20px', fontSize: '18px', color: '#1f2937' }}>Macro Distribution</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {/* Protein Bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px' }}>
+                    <span>💪 Protein</span>
+                    <span style={{ fontWeight: 'bold' }}>{stats.totalProtein}g ({((parseFloat(stats.totalProtein) * 4 / parseFloat(stats.totalCalories)) * 100 || 0).toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ width: '100%', height: '12px', background: '#e5e7eb', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(parseFloat(stats.totalProtein) * 4 / parseFloat(stats.totalCalories)) * 100 || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #2563eb)', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                </div>
+                {/* Carbs Bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px' }}>
+                    <span>🍞 Carbs</span>
+                    <span style={{ fontWeight: 'bold' }}>{stats.totalCarbs}g ({((parseFloat(stats.totalCarbs) * 4 / parseFloat(stats.totalCalories)) * 100 || 0).toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ width: '100%', height: '12px', background: '#e5e7eb', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(parseFloat(stats.totalCarbs) * 4 / parseFloat(stats.totalCalories)) * 100 || 0}%`, height: '100%', background: 'linear-gradient(90deg, #f59e0b, #d97706)', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                </div>
+                {/* Fat Bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px' }}>
+                    <span>🥑 Fat</span>
+                    <span style={{ fontWeight: 'bold' }}>{stats.totalFat}g ({((parseFloat(stats.totalFat) * 9 / parseFloat(stats.totalCalories)) * 100 || 0).toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ width: '100%', height: '12px', background: '#e5e7eb', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(parseFloat(stats.totalFat) * 9 / parseFloat(stats.totalCalories)) * 100 || 0}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #059669)', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -352,8 +412,25 @@ export default function Food() {
                 <div key={entry.id} className="food-entry">
                   <div className="entry-header">
                     <div className="entry-name">{entry.name}</div>
-                    <div className="entry-meal-type" style={{ color: getMealTypeColor(entry.mealType) }}>
-                      {getMealTypeIcon(entry.mealType)} {entry.mealType}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div className="entry-meal-type" style={{ color: getMealTypeColor(entry.meal_type || entry.mealType) }}>
+                        {getMealTypeIcon(entry.meal_type || entry.mealType)} {entry.meal_type || entry.mealType}
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(entry.id)}
+                        className="delete-btn"
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '5px 12px',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   </div>
                   <div className="entry-nutrition">
