@@ -14,6 +14,8 @@ import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
 import MaintenanceNotice from './Components/MaintenanceNotice';
 import MaintenanceHistory from './Components/MaintenanceHistory';
+import StatusCheck from './Components/StatusCheck';
+import AdminStatusChecker from './Components/AdminStatusChecker';
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -80,6 +82,7 @@ export default function App() {
           <Route path="/" element={<LoginSignup />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/maintenance-history" element={<MaintenanceHistory />} />
+          <Route path="/status-check" element={<StatusCheck />} />
           
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -92,6 +95,7 @@ export default function App() {
           
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/dashboard/admin/status" element={<AdminRoute><AdminStatusChecker /></AdminRoute>} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

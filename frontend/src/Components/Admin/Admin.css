@@ -97,6 +97,34 @@
   transform: translateY(0);
 }
 
+.status-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 24px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+  margin-right: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+.status-btn:active {
+  transform: translateY(0);
+}
+
 /* Message Banners */
 .message-banner {
   border-radius: 12px;

@@ -190,6 +190,13 @@ export default function Admin() {
         
         <div className="header-right">
           <button 
+            className="action-btn status-btn"
+            onClick={() => navigate('/dashboard/admin/status')}
+            title="Advanced Status Checker"
+          >
+            🔧 Status
+          </button>
+          <button 
             className="action-btn back-btn"
             onClick={() => navigate('/dashboard')}
             title="Back to Dashboard"

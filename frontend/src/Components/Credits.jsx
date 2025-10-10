@@ -33,6 +33,9 @@ const Credits = () => {
           <Link to="/maintenance-history" className="maintenance-link">
             Maintenance History
           </Link>
+          <Link to="/status-check" className="status-link">
+            System Status
+          </Link>
         </div>
 
         <p className="credits-description">
