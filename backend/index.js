@@ -154,8 +154,37 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Health check
+// Health check endpoints
 app.get('/ping', (_req, res) => res.send('pong'));
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    const healthStatus = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        status: dbStatus,
+        readyState: mongoose.connection.readyState,
+        name: mongoose.connection.name
+      },
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+      },
+      version: '1.0.0'
+    };
+    
+    res.status(200).json(healthStatus);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
 
 // ---------- Auth ----------
 app.post('/signup', async (req, res) => {

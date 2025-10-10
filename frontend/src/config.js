@@ -8,7 +8,7 @@ const API_CONFIG = {
   // For production (GitHub Pages/Heroku), use the environment variable or a default production URL
   BASE_URL: isLocalDevelopment 
     ? 'http://localhost:3001' 
-    : (process.env.REACT_APP_API_URL || 'https://your-heroku-app.herokuapp.com')
+    : (process.env.REACT_APP_API_URL || 'https://powerful-citadel-83317-b198c7aed44f.herokuapp.com')
 };
 
 export default API_CONFIG;
