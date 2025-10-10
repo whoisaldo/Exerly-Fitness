@@ -82,3 +82,4 @@ secret.key
 # === Internal Documentation (Do Not Commit) ===
 IMPLEMENTATION_SUMMARY.md
 MAINTENANCE_MODE.md
+backend/index-postgres-sqlite-backup.js
