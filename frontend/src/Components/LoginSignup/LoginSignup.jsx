@@ -116,6 +116,11 @@ const LoginSignup = () => {
         <div className="circle circle-3"></div>
       </div>
 
+      {/* Back Button */}
+      <Link to="/" className="back-to-landing">
+        ← Back to Landing Page
+      </Link>
+
       {/* Main Content */}
       <div className="auth-card">
         {/* Logo Section */}

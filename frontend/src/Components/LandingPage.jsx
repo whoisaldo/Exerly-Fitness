@@ -117,10 +117,10 @@ export default function LandingPage() {
             <span className="logo-text">Exerly</span>
           </div>
           <div className="nav-links">
-            <button className="nav-btn demo-btn" onClick={() => navigate('/')}>
+            <button className="nav-btn demo-btn" onClick={() => navigate('/login')}>
               Try Demo
             </button>
-            <button className="nav-btn login-btn" onClick={() => navigate('/')}>
+            <button className="nav-btn login-btn" onClick={() => navigate('/login')}>
               Sign In
             </button>
           </div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
           <div className="hero-content">
             <div className="hero-badge">
               <span className="badge-icon">🚀</span>
-              Modern Fitness Tracking Platform
+              Modern Fitness App
             </div>
             <h1 className="hero-title">
               Transform Your <span className="gradient-text">Fitness Journey</span> with Smart Analytics
@@ -143,7 +143,7 @@ export default function LandingPage() {
               Exerly's comprehensive fitness management platform built with cutting-edge technology.
             </p>
             <div className="hero-actions">
-              <button className="cta-primary" onClick={() => navigate('/')}>
+              <button className="cta-primary" onClick={() => navigate('/login')}>
                 Start Free Trial
                 <span className="cta-icon">→</span>
               </button>
@@ -326,7 +326,7 @@ export default function LandingPage() {
               Join thousands of users who are already achieving their health goals with Exerly.
             </p>
             <div className="cta-actions">
-              <button className="cta-primary large" onClick={() => navigate('/')}>
+              <button className="cta-primary large" onClick={() => navigate('/login')}>
                 Get Started Free
                 <span className="cta-icon">🚀</span>
               </button>
@@ -354,14 +354,14 @@ export default function LandingPage() {
             <div className="footer-links">
               <div className="footer-column">
                 <h4 className="footer-title">Product</h4>
-                <a href="#features" className="footer-link">Features</a>
-                <a href="#pricing" className="footer-link">Demo</a>
+                <button onClick={() => navigate('/login')} className="footer-link">Try Demo</button>
+                <button onClick={() => navigate('/login')} className="footer-link">Login</button>
                 <button onClick={() => navigate('/credits')} className="footer-link">About</button>
               </div>
               <div className="footer-column">
                 <h4 className="footer-title">Resources</h4>
-                <a href="https://github.com/whoisaldo/Exerly-Fitness" className="footer-link">GitHub</a>
-                <a href="https://www.linkedin.com/in/ali-younes-41a2b4296/" className="footer-link">LinkedIn</a>
+                <a href="https://github.com/whoisaldo/Exerly-Fitness" target="_blank" rel="noopener noreferrer" className="footer-link">GitHub</a>
+                <a href="https://www.linkedin.com/in/ali-younes-41a2b4296/" target="_blank" rel="noopener noreferrer" className="footer-link">LinkedIn</a>
                 <button onClick={() => navigate('/status-check')} className="footer-link">Status</button>
               </div>
             </div>
