@@ -12,6 +12,7 @@ import Sleep       from './Components/Dashboard/Sleep';
 import Profile     from './Components/Dashboard/Profile';
 import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
+import LandingPage from './Components/LandingPage';
 import MaintenanceNotice from './Components/MaintenanceNotice';
 import MaintenanceHistory from './Components/MaintenanceHistory';
 import StatusCheck from './Components/StatusCheck';
@@ -81,7 +82,8 @@ export default function App() {
         <MaintenanceIcon />
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LoginSignup />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginSignup />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/maintenance-history" element={<MaintenanceHistory />} />
           <Route path="/status-check" element={<StatusCheck />} />
