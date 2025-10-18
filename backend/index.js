@@ -98,6 +98,54 @@ const workoutSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now }
 });
 
+const aiPlanSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  plan: { type: String, required: true },
+  answers: { type: [String], default: [] },
+  userStatsSnapshot: {
+    age: Number,
+    weight: Number,
+    height: Number,
+    gender: String,
+    goal: String
+  },
+  created_at: { type: Date, default: Date.now }
+});
+
+const aiErrorSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  userId: { type: String, required: true, index: true },
+  sessionId: { type: String, required: true, index: true },
+  errorType: { 
+    type: String, 
+    required: true,
+    enum: ['API_ERROR', 'RATE_LIMIT', 'VALIDATION_ERROR', 'NETWORK_ERROR', 'AI_MODEL_ERROR', 'UNKNOWN_ERROR']
+  },
+  errorCode: { type: String, required: true },
+  errorMessage: { type: String, required: true },
+  errorDetails: { type: mongoose.Schema.Types.Mixed, default: {} },
+  userAgent: { type: String },
+  ipAddress: { type: String },
+  requestData: { type: mongoose.Schema.Types.Mixed, default: {} },
+  responseData: { type: mongoose.Schema.Types.Mixed, default: {} },
+  stackTrace: { type: String },
+  severity: { 
+    type: String, 
+    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+    default: 'MEDIUM'
+  },
+  status: { 
+    type: String, 
+    enum: ['OPEN', 'INVESTIGATING', 'RESOLVED', 'IGNORED'],
+    default: 'OPEN'
+  },
+  adminNotes: { type: String, default: '' },
+  resolvedBy: { type: String, default: '' },
+  resolvedAt: { type: Date },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ email: 1, entry_date: 1 });
@@ -110,6 +158,8 @@ const Food = mongoose.model('Food', foodSchema);
 const Sleep = mongoose.model('Sleep', sleepSchema);
 const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
+const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
+const AIError = mongoose.model('AIError', aiErrorSchema);
 
 // ---------- Helper Functions ----------
 function calculateMaintenance(profile) {
@@ -711,6 +761,142 @@ app.get('/api/dashboard-data', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Error fetching dashboard data', error: err.message });
   }
 });
+
+// ---------- AI Plans Routes ----------
+app.get('/api/ai/plans', authenticate, async (req, res) => {
+  try {
+    const plans = await AIPlan.find({ email: req.user.email }).sort({ created_at: -1 });
+    res.json(plans);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching AI plans', error: err.message });
+  }
+});
+
+app.post('/api/ai/plans', authenticate, async (req, res) => {
+  try {
+    const { plan, answers, userStatsSnapshot } = req.body;
+    if (!plan) return res.status(400).json({ message: 'Plan is required' });
+    
+    const newPlan = await AIPlan.create({
+      email: req.user.email,
+      plan: plan.trim(),
+      answers: answers || [],
+      userStatsSnapshot: userStatsSnapshot || {}
+    });
+    
+    res.status(201).json(newPlan);
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving AI plan', error: err.message });
+  }
+});
+
+app.delete('/api/ai/plans/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await AIPlan.findOneAndDelete({ _id: id, email: req.user.email });
+    if (!deleted) return res.status(404).json({ message: 'AI plan not found' });
+    res.json({ message: 'AI plan deleted', plan: deleted });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting AI plan', error: err.message });
+  }
+});
+
+// ---------- AI Error Management Routes ----------
+app.get('/api/admin/ai-errors', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status, severity, errorType } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let filter = {};
+    if (status) filter.status = status;
+    if (severity) filter.severity = severity;
+    if (errorType) filter.errorType = errorType;
+    
+    const [errors, total] = await Promise.all([
+      AIError.find(filter)
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      AIError.countDocuments(filter)
+    ]);
+    
+    res.json({
+      errors,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching AI errors', error: err.message });
+  }
+});
+
+app.get('/api/admin/ai-errors/stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const AIErrorLogger = require('./utils/errorLogger');
+    const stats = await AIErrorLogger.getErrorStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching AI error stats', error: err.message });
+  }
+});
+
+app.get('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const AIErrorLogger = require('./utils/errorLogger');
+    const error = await AIErrorLogger.getErrorById(req.params.id);
+    if (!error) return res.status(404).json({ message: 'Error not found' });
+    res.json(error);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching AI error', error: err.message });
+  }
+});
+
+app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    const AIErrorLogger = require('./utils/errorLogger');
+    const error = await AIErrorLogger.updateErrorStatus(
+      req.params.id, 
+      status, 
+      adminNotes, 
+      req.user.email
+    );
+    if (!error) return res.status(404).json({ message: 'Error not found' });
+    res.json(error);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating AI error status', error: err.message });
+  }
+});
+
+app.delete('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const deleted = await AIError.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Error not found' });
+    res.json({ message: 'AI error deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting AI error', error: err.message });
+  }
+});
+
+app.post('/api/admin/ai-errors/cleanup', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { daysOld = 30 } = req.body;
+    const AIErrorLogger = require('./utils/errorLogger');
+    const deletedCount = await AIErrorLogger.deleteOldErrors(daysOld);
+    res.json({ message: `Cleaned up ${deletedCount} old AI errors` });
+  } catch (err) {
+    res.status(500).json({ message: 'Error cleaning up AI errors', error: err.message });
+  }
+});
+
+// ---------- AI Routes ----------
+const aiRoutes = require('./routes/ai');
+app.use('/api/ai', aiRoutes);
 
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;
