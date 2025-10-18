@@ -10,8 +10,10 @@ import Food        from './Components/Dashboard/Food';
 import Goals       from './Components/Dashboard/Goals';
 import Sleep       from './Components/Dashboard/Sleep';
 import Profile     from './Components/Dashboard/Profile';
+import AICoach     from './Components/Dashboard/AICoach';
 import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
+import AIErrorManager from './Components/Admin/AIErrorManager';
 import LandingPage from './Components/LandingPage';
 import MaintenanceNotice from './Components/MaintenanceNotice';
 import MaintenanceHistory from './Components/MaintenanceHistory';
@@ -96,10 +98,12 @@ export default function App() {
           <Route path="/dashboard/food" element={<ProtectedRoute><Food /></ProtectedRoute>} />
           <Route path="/dashboard/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
           <Route path="/dashboard/sleep" element={<ProtectedRoute><Sleep /></ProtectedRoute>} />
+          <Route path="/dashboard/ai-coach" element={<ProtectedRoute><AICoach /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="/dashboard/admin/status" element={<AdminRoute><AdminStatusChecker /></AdminRoute>} />
+          <Route path="/dashboard/admin/ai-errors" element={<AdminRoute><AIErrorManager /></AdminRoute>} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

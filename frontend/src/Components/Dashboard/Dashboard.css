@@ -446,6 +446,19 @@ body {
   box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
 }
 
+.ai-coach-btn {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.ai-coach-btn:hover {
+  background: linear-gradient(135deg, #a855f7, #c084fc);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
 /* Log Section */
 .log-section {
   margin: 40px 0;

@@ -209,6 +209,13 @@ export default function Admin() {
         
         <div className="header-right">
           <button 
+            className="action-btn ai-errors-btn"
+            onClick={() => navigate('/dashboard/admin/ai-errors')}
+            title="AI Error Management"
+          >
+            🚨 AI Errors
+          </button>
+          <button 
             className="action-btn status-btn"
             onClick={() => navigate('/dashboard/admin/status')}
             title="Advanced Status Checker"

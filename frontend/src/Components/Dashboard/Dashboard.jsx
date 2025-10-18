@@ -489,6 +489,7 @@ export default function Dashboard() {
                 <Link to="/dashboard/food" className="empty-btn">Log Food</Link>
                 <Link to="/dashboard/sleep" className="empty-btn">Log Sleep</Link>
                 <Link to="/dashboard/goals" className="empty-btn">Set Goals</Link>
+                <Link to="/dashboard/ai-coach" className="empty-btn ai-coach-btn">💪 AI Coach</Link>
               </div>
             </div>
           ) : (
@@ -601,6 +602,7 @@ export default function Dashboard() {
                 <Link to="/dashboard/food" className="empty-btn">Log Food</Link>
                 <Link to="/dashboard/sleep" className="empty-btn">Log Sleep</Link>
                 <Link to="/dashboard/goals" className="empty-btn">Set Goals</Link>
+                <Link to="/dashboard/ai-coach" className="empty-btn ai-coach-btn">💪 AI Coach</Link>
               </div>
             </div>
           ) : (
