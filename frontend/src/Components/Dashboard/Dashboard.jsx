@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import API_CONFIG from '../../config';
+import AIMaintenanceNotice from '../AIMaintenanceNotice';
 
 const BASE_URL = API_CONFIG.BASE_URL;
 
@@ -397,6 +398,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
+      <AIMaintenanceNotice />
       {/* Enhanced Header */}
       <header className="dashboard-header">
         <div className="header-left">
