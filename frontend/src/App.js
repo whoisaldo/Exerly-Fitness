@@ -11,6 +11,8 @@ import Goals       from './Components/Dashboard/Goals';
 import Sleep       from './Components/Dashboard/Sleep';
 import Profile     from './Components/Dashboard/Profile';
 import AICoach     from './Components/Dashboard/AICoach';
+import NewAICoach  from './Components/AICoach/AICoach';
+import Onboarding  from './Components/Onboarding/Onboarding';
 import Credits     from './Components/Credits';
 import Admin       from './Components/Admin/Admin';
 import AIErrorManager from './Components/Admin/AIErrorManager';
@@ -98,7 +100,8 @@ export default function App() {
           <Route path="/dashboard/food" element={<ProtectedRoute><Food /></ProtectedRoute>} />
           <Route path="/dashboard/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
           <Route path="/dashboard/sleep" element={<ProtectedRoute><Sleep /></ProtectedRoute>} />
-          <Route path="/dashboard/ai-coach" element={<ProtectedRoute><AICoach /></ProtectedRoute>} />
+          <Route path="/dashboard/ai-coach" element={<ProtectedRoute><NewAICoach /></ProtectedRoute>} />
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={<AdminRoute><Admin /></AdminRoute>} />
