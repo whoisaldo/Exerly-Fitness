@@ -128,23 +128,6 @@ const workoutSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now }
 });
 
-const aiPlanSchema = new mongoose.Schema({
-  email: { type: String, required: true, index: true },
-  plan: { type: String, required: true },
-  planTitle: { type: String, default: 'Personalized Fitness Plan' },
-  structuredPlan: { type: mongoose.Schema.Types.Mixed, default: null },
-  answers: { type: [String], default: [] },
-  userStatsSnapshot: {
-    age: Number,
-    weight: Number,
-    height: Number,
-    gender: String,
-    goal: String
-  },
-  created_at: { type: Date, default: Date.now }
-});
-
-
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ email: 1, entry_date: 1 });
