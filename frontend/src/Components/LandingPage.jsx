@@ -41,7 +41,7 @@ export default function LandingPage() {
   ];
 
   const techStack = [
-    { name: 'Exerly', icon: '💪', description: 'Fitness Platform' },
+    { name: 'React.js', icon: '⚛️', description: 'Modern UI Framework' },
     { name: 'Node.js', icon: '🟢', description: 'Backend Runtime' },
     { name: 'MongoDB', icon: '🍃', description: 'NoSQL Database' },
     { name: 'Express.js', icon: '🚀', description: 'Web Framework' },
@@ -121,7 +121,7 @@ export default function LandingPage() {
               Try Demo
             </button>
             <button className="nav-btn login-btn" onClick={() => navigate('/login')}>
-              Login
+              Sign In
             </button>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function LandingPage() {
                 <span className="footer-logo-text">Exerly</span>
               </div>
               <p className="footer-description">
-                Modern fitness tracking platform built with Exerly, Node.js, and MongoDB.
+                Modern fitness tracking platform built with React, Node.js, and MongoDB.
               </p>
             </div>
             <div className="footer-links">
