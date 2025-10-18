@@ -19,12 +19,12 @@ const conversations = new Map();
 // Rate limiting: max 10 requests per minute per session
 const rateLimit = new Map();
 
-const QUESTIONS = [
-  "What is your primary fitness goal? (e.g., lose weight, build muscle, improve endurance, stay healthy)",
-  "What is your current fitness level? (beginner, intermediate, or advanced)",
-  "How many days per week can you realistically commit to working out? (1-7 days)",
-  "Do you have access to gym equipment, or will you be working out at home?",
-  "Do you have any injuries or physical limitations I should know about?"
+const CONSULTATION_TOPICS = [
+  "fitness goals",
+  "current fitness level", 
+  "workout schedule",
+  "equipment access",
+  "health considerations"
 ];
 
 // Rate limiting middleware
@@ -106,55 +106,75 @@ router.post('/fitness-chat', async (req, res) => {
 
     // Get or create conversation
     let conversation = conversations.get(sessionId) || {
-      questionIndex: 0,
-      answers: [],
-      history: []
+      topics: new Set(),
+      answers: {},
+      history: [],
+      isComplete: false,
+      createdAt: Date.now()
     };
 
-    // Store user's answer if provided
-    if (message && conversation.questionIndex < QUESTIONS.length) {
-      conversation.answers.push(message);
+    // Store user's message in history
+    if (message) {
       conversation.history.push({ role: 'user', content: message });
     }
 
-    // Check if we're done with questions
-    if (conversation.questionIndex >= QUESTIONS.length) {
-      // Generate personalized plan with user profile data
-      let profileContext = '';
-      if (useProfileData && userProfile) {
-        profileContext = `\n\nUser Profile Data:
+    // Build context for AI
+    let profileContext = '';
+    if (useProfileData && userProfile) {
+      profileContext = `User Profile:
+- Name: ${userProfile.name || 'Not specified'}
 - Age: ${userProfile.age || 'Not specified'}
 - Weight: ${userProfile.weight_kg || 'Not specified'} kg
 - Height: ${userProfile.height_cm || 'Not specified'} cm
 - Gender: ${userProfile.sex || 'Not specified'}
 - Activity Level: ${userProfile.activity_level || 'Not specified'}`;
-      }
+    }
 
-      let statsContext = '';
-      if (useProfileData && userStats && userStats.length > 0) {
-        statsContext = `\n\nRecent Activity Summary:
+    let statsContext = '';
+    if (useProfileData && userStats && userStats.length > 0) {
+      statsContext = `Recent Activity:
 ${userStats.map(stat => `- ${stat.label}: ${stat.value}`).join('\n')}`;
-      }
+    }
 
-      const prompt = `You are a certified personal trainer and nutritionist. Based on these user answers, create a personalized fitness plan:
+    // Create intelligent conversation prompt
+    const conversationHistory = conversation.history.map(msg => 
+      `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`
+    ).join('\n');
 
-1. Primary Goal: ${conversation.answers[0] || 'Not specified'}
-2. Fitness Level: ${conversation.answers[1] || 'Not specified'}
-3. Workout Days: ${conversation.answers[2] || 'Not specified'}
-4. Equipment Access: ${conversation.answers[3] || 'Not specified'}
-5. Limitations: ${conversation.answers[4] || 'None mentioned'}${profileContext}${statsContext}
+    const prompt = `You are an intelligent, personalized AI fitness coach. You're having a natural conversation with a user to understand their fitness needs and create a customized plan.
 
-Provide a brief but actionable plan including:
-- A workout split for their available days
-- 3-5 key exercises with brief descriptions
-- One specific nutrition tip for their goal
-- A motivational closing statement
+${profileContext ? profileContext + '\n' : ''}${statsContext ? statsContext + '\n' : ''}
 
-Keep it under 150 words and make it practical and encouraging. Reference their profile data when relevant to make it feel personalized.`;
+Conversation so far:
+${conversationHistory}
 
-      const result = await model.generateContent(prompt);
-      const plan = result.response.text();
+Topics we've discussed: ${Array.from(conversation.topics).join(', ') || 'None yet'}
 
+Instructions:
+1. If this is the first message (no conversation history), greet them warmly and ask about their fitness goals
+2. Have a natural conversation to understand their:
+   - Fitness goals and motivations
+   - Current fitness level and experience
+   - Available time and schedule
+   - Equipment access
+   - Any health considerations or limitations
+3. Ask follow-up questions based on their responses
+4. Be encouraging, knowledgeable, and personalized
+5. When you have enough information (usually after 4-6 exchanges), create a comprehensive fitness plan
+6. Make responses feel natural and conversational, not robotic
+7. Use their name and reference their profile data when relevant
+
+Current user message: ${message || '(Starting conversation)'}
+
+Respond naturally and helpfully. If you're ready to create a plan, end your response with "PLAN_READY:" followed by the plan.`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+
+    // Check if AI is ready to provide a plan
+    if (response.includes('PLAN_READY:')) {
+      const plan = response.split('PLAN_READY:')[1].trim();
+      
       // Clean up conversation after sending plan
       conversations.delete(sessionId);
 
@@ -170,57 +190,35 @@ Keep it under 150 words and make it practical and encouraging. Reference their p
       });
     }
 
-    // Smart question skipping based on profile data
-    let nextQuestion = QUESTIONS[conversation.questionIndex];
-    let questionNumber = conversation.questionIndex + 1;
-
-    // Skip questions if we have profile data and user wants to use it
-    if (useProfileData && userProfile) {
-      // Skip goal question if user already has a goal in profile
-      if (conversation.questionIndex === 0 && userProfile.goal) {
-        conversation.answers.push(userProfile.goal);
-        conversation.questionIndex++;
-        nextQuestion = QUESTIONS[conversation.questionIndex];
-        questionNumber = conversation.questionIndex + 1;
-      }
-
-      // Skip fitness level question if we can infer from workout history
-      if (conversation.questionIndex === 1 && userStats && userStats.length > 0) {
-        const hasWorkouts = userStats.some(stat => stat.label.toLowerCase().includes('workout'));
-        if (hasWorkouts) {
-          conversation.answers.push('intermediate'); // Default to intermediate if they have workout history
-          conversation.questionIndex++;
-          nextQuestion = QUESTIONS[conversation.questionIndex];
-          questionNumber = conversation.questionIndex + 1;
-        }
-      }
+    // Store AI response in history
+    conversation.history.push({ role: 'assistant', content: response });
+    
+    // Update topics based on conversation content
+    const responseLower = response.toLowerCase();
+    if (responseLower.includes('goal') || responseLower.includes('want to')) {
+      conversation.topics.add('fitness goals');
+    }
+    if (responseLower.includes('level') || responseLower.includes('experience') || responseLower.includes('beginner') || responseLower.includes('advanced')) {
+      conversation.topics.add('current fitness level');
+    }
+    if (responseLower.includes('day') || responseLower.includes('schedule') || responseLower.includes('time')) {
+      conversation.topics.add('workout schedule');
+    }
+    if (responseLower.includes('equipment') || responseLower.includes('gym') || responseLower.includes('home')) {
+      conversation.topics.add('equipment access');
+    }
+    if (responseLower.includes('injury') || responseLower.includes('limitation') || responseLower.includes('health')) {
+      conversation.topics.add('health considerations');
     }
 
-    // Add personalization to questions
-    if (useProfileData && userProfile) {
-      const name = userProfile.name || 'there';
-      if (conversation.questionIndex === 0) {
-        nextQuestion = `Hi ${name}! What is your primary fitness goal? (e.g., lose weight, build muscle, improve endurance, stay healthy)`;
-      } else if (conversation.questionIndex === 1) {
-        nextQuestion = `What is your current fitness level, ${name}? (beginner, intermediate, or advanced)`;
-      } else if (conversation.questionIndex === 2) {
-        nextQuestion = `How many days per week can you realistically commit to working out, ${name}? (1-7 days)`;
-      } else if (conversation.questionIndex === 3) {
-        nextQuestion = `Do you have access to gym equipment, or will you be working out at home, ${name}?`;
-      } else if (conversation.questionIndex === 4) {
-        nextQuestion = `Do you have any injuries or physical limitations I should know about, ${name}?`;
-      }
-    }
-
-    conversation.questionIndex++;
     conversations.set(sessionId, conversation);
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ AI Chat Question: ${userEmail} - Q${questionNumber} - ${responseTime}ms`);
+    console.log(`✅ AI Chat Response: ${userEmail} - Topics: ${Array.from(conversation.topics).join(', ')} - ${responseTime}ms`);
 
     res.json({
-      reply: nextQuestion,
-      questionNumber: questionNumber,
+      reply: response,
+      questionNumber: conversation.topics.size + 1,
       isComplete: false
     });
 

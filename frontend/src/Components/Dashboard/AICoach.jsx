@@ -280,10 +280,12 @@ const AICoach = () => {
             <div className="progress-bar">
               <div 
                 className="progress-fill" 
-                style={{ width: `${(questionNumber / 5) * 100}%` }}
+                style={{ width: `${Math.min((questionNumber / 6) * 100, 100)}%` }}
               ></div>
             </div>
-            <span className="progress-text">Question {questionNumber} of 5</span>
+            <span className="progress-text">
+              {questionNumber <= 5 ? `Question ${questionNumber} of 5` : 'Creating your plan...'}
+            </span>
           </div>
         )}
 
@@ -331,7 +333,7 @@ const AICoach = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type your answer here..."
+                    placeholder="Type your message here..."
                     disabled={isLoading}
                     className="message-input"
                   />
