@@ -226,6 +226,15 @@ const AICoach = () => {
 
   return (
     <div className="ai-coach-page">
+      {/* Navigation Header */}
+      <div className="ai-coach-nav">
+        <button className="back-btn" onClick={() => navigate('/dashboard')}>
+          ← Back to Dashboard
+        </button>
+        <div className="nav-title">AI Fitness Coach</div>
+        <div className="nav-spacer"></div>
+      </div>
+
       {/* Header */}
       <div className="ai-coach-header">
         <div className="header-content">
