@@ -42,7 +42,24 @@ const userSchema = new mongoose.Schema({
   hash: { type: String, required: true },
   profile: { type: mongoose.Schema.Types.Mixed, default: {} },
   is_admin: { type: Boolean, default: false },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
+  
+  // Onboarding data
+  onboardingCompleted: { type: Boolean, default: false },
+  age: { type: Number },
+  gender: { type: String },
+  height: { type: Number }, // in cm
+  weight: { type: Number }, // in kg
+  goal: { type: String }, // lose_weight, build_muscle, improve_endurance, stay_healthy
+  experienceLevel: { type: String }, // beginner, intermediate, advanced
+  workoutDaysPerWeek: { type: Number, default: 3 },
+  equipmentAccess: { type: String }, // full_gym, home_gym, no_equipment
+  
+  // AI Credit System
+  aiCreditsRemaining: { type: Number, default: 5 }, // 0-5, resets hourly
+  aiDailyCreditsUsed: { type: Number, default: 0 }, // 0-20, resets daily
+  aiLastCreditReset: { type: Date, default: Date.now }, // Timestamp of last hourly reset
+  aiDailyResetDate: { type: Date, default: Date.now } // Date of last daily reset
 });
 
 const activitySchema = new mongoose.Schema({
@@ -54,6 +71,19 @@ const activitySchema = new mongoose.Schema({
   type: String,
   entry_date: { type: String, required: true, index: true },
   created_at: { type: Date, default: Date.now }
+});
+
+const aiPlanSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, required: true }, // workout_plan, nutrition_advice, progress_analysis, custom_question
+  prompt: { type: String, required: true },
+  response: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  applied: { type: Boolean, default: false },
+  creditsUsedAtTime: {
+    hourly: { type: Number },
+    daily: { type: Number }
+  }
 });
 
 const foodSchema = new mongoose.Schema({
@@ -147,6 +177,56 @@ function validateEmail(email) {
 
 function getTodayUTC() {
   return new Date().toISOString().slice(0, 10);
+}
+
+// ---------- AI Credit Management Functions ----------
+function checkHourlyReset(user) {
+  const now = new Date();
+  const lastReset = new Date(user.aiLastCreditReset);
+  const hoursSince = (now - lastReset) / (1000 * 60 * 60);
+  
+  if (hoursSince >= 1) {
+    user.aiCreditsRemaining = 5;
+    user.aiLastCreditReset = now;
+    return true;
+  }
+  return false;
+}
+
+function checkDailyReset(user) {
+  const now = new Date();
+  const lastReset = new Date(user.aiDailyResetDate);
+  
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.aiDailyCreditsUsed = 0;
+    user.aiDailyResetDate = now;
+    return true;
+  }
+  return false;
+}
+
+function getTimeUntilHourlyReset(user) {
+  const now = new Date();
+  const lastReset = new Date(user.aiLastCreditReset);
+  const nextReset = new Date(lastReset.getTime() + 60 * 60 * 1000);
+  const diff = nextReset - now;
+  
+  const minutes = Math.floor(diff / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function getHoursUntilMidnight() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  
+  const diff = midnight - now;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return `${hours}h ${minutes}m`;
 }
 
 // ---------- App Setup ----------
@@ -292,6 +372,43 @@ app.post('/api/profile', authenticate, async (req, res) => {
     res.json({ message: 'Profile saved', profile });
   } catch (err) {
     res.status(500).json({ message: 'Error saving profile', error: err.message });
+  }
+});
+
+// ---------- Onboarding ----------
+app.post('/api/user/onboarding', authenticate, async (req, res) => {
+  try {
+    const { age, gender, height, weight, goal, experienceLevel, workoutDaysPerWeek, equipmentAccess } = req.body;
+    
+    // Validate required fields
+    if (!age || !gender || !height || !weight || !goal || !experienceLevel) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    // Convert height to cm if needed (assuming frontend sends in cm)
+    const heightInCm = height;
+    const weightInKg = weight;
+    
+    const updateData = {
+      onboardingCompleted: true,
+      age: parseInt(age),
+      gender,
+      height: heightInCm,
+      weight: weightInKg,
+      goal,
+      experienceLevel,
+      workoutDaysPerWeek: parseInt(workoutDaysPerWeek) || 3,
+      equipmentAccess: equipmentAccess || 'full_gym'
+    };
+    
+    await User.updateOne({ email: req.user.email }, updateData);
+    
+    res.json({ 
+      message: 'Onboarding completed successfully!',
+      user: updateData
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error completing onboarding', error: err.message });
   }
 });
 
@@ -863,8 +980,42 @@ app.post('/api/admin/ai-errors/cleanup', authenticate, requireAdmin, async (req,
 });
 
 // ---------- AI Routes ----------
-const aiRoutes = require('./routes/ai');
+const { router: aiRoutes, initModels } = require('./routes/ai');
+initModels(User, AIPlan);
 app.use('/api/ai', aiRoutes);
+
+// ---------- AI Credits (after AI routes to avoid conflicts) ----------
+app.get('/api/ai/credits', authenticate, async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check and reset credits if needed
+    checkHourlyReset(user);
+    checkDailyReset(user);
+    await user.save();
+    
+    const timeUntilHourlyReset = getTimeUntilHourlyReset(user);
+    const hoursUntilMidnight = getHoursUntilMidnight();
+    
+    res.json({
+      hourly: {
+        remaining: user.aiCreditsRemaining,
+        limit: 5,
+        resetTime: timeUntilHourlyReset
+      },
+      daily: {
+        used: user.aiDailyCreditsUsed,
+        limit: 20,
+        resetTime: hoursUntilMidnight
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching AI credits', error: err.message });
+  }
+});
 
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;
