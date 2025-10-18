@@ -2,47 +2,132 @@ const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const AIErrorLogger = require('../utils/errorLogger');
+const mongoose = require('mongoose');
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.AI_API_KEY);
 const model = genAI.getGenerativeModel({ 
   model: "gemini-2.0-flash-lite",
   generationConfig: {
-    maxOutputTokens: 200,
+    maxOutputTokens: 500,
     temperature: 0.7,
   }
 });
 
-// Store conversations in memory (temporary - can move to DB later)
-const conversations = new Map();
+// Import models directly
+const mongoose = require('mongoose');
 
-// Rate limiting: max 10 requests per minute per session
+// Define schemas here to avoid circular dependencies
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  hash: { type: String, required: true },
+  profile: { type: mongoose.Schema.Types.Mixed, default: {} },
+  is_admin: { type: Boolean, default: false },
+  created_at: { type: Date, default: Date.now },
+  
+  // Onboarding data
+  onboardingCompleted: { type: Boolean, default: false },
+  age: { type: Number },
+  gender: { type: String },
+  height: { type: Number }, // in cm
+  weight: { type: Number }, // in kg
+  goal: { type: String }, // lose_weight, build_muscle, improve_endurance, stay_healthy
+  experienceLevel: { type: String }, // beginner, intermediate, advanced
+  workoutDaysPerWeek: { type: Number, default: 3 },
+  equipmentAccess: { type: String }, // full_gym, home_gym, no_equipment
+  
+  // AI Credit System
+  aiCreditsRemaining: { type: Number, default: 5 }, // 0-5, resets hourly
+  aiDailyCreditsUsed: { type: Number, default: 0 }, // 0-20, resets daily
+  aiLastCreditReset: { type: Date, default: Date.now }, // Timestamp of last hourly reset
+  aiDailyResetDate: { type: Date, default: Date.now } // Date of last daily reset
+});
+
+const aiPlanSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, required: true }, // workout_plan, nutrition_advice, progress_analysis, custom_question
+  prompt: { type: String, required: true },
+  response: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  applied: { type: Boolean, default: false },
+  creditsUsedAtTime: {
+    hourly: { type: Number },
+    daily: { type: Number }
+  }
+});
+
+// Create models
+const User = mongoose.model('User', userSchema);
+const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
+
+// Credit management functions (imported from main file)
+const checkHourlyReset = (user) => {
+  const now = new Date();
+  const lastReset = new Date(user.aiLastCreditReset);
+  const hoursSince = (now - lastReset) / (1000 * 60 * 60);
+  
+  if (hoursSince >= 1) {
+    user.aiCreditsRemaining = 5;
+    user.aiLastCreditReset = now;
+    return true;
+  }
+  return false;
+};
+
+const checkDailyReset = (user) => {
+  const now = new Date();
+  const lastReset = new Date(user.aiDailyResetDate);
+  
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.aiDailyCreditsUsed = 0;
+    user.aiDailyResetDate = now;
+    return true;
+  }
+  return false;
+};
+
+const getTimeUntilHourlyReset = (user) => {
+  const now = new Date();
+  const lastReset = new Date(user.aiLastCreditReset);
+  const nextReset = new Date(lastReset.getTime() + 60 * 60 * 1000);
+  const diff = nextReset - now;
+  
+  const minutes = Math.floor(diff / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const getHoursUntilMidnight = () => {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  
+  const diff = midnight - now;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return `${hours}h ${minutes}m`;
+};
+
+// Rate limiting: max 1 request per 10 seconds per user
 const rateLimit = new Map();
 
-const CONSULTATION_TOPICS = [
-  "fitness goals",
-  "current fitness level", 
-  "workout schedule",
-  "equipment access",
-  "health considerations"
-];
-
-// Rate limiting middleware
-const checkRateLimit = (sessionId) => {
+const checkRateLimit = (userId) => {
   const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute
-  const maxRequests = 10;
+  const windowMs = 10 * 1000; // 10 seconds
+  const maxRequests = 1;
 
-  if (!rateLimit.has(sessionId)) {
-    rateLimit.set(sessionId, { count: 1, resetTime: now + windowMs });
+  if (!rateLimit.has(userId)) {
+    rateLimit.set(userId, { count: 1, resetTime: now + windowMs });
     return true;
   }
 
-  const userLimit = rateLimit.get(sessionId);
+  const userLimit = rateLimit.get(userId);
   
   if (now > userLimit.resetTime) {
-    // Reset the window
-    rateLimit.set(sessionId, { count: 1, resetTime: now + windowMs });
+    rateLimit.set(userId, { count: 1, resetTime: now + windowMs });
     return true;
   }
 
@@ -54,251 +139,220 @@ const checkRateLimit = (sessionId) => {
   return true;
 };
 
-router.post('/fitness-chat', async (req, res) => {
+// Main AI Coach endpoint
+router.post('/coach', async (req, res) => {
   const startTime = Date.now();
   let errorLogged = false;
   
   try {
-    const { message, sessionId, useProfileData, userProfile, userStats } = req.body;
+    const { type, question, includeContext = true } = req.body;
     const userEmail = req.user?.email || 'unknown';
     const userId = req.user?.id || 'unknown';
     const userAgent = req.get('User-Agent') || 'unknown';
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
-    if (!sessionId) {
+    if (!type) {
       await AIErrorLogger.logError({
         email: userEmail,
         userId,
         sessionId: 'none',
         errorType: 'VALIDATION_ERROR',
-        errorCode: 'MISSING_SESSION_ID',
-        errorMessage: 'Session ID is required',
+        errorCode: 'MISSING_TYPE',
+        errorMessage: 'Type is required',
         errorDetails: { requestBody: req.body },
         userAgent,
         ipAddress,
-        requestData: { message, useProfileData, hasUserProfile: !!userProfile, hasUserStats: !!userStats },
+        requestData: { type, question, includeContext },
         severity: 'LOW'
       });
       errorLogged = true;
-      return res.status(400).json({ error: 'Session ID is required' });
+      return res.status(400).json({ error: 'Type is required' });
     }
 
     // Check rate limit
-    if (!checkRateLimit(sessionId)) {
+    if (!checkRateLimit(userId)) {
       await AIErrorLogger.logError({
         email: userEmail,
         userId,
-        sessionId,
+        sessionId: 'none',
         errorType: 'RATE_LIMIT',
         errorCode: 'RATE_LIMIT_EXCEEDED',
-        errorMessage: 'Rate limit exceeded. Please wait a minute before trying again.',
-        errorDetails: { sessionId, rateLimitWindow: '1 minute' },
+        errorMessage: 'Rate limit exceeded. Please wait 10 seconds before trying again.',
+        errorDetails: { userId, rateLimitWindow: '10 seconds' },
         userAgent,
         ipAddress,
-        requestData: { message, useProfileData, hasUserProfile: !!userProfile, hasUserStats: !!userStats },
+        requestData: { type, question, includeContext },
         severity: 'LOW'
       });
       errorLogged = true;
       return res.status(429).json({ 
-        error: 'Rate limit exceeded. Please wait a minute before trying again.' 
+        error: 'Rate limit exceeded. Please wait 10 seconds before trying again.' 
       });
     }
 
-    // Get or create conversation
-    let conversation = conversations.get(sessionId) || {
-      topics: new Set(),
-      answers: {},
-      history: [],
-      isComplete: false,
-      createdAt: Date.now()
-    };
-
-    // Store user's message in history
-    if (message) {
-      conversation.history.push({ role: 'user', content: message });
+    // Get user and check credits
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Build context for AI
-    let profileContext = '';
-    if (useProfileData && userProfile) {
-      profileContext = `User Profile:
-- Name: ${userProfile.name || 'Not specified'}
-- Age: ${userProfile.age || 'Not specified'}
-- Weight: ${userProfile.weight_kg || 'Not specified'} kg
-- Height: ${userProfile.height_cm || 'Not specified'} cm
-- Gender: ${userProfile.sex || 'Not specified'}
-- Activity Level: ${userProfile.activity_level || 'Not specified'}`;
+    // Check and reset credits if needed
+    checkHourlyReset(user);
+    checkDailyReset(user);
+
+    // Check hourly credits
+    if (user.aiCreditsRemaining <= 0) {
+      const timeUntilReset = getTimeUntilHourlyReset(user);
+      await user.save();
+      
+      return res.status(429).json({
+        error: 'Hourly limit reached',
+        waitTime: timeUntilReset,
+        dailyUsed: user.aiDailyCreditsUsed,
+        dailyLimit: 20,
+        creditsRemaining: user.aiCreditsRemaining,
+        dailyUsed: user.aiDailyCreditsUsed
+      });
     }
 
-    let statsContext = '';
-    if (useProfileData && userStats && userStats.length > 0) {
-      statsContext = `Recent Activity:
-${userStats.map(stat => `- ${stat.label}: ${stat.value}`).join('\n')}`;
+    // Check daily credits
+    if (user.aiDailyCreditsUsed >= 20) {
+      const hoursUntilReset = getHoursUntilMidnight();
+      await user.save();
+      
+      return res.status(429).json({
+        error: 'Daily limit reached',
+        resetTime: 'midnight',
+        hoursUntilReset: hoursUntilReset,
+        creditsRemaining: user.aiCreditsRemaining,
+        dailyUsed: user.aiDailyCreditsUsed
+      });
     }
 
-    // Create intelligent conversation prompt
-    const conversationHistory = conversation.history.map(msg => 
-      `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`
-    ).join('\n');
+    // Build context based on type and user data
+    let context = '';
+    let prompt = '';
 
-    const prompt = `You are an expert AI fitness coach integrated into Exerly Fitness. Your role is to help users achieve their fitness goals through personalized guidance, profile setup, and workout recommendations.
+    if (includeContext) {
+      context = `User Profile:
+- Name: ${user.name || 'Not specified'}
+- Age: ${user.age || 'Not specified'}
+- Gender: ${user.gender || 'Not specified'}
+- Height: ${user.height || 'Not specified'} cm
+- Weight: ${user.weight || 'Not specified'} kg
+- Goal: ${user.goal || 'Not specified'}
+- Experience Level: ${user.experienceLevel || 'Not specified'}
+- Workout Days/Week: ${user.workoutDaysPerWeek || 'Not specified'}
+- Equipment Access: ${user.equipmentAccess || 'Not specified'}`;
+    }
 
-CORE PRINCIPLES:
-- Be Proactive, Not Reactive: Suggest plans based on minimal input rather than asking endless questions
-- Action-Oriented: Actually modify user profiles and create workout plans - don't just advise
-- Progressive Discovery: Learn from user behavior over time instead of interrogating upfront
-- Conversational & Confident: Speak like a knowledgeable coach, not a survey form
-- Respect User Time: Maximum 3-5 questions during initial profile setup
+    // Build prompts based on type
+    switch (type) {
+      case 'workout_plan':
+        prompt = `You are an expert AI fitness coach. Create a personalized workout plan.
 
-PERSONALITY & TONE:
-- Motivational but not cheesy
-- Confident and direct
-- Use short, punchy sentences
-- Casual but professional (like a personal trainer, not a robot)
-- Emojis sparingly (only for achievements/milestones)
+${context}
 
-${profileContext ? profileContext + '\n' : ''}${statsContext ? statsContext + '\n' : ''}
+Instructions:
+- Create a specific, actionable workout plan
+- Include warm-up, main workout, and cool-down
+- Specify exercises, sets, reps, and rest periods
+- Consider their experience level and equipment access
+- Keep it practical and achievable
+- Use clear formatting with bullet points
 
-Conversation so far:
-${conversationHistory}
+Generate a comprehensive workout plan that they can start immediately.`;
+        break;
 
-Topics we've discussed: ${Array.from(conversation.topics).join(', ') || 'None yet'}
+      case 'nutrition_advice':
+        prompt = `You are an expert AI nutritionist. Provide personalized nutrition advice.
 
-PROFILE BUILDING FLOW:
-First-Time Users (Incomplete Profile) - collect ONLY essentials:
-1. Primary Goal: "What's your main fitness goal? 🎯" (Lose weight, Build muscle, Get stronger, Improve endurance, Stay active)
-2. Experience Level: "How would you describe your fitness level?" (Just starting out, Getting back into it, I work out regularly, I'm an athlete)
-3. Workout Frequency: Default to 3-4 days/week (infer, don't ask)
-4. Limitations: Only if user mentions - "Any injuries or limitations I should know about?"
+${context}
 
-After Initial Questions:
-- Immediately generate their first workout plan
-- Say: "Perfect! I've created your personalized plan. Let's start with [specific workout]. Ready?"
-- Don't ask for confirmation - show the plan and let them modify if needed
+Instructions:
+- Give specific, actionable nutrition advice
+- Consider their fitness goals and current stats
+- Provide practical meal suggestions
+- Include macro targets if relevant
+- Keep advice simple and sustainable
+- Use clear formatting with bullet points
 
-CONVERSATION GUIDELINES:
-DO:
-- Make smart assumptions based on context
-- Offer to skip questions: "Want me to just build you a plan? I'll adjust as we go"
-- Celebrate wins: "3 workouts this week - that's progress! 💪"
-- Adjust plans based on feedback: "Feeling sore? Let's focus on mobility today"
-- Give specific, actionable advice: "Add 5 lbs to your squat next session"
+Provide personalized nutrition guidance.`;
+        break;
 
-DON'T:
-- Ask redundant questions (check profile first)
-- Request information you can infer or set as defaults
-- Ask for confirmation on every action
-- Use corporate/robotic language
-- Overwhelm with options - pick one and run with it
-- Ask about meals unless user specifically asks about nutrition
+      case 'progress_analysis':
+        prompt = `You are an expert AI fitness coach. Analyze their progress and provide insights.
 
-SMART DEFAULTS:
-- Workout frequency: 3-4 days/week
-- Workout duration: 45-60 minutes
-- Rest between sets: 60-90 seconds
-- Progressive overload: +5% per week
-- Prefer compound movements for beginners
+${context}
 
-RESPONSE LENGTH:
-- Keep responses short (2-3 sentences max) unless explaining a workout
-- For workout plans, use clear formatting with bullet points
-- Never write paragraphs in regular conversation
+Instructions:
+- Analyze their current situation and goals
+- Provide encouraging but honest feedback
+- Suggest specific improvements
+- Celebrate any progress made
+- Give actionable next steps
+- Keep it motivational and practical
 
-Current user message: ${message || '(Starting conversation)'}
+Provide a progress analysis and recommendations.`;
+        break;
 
-Respond like a confident personal trainer. If ready for a plan, end with "PLAN_READY:" followed by the plan.`;
+      case 'custom_question':
+        prompt = `You are an expert AI fitness coach. Answer their question with personalized advice.
 
+${context}
+
+User Question: ${question || 'No specific question provided'}
+
+Instructions:
+- Answer their question directly and helpfully
+- Use their profile data to personalize the response
+- Provide specific, actionable advice
+- Keep responses concise but comprehensive
+- Be encouraging and professional
+
+Answer their question with personalized fitness advice.`;
+        break;
+
+      default:
+        return res.status(400).json({ error: 'Invalid type. Must be workout_plan, nutrition_advice, progress_analysis, or custom_question' });
+    }
+
+    // Call AI
     const result = await model.generateContent(prompt);
     const response = result.response.text();
 
-    // Check if AI is ready to provide a plan
-    if (response.includes('PLAN_READY:')) {
-      const plan = response.split('PLAN_READY:')[1].trim();
-      
-      // Extract plan title if it exists (look for first line or title pattern)
-      const lines = plan.split('\n');
-      const firstLine = lines[0].trim();
-      const planTitle = firstLine && firstLine.length < 50 ? firstLine : 'Personalized Fitness Plan';
-      
-      // Create structured plan data
-      const structuredPlan = {
-        title: planTitle,
-        content: plan,
-        topics: Array.from(conversation.topics),
-        conversationLength: conversation.history.length,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Clean up conversation after sending plan
-      conversations.delete(sessionId);
+    // Save to database
+    const aiPlan = new AIPlan({
+      userId: user._id,
+      type,
+      prompt,
+      response,
+      creditsUsedAtTime: {
+        hourly: user.aiCreditsRemaining,
+        daily: user.aiDailyCreditsUsed
+      }
+    });
+    await aiPlan.save();
 
-      const responseTime = Date.now() - startTime;
-      console.log(`✅ AI Chat Success: ${userEmail} - ${responseTime}ms`);
-
-      return res.json({
-        reply: plan,
-        questionNumber: 5,
-        isComplete: true,
-        plan: plan,
-        planTitle: planTitle,
-        structuredPlan: structuredPlan,
-        answers: conversation.answers
-      });
-    }
-
-    // Store AI response in history
-    conversation.history.push({ role: 'assistant', content: response });
-    
-    // Update topics based on conversation content
-    const responseLower = response.toLowerCase();
-    const messageLower = message.toLowerCase();
-    
-    // Track fitness goals
-    if (responseLower.includes('goal') || responseLower.includes('want to') || messageLower.includes('goal') || 
-        messageLower.includes('lose weight') || messageLower.includes('build muscle') || messageLower.includes('get stronger')) {
-      conversation.topics.add('fitness goals');
-    }
-    
-    // Track experience level
-    if (responseLower.includes('level') || responseLower.includes('experience') || responseLower.includes('beginner') || 
-        responseLower.includes('advanced') || messageLower.includes('level') || messageLower.includes('starting out') || 
-        messageLower.includes('getting back into it')) {
-      conversation.topics.add('current fitness level');
-    }
-    
-    // Track workout schedule
-    if (responseLower.includes('day') || responseLower.includes('schedule') || responseLower.includes('time') || 
-        messageLower.includes('days') || messageLower.includes('week') || messageLower.includes('frequency')) {
-      conversation.topics.add('workout schedule');
-    }
-    
-    // Track equipment access
-    if (responseLower.includes('equipment') || responseLower.includes('gym') || responseLower.includes('home') || 
-        messageLower.includes('equipment') || messageLower.includes('gym') || messageLower.includes('home')) {
-      conversation.topics.add('equipment access');
-    }
-    
-    // Track health considerations
-    if (responseLower.includes('injury') || responseLower.includes('limitation') || responseLower.includes('health') || 
-        messageLower.includes('limitations') || messageLower.includes('injury') || messageLower.includes('pain')) {
-      conversation.topics.add('health considerations');
-    }
-
-    conversations.set(sessionId, conversation);
+    // Update user credits
+    user.aiCreditsRemaining -= 1;
+    user.aiDailyCreditsUsed += 1;
+    await user.save();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ AI Chat Response: ${userEmail} - Topics: ${Array.from(conversation.topics).join(', ')} - ${responseTime}ms`);
+    console.log(`✅ AI Coach Success: ${userEmail} - Type: ${type} - ${responseTime}ms`);
 
     res.json({
-      reply: response,
-      questionNumber: conversation.topics.size + 1,
-      isComplete: false
+      response,
+      type,
+      creditsRemaining: user.aiCreditsRemaining,
+      dailyUsed: user.aiDailyCreditsUsed,
+      nextResetTime: getTimeUntilHourlyReset(user)
     });
 
   } catch (error) {
-    console.error('AI Chat Error:', error);
+    console.error('AI Coach Error:', error);
     
-    // Log error if not already logged
     if (!errorLogged) {
       const errorType = error.name === 'GoogleGenerativeAIFetchError' ? 'AI_MODEL_ERROR' : 
                        error.code === 'ENOTFOUND' ? 'NETWORK_ERROR' : 'UNKNOWN_ERROR';
@@ -312,7 +366,7 @@ Respond like a confident personal trainer. If ready for a plan, end with "PLAN_R
       await AIErrorLogger.logError({
         email: req.user?.email || 'unknown',
         userId: req.user?.id || 'unknown',
-        sessionId: req.body.sessionId || 'unknown',
+        sessionId: 'none',
         errorType,
         errorCode,
         errorMessage: error.message || 'Unknown error occurred',
@@ -325,10 +379,9 @@ Respond like a confident personal trainer. If ready for a plan, end with "PLAN_R
         userAgent: req.get('User-Agent') || 'unknown',
         ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
         requestData: {
-          message: req.body.message,
-          useProfileData: req.body.useProfileData,
-          hasUserProfile: !!req.body.userProfile,
-          hasUserStats: !!req.body.userStats
+          type: req.body.type,
+          question: req.body.question,
+          includeContext: req.body.includeContext
         },
         responseData: { status: 500 },
         stackTrace: error.stack,
@@ -343,14 +396,78 @@ Respond like a confident personal trainer. If ready for a plan, end with "PLAN_R
   }
 });
 
+// Get saved AI plans
+router.get('/plans', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const plans = await AIPlan.find({ userId }).sort({ createdAt: -1 }).limit(20);
+    res.json(plans);
+  } catch (error) {
+    console.error('Error fetching AI plans:', error);
+    res.status(500).json({ error: 'Error fetching plans' });
+  }
+});
+
+// Delete AI plan
+router.delete('/plans/:id', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const planId = req.params.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const result = await AIPlan.deleteOne({ _id: planId, userId });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    res.json({ message: 'Plan deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting AI plan:', error);
+    res.status(500).json({ error: 'Error deleting plan' });
+  }
+});
+
+// Mark plan as applied
+router.patch('/plans/:id/apply', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const planId = req.params.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const result = await AIPlan.updateOne(
+      { _id: planId, userId }, 
+      { applied: true }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    res.json({ message: 'Plan marked as applied' });
+  } catch (error) {
+    console.error('Error applying AI plan:', error);
+    res.status(500).json({ error: 'Error applying plan' });
+  }
+});
+
 // Clean up old conversations every hour
 setInterval(() => {
   const now = Date.now();
   const maxAge = 60 * 60 * 1000; // 1 hour
   
-  for (const [sessionId, conversation] of conversations.entries()) {
-    if (now - conversation.createdAt > maxAge) {
-      conversations.delete(sessionId);
+  for (const [userId, userLimit] of rateLimit.entries()) {
+    if (now > userLimit.resetTime) {
+      rateLimit.delete(userId);
     }
   }
 }, 60 * 60 * 1000);
