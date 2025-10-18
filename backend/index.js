@@ -142,6 +142,9 @@ const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
 const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
 
+// Import AIError model from errorLogger to avoid conflicts
+const AIError = require('./utils/errorLogger').AIError;
+
 // ---------- Helper Functions ----------
 function calculateMaintenance(profile) {
   if (!profile) return null;
@@ -965,7 +968,7 @@ app.post('/api/admin/ai-errors/cleanup', authenticate, requireAdmin, async (req,
 // ---------- AI Routes ----------
 const { router: aiRoutes, initModels } = require('./routes/ai');
 initModels(User, AIPlan);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', authenticate, aiRoutes);
 
 // ---------- AI Credits (after AI routes to avoid conflicts) ----------
 app.get('/api/ai/credits', authenticate, async (req, res) => {

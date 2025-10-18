@@ -34,7 +34,12 @@ const aiErrorSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now }
 });
 
-const AIError = mongoose.model('AIError', aiErrorSchema);
+let AIError;
+try {
+  AIError = mongoose.model('AIError');
+} catch (error) {
+  AIError = mongoose.model('AIError', aiErrorSchema);
+}
 
 class AIErrorLogger {
   static async logError({
@@ -212,3 +217,4 @@ class AIErrorLogger {
 }
 
 module.exports = AIErrorLogger;
+module.exports.AIError = AIError;

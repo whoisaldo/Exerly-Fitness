@@ -3,6 +3,25 @@ const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const AIErrorLogger = require('../utils/errorLogger');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
+// Fallback auth (in case parent doesn't mount authenticate)
+const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
+router.use((req, res, next) => {
+  if (req.user) return next();
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'Authorization header missing' });
+  const parts = auth.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Invalid authorization format. Use: Bearer <token>' });
+  }
+  try {
+    req.user = jwt.verify(parts[1], SECRET);
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.AI_API_KEY);
@@ -108,8 +127,9 @@ router.post('/coach', async (req, res) => {
   
   try {
     const { type, question, includeContext = true } = req.body;
+    console.log('🔐 JWT User data:', req.user);
     const userEmail = req.user?.email || 'unknown';
-    const userId = req.user?.id || 'unknown';
+    const userId = userEmail;
     const userAgent = req.get('User-Agent') || 'unknown';
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
@@ -131,16 +151,25 @@ router.post('/coach', async (req, res) => {
       return res.status(400).json({ error: 'Type is required' });
     }
 
-    // Check rate limit
-    if (!checkRateLimit(userId)) {
+    // Get user and check credits
+    console.log('🔍 Looking for user with email:', userEmail);
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      console.log('❌ User not found for email:', userEmail);
+      return res.status(404).json({ error: 'User not found' });
+    }
+    console.log('✅ User found:', user.email, 'Credits remaining:', user.aiCreditsRemaining);
+
+    // Now check rate limit using verified identity
+    if (!checkRateLimit(user.email)) {
       await AIErrorLogger.logError({
-        email: userEmail,
-        userId,
+        email: user.email,
+        userId: user.email,
         sessionId: 'none',
         errorType: 'RATE_LIMIT',
         errorCode: 'RATE_LIMIT_EXCEEDED',
         errorMessage: 'Rate limit exceeded. Please wait 10 seconds before trying again.',
-        errorDetails: { userId, rateLimitWindow: '10 seconds' },
+        errorDetails: { userId: user.email, rateLimitWindow: '10 seconds' },
         userAgent,
         ipAddress,
         requestData: { type, question, includeContext },
@@ -150,12 +179,6 @@ router.post('/coach', async (req, res) => {
       return res.status(429).json({ 
         error: 'Rate limit exceeded. Please wait 10 seconds before trying again.' 
       });
-    }
-
-    // Get user and check credits
-    const user = await User.findOne({ email: userEmail });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
     }
 
     // Check and reset credits if needed
@@ -327,7 +350,7 @@ Answer their question with personalized fitness advice.`;
 
       await AIErrorLogger.logError({
         email: req.user?.email || 'unknown',
-        userId: req.user?.id || 'unknown',
+        userId: req.user?.email || 'unknown',
         sessionId: 'none',
         errorType,
         errorCode,
@@ -361,12 +384,17 @@ Answer their question with personalized fitness advice.`;
 // Get saved AI plans
 router.get('/plans', async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
+    const userEmail = req.user?.email;
+    if (!userEmail) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const plans = await AIPlan.find({ userId }).sort({ createdAt: -1 }).limit(20);
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const plans = await AIPlan.find({ userId: user._id }).sort({ createdAt: -1 }).limit(20);
     res.json(plans);
   } catch (error) {
     console.error('Error fetching AI plans:', error);
@@ -377,14 +405,19 @@ router.get('/plans', async (req, res) => {
 // Delete AI plan
 router.delete('/plans/:id', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userEmail = req.user?.email;
     const planId = req.params.id;
     
-    if (!userId) {
+    if (!userEmail) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const result = await AIPlan.deleteOne({ _id: planId, userId });
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const result = await AIPlan.deleteOne({ _id: planId, userId: user._id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Plan not found' });
     }
@@ -399,15 +432,20 @@ router.delete('/plans/:id', async (req, res) => {
 // Mark plan as applied
 router.patch('/plans/:id/apply', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userEmail = req.user?.email;
     const planId = req.params.id;
     
-    if (!userId) {
+    if (!userEmail) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const result = await AIPlan.updateOne(
-      { _id: planId, userId }, 
+      { _id: planId, userId: user._id }, 
       { applied: true }
     );
     
