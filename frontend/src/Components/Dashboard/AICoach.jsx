@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_CONFIG from '../../config';
 import './AICoach.css';
+import aiCoachPfp from '../Assets/ai-coach-pfp.svg';
 
 const { BASE_URL } = API_CONFIG;
 
@@ -295,24 +296,30 @@ const AICoach = () => {
           {/* Chat Area */}
           <div className="chat-area">
             <div className="chat-messages">
-              {messages.map((message) => (
-                <div key={message.id} className={`message ${message.isUser ? 'user-message' : 'ai-message'}`}>
-                  {!message.isUser && <div className="message-avatar">💪</div>}
-                  <div className="message-content">
-                    <div className="message-bubble">
-                      {message.text}
+                  {messages.map((message) => (
+                    <div key={message.id} className={`message ${message.isUser ? 'user-message' : 'ai-message'}`}>
+                      {!message.isUser && (
+                        <div className="message-avatar">
+                          <img src={aiCoachPfp} alt="AI Coach" className="ai-avatar-img" />
+                        </div>
+                      )}
+                      <div className="message-content">
+                        <div className="message-bubble">
+                          {message.text}
+                        </div>
+                        <div className="message-time">
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
                     </div>
-                    <div className="message-time">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
 
               {/* Typing Indicator */}
               {isLoading && (
                 <div className="message ai-message">
-                  <div className="message-avatar">💪</div>
+                  <div className="message-avatar">
+                    <img src={aiCoachPfp} alt="AI Coach" className="ai-avatar-img" />
+                  </div>
                   <div className="message-content">
                     <div className="message-bubble typing-indicator">
                       <span></span>

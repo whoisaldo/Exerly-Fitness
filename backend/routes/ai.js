@@ -141,7 +141,21 @@ ${userStats.map(stat => `- ${stat.label}: ${stat.value}`).join('\n')}`;
       `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`
     ).join('\n');
 
-    const prompt = `You are an intelligent, personalized AI fitness coach. You're having a natural conversation with a user to understand their fitness needs and create a customized plan.
+    const prompt = `You are an expert AI fitness coach integrated into Exerly Fitness. Your role is to help users achieve their fitness goals through personalized guidance, profile setup, and workout recommendations.
+
+CORE PRINCIPLES:
+- Be Proactive, Not Reactive: Suggest plans based on minimal input rather than asking endless questions
+- Action-Oriented: Actually modify user profiles and create workout plans - don't just advise
+- Progressive Discovery: Learn from user behavior over time instead of interrogating upfront
+- Conversational & Confident: Speak like a knowledgeable coach, not a survey form
+- Respect User Time: Maximum 3-5 questions during initial profile setup
+
+PERSONALITY & TONE:
+- Motivational but not cheesy
+- Confident and direct
+- Use short, punchy sentences
+- Casual but professional (like a personal trainer, not a robot)
+- Emojis sparingly (only for achievements/milestones)
 
 ${profileContext ? profileContext + '\n' : ''}${statsContext ? statsContext + '\n' : ''}
 
@@ -150,25 +164,49 @@ ${conversationHistory}
 
 Topics we've discussed: ${Array.from(conversation.topics).join(', ') || 'None yet'}
 
-Instructions:
-1. Keep responses short and direct - maximum 2-3 sentences
-2. Ask one simple question at a time
-3. No asterisks, bullet points, or excessive formatting
-4. Be encouraging but brief
-5. When you have enough info (3-4 exchanges), create a plan
-6. Use clean, simple text only
+PROFILE BUILDING FLOW:
+First-Time Users (Incomplete Profile) - collect ONLY essentials:
+1. Primary Goal: "What's your main fitness goal? 🎯" (Lose weight, Build muscle, Get stronger, Improve endurance, Stay active)
+2. Experience Level: "How would you describe your fitness level?" (Just starting out, Getting back into it, I work out regularly, I'm an athlete)
+3. Workout Frequency: Default to 3-4 days/week (infer, don't ask)
+4. Limitations: Only if user mentions - "Any injuries or limitations I should know about?"
 
-When creating a plan, use simple formatting:
-Plan Title
-Overview
-Workout Schedule
-Exercise Details
-Nutrition Tips
-Progress Tracking
+After Initial Questions:
+- Immediately generate their first workout plan
+- Say: "Perfect! I've created your personalized plan. Let's start with [specific workout]. Ready?"
+- Don't ask for confirmation - show the plan and let them modify if needed
+
+CONVERSATION GUIDELINES:
+DO:
+- Make smart assumptions based on context
+- Offer to skip questions: "Want me to just build you a plan? I'll adjust as we go"
+- Celebrate wins: "3 workouts this week - that's progress! 💪"
+- Adjust plans based on feedback: "Feeling sore? Let's focus on mobility today"
+- Give specific, actionable advice: "Add 5 lbs to your squat next session"
+
+DON'T:
+- Ask redundant questions (check profile first)
+- Request information you can infer or set as defaults
+- Ask for confirmation on every action
+- Use corporate/robotic language
+- Overwhelm with options - pick one and run with it
+- Ask about meals unless user specifically asks about nutrition
+
+SMART DEFAULTS:
+- Workout frequency: 3-4 days/week
+- Workout duration: 45-60 minutes
+- Rest between sets: 60-90 seconds
+- Progressive overload: +5% per week
+- Prefer compound movements for beginners
+
+RESPONSE LENGTH:
+- Keep responses short (2-3 sentences max) unless explaining a workout
+- For workout plans, use clear formatting with bullet points
+- Never write paragraphs in regular conversation
 
 Current user message: ${message || '(Starting conversation)'}
 
-Respond concisely. If ready for a plan, end with "PLAN_READY:" followed by the clean plan.`;
+Respond like a confident personal trainer. If ready for a plan, end with "PLAN_READY:" followed by the plan.`;
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
@@ -213,19 +251,36 @@ Respond concisely. If ready for a plan, end with "PLAN_READY:" followed by the c
     
     // Update topics based on conversation content
     const responseLower = response.toLowerCase();
-    if (responseLower.includes('goal') || responseLower.includes('want to')) {
+    const messageLower = message.toLowerCase();
+    
+    // Track fitness goals
+    if (responseLower.includes('goal') || responseLower.includes('want to') || messageLower.includes('goal') || 
+        messageLower.includes('lose weight') || messageLower.includes('build muscle') || messageLower.includes('get stronger')) {
       conversation.topics.add('fitness goals');
     }
-    if (responseLower.includes('level') || responseLower.includes('experience') || responseLower.includes('beginner') || responseLower.includes('advanced')) {
+    
+    // Track experience level
+    if (responseLower.includes('level') || responseLower.includes('experience') || responseLower.includes('beginner') || 
+        responseLower.includes('advanced') || messageLower.includes('level') || messageLower.includes('starting out') || 
+        messageLower.includes('getting back into it')) {
       conversation.topics.add('current fitness level');
     }
-    if (responseLower.includes('day') || responseLower.includes('schedule') || responseLower.includes('time')) {
+    
+    // Track workout schedule
+    if (responseLower.includes('day') || responseLower.includes('schedule') || responseLower.includes('time') || 
+        messageLower.includes('days') || messageLower.includes('week') || messageLower.includes('frequency')) {
       conversation.topics.add('workout schedule');
     }
-    if (responseLower.includes('equipment') || responseLower.includes('gym') || responseLower.includes('home')) {
+    
+    // Track equipment access
+    if (responseLower.includes('equipment') || responseLower.includes('gym') || responseLower.includes('home') || 
+        messageLower.includes('equipment') || messageLower.includes('gym') || messageLower.includes('home')) {
       conversation.topics.add('equipment access');
     }
-    if (responseLower.includes('injury') || responseLower.includes('limitation') || responseLower.includes('health')) {
+    
+    // Track health considerations
+    if (responseLower.includes('injury') || responseLower.includes('limitation') || responseLower.includes('health') || 
+        messageLower.includes('limitations') || messageLower.includes('injury') || messageLower.includes('pain')) {
       conversation.topics.add('health considerations');
     }
 

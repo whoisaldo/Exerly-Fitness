@@ -101,6 +101,8 @@ const workoutSchema = new mongoose.Schema({
 const aiPlanSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   plan: { type: String, required: true },
+  planTitle: { type: String, default: 'Personalized Fitness Plan' },
+  structuredPlan: { type: mongoose.Schema.Types.Mixed, default: null },
   answers: { type: [String], default: [] },
   userStatsSnapshot: {
     age: Number,
