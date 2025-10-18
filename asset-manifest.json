@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/Exerly-Fitness/static/css/main.cb648cd9.css",
-    "main.js": "/Exerly-Fitness/static/js/main.8435e1f3.js",
+    "main.css": "/Exerly-Fitness/static/css/main.7cbf020d.css",
+    "main.js": "/Exerly-Fitness/static/js/main.d13b02e9.js",
     "static/js/453.1046b0ad.chunk.js": "/Exerly-Fitness/static/js/453.1046b0ad.chunk.js",
     "static/media/ExerlyLogo.jpg": "/Exerly-Fitness/static/media/ExerlyLogo.d6f640bb7569f41c9b25.jpg",
     "index.html": "/Exerly-Fitness/index.html",
-    "main.cb648cd9.css.map": "/Exerly-Fitness/static/css/main.cb648cd9.css.map",
-    "main.8435e1f3.js.map": "/Exerly-Fitness/static/js/main.8435e1f3.js.map",
+    "main.7cbf020d.css.map": "/Exerly-Fitness/static/css/main.7cbf020d.css.map",
+    "main.d13b02e9.js.map": "/Exerly-Fitness/static/js/main.d13b02e9.js.map",
     "453.1046b0ad.chunk.js.map": "/Exerly-Fitness/static/js/453.1046b0ad.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.cb648cd9.css",
-    "static/js/main.8435e1f3.js"
+    "static/css/main.7cbf020d.css",
+    "static/js/main.d13b02e9.js"
   ]
 }
