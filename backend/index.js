@@ -112,39 +112,6 @@ const aiPlanSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now }
 });
 
-const aiErrorSchema = new mongoose.Schema({
-  email: { type: String, required: true, index: true },
-  userId: { type: String, required: true, index: true },
-  sessionId: { type: String, required: true, index: true },
-  errorType: { 
-    type: String, 
-    required: true,
-    enum: ['API_ERROR', 'RATE_LIMIT', 'VALIDATION_ERROR', 'NETWORK_ERROR', 'AI_MODEL_ERROR', 'UNKNOWN_ERROR']
-  },
-  errorCode: { type: String, required: true },
-  errorMessage: { type: String, required: true },
-  errorDetails: { type: mongoose.Schema.Types.Mixed, default: {} },
-  userAgent: { type: String },
-  ipAddress: { type: String },
-  requestData: { type: mongoose.Schema.Types.Mixed, default: {} },
-  responseData: { type: mongoose.Schema.Types.Mixed, default: {} },
-  stackTrace: { type: String },
-  severity: { 
-    type: String, 
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-    default: 'MEDIUM'
-  },
-  status: { 
-    type: String, 
-    enum: ['OPEN', 'INVESTIGATING', 'RESOLVED', 'IGNORED'],
-    default: 'OPEN'
-  },
-  adminNotes: { type: String, default: '' },
-  resolvedBy: { type: String, default: '' },
-  resolvedAt: { type: Date },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
-});
 
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
@@ -159,7 +126,6 @@ const Sleep = mongoose.model('Sleep', sleepSchema);
 const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
 const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
-const AIError = mongoose.model('AIError', aiErrorSchema);
 
 // ---------- Helper Functions ----------
 function calculateMaintenance(profile) {
