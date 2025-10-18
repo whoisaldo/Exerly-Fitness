@@ -1025,6 +1025,31 @@
   margin-bottom: 0;
 }
 
+.plan-section-title {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 20px 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+}
+
+.plan-bullet-point {
+  color: #e4e4e7;
+  margin: 8px 0;
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.6;
+}
+
+.plan-bullet-point::before {
+  content: '•';
+  color: #8b5cf6;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
 .plan-modal-actions {
   display: flex;
   gap: 16px;

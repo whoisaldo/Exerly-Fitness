@@ -140,8 +140,8 @@ const AICoach = () => {
       setIsComplete(data.isComplete);
 
       if (data.isComplete) {
-        // Save the plan
-        await savePlan(data.plan, data.answers);
+        // Save the plan with enhanced data
+        await savePlan(data.plan, data.answers, data.planTitle, data.structuredPlan);
         // Refresh saved plans
         fetchSavedPlans();
       }
@@ -159,7 +159,7 @@ const AICoach = () => {
     }
   };
 
-  const savePlan = async (plan, answers) => {
+  const savePlan = async (plan, answers, planTitle, structuredPlan) => {
     try {
       const token = localStorage.getItem('token');
       await fetch(`${BASE_URL}/api/ai/plans`, {
@@ -170,6 +170,8 @@ const AICoach = () => {
         },
         body: JSON.stringify({
           plan,
+          planTitle: planTitle || 'Personalized Fitness Plan',
+          structuredPlan: structuredPlan || null,
           answers,
           userStatsSnapshot: {
             age: userProfile?.age,
@@ -459,7 +461,7 @@ const AICoach = () => {
             {savedPlans.map((plan) => (
               <div key={plan._id} className="plan-card">
                 <div className="plan-header">
-                  <h3>Fitness Plan</h3>
+                  <h3>{plan.planTitle || 'Fitness Plan'}</h3>
                   <span className="plan-date">{formatDate(plan.created_at || plan.createdAt)}</span>
                 </div>
                 <div className="plan-stats">
@@ -517,7 +519,7 @@ const AICoach = () => {
         <div className="plan-modal-overlay" onClick={() => setShowPlanModal(false)}>
           <div className="plan-modal" onClick={(e) => e.stopPropagation()}>
             <div className="plan-modal-header">
-              <h2>Fitness Plan Details</h2>
+              <h2>{selectedPlan.planTitle || 'Fitness Plan Details'}</h2>
               <button 
                 className="close-modal-btn" 
                 onClick={() => setShowPlanModal(false)}
@@ -550,11 +552,18 @@ const AICoach = () => {
               <div className="plan-modal-plan">
                 <h3>Your Personalized Plan</h3>
                 <div className="plan-content">
-                  {selectedPlan.plan.split('\n').map((line, index) => (
-                    <p key={index} className="plan-line">
-                      {line}
-                    </p>
-                  ))}
+                  {selectedPlan.plan.split('\n').map((line, index) => {
+                    // Handle different formatting
+                    if (line.startsWith('**') && line.endsWith('**')) {
+                      return <h4 key={index} className="plan-section-title">{line.replace(/\*\*/g, '')}</h4>;
+                    } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                      return <div key={index} className="plan-bullet-point">{line}</div>;
+                    } else if (line.trim() === '') {
+                      return <br key={index} />;
+                    } else {
+                      return <p key={index} className="plan-line">{line}</p>;
+                    }
+                  })}
                 </div>
               </div>
               <div className="plan-modal-actions">
