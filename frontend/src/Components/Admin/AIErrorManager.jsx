@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import API_CONFIG from '../../config';
 import './AIErrorManager.css';
+
+const { BASE_URL } = API_CONFIG;
 
 const AIErrorManager = () => {
   const [errors, setErrors] = useState([]);
@@ -54,7 +57,7 @@ const AIErrorManager = () => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/ai-errors/stats', {
+      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -112,7 +115,7 @@ const AIErrorManager = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/ai-errors/cleanup', {
+      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/cleanup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_CONFIG from '../../config';
 import './AICoach.css';
+
+const { BASE_URL } = API_CONFIG;
 
 const AICoach = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -27,10 +30,10 @@ const AICoach = () => {
     try {
       const token = localStorage.getItem('token');
       const [profileRes, statsRes] = await Promise.all([
-        fetch('/api/profile', {
+        fetch(`${BASE_URL}/api/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('/api/dashboard-data', {
+        fetch(`${BASE_URL}/api/dashboard-data`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -52,7 +55,7 @@ const AICoach = () => {
   const fetchSavedPlans = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/ai/plans', {
+      const response = await fetch(`${BASE_URL}/api/ai/plans`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -102,7 +105,7 @@ const AICoach = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/ai/fitness-chat', {
+      const response = await fetch(`${BASE_URL}/api/ai/fitness-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +160,7 @@ const AICoach = () => {
   const savePlan = async (plan, answers) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('/api/ai/plans', {
+      await fetch(`${BASE_URL}/api/ai/plans`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
