@@ -287,3 +287,4 @@ without the express written permission of the copyright holder.
 [![GitHub issues](https://img.shields.io/github/issues/whoisaldo/Exerly-Fitness)](https://github.com/whoisaldo/Exerly-Fitness/issues)
 
 </div>
+# Force redeploy Fri Oct 17 23:22:16 EDT 2025
