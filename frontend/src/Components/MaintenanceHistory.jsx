@@ -5,6 +5,14 @@ export default function MaintenanceHistory() {
   const maintenanceHistory = [
     {
       id: 1,
+      date: 'October 18, 2024',
+      duration: 'Ongoing',
+      reason: 'Frontend Updates',
+      description: 'Website may not be at full functionality right now due to ongoing frontend improvements and optimizations.',
+      status: 'in-progress'
+    },
+    {
+      id: 2,
       date: 'October 10, 2025',
       duration: '2 hours',
       reason: 'Database Migration',
@@ -12,7 +20,7 @@ export default function MaintenanceHistory() {
       status: 'completed'
     },
     {
-      id: 2,
+      id: 3,
       date: 'October 10, 2025',
       duration: '30 minutes',
       reason: 'System Maintenance',
