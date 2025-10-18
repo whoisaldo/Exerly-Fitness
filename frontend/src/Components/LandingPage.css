@@ -174,10 +174,12 @@
 
 /* Hero Section */
 .hero-section {
-  padding: 100px 0 60px;
+  padding: 120px 0 80px;
   position: relative;
   overflow: hidden;
-  min-height: 80vh;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
 }
 
 .hero-container {
@@ -186,7 +188,7 @@
   padding: 0 20px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 60px;
   align-items: center;
 }
 
@@ -248,10 +250,10 @@
 }
 
 .hero-title {
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 20px;
+  line-height: 1.2;
+  margin-bottom: 25px;
   color: #ffffff;
   animation: fadeInUp 1s ease-out 0.4s both;
 }
@@ -268,7 +270,7 @@
   color: #cbd5e1;
   line-height: 1.6;
   margin-bottom: 40px;
-  max-width: 500px;
+  max-width: 520px;
   animation: fadeInUp 1s ease-out 0.6s both;
 }
 
@@ -494,7 +496,7 @@
 
 /* Stats Section */
 .stats-section {
-  padding: 60px 0;
+  padding: 80px 0;
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -564,7 +566,7 @@
 
 /* Features Section */
 .features-section {
-  padding: 80px 0;
+  padding: 100px 0;
 }
 
 .features-container {
@@ -597,23 +599,28 @@
 .features-showcase {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: 80px;
   align-items: center;
 }
 
 .feature-content {
-  padding-right: 40px;
-  animation: slideInLeft 1s ease-out 0.2s both;
+  order: 1;
+}
+
+.feature-info {
+  z-index: 2;
 }
 
 .feature-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
+  font-size: 4rem;
+  margin-bottom: 25px;
+  display: inline-block;
+  transition: all 0.3s ease;
 }
 
 .feature-title {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 2.2rem;
+  font-weight: 700;
   color: #ffffff;
   margin-bottom: 15px;
 }
@@ -621,8 +628,9 @@
 .feature-description {
   font-size: 1.1rem;
   color: #cbd5e1;
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 30px;
+  max-width: 480px;
 }
 
 .feature-indicators {
@@ -646,9 +654,7 @@
 }
 
 .feature-visual {
-  display: flex;
-  justify-content: center;
-  animation: slideInRight 1s ease-out 0.4s both;
+  order: 2;
 }
 
 .feature-mockup {
@@ -716,7 +722,6 @@
 /* Tech Stack Section */
 .tech-section {
   padding: 100px 0;
-  background: rgba(255, 255, 255, 0.02);
 }
 
 .tech-container {
@@ -727,19 +732,19 @@
 
 .tech-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px;
+  padding: 0 20px;
 }
 
 .tech-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  padding: 30px 20px;
+  padding: 40px;
+  min-height: 240px;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: fadeInUp 0.8s ease-out both;
-  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 15px;
 }
 
 .tech-card:nth-child(1) { animation-delay: 0.1s; }
@@ -780,27 +785,25 @@
 
 /* Testimonials Section */
 .testimonials-section {
-  padding: 100px 0;
-}
-
-.testimonials-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+  padding: 120px 0;
 }
 
 .testimonials-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
+  gap: 40px;
 }
 
 .testimonial-card {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 16px;
-  padding: 30px;
+  padding: 40px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .testimonial-card:hover {
@@ -835,31 +838,32 @@
 
 /* CTA Section */
 .cta-section {
-  padding: 100px 0;
+  padding: 120px 0;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .cta-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 20px;
   text-align: center;
 }
 
 .cta-title {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  line-height: 1.2;
 }
 
 .cta-description {
   font-size: 1.2rem;
   color: #cbd5e1;
-  margin-bottom: 40px;
-  line-height: 1.6;
+  margin-bottom: 50px;
+  line-height: 1.8;
 }
 
 .cta-actions {
