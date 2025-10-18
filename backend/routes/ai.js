@@ -151,22 +151,24 @@ ${conversationHistory}
 Topics we've discussed: ${Array.from(conversation.topics).join(', ') || 'None yet'}
 
 Instructions:
-1. If this is the first message (no conversation history), greet them warmly and ask about their fitness goals
-2. Have a natural conversation to understand their:
-   - Fitness goals and motivations
-   - Current fitness level and experience
-   - Available time and schedule
-   - Equipment access
-   - Any health considerations or limitations
-3. Ask follow-up questions based on their responses
-4. Be encouraging, knowledgeable, and personalized
-5. When you have enough information (usually after 4-6 exchanges), create a comprehensive fitness plan
-6. Make responses feel natural and conversational, not robotic
-7. Use their name and reference their profile data when relevant
+1. Keep responses short and direct - maximum 2-3 sentences
+2. Ask one simple question at a time
+3. No asterisks, bullet points, or excessive formatting
+4. Be encouraging but brief
+5. When you have enough info (3-4 exchanges), create a plan
+6. Use clean, simple text only
+
+When creating a plan, use simple formatting:
+Plan Title
+Overview
+Workout Schedule
+Exercise Details
+Nutrition Tips
+Progress Tracking
 
 Current user message: ${message || '(Starting conversation)'}
 
-Respond naturally and helpfully. If you're ready to create a plan, end your response with "PLAN_READY:" followed by the plan.`;
+Respond concisely. If ready for a plan, end with "PLAN_READY:" followed by the clean plan.`;
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
@@ -174,6 +176,20 @@ Respond naturally and helpfully. If you're ready to create a plan, end your resp
     // Check if AI is ready to provide a plan
     if (response.includes('PLAN_READY:')) {
       const plan = response.split('PLAN_READY:')[1].trim();
+      
+      // Extract plan title if it exists (look for first line or title pattern)
+      const lines = plan.split('\n');
+      const firstLine = lines[0].trim();
+      const planTitle = firstLine && firstLine.length < 50 ? firstLine : 'Personalized Fitness Plan';
+      
+      // Create structured plan data
+      const structuredPlan = {
+        title: planTitle,
+        content: plan,
+        topics: Array.from(conversation.topics),
+        conversationLength: conversation.history.length,
+        createdAt: new Date().toISOString()
+      };
       
       // Clean up conversation after sending plan
       conversations.delete(sessionId);
@@ -186,6 +202,8 @@ Respond naturally and helpfully. If you're ready to create a plan, end your resp
         questionNumber: 5,
         isComplete: true,
         plan: plan,
+        planTitle: planTitle,
+        structuredPlan: structuredPlan,
         answers: conversation.answers
       });
     }
