@@ -17,6 +17,8 @@ const AICoach = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [useProfileData, setUseProfileData] = useState(true);
   const [sessionId] = useState(() => crypto.randomUUID());
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -212,13 +214,50 @@ const AICoach = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return 'Unknown Date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleViewPlan = (plan) => {
+    setSelectedPlan(plan);
+    setShowPlanModal(true);
+  };
+
+  const handleApplyPlan = (plan) => {
+    // For now, just show an alert. In a real app, this would integrate with the workout system
+    alert(`Applied plan: ${plan.plan.substring(0, 100)}...`);
+  };
+
+  const handleDeletePlan = async (planId) => {
+    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/api/ai/plans/${planId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        setSavedPlans(savedPlans.filter(plan => plan._id !== planId));
+        alert('Plan deleted successfully!');
+      } else {
+        alert('Error deleting plan');
+      }
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      alert('Error deleting plan');
+    }
   };
 
   if (isConsultationActive) {
@@ -419,7 +458,7 @@ const AICoach = () => {
               <div key={plan._id} className="plan-card">
                 <div className="plan-header">
                   <h3>Fitness Plan</h3>
-                  <span className="plan-date">{formatDate(plan.createdAt)}</span>
+                  <span className="plan-date">{formatDate(plan.created_at || plan.createdAt)}</span>
                 </div>
                 <div className="plan-stats">
                   {plan.userStatsSnapshot && (
@@ -440,9 +479,24 @@ const AICoach = () => {
                   <p>{plan.plan.substring(0, 150)}...</p>
                 </div>
                 <div className="plan-actions">
-                  <button className="plan-btn view-btn">View Details</button>
-                  <button className="plan-btn apply-btn">Apply Plan</button>
-                  <button className="plan-btn delete-btn">Delete</button>
+                  <button 
+                    className="plan-btn view-btn" 
+                    onClick={() => handleViewPlan(plan)}
+                  >
+                    View Details
+                  </button>
+                  <button 
+                    className="plan-btn apply-btn" 
+                    onClick={() => handleApplyPlan(plan)}
+                  >
+                    Apply Plan
+                  </button>
+                  <button 
+                    className="plan-btn delete-btn" 
+                    onClick={() => handleDeletePlan(plan._id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
@@ -455,6 +509,76 @@ const AICoach = () => {
           </div>
         )}
       </div>
+
+      {/* Plan Details Modal */}
+      {showPlanModal && selectedPlan && (
+        <div className="plan-modal-overlay" onClick={() => setShowPlanModal(false)}>
+          <div className="plan-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="plan-modal-header">
+              <h2>Fitness Plan Details</h2>
+              <button 
+                className="close-modal-btn" 
+                onClick={() => setShowPlanModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="plan-modal-content">
+              <div className="plan-modal-stats">
+                {selectedPlan.userStatsSnapshot && (
+                  <div className="plan-stats-grid">
+                    {selectedPlan.userStatsSnapshot.age && (
+                      <span className="plan-stat">Age: {selectedPlan.userStatsSnapshot.age}</span>
+                    )}
+                    {selectedPlan.userStatsSnapshot.weight && (
+                      <span className="plan-stat">Weight: {selectedPlan.userStatsSnapshot.weight}kg</span>
+                    )}
+                    {selectedPlan.userStatsSnapshot.height && (
+                      <span className="plan-stat">Height: {selectedPlan.userStatsSnapshot.height}cm</span>
+                    )}
+                    {selectedPlan.userStatsSnapshot.gender && (
+                      <span className="plan-stat">Gender: {selectedPlan.userStatsSnapshot.gender}</span>
+                    )}
+                    {selectedPlan.userStatsSnapshot.goal && (
+                      <span className="plan-stat">Goal: {selectedPlan.userStatsSnapshot.goal}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="plan-modal-plan">
+                <h3>Your Personalized Plan</h3>
+                <div className="plan-content">
+                  {selectedPlan.plan.split('\n').map((line, index) => (
+                    <p key={index} className="plan-line">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="plan-modal-actions">
+                <button 
+                  className="plan-btn apply-btn" 
+                  onClick={() => {
+                    handleApplyPlan(selectedPlan);
+                    setShowPlanModal(false);
+                  }}
+                >
+                  Apply This Plan
+                </button>
+                <button 
+                  className="plan-btn delete-btn" 
+                  onClick={() => {
+                    handleDeletePlan(selectedPlan._id);
+                    setShowPlanModal(false);
+                  }}
+                >
+                  Delete Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
