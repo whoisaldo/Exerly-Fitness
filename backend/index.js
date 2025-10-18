@@ -963,7 +963,8 @@ app.post('/api/admin/ai-errors/cleanup', authenticate, requireAdmin, async (req,
 });
 
 // ---------- AI Routes ----------
-const aiRoutes = require('./routes/ai');
+const { router: aiRoutes, initModels } = require('./routes/ai');
+initModels(User, AIPlan);
 app.use('/api/ai', aiRoutes);
 
 // ---------- AI Credits (after AI routes to avoid conflicts) ----------

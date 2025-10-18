@@ -14,52 +14,14 @@ const model = genAI.getGenerativeModel({
   }
 });
 
-// Import models directly
-const mongoose = require('mongoose');
+// Import models from main file to avoid circular dependencies
+let User, AIPlan;
 
-// Define schemas here to avoid circular dependencies
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
-  hash: { type: String, required: true },
-  profile: { type: mongoose.Schema.Types.Mixed, default: {} },
-  is_admin: { type: Boolean, default: false },
-  created_at: { type: Date, default: Date.now },
-  
-  // Onboarding data
-  onboardingCompleted: { type: Boolean, default: false },
-  age: { type: Number },
-  gender: { type: String },
-  height: { type: Number }, // in cm
-  weight: { type: Number }, // in kg
-  goal: { type: String }, // lose_weight, build_muscle, improve_endurance, stay_healthy
-  experienceLevel: { type: String }, // beginner, intermediate, advanced
-  workoutDaysPerWeek: { type: Number, default: 3 },
-  equipmentAccess: { type: String }, // full_gym, home_gym, no_equipment
-  
-  // AI Credit System
-  aiCreditsRemaining: { type: Number, default: 5 }, // 0-5, resets hourly
-  aiDailyCreditsUsed: { type: Number, default: 0 }, // 0-20, resets daily
-  aiLastCreditReset: { type: Date, default: Date.now }, // Timestamp of last hourly reset
-  aiDailyResetDate: { type: Date, default: Date.now } // Date of last daily reset
-});
-
-const aiPlanSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, required: true }, // workout_plan, nutrition_advice, progress_analysis, custom_question
-  prompt: { type: String, required: true },
-  response: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  applied: { type: Boolean, default: false },
-  creditsUsedAtTime: {
-    hourly: { type: Number },
-    daily: { type: Number }
-  }
-});
-
-// Create models
-const User = mongoose.model('User', userSchema);
-const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
+// Initialize models function
+const initModels = (userModel, aiPlanModel) => {
+  User = userModel;
+  AIPlan = aiPlanModel;
+};
 
 // Credit management functions (imported from main file)
 const checkHourlyReset = (user) => {
@@ -472,4 +434,4 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
-module.exports = router;
+module.exports = { router, initModels };
