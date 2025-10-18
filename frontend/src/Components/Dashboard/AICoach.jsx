@@ -560,6 +560,8 @@ const AICoach = () => {
                       return <div key={index} className="plan-bullet-point">{line}</div>;
                     } else if (line.trim() === '') {
                       return <br key={index} />;
+                    } else if (line.includes(':') && line.length < 100 && !line.includes('.')) {
+                      return <h4 key={index} className="plan-section-title">{line}</h4>;
                     } else {
                       return <p key={index} className="plan-line">{line}</p>;
                     }
