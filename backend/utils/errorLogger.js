@@ -35,9 +35,10 @@ const aiErrorSchema = new mongoose.Schema({
 });
 
 let AIError;
-try {
-  AIError = mongoose.model('AIError');
-} catch (error) {
+// Check if model already exists to prevent OverwriteModelError
+if (mongoose.models.AIError) {
+  AIError = mongoose.models.AIError;
+} else {
   AIError = mongoose.model('AIError', aiErrorSchema);
 }
 
