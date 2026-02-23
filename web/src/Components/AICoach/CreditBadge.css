@@ -1,0 +1,171 @@
+/* Credit Badge Styles */
+.credit-badge {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.credit-badge.good {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.credit-badge.warning {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.credit-badge.critical {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.credit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hourly-credits {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.credit-icon {
+  font-size: 1.2rem;
+}
+
+.credit-count {
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.reset-timer {
+  font-size: 0.9rem;
+  color: #ef4444;
+  font-weight: 600;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.5;
+  }
+}
+
+.daily-credits {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+}
+
+.daily-count {
+  font-weight: 500;
+}
+
+.limit-message {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.limit-message p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.limit-message p:last-child {
+  margin-bottom: 0;
+  color: #a0a0a0;
+}
+
+.daily-limit-message {
+  margin-top: 15px;
+  padding: 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  text-align: center;
+  animation: slideDown 0.3s ease;
+}
+
+.daily-limit-message p {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.daily-limit-message p:first-child {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.daily-limit-message p:last-child {
+  margin-bottom: 0;
+  color: #a0a0a0;
+  font-size: 0.8rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .credit-badge {
+    padding: 12px;
+  }
+  
+  .hourly-credits {
+    flex-wrap: wrap;
+  }
+  
+  .credit-count {
+    font-size: 1rem;
+  }
+  
+  .reset-timer {
+    font-size: 0.8rem;
+  }
+  
+  .limit-message,
+  .daily-limit-message {
+    padding: 12px;
+  }
+  
+  .limit-message p,
+  .daily-limit-message p {
+    font-size: 0.8rem;
+  }
+}
