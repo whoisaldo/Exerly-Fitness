@@ -1,21 +1,33 @@
 {
-  "name": "exerly-fitness",
+  "name": "exerly-fitness-monorepo",
   "version": "1.0.0",
+  "description": "Exerly Fitness - Monorepo with backend, web, and mobile apps",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "mobile"
+  ],
   "scripts": {
-    "start": "cd backend && npm start"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.1",
-    "pg": "^8.16.3",
-    "sqlite3": "^5.1.7"
+    "dev": "concurrently -n backend,web -c blue,green \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:all": "concurrently -n backend,web,mobile -c blue,green,magenta \"npm run dev:backend\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "dev:backend": "npm start --prefix backend",
+    "dev:web": "npm start --prefix web",
+    "dev:mobile": "npm start --prefix mobile",
+    "local": "concurrently -n backend,web -c blue,green \"npm run local:backend\" \"npm run dev:web\"",
+    "local:all": "concurrently -n backend,web,mobile -c blue,green,magenta \"npm run local:backend\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "local:backend": "npm run start:local --prefix backend",
+    "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../mobile && npm install",
+    "build:web": "npm run build --prefix web",
+    "start:backend": "npm start --prefix backend",
+    "ios": "cd mobile && npx expo start --ios",
+    "android": "cd mobile && npx expo start --android"
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "concurrently": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
+

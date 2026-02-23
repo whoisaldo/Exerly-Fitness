@@ -222,12 +222,31 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'https://whoisaldo.github.io',
+  // Mobile app origins (Expo)
+  'http://localhost:8081',
+  'http://localhost:19000',
+  'http://localhost:19006',
+  // Allow local network access for mobile development
+  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/,
+  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/,
+  /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/,
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    
+    // Check if origin matches any allowed origin (string or regex)
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return allowed === origin;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
       return callback(null, true);
     } else {
       return callback(null, false);
@@ -1005,5 +1024,9 @@ app.get('/api/ai/credits', authenticate, async (req, res) => {
 
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🟢 Server running on http://localhost:${PORT}`));
+const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
+app.listen(PORT, HOST, () => {
+  console.log(`🟢 Server running on http://localhost:${PORT}`);
+  console.log(`📱 Mobile access: http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_LOCAL_IP'}:${PORT}`);
+});
 

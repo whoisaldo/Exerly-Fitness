@@ -1,85 +1,44 @@
-# === Node.js ===
+# Dependencies
 node_modules/
-frontend/node_modules/
-backend/node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# === React / Vite / Webpack Builds ===
-build/
-dist/
-frontend/build/
-frontend/dist/
-coverage/
+# Build outputs
+web/build/
+mobile/.expo/
+mobile/dist/
 
-# === SQLite DB ===
-*.sqlite
-*.sqlite3
-*.db
-*.bak
-backend/users.db
-
-# === Logs ===
-*.log
-logs/
-log/
-
-# === Environment Variables ===
+# Environment files
 .env
-.env.*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-frontend/.env
-backend/.env
 
-# === System / OS Files ===
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
 .DS_Store
 Thumbs.db
 
-# === Editor Directories ===
-.vscode/
+# IDE
 .idea/
-.vs/
-*.sublime-workspace
-*.sublime-project
-
-# === Mac & Linux files ===
+.vscode/
 *.swp
-*~
-.npm
-.cache/
-*.pid
+*.swo
 
-# === Heroku / Deployment ===
-.heroku/
-*.orig
+# SQLite database (local development)
+*.db
 
-# === Test / Temp files ===
-__pycache__/
-*.py[cod]
-*.tmp
-*.temp
+# Expo
+mobile/ios/
+mobile/android/
 
-# === Ignore compiled JS/TS output ===
-*.tsbuildinfo
-*.map
+# Coverage
+coverage/
 
-# === Git Backup / Rebase ===
-*.rej
-*.patch
-*.orig
+# Package manager locks (keep one per workspace)
+# Uncomment if you want to ignore lock files
+# package-lock.json
 
-# === Misc ===
-*.pem
-*.key
-*.crt
-secret.key
-
-# === Internal Documentation (Do Not Commit) ===
-IMPLEMENTATION_SUMMARY.md
-MAINTENANCE_MODE.md
-backend/index-postgres-sqlite-backup.js
