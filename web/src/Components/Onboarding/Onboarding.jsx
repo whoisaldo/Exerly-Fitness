@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_CONFIG from '../../config';
 import './Onboarding.css';
@@ -73,6 +73,8 @@ const Onboarding = () => {
         if (!formData.equipmentAccess) {
           newErrors.equipmentAccess = 'Please select your equipment access';
         }
+        break;
+      default:
         break;
     }
     

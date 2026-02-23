@@ -10,7 +10,7 @@ import './AICoach.css';
 const { BASE_URL } = API_CONFIG;
 
 const AICoach = () => {
-  const [userProfile, setUserProfile] = useState(null);
+  const [, setUserProfile] = useState(null);
   const [credits, setCredits] = useState({
     hourly: { remaining: 5, limit: 5, resetTime: '0:00' },
     daily: { used: 0, limit: 20, resetTime: '0h 0m' }

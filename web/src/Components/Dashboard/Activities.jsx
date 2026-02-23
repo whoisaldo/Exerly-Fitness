@@ -24,6 +24,7 @@ export default function Activities() {
     if (!token) return navigate('/');
     
     fetchActivitiesData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const fetchActivitiesData = async () => {

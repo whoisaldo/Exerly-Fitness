@@ -22,6 +22,7 @@ export default function Sleep() {
     if (!token) return navigate('/');
     
     fetchSleepData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const fetchSleepData = async () => {

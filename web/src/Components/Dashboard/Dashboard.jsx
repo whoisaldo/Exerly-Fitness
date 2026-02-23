@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [goals, setGoals] = useState(null);
+  const [, setGoals] = useState(null);
   const [goalsProgress, setGoalsProgress] = useState(null);
   const navigate = useNavigate();
 

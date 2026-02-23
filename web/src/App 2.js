@@ -10,6 +10,7 @@ import Food        from './Components/Dashboard/Food';
 import Goals       from './Components/Dashboard/Goals';
 import Sleep       from './Components/Dashboard/Sleep';
 import Profile     from './Components/Dashboard/Profile';
+import AICoach     from './Components/Dashboard/AICoach';
 import NewAICoach  from './Components/AICoach/AICoach';
 import Onboarding  from './Components/Onboarding/Onboarding';
 import Credits     from './Components/Credits';
@@ -69,7 +70,10 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  // Maintenance mode toggle - set to true to show maintenance notice
+  // Show maintenance notice on GitHub Pages deployment
+  // To disable: remove this check or set REACT_APP_MAINTENANCE=false
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  //const maintenanceMode = process.env.REACT_APP_MAINTENANCE !== 'false' && isGitHubPages;
   const maintenanceMode = false;
   // Show maintenance notice if enabled
   if (maintenanceMode) {

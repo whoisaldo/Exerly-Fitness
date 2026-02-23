@@ -22,7 +22,7 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState('');
   const [entries, setEntries] = useState({ activities: [], food: [], sleep: [] });
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(true); // eslint-disable-line no-unused-vars
   const [usersLoading, setUsersLoading] = useState(true);
   const [entriesLoading, setEntriesLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,7 @@ export default function Admin() {
         timestamp: new Date().toISOString()
       });
     }
-  }, [BASE_URL]);
+  }, []);
 
   // Load users list (admin-only)
   useEffect(() => {
@@ -91,6 +91,7 @@ export default function Admin() {
         setError('Failed to load users. Please try again.');
       })
       .finally(() => setUsersLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, token, me, selectedEmail]);
 
   // Load selected user's entries

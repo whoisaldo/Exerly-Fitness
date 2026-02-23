@@ -92,6 +92,7 @@ export default function Profile() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
 
@@ -160,12 +161,6 @@ export default function Profile() {
     return useMetric ? weight : kgToLbs(weight);
   };
 
-  const getDisplayTargetWeight = () => {
-    if (!form.target_weight || form.target_weight === '') return '';
-    const targetWeight = parseFloat(form.target_weight);
-    if (isNaN(targetWeight) || targetWeight <= 0) return '';
-    return useMetric ? targetWeight : kgToLbs(targetWeight);
-  };
 
   // Handle height input changes
   const handleHeightChange = (e) => {
@@ -281,7 +276,7 @@ export default function Profile() {
       });
       
       if (res.ok) {
-        const result = await res.json();
+        await res.json();
         setSuccess('Profile updated successfully!');
         setTimeout(() => setSuccess(''), 3000);
       } else {

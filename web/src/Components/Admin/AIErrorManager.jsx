@@ -24,6 +24,7 @@ const AIErrorManager = () => {
   useEffect(() => {
     fetchErrors();
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, filters]);
 
   const fetchErrors = async () => {

@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './Workouts.css';
-import API_CONFIG from '../../config';
-
-const BASE_URL = API_CONFIG.BASE_URL;
 
 export default function Workouts() {
   const navigate = useNavigate();
@@ -74,6 +71,7 @@ export default function Workouts() {
       setWorkouts(sampleWorkouts);
       setLoading(false);
     }, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e) => {

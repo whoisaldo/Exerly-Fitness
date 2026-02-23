@@ -105,7 +105,7 @@ export default function LandingPage() {
       setCurrentFeature((prev) => (prev + 1) % features.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [features.length]);
+  }, []);
 
   return (
     <div className="landing-page">

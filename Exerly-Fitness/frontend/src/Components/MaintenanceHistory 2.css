@@ -1,0 +1,214 @@
+.maintenance-history {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.maintenance-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.maintenance-header h2 {
+  color: #2c3e50;
+  font-size: 2rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.maintenance-header p {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.maintenance-timeline {
+  position: relative;
+  padding-left: 40px;
+}
+
+.maintenance-entry {
+  position: relative;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -40px;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-icon {
+  background: #fff;
+  border: 3px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 2;
+  position: relative;
+}
+
+.timeline-line {
+  width: 2px;
+  height: 60px;
+  background: #e0e0e0;
+  margin-top: 5px;
+}
+
+.maintenance-content {
+  flex: 1;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  transition: all 0.3s ease;
+}
+
+.maintenance-content:hover {
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+  transform: translateY(-2px);
+}
+
+.maintenance-header-info h3 {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  margin: 0 0 10px 0;
+  font-weight: 600;
+}
+
+.maintenance-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.maintenance-date {
+  background: #3498db;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.maintenance-duration {
+  background: #95a5a6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.maintenance-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+  text-transform: capitalize;
+  font-size: 0.85rem;
+}
+
+.status-completed {
+  background: #27ae60;
+  color: white;
+}
+
+.status-scheduled {
+  background: #f39c12;
+  color: white;
+}
+
+.status-in-progress {
+  background: #e74c3c;
+  color: white;
+}
+
+.status-default {
+  background: #bdc3c7;
+  color: white;
+}
+
+.maintenance-description {
+  color: #555;
+  line-height: 1.6;
+}
+
+.maintenance-description p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.maintenance-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px solid #f0f0f0;
+  text-align: center;
+}
+
+.maintenance-footer p {
+  margin: 8px 0;
+  color: #555;
+}
+
+.maintenance-footer strong {
+  color: #27ae60;
+}
+
+.last-updated {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .maintenance-history {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .maintenance-timeline {
+    padding-left: 30px;
+  }
+  
+  .timeline-marker {
+    left: -30px;
+  }
+  
+  .timeline-icon {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+  
+  .maintenance-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .maintenance-header-info h3 {
+    font-size: 1.1rem;
+  }
+  
+  .maintenance-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .maintenance-content {
+    padding: 15px;
+  }
+}
