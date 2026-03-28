@@ -2,7 +2,7 @@
 node_modules/
 
 # Build outputs
-web/build/
+frontend/build/
 mobile/.expo/
 mobile/dist/
 
@@ -12,6 +12,9 @@ mobile/dist/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# SQLite databases (local development)
+*.db
 
 # Logs
 npm-debug.log*
@@ -28,9 +31,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# SQLite database (local development)
-*.db
-
 # Expo
 mobile/ios/
 mobile/android/
@@ -38,7 +38,6 @@ mobile/android/
 # Coverage
 coverage/
 
-# Package manager locks (keep one per workspace)
-# Uncomment if you want to ignore lock files
-# package-lock.json
-
+# Visual Studio artifacts
+*.wsuo
+DocumentLayout.json

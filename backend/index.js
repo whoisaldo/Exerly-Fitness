@@ -1,5 +1,12 @@
-// backend/index.js - MongoDB version
+// backend/index.js — unified entry point
+// DB_MODE=local  → SQLite + mock AI  (no external services needed)
+// DB_MODE unset   → MongoDB Atlas + Gemini AI  (production)
 require('dotenv').config();
+
+if (process.env.DB_MODE === 'local') {
+  return require('./server-local');
+}
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');

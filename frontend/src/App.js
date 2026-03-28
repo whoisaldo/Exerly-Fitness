@@ -2,26 +2,26 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import LoginSignup from './Components/LoginSignup/LoginSignup';
-import Dashboard   from './Components/Dashboard/Dashboard';
-import Workouts    from './Components/Dashboard/Workouts';
-import Activities  from './Components/Dashboard/Activities';
-import Food        from './Components/Dashboard/Food';
-import Goals       from './Components/Dashboard/Goals';
-import Sleep       from './Components/Dashboard/Sleep';
-import Profile     from './Components/Dashboard/Profile';
-import AICoach     from './Components/Dashboard/AICoach';
-import NewAICoach  from './Components/AICoach/AICoach';
-import Onboarding  from './Components/Onboarding/Onboarding';
-import Credits     from './Components/Credits';
-import Admin       from './Components/Admin/Admin';
-import AIErrorManager from './Components/Admin/AIErrorManager';
-import LandingPage from './Components/LandingPage';
-import MaintenanceNotice from './Components/MaintenanceNotice';
-import MaintenanceHistory from './Components/MaintenanceHistory';
-import StatusCheck from './Components/StatusCheck';
-import AdminStatusChecker from './Components/AdminStatusChecker';
-import MaintenanceIcon from './Components/MaintenanceIcon';
+import LoginSignup from './components/LoginSignup/LoginSignup';
+import Dashboard   from './components/Dashboard/Dashboard';
+import Workouts    from './components/Dashboard/Workouts';
+import Activities  from './components/Dashboard/Activities';
+import Food        from './components/Dashboard/Food';
+import Goals       from './components/Dashboard/Goals';
+import Sleep       from './components/Dashboard/Sleep';
+import Profile     from './components/Dashboard/Profile';
+import AICoach     from './components/Dashboard/AICoach';
+import NewAICoach  from './components/AICoach/AICoach';
+import Onboarding  from './components/Onboarding/Onboarding';
+import Credits     from './components/Credits';
+import Admin       from './components/Admin/Admin';
+import AIErrorManager from './components/Admin/AIErrorManager';
+import LandingPage from './components/LandingPage';
+import MaintenanceNotice from './components/MaintenanceNotice';
+import MaintenanceHistory from './components/MaintenanceHistory';
+import StatusCheck from './components/StatusCheck';
+import AdminStatusChecker from './components/AdminStatusChecker';
+import MaintenanceIcon from './components/MaintenanceIcon';
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
