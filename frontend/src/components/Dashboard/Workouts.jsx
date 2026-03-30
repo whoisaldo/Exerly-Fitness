@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Dashboard.css';
-import './Workouts.css';
+import { motion, AnimatePresence } from 'framer-motion';
 import API_CONFIG from '../../config';
+import {
+  GlassCard,
+  StatCard,
+  PageHeader,
+  ActionButton,
+  Badge,
+  EmptyState,
+  LoadingSkeleton,
+  PageTransition,
+} from '../ui';
 
 const BASE_URL = API_CONFIG.BASE_URL;
 
@@ -21,12 +30,12 @@ export default function Workouts() {
   });
 
   const workoutTypes = [
-    { value: 'strength', label: '💪 Strength Training', icon: '💪' },
-    { value: 'cardio', label: '❤️ Cardio', icon: '❤️' },
-    { value: 'flexibility', label: '🧘 Flexibility', icon: '🧘' },
-    { value: 'hiit', label: '⚡ HIIT', icon: '⚡' },
-    { value: 'yoga', label: '🧘‍♀️ Yoga', icon: '🧘‍♀️' },
-    { value: 'sports', label: '⚽ Sports', icon: '⚽' }
+    { value: 'strength', label: 'Strength Training', icon: '💪' },
+    { value: 'cardio', label: 'Cardio', icon: '❤️' },
+    { value: 'flexibility', label: 'Flexibility', icon: '🧘' },
+    { value: 'hiit', label: 'HIIT', icon: '⚡' },
+    { value: 'yoga', label: 'Yoga', icon: '🧘‍♀️' },
+    { value: 'sports', label: 'Sports', icon: '⚽' }
   ];
 
   const difficultyLevels = [
@@ -100,7 +109,7 @@ export default function Workouts() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.duration) {
       alert('Please fill in all required fields');
       return;
@@ -143,304 +152,367 @@ export default function Workouts() {
     return difficultyLevels.find(d => d.value === difficulty)?.color || '#fdcb6e';
   };
 
+  const getDifficultyBadgeVariant = (difficulty) => {
+    switch (difficulty) {
+      case 'beginner': return 'status';
+      case 'medium': return 'meal';
+      case 'advanced': return 'severity';
+      default: return 'meal';
+    }
+  };
+
+  const avgDuration = workouts.length > 0
+    ? Math.round(workouts.reduce((sum, w) => sum + w.duration, 0) / workouts.length)
+    : 0;
+
+  const mostUsedType = workouts.length > 0
+    ? workoutTypes.find(t => t.value === workouts[0].type)?.label || 'Strength'
+    : 'None';
+
   if (loading) {
     return (
-      <div className="workouts-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading workouts...</p>
+      <PageTransition className="min-h-screen bg-deep px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl space-y-8">
+          <PageHeader title="Workout Library" subtitle="Plan, save, and track your workouts" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <LoadingSkeleton variant="stat" count={3} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <LoadingSkeleton variant="card" count={3} />
+          </div>
         </div>
-      </div>
+      </PageTransition>
     );
   }
 
   return (
-    <div className="workouts-page">
-      {/* Header */}
-      <header className="workouts-header">
-        <div className="header-left">
-          <button className="action-btn back-btn" onClick={() => navigate('/dashboard')}>
-            ← Back
-          </button>
-          <div className="header-content">
-            <h1 className="workouts-title">💪 Workout Library</h1>
-            <p className="workouts-subtitle">Plan, save, and track your workouts</p>
-          </div>
-        </div>
-        
-        <div className="header-right">
-          <button 
-            className="action-btn add-btn"
-            onClick={() => setShowForm(true)}
-          >
-            + Add Workout
-          </button>
-        </div>
-      </header>
+    <PageTransition className="min-h-screen bg-deep px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-8">
+        {/* Header */}
+        <PageHeader
+          title="Workout Library"
+          subtitle="Plan, save, and track your workouts"
+          action={
+            <div className="flex items-center gap-3">
+              <ActionButton
+                variant="ghost"
+                onClick={() => navigate('/dashboard')}
+                icon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                }
+              >
+                Back
+              </ActionButton>
+              <ActionButton onClick={() => setShowForm(true)} icon={<span>+</span>}>
+                New Workout
+              </ActionButton>
+            </div>
+          }
+        />
 
-      {/* Main Content */}
-      <div className="workouts-content">
-        {/* Quick Stats */}
-        <section className="stats-section">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">💪</div>
-              <div className="stat-content">
-                <h3 className="stat-label">Total Workouts</h3>
-                <div className="stat-value">{workouts.length}</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">⏱️</div>
-              <div className="stat-content">
-                <h3 className="stat-label">Avg Duration</h3>
-                <div className="stat-value">
-                  {workouts.length > 0 
-                    ? Math.round(workouts.reduce((sum, w) => sum + w.duration, 0) / workouts.length)
-                    : 0
-                  } min
-                </div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🎯</div>
-              <div className="stat-content">
-                <h3 className="stat-label">Most Used Type</h3>
-                <div className="stat-value">
-                  {workouts.length > 0 
-                    ? workoutTypes.find(t => t.value === workouts[0].type)?.label.split(' ')[1] || 'Strength'
-                    : 'None'
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StatCard
+            icon={<span className="text-lg">💪</span>}
+            label="Total Workouts"
+            value={workouts.length}
+          />
+          <StatCard
+            icon={<span className="text-lg">⏱️</span>}
+            label="Avg Duration"
+            value={`${avgDuration} min`}
+          />
+          <StatCard
+            icon={<span className="text-lg">🎯</span>}
+            label="Most Used Type"
+            value={mostUsedType}
+          />
+        </div>
 
-        {/* Workout Form Modal */}
-        {showForm && (
-          <div className="modal-overlay" onClick={() => setShowForm(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">Create New Workout</h2>
-                <button 
-                  className="modal-close"
-                  onClick={() => setShowForm(false)}
-                >
-                  ×
-                </button>
-              </div>
-              
-              <form onSubmit={handleSubmit} className="workout-form">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Workout Name *</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Full Body Strength"
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Type</label>
-                    <select
-                      name="type"
-                      value={formData.type}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      {workoutTypes.map(type => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Duration (minutes) *</label>
-                    <input
-                      type="number"
-                      name="duration"
-                      value={formData.duration}
-                      onChange={handleInputChange}
-                      placeholder="45"
-                      className="form-input"
-                      min="5"
-                      max="180"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Difficulty</label>
-                    <select
-                      name="difficulty"
-                      value={formData.difficulty}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      {difficultyLevels.map(level => (
-                        <option key={level.value} value={level.value}>
-                          {level.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Describe your workout..."
-                    className="form-textarea"
-                    rows="3"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Exercises</label>
-                  <div className="exercises-container">
-                    {formData.exercises.map((exercise, index) => (
-                      <div key={index} className="exercise-tag">
-                        <span>{exercise}</span>
-                        <button
-                          type="button"
-                          className="remove-exercise"
-                          onClick={() => removeExercise(index)}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+        {/* Modal */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setShowForm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                transition={{ duration: 0.25 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              >
+                <GlassCard elevated className="!p-6">
+                  {/* Modal Header */}
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-slate-100">Create New Workout</h2>
                     <button
-                      type="button"
-                      className="add-exercise-btn"
-                      onClick={addExercise}
+                      onClick={() => setShowForm(false)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
                     >
-                      + Add Exercise
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
-                </div>
-                
-                <div className="form-actions">
-                  <button
-                    type="button"
-                    className="action-btn cancel-btn"
-                    onClick={() => setShowForm(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="action-btn submit-btn"
-                  >
-                    Create Workout
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
-        {/* Workouts List */}
-        <section className="workouts-list">
-          <h2 className="section-title">Your Workouts</h2>
-          
-          {workouts.length === 0 ? (
-            <div className="empty-workouts">
-              <div className="empty-icon">💪</div>
-              <h3 className="empty-title">No workouts yet</h3>
-              <p className="empty-description">
-                Create your first workout to start building your fitness routine
-              </p>
-              <button 
-                className="empty-btn"
-                onClick={() => setShowForm(true)}
-              >
-                Create Workout
-              </button>
-            </div>
-          ) : (
-            <div className="workouts-grid">
-              {workouts.map(workout => (
-                <div key={workout.id} className="workout-card">
-                  <div className="workout-header">
-                    <div className="workout-type-icon">
-                      {getWorkoutTypeIcon(workout.type)}
-                    </div>
-                    <div className="workout-meta">
-                      <div className="workout-difficulty" style={{ backgroundColor: getDifficultyColor(workout.difficulty) }}>
-                        {workout.difficulty}
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-label text-slate-300">Workout Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="e.g., Full Body Strength"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          required
+                        />
                       </div>
-                      <div className="workout-duration">
-                        {workout.duration} min
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="workout-content">
-                    <h3 className="workout-name">{workout.name}</h3>
-                    {workout.description && (
-                      <p className="workout-description">{workout.description}</p>
-                    )}
-                    
-                    {workout.exercises.length > 0 && (
-                      <div className="exercises-preview">
-                        <h4 className="exercises-title">Exercises:</h4>
-                        <div className="exercises-list">
-                          {workout.exercises.slice(0, 3).map((exercise, index) => (
-                            <span key={index} className="exercise-item">
-                              {exercise}
-                            </span>
+                      <div className="space-y-1.5">
+                        <label className="text-label text-slate-300">Type</label>
+                        <select
+                          name="type"
+                          value={formData.type}
+                          onChange={handleInputChange}
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                        >
+                          {workoutTypes.map(type => (
+                            <option key={type.value} value={type.value}>
+                              {type.icon} {type.label}
+                            </option>
                           ))}
-                          {workout.exercises.length > 3 && (
-                            <span className="exercise-more">
-                              +{workout.exercises.length - 3} more
-                            </span>
-                          )}
-                        </div>
+                        </select>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="workout-footer">
-                    <div className="workout-last-used">
-                      Last used: {workout.lastUsed}
                     </div>
-                    <div className="workout-actions">
-                      <button
-                        className="action-btn start-btn"
-                        onClick={() => startWorkout(workout)}
-                      >
-                        Start
-                      </button>
-                      <button
-                        className="action-btn delete-btn"
-                        onClick={() => deleteWorkout(workout.id)}
-                      >
-                        Delete
-                      </button>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-label text-slate-300">Duration (minutes) *</label>
+                        <input
+                          type="number"
+                          name="duration"
+                          value={formData.duration}
+                          onChange={handleInputChange}
+                          placeholder="45"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          min="5"
+                          max="180"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-label text-slate-300">Difficulty</label>
+                        <select
+                          name="difficulty"
+                          value={formData.difficulty}
+                          onChange={handleInputChange}
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                        >
+                          {difficultyLevels.map(level => (
+                            <option key={level.value} value={level.value}>
+                              {level.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-label text-slate-300">Description</label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        placeholder="Describe your workout..."
+                        rows="3"
+                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                      />
+                    </div>
+
+                    {/* Exercises */}
+                    <div className="space-y-2">
+                      <label className="text-label text-slate-300">Exercises</label>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.exercises.map((exercise, index) => (
+                          <Badge key={index} variant="intensity" className="gap-1.5 py-1 pl-3 pr-1.5">
+                            {exercise}
+                            <button
+                              type="button"
+                              onClick={() => removeExercise(index)}
+                              className="flex h-4 w-4 items-center justify-center rounded-full bg-white/10 text-[10px] hover:bg-white/20"
+                            >
+                              x
+                            </button>
+                          </Badge>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addExercise}
+                          className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed border-border-subtle px-3 text-xs text-slate-400 transition-colors hover:border-primary/40 hover:text-primary-bright"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-3 border-t border-border-subtle pt-5">
+                      <ActionButton
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setShowForm(false)}
+                      >
+                        Cancel
+                      </ActionButton>
+                      <ActionButton type="submit">
+                        Create Workout
+                      </ActionButton>
+                    </div>
+                  </form>
+                </GlassCard>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Workouts Grid */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-100">Your Workouts</h2>
+
+          {workouts.length === 0 ? (
+            <GlassCard>
+              <EmptyState
+                icon={<span className="text-2xl">💪</span>}
+                title="No workouts yet"
+                message="Create your first workout to start building your fitness routine."
+                action={{ label: 'Create Workout', onClick: () => setShowForm(true) }}
+              />
+            </GlassCard>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {workouts.map((workout, i) => (
+                <motion.div
+                  key={workout.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.35 }}
+                >
+                  <WorkoutCard
+                    workout={workout}
+                    getWorkoutTypeIcon={getWorkoutTypeIcon}
+                    getDifficultyBadgeVariant={getDifficultyBadgeVariant}
+                    startWorkout={startWorkout}
+                    deleteWorkout={deleteWorkout}
+                  />
+                </motion.div>
               ))}
             </div>
           )}
-        </section>
+        </div>
       </div>
-    </div>
+    </PageTransition>
+  );
+}
+
+/* ---------- Workout card with expandable exercises ---------- */
+function WorkoutCard({ workout, getWorkoutTypeIcon, getDifficultyBadgeVariant, startWorkout, deleteWorkout }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <GlassCard className="flex h-full flex-col group">
+      {/* Card Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xl">
+          {getWorkoutTypeIcon(workout.type)}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={getDifficultyBadgeVariant(workout.difficulty)}>
+            {workout.difficulty}
+          </Badge>
+          <span className="text-xs text-slate-400">{workout.duration} min</span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mt-4 flex-1">
+        <h3 className="font-semibold text-slate-100">{workout.name}</h3>
+        {workout.description && (
+          <p className="mt-1 text-xs leading-relaxed text-slate-400 line-clamp-2">{workout.description}</p>
+        )}
+
+        {/* Exercises - expandable */}
+        {workout.exercises.length > 0 && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setExpanded(prev => !prev)}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary-bright transition-colors hover:text-primary"
+            >
+              <Badge variant="intensity">{workout.exercises.length} exercises</Badge>
+              <svg
+                className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <AnimatePresence>
+              {expanded && (
+                <motion.ul
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-2 space-y-1 overflow-hidden"
+                >
+                  {workout.exercises.map((exercise, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                      <span className="h-1 w-1 rounded-full bg-primary" />
+                      {exercise}
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-4 flex items-center justify-between border-t border-border-subtle pt-3">
+        <span className="text-[11px] text-slate-500">Last: {workout.lastUsed}</span>
+        <div className="flex items-center gap-2">
+          <ActionButton
+            variant="primary"
+            onClick={() => startWorkout(workout)}
+            className="!px-3.5 !py-1.5 !text-xs"
+          >
+            Start
+          </ActionButton>
+          <button
+            onClick={() => deleteWorkout(workout.id)}
+            className="h-8 rounded-lg px-2.5 text-xs text-slate-400 opacity-0 transition-all hover:bg-error/10 hover:text-error group-hover:opacity-100"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </GlassCard>
   );
 }

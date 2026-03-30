@@ -1,150 +1,149 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius, fontSize, fontWeight } from '../theme/colors';
-import API_CONFIG from '../config';
-import apiClient from '../api/client';
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
+import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
+import { ActionButton } from '../components/ActionButton';
 
-export default function WelcomeScreen({ navigation }) {
-  const [connectionStatus, setConnectionStatus] = useState('checking');
-  const [serverInfo, setServerInfo] = useState(null);
+const { width, height } = Dimensions.get('window');
 
-  useEffect(() => {
-    checkBackendConnection();
-  }, []);
+function AnimatedOrb({ size, x, y, delay, color }) {
+  const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0);
 
-  const checkBackendConnection = async () => {
-    setConnectionStatus('checking');
-    try {
-      const response = await apiClient.get('/api/health');
-      setServerInfo(response.data);
-      setConnectionStatus('connected');
-    } catch (error) {
-      console.log('Connection error:', error.message);
-      setConnectionStatus('error');
-    }
-  };
+  React.useEffect(() => {
+    translateY.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(24, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      ),
+    );
+    translateX.value = withDelay(
+      delay + 500,
+      withRepeat(
+        withTiming(16, { duration: 5000, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      ),
+    );
+  }, [translateY, translateX, delay]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { translateX: translateX.value },
+    ],
+  }));
 
   return (
+    <Animated.View
+      entering={FadeIn.delay(delay).duration(1200)}
+      style={[
+        styles.orb,
+        { width: size, height: size, borderRadius: size / 2, left: x, top: y },
+        animStyle,
+      ]}
+    >
+      <LinearGradient
+        colors={[color, 'transparent']}
+        style={styles.orbGradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+    </Animated.View>
+  );
+}
+
+export default function WelcomeScreen({ navigation }) {
+  return (
     <LinearGradient
-      colors={colors.gradientBackground}
+      colors={[colors.deep, colors.surface1, colors.dark]}
       locations={[0, 0.5, 1]}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Decorative circles */}
-        <View style={styles.decorativeCircles}>
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            style={[styles.circle, styles.circle1]}
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Animated background orbs */}
+        <View style={styles.orbContainer} pointerEvents="none">
+          <AnimatedOrb
+            size={280}
+            x={width * 0.5}
+            y={-60}
+            delay={0}
+            color="rgba(139,92,246,0.12)"
           />
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            style={[styles.circle, styles.circle2]}
+          <AnimatedOrb
+            size={200}
+            x={-80}
+            y={height * 0.55}
+            delay={600}
+            color="rgba(236,72,153,0.10)"
+          />
+          <AnimatedOrb
+            size={140}
+            x={width * 0.6}
+            y={height * 0.7}
+            delay={1200}
+            color="rgba(168,85,247,0.08)"
           />
         </View>
 
-        {/* Logo Section */}
-        <View style={styles.logoSection}>
-          <View style={styles.logoWrapper}>
-            <Text style={styles.logoEmoji}>🏋️</Text>
-          </View>
-          <Text style={styles.brandName}>Exerly</Text>
-          <Text style={styles.brandTagline}>Your AI-Powered Fitness Coach</Text>
-        </View>
-
-        {/* Connection Status */}
-        <View style={styles.statusCard}>
-          <Text style={styles.statusTitle}>Backend Status</Text>
-          <Text style={styles.apiUrl}>{API_CONFIG.BASE_URL}</Text>
-          
-          {connectionStatus === 'checking' && (
-            <View style={styles.statusRow}>
-              <ActivityIndicator color={colors.primary} size="small" />
-              <Text style={styles.statusTextChecking}>Connecting...</Text>
-            </View>
-          )}
-          
-          {connectionStatus === 'connected' && (
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, styles.statusDotConnected]} />
-              <Text style={styles.statusTextConnected}>Connected</Text>
-            </View>
-          )}
-          
-          {connectionStatus === 'error' && (
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, styles.statusDotError]} />
-              <Text style={styles.statusTextError}>Connection Failed</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Features */}
-        <View style={styles.features}>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>💪</Text>
-            <Text style={styles.featureText}>Track Workouts</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>🍎</Text>
-            <Text style={styles.featureText}>Log Nutrition</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>😴</Text>
-            <Text style={styles.featureText}>Monitor Sleep</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>🤖</Text>
-            <Text style={styles.featureText}>AI Coach</Text>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={styles.primaryButtonWrapper}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('Login')}
+        <View style={styles.content}>
+          {/* Logo + Tagline */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(800).springify()}
+            style={styles.logoSection}
           >
-            <LinearGradient
-              colors={colors.gradientPrimary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.primaryButton}
-            >
-              <Text style={styles.primaryButtonText}>Login</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.secondaryButton}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('Signup')}
-          >
-            <Text style={styles.secondaryButtonText}>Create Account</Text>
-          </TouchableOpacity>
+            <View style={styles.logoWrap}>
+              <LinearGradient
+                colors={gradients.primary}
+                style={styles.logoGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.logoIcon}>E</Text>
+              </LinearGradient>
+            </View>
+            <Text style={styles.brand}>Exerly</Text>
+            <Text style={styles.tagline}>Train smarter. Live stronger.</Text>
+          </Animated.View>
 
-          {connectionStatus === 'error' && (
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={checkBackendConnection}
+          {/* Spacer */}
+          <View style={styles.spacer} />
+
+          {/* CTA Buttons */}
+          <Animated.View
+            entering={FadeInUp.delay(500).duration(700).springify()}
+            style={styles.cta}
+          >
+            <ActionButton
+              variant="primary"
+              onPress={() => navigation.navigate('Signup')}
+              style={styles.ctaButton}
             >
-              <Text style={styles.retryButtonText}>🔄 Retry Connection</Text>
-            </TouchableOpacity>
-          )}
+              Get Started
+            </ActionButton>
+            <ActionButton
+              variant="ghost"
+              onPress={() => navigation.navigate('Login')}
+              style={styles.ctaButton}
+            >
+              Log In
+            </ActionButton>
+          </Animated.View>
         </View>
-      </ScrollView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
@@ -153,184 +152,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-    paddingTop: 80,
-    paddingBottom: 40,
+  safe: {
+    flex: 1,
   },
-  decorativeCircles: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  orbContainer: {
+    ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
-  circle: {
+  orb: {
     position: 'absolute',
+    overflow: 'hidden',
+  },
+  orbGradient: {
+    flex: 1,
     borderRadius: 9999,
-    opacity: 0.15,
   },
-  circle1: {
-    width: 300,
-    height: 300,
-    top: -150,
-    right: -150,
-  },
-  circle2: {
-    width: 200,
-    height: 200,
-    bottom: -100,
-    left: -100,
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginTop: spacing['3xl'],
   },
-  logoWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 25,
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+  logoWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 28,
+    elevation: 12,
+  },
+  logoGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
   },
-  logoEmoji: {
-    fontSize: 50,
-  },
-  brandName: {
-    fontSize: 48,
+  logoIcon: {
+    fontSize: 42,
     fontWeight: fontWeight.extrabold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    color: '#fff',
+    letterSpacing: -2,
   },
-  brandTagline: {
-    fontSize: fontSize.lg,
-    color: colors.textSecondary,
-    fontWeight: fontWeight.medium,
-    textAlign: 'center',
-  },
-  statusCard: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-  },
-  statusTitle: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  apiUrl: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: 'monospace',
-    marginBottom: spacing.sm,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: spacing.sm,
-  },
-  statusDotConnected: {
-    backgroundColor: colors.success,
-  },
-  statusDotError: {
-    backgroundColor: colors.error,
-  },
-  statusTextChecking: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginLeft: spacing.sm,
-  },
-  statusTextConnected: {
-    color: colors.success,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-  statusTextError: {
-    color: colors.error,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-  features: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-    gap: spacing.sm,
-  },
-  featureItem: {
-    width: '48%',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  featureIcon: {
-    fontSize: 32,
-    marginBottom: spacing.xs,
-  },
-  featureText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: fontWeight.medium,
-  },
-  buttonContainer: {
-    gap: spacing.md,
-  },
-  primaryButtonWrapper: {
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  primaryButton: {
-    paddingVertical: 18,
-    alignItems: 'center',
-    borderRadius: borderRadius.lg,
-  },
-  primaryButtonText: {
+  brand: {
+    fontSize: fontSize.display,
+    fontWeight: fontWeight.extrabold,
     color: colors.textPrimary,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    letterSpacing: -1.5,
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 18,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    alignItems: 'center',
+  tagline: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    letterSpacing: 0.3,
   },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+  spacer: {
+    flex: 1,
   },
-  retryButton: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+  cta: {
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
   },
-  retryButtonText: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
+  ctaButton: {
+    minHeight: 52,
   },
 });
-

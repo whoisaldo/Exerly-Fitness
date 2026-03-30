@@ -26,7 +26,7 @@ function AuthStack() {
     <Stack.Navigator 
       screenOptions={{ 
         headerShown: false,
-        contentStyle: { backgroundColor: colors.darkBg },
+        contentStyle: { backgroundColor: colors.deep },
         animation: 'slide_from_right',
       }}
     >
@@ -43,7 +43,7 @@ function AppStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.darkBg },
+        contentStyle: { backgroundColor: colors.deep },
         animation: 'slide_from_right',
       }}
     >
@@ -61,7 +61,7 @@ function Navigation() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.darkBg }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.deep }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );

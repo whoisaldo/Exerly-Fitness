@@ -1,96 +1,102 @@
-// Exerly Fitness - Theme Colors
-// Matches the web app's purple and dark theme exactly
+/**
+ * Exerly Fitness — Mobile Design Tokens
+ *
+ * All color values match the locked brand scheme.
+ * Web equivalent: frontend/src/theme/colors.ts
+ */
 
 export const colors = {
-  // Primary Purple Palette
+  // Brand
   primary: '#8b5cf6',
-  primaryDark: '#7c3aed',
+  primaryBright: '#a78bfa',
+  primaryGlow: 'rgba(139,92,246,0.15)',
   secondary: '#a855f7',
   accent: '#ec4899',
-  
-  // Background Colors
-  darkBg: '#1e1b4b',
-  darkerBg: '#312e81',
-  deepPurple: '#4338ca',
-  
-  // Card Styles
-  cardBg: 'rgba(139, 92, 246, 0.08)',
-  cardBgSolid: '#2d2a5e', // Solid fallback for RN
-  cardBorder: 'rgba(139, 92, 246, 0.12)',
-  cardBorderSolid: '#4c4785',
-  
-  // Glass Effect (approximation for RN)
-  glassBg: 'rgba(255, 255, 255, 0.05)',
-  glassBorder: 'rgba(255, 255, 255, 0.1)',
-  
-  // Text Colors
-  textPrimary: '#ffffff',
-  textSecondary: '#c4b5fd',
-  textMuted: '#a78bfa',
-  
-  // Status Colors
+  accentGlow: 'rgba(236,72,153,0.15)',
+
+  // Backgrounds & surfaces
+  deep: '#080810',
+  surface1: '#0f0f1a',
+  surface2: '#161625',
+  surface3: '#1e1e32',
+  dark: '#1e1b4b',
+
+  // Borders
+  borderSubtle: 'rgba(255,255,255,0.06)',
+  borderAccent: 'rgba(139,92,246,0.4)',
+
+  // Status
   success: '#10b981',
-  successLight: 'rgba(16, 185, 129, 0.1)',
-  error: '#ef4444',
-  errorLight: 'rgba(239, 68, 68, 0.1)',
+  successGlow: 'rgba(16,185,129,0.15)',
   warning: '#f59e0b',
-  warningLight: 'rgba(245, 158, 11, 0.1)',
-  
-  // Activity-specific colors (matching web)
-  workout: '#00b894',
-  workoutSecondary: '#00cec9',
-  burned: '#e17055',
-  burnedSecondary: '#d63031',
-  consumed: '#fdcb6e',
-  sleep: '#6c5ce7',
-  sleepSecondary: '#a29bfe',
-  
-  // Gradients (as array for LinearGradient)
-  gradientPrimary: ['#8b5cf6', '#a855f7'],
-  gradientSecondary: ['#ec4899', '#f59e0b'],
-  gradientBackground: ['#1e1b4b', '#312e81', '#4338ca'],
-  gradientWorkout: ['#00b894', '#00cec9'],
-  gradientBurned: ['#e17055', '#d63031'],
-  gradientSleep: ['#6c5ce7', '#a29bfe'],
-  
-  // Shadows
-  shadowColor: 'rgba(139, 92, 246, 0.3)',
+  warningGlow: 'rgba(245,158,11,0.15)',
+  error: '#ef4444',
+  errorGlow: 'rgba(239,68,68,0.15)',
+
+  // Text
+  textPrimary: '#f8fafc',
+  textSecondary: '#94a3b8',
+  textMuted: '#475569',
+
+  // Glassmorphism (RN approximation)
+  glassBg: 'rgba(255,255,255,0.03)',
+  glassElevated: 'rgba(255,255,255,0.06)',
+  glassBorder: 'rgba(255,255,255,0.06)',
+  glassBorderElevated: 'rgba(139,92,246,0.2)',
+
+  // Activity-specific (charts, category badges)
+  workout: '#10b981',
+  nutrition: '#f59e0b',
+  sleep: '#8b5cf6',
+  goals: '#ec4899',
 };
 
-// Spacing scale
+// Gradient arrays for expo-linear-gradient
+export const gradients = {
+  primary: ['#8b5cf6', '#a855f7'],
+  accent: ['#ec4899', '#a855f7'],
+  surface: ['#0f0f1a', '#080810'],
+  page: ['#080810', '#0f0f1a', '#1e1b4b'],
+  card: ['rgba(139,92,246,0.08)', 'rgba(236,72,153,0.04)'],
+};
+
+// Spacing scale (points)
 export const spacing = {
   xs: 4,
   sm: 8,
   md: 16,
   lg: 24,
   xl: 32,
-  xxl: 48,
+  '2xl': 48,
+  '3xl': 64,
 };
 
 // Border radius scale
-export const borderRadius = {
+export const radii = {
   sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
-  xxl: 24,
+  '2xl': 24,
   full: 9999,
 };
 
-// Font sizes
+// Type scale
 export const fontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  display: 40,
+  xs: 11,
+  sm: 13,
+  base: 15,
+  md: 17,
+  lg: 20,
+  xl: 24,
+  '2xl': 30,
+  '3xl': 36,
+  display: 48,
 };
 
-// Font weights
+// Font weights (string for RN StyleSheet)
 export const fontWeight = {
+  light: '300',
   normal: '400',
   medium: '500',
   semibold: '600',
@@ -100,9 +106,9 @@ export const fontWeight = {
 
 export default {
   colors,
+  gradients,
   spacing,
-  borderRadius,
+  radii,
   fontSize,
   fontWeight,
 };
-

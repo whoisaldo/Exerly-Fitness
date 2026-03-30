@@ -3,46 +3,66 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
+  Pressable,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius, fontSize, fontWeight } from '../theme/colors';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+import Slider from '@react-native-community/slider';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
+import { GlassCard } from '../components/GlassCard';
+import { ActionButton } from '../components/ActionButton';
 import apiClient from '../api/client';
 
 const QUALITY_OPTIONS = [
-  { id: 'poor', label: 'Poor', emoji: '😫', color: colors.error },
-  { id: 'fair', label: 'Fair', emoji: '😐', color: colors.warning },
-  { id: 'good', label: 'Good', emoji: '😊', color: colors.success },
-  { id: 'excellent', label: 'Excellent', emoji: '😴', color: colors.primary },
+  { id: 'poor', emoji: '\u{1F62B}', label: 'Poor' },
+  { id: 'fair', emoji: '\u{1F610}', label: 'Fair' },
+  { id: 'good', emoji: '\u{1F60A}', label: 'Good' },
+  { id: 'great', emoji: '\u{1F60D}', label: 'Great' },
+  { id: 'excellent', emoji: '\u{1F634}', label: 'Perfect' },
 ];
 
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 export default function LogSleepScreen({ navigation }) {
-  const [hours, setHours] = useState('');
+  const [hours, setHours] = useState(7);
   const [quality, setQuality] = useState('good');
-  const [bedtime, setBedtime] = useState('');
-  const [wakeTime, setWakeTime] = useState('');
+  const [bedtime, setBedtime] = useState(new Date(2026, 0, 1, 22, 30));
+  const [wakeTime, setWakeTime] = useState(new Date(2026, 0, 1, 6, 30));
+  const [showBedPicker, setShowBedPicker] = useState(false);
+  const [showWakePicker, setShowWakePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!hours || !quality) {
-      Alert.alert('Missing Fields', 'Please enter hours and select quality');
+    if (hours <= 0) {
+      Alert.alert('Invalid', 'Please set hours slept');
       return;
     }
 
     setLoading(true);
     try {
       await apiClient.post('/api/sleep', {
-        hours: parseFloat(hours),
+        hours: parseFloat(hours.toFixed(1)),
         quality,
-        bedtime: bedtime || null,
-        wakeTime: wakeTime || null,
+        bedtime: formatTime(bedtime),
+        wakeTime: formatTime(wakeTime),
       });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       Alert.alert('Success!', 'Sleep logged successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to log sleep');
@@ -51,204 +71,344 @@ export default function LogSleepScreen({ navigation }) {
     }
   };
 
-  const selectedQuality = QUALITY_OPTIONS.find(q => q.id === quality);
-
   return (
     <LinearGradient
-      colors={colors.gradientBackground}
+      colors={[colors.deep, colors.surface1, colors.dark]}
       locations={[0, 0.5, 1]}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Log Sleep 😴</Text>
-        </View>
-
-        <View style={styles.card}>
-          {/* Hours Slept */}
-          <Text style={styles.label}>Hours Slept *</Text>
-          <View style={styles.hoursContainer}>
-            <View style={styles.hoursInputWrapper}>
-              <TextInput
-                style={styles.hoursInput}
-                placeholder="7.5"
-                placeholderTextColor={colors.textMuted}
-                value={hours}
-                onChangeText={setHours}
-                keyboardType="decimal-pad"
-              />
-              <Text style={styles.hoursLabel}>hours</Text>
-            </View>
-          </View>
-
-          {/* Quick Hour Buttons */}
-          <View style={styles.quickHours}>
-            {[6, 7, 8, 9].map((h) => (
-              <TouchableOpacity
-                key={h}
-                style={[styles.quickHourButton, hours === h.toString() && styles.quickHourActive]}
-                onPress={() => setHours(h.toString())}
-              >
-                <Text style={[styles.quickHourText, hours === h.toString() && styles.quickHourTextActive]}>{h}h</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Sleep Quality */}
-          <Text style={styles.label}>Sleep Quality *</Text>
-          <View style={styles.qualityGrid}>
-            {QUALITY_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.qualityButton,
-                  quality === option.id && { backgroundColor: `${option.color}20`, borderColor: option.color },
-                ]}
-                onPress={() => setQuality(option.id)}
-              >
-                <Text style={styles.qualityEmoji}>{option.emoji}</Text>
-                <Text style={[
-                  styles.qualityLabel,
-                  quality === option.id && { color: option.color },
-                ]}>{option.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Bedtime & Wake Time (Optional) */}
-          <View style={styles.timeRow}>
-            <View style={styles.timeInput}>
-              <Text style={styles.label}>Bedtime</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="10:30 PM"
-                  placeholderTextColor={colors.textMuted}
-                  value={bedtime}
-                  onChangeText={setBedtime}
-                />
-              </View>
-            </View>
-            <View style={styles.timeInput}>
-              <Text style={styles.label}>Wake Time</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="6:30 AM"
-                  placeholderTextColor={colors.textMuted}
-                  value={wakeTime}
-                  onChangeText={setWakeTime}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Sleep Summary */}
-          {hours && (
-            <View style={styles.summary}>
-              <Text style={styles.summaryText}>
-                {parseFloat(hours) >= 7 ? '✨ Great!' : parseFloat(hours) >= 6 ? '👍 Good' : '⚠️ Could be better'} 
-                {' '}You slept {hours} hours with {selectedQuality?.label.toLowerCase()} quality
-              </Text>
-            </View>
-          )}
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.submitButtonWrapper}
-            onPress={handleSubmit}
-            disabled={loading}
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <LinearGradient
-              colors={colors.gradientSleep}
-              style={styles.submitButton}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>Log Sleep</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            {/* Header */}
+            <Animated.View entering={FadeInUp.delay(50).duration(500)}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={styles.backBtn}
+                hitSlop={12}
+              >
+                <Text style={styles.backText}>{'\u2190'} Back</Text>
+              </Pressable>
+              <Text style={styles.title}>Log Sleep</Text>
+            </Animated.View>
+
+            {/* Form */}
+            <Animated.View entering={FadeInUp.delay(150).duration(600)}>
+              <GlassCard elevated style={styles.card}>
+                <BlurView intensity={15} tint="dark" style={styles.blur}>
+                  <View style={styles.cardInner}>
+                    {/* Hours Slider */}
+                    <Text style={styles.label}>Hours Slept</Text>
+                    <View style={styles.hoursDisplay}>
+                      <Text style={styles.hoursValue}>
+                        {hours.toFixed(1)}
+                      </Text>
+                      <Text style={styles.hoursUnit}>hours</Text>
+                    </View>
+                    <Slider
+                      style={styles.slider}
+                      minimumValue={0}
+                      maximumValue={12}
+                      step={0.5}
+                      value={hours}
+                      onValueChange={(val) => {
+                        setHours(val);
+                        if (val % 1 === 0) Haptics.selectionAsync();
+                      }}
+                      minimumTrackTintColor={colors.sleep}
+                      maximumTrackTintColor={colors.surface3}
+                      thumbTintColor={colors.primaryBright}
+                    />
+                    <View style={styles.sliderLabels}>
+                      <Text style={styles.sliderMinMax}>0h</Text>
+                      <Text style={styles.sliderMinMax}>12h</Text>
+                    </View>
+
+                    {/* Quality — emoji scale */}
+                    <Text style={styles.label}>Sleep Quality</Text>
+                    <View style={styles.qualityRow}>
+                      {QUALITY_OPTIONS.map((opt) => {
+                        const active = quality === opt.id;
+                        return (
+                          <Pressable
+                            key={opt.id}
+                            onPress={() => {
+                              setQuality(opt.id);
+                              Haptics.selectionAsync();
+                            }}
+                            style={[
+                              styles.qualityBtn,
+                              active && styles.qualityBtnActive,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.qualityEmoji,
+                                active && styles.qualityEmojiActive,
+                              ]}
+                            >
+                              {opt.emoji}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.qualityLabel,
+                                active && styles.qualityLabelActive,
+                              ]}
+                            >
+                              {opt.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {/* Bedtime & Wake Time */}
+                    <Text style={styles.label}>Schedule</Text>
+                    <View style={styles.timeRow}>
+                      <Pressable
+                        onPress={() => setShowBedPicker(true)}
+                        style={styles.timeBtn}
+                      >
+                        <Text style={styles.timeBtnLabel}>Bedtime</Text>
+                        <Text style={styles.timeBtnValue}>
+                          {formatTime(bedtime)}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setShowWakePicker(true)}
+                        style={styles.timeBtn}
+                      >
+                        <Text style={styles.timeBtnLabel}>Wake Up</Text>
+                        <Text style={styles.timeBtnValue}>
+                          {formatTime(wakeTime)}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {showBedPicker && (
+                      <DateTimePicker
+                        value={bedtime}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(e, date) => {
+                          setShowBedPicker(Platform.OS === 'ios');
+                          if (date) setBedtime(date);
+                        }}
+                        themeVariant="dark"
+                      />
+                    )}
+                    {showWakePicker && (
+                      <DateTimePicker
+                        value={wakeTime}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(e, date) => {
+                          setShowWakePicker(Platform.OS === 'ios');
+                          if (date) setWakeTime(date);
+                        }}
+                        themeVariant="dark"
+                      />
+                    )}
+
+                    {/* Summary */}
+                    {hours > 0 && (
+                      <View style={styles.summary}>
+                        <Text style={styles.summaryText}>
+                          {hours >= 8
+                            ? 'Great rest!'
+                            : hours >= 6
+                            ? 'Solid sleep'
+                            : 'Try to get more rest'}{' '}
+                          {'\u2014'} {hours.toFixed(1)}h,{' '}
+                          {QUALITY_OPTIONS.find((q) => q.id === quality)?.label.toLowerCase()}{' '}
+                          quality
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Submit */}
+                    <ActionButton
+                      variant="primary"
+                      onPress={handleSubmit}
+                      loading={loading}
+                      style={styles.submitBtn}
+                    >
+                      Log Sleep
+                    </ActionButton>
+                  </View>
+                </BlurView>
+              </GlassCard>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: spacing.lg, paddingTop: 60 },
-  header: { marginBottom: spacing.lg },
-  backButton: { color: colors.primary, fontSize: fontSize.md, marginBottom: spacing.sm },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  container: {
+    flex: 1,
+  },
+  safe: {
+    flex: 1,
+  },
+  kav: {
+    flex: 1,
+  },
+  scroll: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing['2xl'],
+  },
+  backBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  backText: {
+    color: colors.primaryBright,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+  },
+  title: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
   card: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    padding: 0,
+    overflow: 'hidden',
+  },
+  blur: {
+    overflow: 'hidden',
+    borderRadius: radii.lg,
+  },
+  cardInner: {
     padding: spacing.lg,
   },
-  label: { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.sm, marginTop: spacing.md },
-  hoursContainer: { alignItems: 'center', paddingVertical: spacing.lg },
-  hoursInputWrapper: { flexDirection: 'row', alignItems: 'baseline' },
-  hoursInput: {
-    fontSize: 48,
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  hoursDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  hoursValue: {
+    fontSize: fontSize.display,
     fontWeight: fontWeight.bold,
-    color: colors.primary,
-    textAlign: 'center',
-    minWidth: 100,
+    color: colors.sleep,
   },
-  hoursLabel: { fontSize: fontSize.xl, color: colors.textMuted, marginLeft: spacing.sm },
-  quickHours: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  quickHourButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+  hoursUnit: {
+    fontSize: fontSize.lg,
+    color: colors.textMuted,
   },
-  quickHourActive: { backgroundColor: 'rgba(108, 92, 231, 0.3)', borderColor: colors.sleep },
-  quickHourText: { color: colors.textMuted, fontSize: fontSize.sm },
-  quickHourTextActive: { color: colors.sleep },
-  qualityGrid: { flexDirection: 'row', gap: spacing.sm },
-  qualityButton: {
+  slider: {
+    width: '100%',
+    height: 44,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sliderMinMax: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  qualityBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
     alignItems: 'center',
-  },
-  qualityEmoji: { fontSize: 28, marginBottom: spacing.xs },
-  qualityLabel: { color: colors.textMuted, fontSize: fontSize.xs },
-  timeRow: { flexDirection: 'row', gap: spacing.md },
-  timeInput: { flex: 1 },
-  inputGroup: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
+    borderColor: colors.borderSubtle,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  input: { color: colors.textPrimary, fontSize: fontSize.md, paddingVertical: spacing.md },
+  qualityBtnActive: {
+    backgroundColor: 'rgba(139,92,246,0.15)',
+    borderColor: colors.sleep,
+  },
+  qualityEmoji: {
+    fontSize: 22,
+    opacity: 0.5,
+  },
+  qualityEmojiActive: {
+    opacity: 1,
+  },
+  qualityLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  qualityLabelActive: {
+    color: colors.sleep,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  timeBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  timeBtnLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  timeBtnValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.textPrimary,
+  },
   summary: {
-    backgroundColor: 'rgba(108, 92, 231, 0.2)',
-    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    borderRadius: radii.md,
     padding: spacing.md,
     marginTop: spacing.lg,
   },
-  summaryText: { color: colors.textSecondary, fontSize: fontSize.sm, textAlign: 'center' },
-  submitButtonWrapper: { marginTop: spacing.xl, borderRadius: borderRadius.lg, overflow: 'hidden' },
-  submitButton: { paddingVertical: spacing.md, alignItems: 'center' },
-  submitButtonText: { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
+  summaryText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  submitBtn: {
+    marginTop: spacing.xl,
+    minHeight: 52,
+  },
 });
-

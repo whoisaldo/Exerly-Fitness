@@ -1,15 +1,82 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  height: 100vh;
-  background: linear-gradient(#090907, #b300fe);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #8b5cf6;
+    --color-primary-bright: #a78bfa;
+    --color-primary-glow: rgba(139, 92, 246, 0.15);
+    --color-secondary: #a855f7;
+    --color-accent: #ec4899;
+    --color-accent-glow: rgba(236, 72, 153, 0.15);
+    --color-deep: #080810;
+    --color-surface-1: #0f0f1a;
+    --color-surface-2: #161625;
+    --color-surface-3: #1e1e32;
+    --color-dark: #1e1b4b;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #475569;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply font-sans antialiased min-h-screen bg-deep text-slate-50 overflow-x-hidden;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Custom scrollbar — Webkit */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.25);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.45);
+  }
+
+  /* Custom scrollbar — Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(139, 92, 246, 0.3);
+    color: #f8fafc;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer components {
+  /* Glassmorphism cards */
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+  }
+  .glass-elevated {
+    @apply bg-white/[0.06] backdrop-blur-xl border border-violet-500/20 rounded-2xl shadow-glow;
+  }
+
+  /* Label typography preset */
+  .label {
+    @apply text-label uppercase tracking-widest text-slate-400;
+  }
+
+  /* Stat number typography */
+  .stat-value {
+    @apply text-stat tabular-nums font-bold text-slate-50;
+  }
 }

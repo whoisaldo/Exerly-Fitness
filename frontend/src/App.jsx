@@ -1,5 +1,5 @@
-// frontend/src/App.js
-import React from 'react';
+// frontend/src/App.jsx
+import React, { lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import LoginSignup from './components/LoginSignup/LoginSignup';
@@ -11,10 +11,8 @@ import Goals       from './components/Dashboard/Goals';
 import Sleep       from './components/Dashboard/Sleep';
 import Profile     from './components/Dashboard/Profile';
 import AICoach     from './components/Dashboard/AICoach';
-import NewAICoach  from './components/AICoach/AICoach';
 import Onboarding  from './components/Onboarding/Onboarding';
 import Credits     from './components/Credits';
-import Admin       from './components/Admin/Admin';
 import AIErrorManager from './components/Admin/AIErrorManager';
 import LandingPage from './components/LandingPage';
 import MaintenanceNotice from './components/MaintenanceNotice';
@@ -22,6 +20,15 @@ import MaintenanceHistory from './components/MaintenanceHistory';
 import StatusCheck from './components/StatusCheck';
 import AdminStatusChecker from './components/AdminStatusChecker';
 import MaintenanceIcon from './components/MaintenanceIcon';
+
+const NewAICoach = lazy(() => import('./components/AICoach/AICoach'));
+const Admin = lazy(() => import('./components/Admin/Admin'));
+
+const LazyFallback = () => (
+  <div className="min-h-screen bg-deep flex items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -31,8 +38,8 @@ function decodeJWT(token) {
     return JSON.parse(decodeURIComponent(
       atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
     ));
-  } catch { 
-    return null; 
+  } catch {
+    return null;
   }
 }
 
@@ -45,8 +52,8 @@ function AdminRoute({ children }) {
   if (!payload?.email) return <Navigate to="/" replace />;
 
   const email = payload.email.toLowerCase();
-  const isAdmin = payload.is_admin || 
-    (process.env.REACT_APP_ADMIN_EMAILS || '')
+  const isAdmin = payload.is_admin ||
+    (import.meta.env.VITE_ADMIN_EMAILS || '')
       .toLowerCase()
       .split(',')
       .map(s => s.trim())
@@ -62,10 +69,10 @@ function AdminRoute({ children }) {
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/" replace />;
-  
+
   const payload = decodeJWT(token);
   if (!payload?.email) return <Navigate to="/" replace />;
-  
+
   return children;
 }
 
@@ -82,7 +89,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="app">
+      <>
         <MaintenanceIcon />
         <Routes>
           {/* Public Routes */}
@@ -91,7 +98,7 @@ export default function App() {
           <Route path="/credits" element={<Credits />} />
           <Route path="/maintenance-history" element={<MaintenanceHistory />} />
           <Route path="/status-check" element={<StatusCheck />} />
-          
+
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -100,18 +107,30 @@ export default function App() {
           <Route path="/dashboard/food" element={<ProtectedRoute><Food /></ProtectedRoute>} />
           <Route path="/dashboard/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
           <Route path="/dashboard/sleep" element={<ProtectedRoute><Sleep /></ProtectedRoute>} />
-          <Route path="/dashboard/ai-coach" element={<ProtectedRoute><NewAICoach /></ProtectedRoute>} />
+          <Route path="/dashboard/ai-coach" element={
+            <ProtectedRoute>
+              <Suspense fallback={<LazyFallback />}>
+                <NewAICoach />
+              </Suspense>
+            </ProtectedRoute>
+          } />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          
+
           {/* Admin Routes */}
-          <Route path="/dashboard/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/dashboard/admin" element={
+            <AdminRoute>
+              <Suspense fallback={<LazyFallback />}>
+                <Admin />
+              </Suspense>
+            </AdminRoute>
+          } />
           <Route path="/dashboard/admin/status" element={<AdminRoute><AdminStatusChecker /></AdminRoute>} />
           <Route path="/dashboard/admin/ai-errors" element={<AdminRoute><AIErrorManager /></AdminRoute>} />
-          
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
+      </>
     </Router>
   );
 }

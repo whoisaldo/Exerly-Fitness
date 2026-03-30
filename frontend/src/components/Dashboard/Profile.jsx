@@ -1,7 +1,8 @@
 // frontend/src/components/Dashboard/Profile.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Profile.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlassCard, PageTransition, ActionButton, Toggle, StatCard, ProgressRing } from '../ui';
 import API_CONFIG from '../../config';
 
 const BASE_URL = API_CONFIG.BASE_URL;
@@ -25,7 +26,7 @@ export default function Profile() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [useMetric, setUseMetric] = useState(false); // false = American units, true = Metric
-  
+
   // Local display state for inputs
   const [displayValues, setDisplayValues] = useState({
     height: '',
@@ -37,7 +38,7 @@ export default function Profile() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
-    
+
     fetch(`${BASE_URL}/api/profile`, {
       headers: { Authorization: 'Bearer ' + token },
     })
@@ -63,7 +64,7 @@ export default function Profile() {
             email_notifications: data.email_notifications !== false,
             privacy_settings: data.privacy_settings || 'public'
           }));
-          
+
           // Set display values
           if (data.height_cm) {
             const height = parseFloat(data.height_cm);
@@ -72,7 +73,7 @@ export default function Profile() {
               setDisplayValues(prev => ({ ...prev, height: displayHeight.toString() }));
             }
           }
-          
+
           if (data.weight_kg) {
             const weight = parseFloat(data.weight_kg);
             if (!isNaN(weight) && weight > 0) {
@@ -80,7 +81,7 @@ export default function Profile() {
               setDisplayValues(prev => ({ ...prev, weight: displayWeight.toString() }));
             }
           }
-          
+
           if (data.target_weight) {
             const targetWeight = parseFloat(data.target_weight);
             if (!isNaN(targetWeight) && targetWeight > 0) {
@@ -105,7 +106,7 @@ export default function Profile() {
         setDisplayValues(prev => ({ ...prev, height: displayHeight.toString() }));
       }
     }
-    
+
     if (form.weight_kg) {
       const weight = parseFloat(form.weight_kg);
       if (!isNaN(weight) && weight > 0) {
@@ -113,7 +114,7 @@ export default function Profile() {
         setDisplayValues(prev => ({ ...prev, weight: displayWeight.toString() }));
       }
     }
-    
+
     if (form.target_weight) {
       const targetWeight = parseFloat(form.target_weight);
       if (!isNaN(targetWeight) && targetWeight > 0) {
@@ -192,10 +193,10 @@ export default function Profile() {
       setForm(prev => ({ ...prev, height_cm: '' }));
       return;
     }
-    
+
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) return;
-    
+
     // Convert to cm for storage
     const heightCm = useMetric ? numValue : inchesToCm(numValue);
     setForm(prev => ({ ...prev, height_cm: heightCm.toString() }));
@@ -208,10 +209,10 @@ export default function Profile() {
       setForm(prev => ({ ...prev, weight_kg: '' }));
       return;
     }
-    
+
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) return;
-    
+
     // Convert to kg for storage
     const weightKg = useMetric ? numValue : lbsToKg(numValue);
     setForm(prev => ({ ...prev, weight_kg: weightKg.toString() }));
@@ -224,10 +225,10 @@ export default function Profile() {
       setForm(prev => ({ ...prev, target_weight: '' }));
       return;
     }
-    
+
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) return;
-    
+
     // Convert to kg for storage
     const targetWeightKg = useMetric ? numValue : lbsToKg(numValue);
     setForm(prev => ({ ...prev, target_weight: targetWeightKg.toString() }));
@@ -236,12 +237,12 @@ export default function Profile() {
   // Handle regular form changes for non-converting fields
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    
+
     // Skip the converting fields as they have their own handlers
     if (['height_cm', 'weight_kg', 'target_weight'].includes(name)) {
       return;
     }
-    
+
     if (type === 'checkbox') {
       setForm(prev => ({ ...prev, [name]: checked }));
     } else {
@@ -258,11 +259,11 @@ export default function Profile() {
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) return navigate('/');
-    
+
     setSaving(true);
     setError('');
     setSuccess('');
-    
+
     try {
       // Validate required fields
       if (!form.age || !form.height_cm || !form.weight_kg) {
@@ -279,7 +280,7 @@ export default function Profile() {
         },
         body: JSON.stringify(form),
       });
-      
+
       if (res.ok) {
         const result = await res.json();
         setSuccess('Profile updated successfully!');
@@ -299,9 +300,9 @@ export default function Profile() {
     if (!form.height_cm || !form.weight_kg) return null;
     const height = parseFloat(form.height_cm);
     const weight = parseFloat(form.weight_kg);
-    
+
     if (isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) return null;
-    
+
     const heightM = height / 100;
     const bmi = weight / (heightM * heightM);
     return bmi.toFixed(1);
@@ -327,332 +328,373 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="profile-page">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading profile...</p>
+      <PageTransition>
+        <div className="min-h-screen bg-deep flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-white/60 text-label">Loading profile...</p>
+          </div>
         </div>
-      </div>
+      </PageTransition>
     );
   }
 
   const bmi = calculateBMI();
   const bmiInfo = bmi ? getBMICategory(bmi) : null;
 
+  const bmiColorMap = {
+    success: 'text-success',
+    warning: 'text-warning',
+    error: 'text-error',
+  };
+
+  const bmiRingValue = bmi ? Math.min(Math.max(((parseFloat(bmi) - 10) / 30) * 100, 0), 100) : 0;
+
   return (
-    <div className="profile-page">
-      {/* Header */}
-      <div className="profile-header">
-        <button className="back-btn" onClick={() => navigate('/dashboard')}>
-          Back to Dashboard
-        </button>
-        <div className="header-content">
-          <h1 className="profile-title">Your Profile</h1>
-          <p className="profile-subtitle">Manage your personal information and fitness goals</p>
-        </div>
-      </div>
+    <PageTransition>
+      <div className="min-h-screen bg-deep px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 h-11 px-3 -ml-3 rounded-xl"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </button>
 
-      {/* Success/Error Messages */}
-      {success && (
-        <div className="message-banner success">
-          <span>{success}</span>
-        </div>
-      )}
-      {error && (
-        <div className="message-banner error">
-          <span>{error}</span>
-          <button onClick={() => setError('')}>×</button>
-        </div>
-      )}
-
-      <div className="profile-content">
-        {/* Unit Toggle */}
-        <div className="unit-toggle-section">
-          <div className="unit-toggle">
-            <span className={`unit-option ${!useMetric ? 'active' : ''}`}>
-              Imperial (lbs, inches)
-            </span>
-            <button 
-              className="toggle-switch"
-              onClick={handleUnitToggle}
-              aria-label="Toggle units"
-            >
-              <span className={`toggle-slider ${useMetric ? 'metric' : 'imperial'}`}></span>
-            </button>
-            <span className={`unit-option ${useMetric ? 'active' : ''}`}>
-              Metric (kg, cm)
-            </span>
-          </div>
+          <h1 className="text-display text-white mb-1">Your Profile</h1>
+          <p className="text-white/50">Manage your personal information and fitness goals</p>
         </div>
 
-        {/* Profile Overview Card */}
-        <div className="profile-overview">
-          <div className="overview-header">
-            <h2>Profile Overview</h2>
-            <div className="overview-avatar">
-              <span>{form.name ? form.name.charAt(0).toUpperCase() : 'U'}</span>
-            </div>
-          </div>
-          
-          {bmi && (
-            <div className="bmi-section">
-              <div className="bmi-value">
-                <span className="bmi-number">{bmi}</span>
-                <span className="bmi-label">BMI</span>
+        {/* Success/Error Messages */}
+        <div className="max-w-6xl mx-auto">
+          <AnimatePresence>
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="mb-6 rounded-xl border border-success/20 bg-success/10 px-4 py-3 flex items-center justify-between"
+              >
+                <span className="text-success text-sm font-medium">{success}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="mb-6 rounded-xl border border-error/20 bg-error/10 px-4 py-3 flex items-center justify-between"
+              >
+                <span className="text-error text-sm font-medium">{error}</span>
+                <button onClick={() => setError('')} className="text-error/60 hover:text-error ml-3 h-6 w-6 flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Avatar & Overview */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Avatar Card */}
+            <GlassCard elevated className="flex flex-col items-center py-8 px-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow-primary mb-4">
+                <span className="text-display text-white">
+                  {form.name ? form.name.charAt(0).toUpperCase() : 'U'}
+                </span>
               </div>
-              <div className={`bmi-category ${bmiInfo.color}`}>
-                {bmiInfo.category}
+              <h2 className="text-lg font-semibold text-white mb-1">{form.name || 'User'}</h2>
+              <p className="text-white/40 text-sm capitalize">{form.goal?.replace('_', ' ') || 'Maintain Weight'}</p>
+
+              {/* Unit Toggle */}
+              <div className="mt-6 w-full border-t border-border-subtle pt-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-label text-white/50">
+                    {useMetric ? 'Metric (kg, cm)' : 'Imperial (lbs, in)'}
+                  </span>
+                  <Toggle
+                    checked={useMetric}
+                    onChange={handleUnitToggle}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            </GlassCard>
 
-          <div className="overview-stats">
-            <div className="stat-item">
-              <span className="stat-value">{form.age || '--'}</span>
-              <span className="stat-label">Age</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value">
-                {getDisplayHeight() || '--'} {useMetric ? 'cm' : 'inches'}
-              </span>
-              <span className="stat-label">Height</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value">
-                {getDisplayWeight() || '--'} {useMetric ? 'kg' : 'lbs'}
-              </span>
-              <span className="stat-label">Weight</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Form */}
-        <form onSubmit={handleSubmit} className="profile-form-section">
-          <div className="section-header">
-            <h2>Personal Information</h2>
-            <p>Update your basic profile details</p>
-          </div>
-          
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">👤</span>
-                Age *
-              </label>
-              <input
-                key={`age-${useMetric}`}
-                name="age"
-                type="number"
-                placeholder="Enter your age"
-                value={form.age}
-                onChange={handleChange}
-                min="13"
-                max="120"
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">⚧</span>
-                Sex
-              </label>
-              <select 
-                name="sex" 
-                value={form.sex} 
-                onChange={handleChange}
-                className="form-select"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">📏</span>
-                Height ({useMetric ? 'cm' : 'inches'}) *
-              </label>
-              <input
-                key={`height-${useMetric}`}
-                name="height_cm"
-                type="number"
-                placeholder={`Enter height in ${useMetric ? 'cm' : 'inches'}`}
-                value={displayValues.height}
-                onChange={handleHeightChange}
-                onBlur={handleHeightBlur}
-                min={useMetric ? 100 : 40}
-                max={useMetric ? 250 : 100}
-                required
-                className="form-input"
-              />
-              <p className="form-help">
-                {useMetric ? 'Centimeters (100-250 cm)' : 'Inches (40-100 inches)'}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">⚖️</span>
-                Weight ({useMetric ? 'kg' : 'lbs'}) *
-              </label>
-              <input
-                key={`weight-${useMetric}`}
-                name="weight_kg"
-                type="number"
-                placeholder={`Enter weight in ${useMetric ? 'kg' : 'lbs'}`}
-                value={displayValues.weight}
-                onChange={handleWeightChange}
-                onBlur={handleWeightBlur}
-                min={useMetric ? 30 : 66}
-                max={useMetric ? 300 : 661}
-                required
-                className="form-input"
-              />
-              <p className="form-help">
-                {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
-              </p>
-            </div>
-          </div>
-
-          <div className="section-header">
-            <h2>Activity & Goals</h2>
-            <p>Set your fitness activity level and goals</p>
-          </div>
-
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🏃‍♂️</span>
-                Activity Level
-              </label>
-              <select
-                name="activity_level"
-                value={form.activity_level}
-                onChange={handleChange}
-                className="form-select"
-              >
-                <option value="sedentary">Sedentary</option>
-                <option value="light">Light</option>
-                <option value="moderate">Moderate</option>
-                <option value="active">Active</option>
-                <option value="very active">Very Active</option>
-              </select>
-              <p className="form-help">{getActivityLevelDescription(form.activity_level)}</p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🎯</span>
-                Fitness Goal
-              </label>
-              <select
-                name="goal"
-                value={form.goal}
-                onChange={handleChange}
-                className="form-select"
-              >
-                <option value="lose">Lose Weight</option>
-                <option value="maintain">Maintain Weight</option>
-                <option value="gain">Gain Weight</option>
-                <option value="build_muscle">Build Muscle</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🎯</span>
-                Target Weight ({useMetric ? 'kg' : 'lbs'})
-              </label>
-              <input
-                key={`target-weight-${useMetric}`}
-                name="target_weight"
-                type="number"
-                placeholder={`Enter target weight in ${useMetric ? 'kg' : 'lbs'}`}
-                value={displayValues.targetWeight}
-                onChange={handleTargetWeightChange}
-                onBlur={handleTargetWeightBlur}
-                min={useMetric ? 30 : 66}
-                max={useMetric ? 300 : 661}
-                className="form-input"
-              />
-              <p className="form-help">
-                {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">📅</span>
-                Target Date
-              </label>
-              <input
-                name="target_date"
-                type="date"
-                value={form.target_date}
-                onChange={handleChange}
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          <div className="section-header">
-            <h2>Preferences</h2>
-            <p>Customize your app experience</p>
-          </div>
-
-          <div className="form-grid">
-            <div className="form-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  name="email_notifications"
-                  type="checkbox"
-                  checked={form.email_notifications}
-                  onChange={handleChange}
-                  className="form-checkbox"
+            {/* BMI Card */}
+            {bmi && bmiInfo && (
+              <GlassCard className="flex flex-col items-center py-6 px-6">
+                <h3 className="text-label text-white/50 mb-4">Body Mass Index</h3>
+                <ProgressRing
+                  value={bmiRingValue}
+                  size={120}
+                  strokeWidth={8}
+                  label="BMI"
                 />
-                <span className="checkbox-text">Receive email notifications</span>
-              </label>
-            </div>
+                <div className="mt-4 text-center">
+                  <span className="text-stat text-white">{bmi}</span>
+                  <span className={`block mt-1 text-sm font-medium ${bmiColorMap[bmiInfo.color]}`}>
+                    {bmiInfo.category}
+                  </span>
+                </div>
+              </GlassCard>
+            )}
 
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🔒</span>
-                Privacy Settings
-              </label>
-              <select
-                name="privacy_settings"
-                value={form.privacy_settings}
-                onChange={handleChange}
-                className="form-select"
-              >
-                <option value="public">Public Profile</option>
-                <option value="friends">Friends Only</option>
-                <option value="private">Private</option>
-              </select>
-            </div>
+            {/* Quick Stats */}
+            <GlassCard className="py-5 px-6">
+              <h3 className="text-label text-white/50 mb-4">Overview</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Age</span>
+                  <span className="text-white font-medium">{form.age || '--'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Height</span>
+                  <span className="text-white font-medium">
+                    {getDisplayHeight() || '--'} {useMetric ? 'cm' : 'in'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Weight</span>
+                  <span className="text-white font-medium">
+                    {getDisplayWeight() || '--'} {useMetric ? 'kg' : 'lbs'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Activity</span>
+                  <span className="text-white font-medium capitalize">{form.activity_level}</span>
+                </div>
+              </div>
+            </GlassCard>
           </div>
 
-          <div className="form-actions">
-            <button 
-              type="submit" 
-              className="submit-btn"
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <div className="spinner"></div>
-                  Saving...
-                </>
-              ) : (
-                'Save Profile'
-              )}
-            </button>
+          {/* Right Column - Form */}
+          <div className="lg:col-span-2">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Personal Information */}
+              <GlassCard className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-white">Personal Information</h2>
+                  <p className="text-white/40 text-sm mt-1">Update your basic profile details</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Age *</label>
+                    <input
+                      key={`age-${useMetric}`}
+                      name="age"
+                      type="number"
+                      placeholder="Enter your age"
+                      value={form.age}
+                      onChange={handleChange}
+                      min="13"
+                      max="120"
+                      required
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Sex</label>
+                    <select
+                      name="sex"
+                      value={form.sex}
+                      onChange={handleChange}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">
+                      Height ({useMetric ? 'cm' : 'inches'}) *
+                    </label>
+                    <input
+                      key={`height-${useMetric}`}
+                      name="height_cm"
+                      type="number"
+                      placeholder={`Enter height in ${useMetric ? 'cm' : 'inches'}`}
+                      value={displayValues.height}
+                      onChange={handleHeightChange}
+                      onBlur={handleHeightBlur}
+                      min={useMetric ? 100 : 40}
+                      max={useMetric ? 250 : 100}
+                      required
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                    />
+                    <p className="text-white/30 text-xs mt-1.5">
+                      {useMetric ? 'Centimeters (100-250 cm)' : 'Inches (40-100 inches)'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">
+                      Weight ({useMetric ? 'kg' : 'lbs'}) *
+                    </label>
+                    <input
+                      key={`weight-${useMetric}`}
+                      name="weight_kg"
+                      type="number"
+                      placeholder={`Enter weight in ${useMetric ? 'kg' : 'lbs'}`}
+                      value={displayValues.weight}
+                      onChange={handleWeightChange}
+                      onBlur={handleWeightBlur}
+                      min={useMetric ? 30 : 66}
+                      max={useMetric ? 300 : 661}
+                      required
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                    />
+                    <p className="text-white/30 text-xs mt-1.5">
+                      {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Activity & Goals */}
+              <GlassCard className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-white">Activity & Goals</h2>
+                  <p className="text-white/40 text-sm mt-1">Set your fitness activity level and goals</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Activity Level</label>
+                    <select
+                      name="activity_level"
+                      value={form.activity_level}
+                      onChange={handleChange}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="sedentary">Sedentary</option>
+                      <option value="light">Light</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="active">Active</option>
+                      <option value="very active">Very Active</option>
+                    </select>
+                    <p className="text-white/30 text-xs mt-1.5">{getActivityLevelDescription(form.activity_level)}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Fitness Goal</label>
+                    <select
+                      name="goal"
+                      value={form.goal}
+                      onChange={handleChange}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="lose">Lose Weight</option>
+                      <option value="maintain">Maintain Weight</option>
+                      <option value="gain">Gain Weight</option>
+                      <option value="build_muscle">Build Muscle</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">
+                      Target Weight ({useMetric ? 'kg' : 'lbs'})
+                    </label>
+                    <input
+                      key={`target-weight-${useMetric}`}
+                      name="target_weight"
+                      type="number"
+                      placeholder={`Enter target weight in ${useMetric ? 'kg' : 'lbs'}`}
+                      value={displayValues.targetWeight}
+                      onChange={handleTargetWeightChange}
+                      onBlur={handleTargetWeightBlur}
+                      min={useMetric ? 30 : 66}
+                      max={useMetric ? 300 : 661}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                    />
+                    <p className="text-white/30 text-xs mt-1.5">
+                      {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Target Date</label>
+                    <input
+                      name="target_date"
+                      type="date"
+                      value={form.target_date}
+                      onChange={handleChange}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                    />
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Preferences */}
+              <GlassCard className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-white">Preferences</h2>
+                  <p className="text-white/40 text-sm mt-1">Customize your app experience</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="flex items-center justify-between rounded-xl bg-surface-2 border border-border-subtle px-4 h-14">
+                    <span className="text-white text-sm">Email Notifications</span>
+                    <Toggle
+                      checked={form.email_notifications}
+                      onChange={() => setForm(prev => ({ ...prev, email_notifications: !prev.email_notifications }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-label text-white/60 mb-2">Privacy Settings</label>
+                    <select
+                      name="privacy_settings"
+                      value={form.privacy_settings}
+                      onChange={handleChange}
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="public">Public Profile</option>
+                      <option value="friends">Friends Only</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
+                <ActionButton
+                  variant="primary"
+                  loading={saving}
+                  icon={
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  }
+                >
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </ActionButton>
+
+                <button
+                  type="button"
+                  className="h-11 px-5 rounded-xl text-sm font-medium bg-error/10 text-error border border-error/20 hover:bg-error/20 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

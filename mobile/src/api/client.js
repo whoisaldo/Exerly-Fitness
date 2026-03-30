@@ -1,7 +1,17 @@
 // Axios API Client for Exerly Fitness Mobile App
 import axios from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import API_CONFIG from '../config';
+
+// Web shim — SecureStore is native-only
+const storage = Platform.OS === 'web'
+  ? {
+      getItemAsync: (key) => Promise.resolve(localStorage.getItem(key)),
+      setItemAsync: (key, val) => { localStorage.setItem(key, val); return Promise.resolve(); },
+      deleteItemAsync: (key) => { localStorage.removeItem(key); return Promise.resolve(); },
+    }
+  : SecureStore;
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -17,15 +27,15 @@ const TOKEN_KEY = 'exerly_auth_token';
 
 // Token management functions
 export const saveToken = async (token) => {
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
+  await storage.setItemAsync(TOKEN_KEY, token);
 };
 
 export const getToken = async () => {
-  return await SecureStore.getItemAsync(TOKEN_KEY);
+  return await storage.getItemAsync(TOKEN_KEY);
 };
 
 export const removeToken = async () => {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await storage.deleteItemAsync(TOKEN_KEY);
 };
 
 // Request interceptor - adds auth token to requests

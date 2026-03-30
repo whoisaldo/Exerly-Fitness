@@ -4,39 +4,41 @@ import {
   Text,
   View,
   TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
+  Pressable,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius, fontSize, fontWeight } from '../theme/colors';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+import Slider from '@react-native-community/slider';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
+import { GlassCard } from '../components/GlassCard';
+import { ActionButton } from '../components/ActionButton';
 import apiClient from '../api/client';
 
-const ACTIVITY_TYPES = [
-  { id: 'cardio', label: 'Cardio', emoji: '🏃' },
-  { id: 'strength', label: 'Strength', emoji: '🏋️' },
-  { id: 'flexibility', label: 'Flexibility', emoji: '🧘' },
-  { id: 'sports', label: 'Sports', emoji: '⚽' },
-];
-
 const INTENSITIES = [
-  { id: 'light', label: 'Light', color: colors.success },
-  { id: 'moderate', label: 'Moderate', color: colors.warning },
-  { id: 'intense', label: 'Intense', color: colors.error },
+  { id: 'light', label: 'Low', color: colors.success },
+  { id: 'moderate', label: 'Med', color: colors.warning },
+  { id: 'intense', label: 'High', color: colors.error },
 ];
 
 export default function LogActivityScreen({ navigation }) {
   const [activity, setActivity] = useState('');
-  const [duration, setDuration] = useState('');
+  const [duration, setDuration] = useState(30);
   const [calories, setCalories] = useState('');
-  const [activityType, setActivityType] = useState('cardio');
   const [intensity, setIntensity] = useState('moderate');
   const [loading, setLoading] = useState(false);
+  const [activityFocused, setActivityFocused] = useState(false);
+  const [calFocused, setCalFocused] = useState(false);
 
   const handleSubmit = async () => {
-    if (!activity || !duration || !calories) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields');
+    if (!activity || !calories) {
+      Alert.alert('Missing Fields', 'Please fill in activity name and calories');
       return;
     }
 
@@ -44,13 +46,13 @@ export default function LogActivityScreen({ navigation }) {
     try {
       await apiClient.post('/api/activities', {
         activity,
-        duration_min: parseInt(duration),
-        calories: parseInt(calories),
-        type: activityType,
+        duration_min: Math.round(duration),
+        calories: parseInt(calories, 10),
         intensity,
       });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       Alert.alert('Success!', 'Activity logged successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to log activity');
@@ -61,173 +63,254 @@ export default function LogActivityScreen({ navigation }) {
 
   return (
     <LinearGradient
-      colors={colors.gradientBackground}
+      colors={[colors.deep, colors.surface1, colors.dark]}
       locations={[0, 0.5, 1]}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Log Activity 🏃</Text>
-        </View>
-
-        <View style={styles.card}>
-          {/* Activity Name */}
-          <Text style={styles.label}>Activity Name *</Text>
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Morning Run, Weight Training"
-              placeholderTextColor={colors.textMuted}
-              value={activity}
-              onChangeText={setActivity}
-            />
-          </View>
-
-          {/* Activity Type */}
-          <Text style={styles.label}>Activity Type</Text>
-          <View style={styles.typeGrid}>
-            {ACTIVITY_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.id}
-                style={[
-                  styles.typeButton,
-                  activityType === type.id && styles.typeButtonActive,
-                ]}
-                onPress={() => setActivityType(type.id)}
-              >
-                <Text style={styles.typeEmoji}>{type.emoji}</Text>
-                <Text style={[
-                  styles.typeLabel,
-                  activityType === type.id && styles.typeLabelActive,
-                ]}>{type.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Duration */}
-          <Text style={styles.label}>Duration (minutes) *</Text>
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
-              placeholder="30"
-              placeholderTextColor={colors.textMuted}
-              value={duration}
-              onChangeText={setDuration}
-              keyboardType="numeric"
-            />
-          </View>
-
-          {/* Calories */}
-          <Text style={styles.label}>Calories Burned *</Text>
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
-              placeholder="250"
-              placeholderTextColor={colors.textMuted}
-              value={calories}
-              onChangeText={setCalories}
-              keyboardType="numeric"
-            />
-          </View>
-
-          {/* Intensity */}
-          <Text style={styles.label}>Intensity</Text>
-          <View style={styles.intensityRow}>
-            {INTENSITIES.map((int) => (
-              <TouchableOpacity
-                key={int.id}
-                style={[
-                  styles.intensityButton,
-                  intensity === int.id && { backgroundColor: `${int.color}30`, borderColor: int.color },
-                ]}
-                onPress={() => setIntensity(int.id)}
-              >
-                <Text style={[
-                  styles.intensityLabel,
-                  intensity === int.id && { color: int.color },
-                ]}>{int.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.submitButtonWrapper}
-            onPress={handleSubmit}
-            disabled={loading}
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <LinearGradient
-              colors={colors.gradientWorkout}
-              style={styles.submitButton}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>Log Activity</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            {/* Header */}
+            <Animated.View entering={FadeInUp.delay(50).duration(500)}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={styles.backBtn}
+                hitSlop={12}
+              >
+                <Text style={styles.backText}>{'\u2190'} Back</Text>
+              </Pressable>
+              <Text style={styles.title}>Log Activity</Text>
+            </Animated.View>
+
+            {/* Form */}
+            <Animated.View entering={FadeInUp.delay(150).duration(600)}>
+              <GlassCard elevated style={styles.card}>
+                <BlurView intensity={15} tint="dark" style={styles.blur}>
+                  <View style={styles.cardInner}>
+                    {/* Activity Name */}
+                    <Text style={styles.label}>Activity Name</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        activityFocused && styles.inputFocused,
+                      ]}
+                      placeholder="e.g., Morning Run"
+                      placeholderTextColor={colors.textMuted}
+                      value={activity}
+                      onChangeText={setActivity}
+                      onFocus={() => setActivityFocused(true)}
+                      onBlur={() => setActivityFocused(false)}
+                    />
+
+                    {/* Duration Slider */}
+                    <Text style={styles.label}>Duration</Text>
+                    <View style={styles.sliderWrap}>
+                      <Text style={styles.sliderValue}>
+                        {Math.round(duration)} min
+                      </Text>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={5}
+                        maximumValue={180}
+                        step={5}
+                        value={duration}
+                        onValueChange={setDuration}
+                        minimumTrackTintColor={colors.primary}
+                        maximumTrackTintColor={colors.surface3}
+                        thumbTintColor={colors.primaryBright}
+                      />
+                      <View style={styles.sliderLabels}>
+                        <Text style={styles.sliderMinMax}>5 min</Text>
+                        <Text style={styles.sliderMinMax}>180 min</Text>
+                      </View>
+                    </View>
+
+                    {/* Intensity Pills */}
+                    <Text style={styles.label}>Intensity</Text>
+                    <View style={styles.pillRow}>
+                      {INTENSITIES.map((item) => {
+                        const active = intensity === item.id;
+                        return (
+                          <Pressable
+                            key={item.id}
+                            onPress={() => {
+                              setIntensity(item.id);
+                              Haptics.selectionAsync();
+                            }}
+                            style={[
+                              styles.pill,
+                              active && {
+                                backgroundColor: `${item.color}25`,
+                                borderColor: item.color,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.pillText,
+                                active && { color: item.color },
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {/* Calories */}
+                    <Text style={styles.label}>Calories Burned</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        calFocused && styles.inputFocused,
+                      ]}
+                      placeholder="250"
+                      placeholderTextColor={colors.textMuted}
+                      value={calories}
+                      onChangeText={setCalories}
+                      onFocus={() => setCalFocused(true)}
+                      onBlur={() => setCalFocused(false)}
+                      keyboardType="numeric"
+                    />
+
+                    {/* Submit */}
+                    <ActionButton
+                      variant="primary"
+                      onPress={handleSubmit}
+                      loading={loading}
+                      style={styles.submitBtn}
+                    >
+                      Log Activity
+                    </ActionButton>
+                  </View>
+                </BlurView>
+              </GlassCard>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: spacing.lg, paddingTop: 60 },
-  header: { marginBottom: spacing.lg },
-  backButton: { color: colors.primary, fontSize: fontSize.md, marginBottom: spacing.sm },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  container: {
+    flex: 1,
+  },
+  safe: {
+    flex: 1,
+  },
+  kav: {
+    flex: 1,
+  },
+  scroll: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing['2xl'],
+  },
+  backBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  backText: {
+    color: colors.primaryBright,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+  },
+  title: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
   card: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    padding: 0,
+    overflow: 'hidden',
+  },
+  blur: {
+    overflow: 'hidden',
+    borderRadius: radii.lg,
+  },
+  cardInner: {
     padding: spacing.lg,
   },
-  label: { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.sm, marginTop: spacing.md },
-  inputGroup: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.md,
     paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    color: colors.textPrimary,
+    fontSize: fontSize.base,
+    minHeight: 48,
   },
-  input: { color: colors.textPrimary, fontSize: fontSize.md, paddingVertical: spacing.md },
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  typeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    width: '48%',
+  inputFocused: {
+    borderColor: colors.borderAccent,
   },
-  typeButtonActive: { backgroundColor: 'rgba(0, 184, 148, 0.2)', borderColor: colors.workout },
-  typeEmoji: { fontSize: 24, marginBottom: spacing.xs },
-  typeLabel: { color: colors.textMuted, fontSize: fontSize.sm },
-  typeLabelActive: { color: colors.workout },
-  intensityRow: { flexDirection: 'row', gap: spacing.sm },
-  intensityButton: {
+  sliderWrap: {
+    paddingVertical: spacing.sm,
+  },
+  sliderValue: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.primaryBright,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  slider: {
+    width: '100%',
+    height: 44,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sliderMinMax: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  pill: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.full,
+    paddingVertical: 12,
     alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  intensityLabel: { color: colors.textMuted, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
-  submitButtonWrapper: { marginTop: spacing.xl, borderRadius: borderRadius.lg, overflow: 'hidden' },
-  submitButton: { paddingVertical: spacing.md, alignItems: 'center' },
-  submitButtonText: { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
+  pillText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.textMuted,
+  },
+  submitBtn: {
+    marginTop: spacing.xl,
+    minHeight: 52,
+  },
 });
-
