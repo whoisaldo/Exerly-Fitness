@@ -2,28 +2,47 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radii, fontSize, fontWeight } from '../theme/colors';
 
-const variantColors = {
-  intensity: { bg: 'rgba(139,92,246,0.15)', text: colors.primaryBright, border: 'rgba(139,92,246,0.2)' },
-  meal: { bg: 'rgba(245,158,11,0.15)', text: colors.warning, border: 'rgba(245,158,11,0.2)' },
-  status: { bg: 'rgba(16,185,129,0.15)', text: colors.success, border: 'rgba(16,185,129,0.2)' },
-  severity: { bg: 'rgba(239,68,68,0.15)', text: colors.error, border: 'rgba(239,68,68,0.2)' },
+const VARIANT_COLORS = {
+  // Intensity
+  low: colors.success,
+  medium: colors.warning,
+  high: colors.error,
+  // Meals
+  breakfast: '#6366f1',
+  lunch: '#f59e0b',
+  dinner: '#ec4899',
+  snack: '#10b981',
+  // Status
+  active: colors.primary,
+  completed: colors.success,
+  pending: colors.warning,
+  // Legacy variant groups
+  intensity: colors.primaryBright,
+  meal: colors.warning,
+  status: colors.success,
+  severity: colors.error,
 };
 
-export function Badge({ children, variant = 'status', style }) {
-  const scheme = variantColors[variant] || variantColors.status;
+/**
+ * Colored pill badge.
+ * @param {{ label?: string, children?: React.ReactNode, variant?: string, color?: string, style?: object }} props
+ */
+export default function Badge({ label, children, variant = 'status', color, style }) {
+  const bg = color ?? VARIANT_COLORS[variant] ?? colors.primary;
+  const content = label ?? children;
 
   return (
     <View
-      style={[
-        styles.pill,
-        { backgroundColor: scheme.bg, borderColor: scheme.border },
-        style,
-      ]}
+      style={[styles.pill, { backgroundColor: `${bg}22`, borderColor: `${bg}33` }, style]}
+      accessibilityRole="text"
+      accessibilityLabel={typeof content === 'string' ? content : undefined}
     >
-      <Text style={[styles.text, { color: scheme.text }]}>{children}</Text>
+      <Text style={[styles.text, { color: bg }]}>{content}</Text>
     </View>
   );
 }
+
+export { Badge };
 
 const styles = StyleSheet.create({
   pill: {
@@ -33,10 +52,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.full,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   text: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
+    textTransform: 'capitalize',
   },
 });

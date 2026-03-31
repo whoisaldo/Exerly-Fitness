@@ -1,52 +1,76 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radii, fontSize, fontWeight, spacing } from '../theme/colors';
-import { ActionButton } from './ActionButton';
+import { Ionicons } from '@expo/vector-icons';
+import ActionButton from './ActionButton';
+import { colors, fontSize, fontWeight, spacing } from '../theme/colors';
 
-export function EmptyState({ icon, title, message, action, style }) {
+/**
+ * Empty-state placeholder with icon, message, and optional CTA.
+ * @param {{ icon?: string|React.ReactNode, title: string, subtitle?: string, message?: string, actionTitle?: string, action?: { label: string, onPress: () => void }, onAction?: () => void, style?: object }} props
+ */
+export default function EmptyState({
+  icon = 'layers-outline',
+  title,
+  subtitle,
+  message,
+  actionTitle,
+  action,
+  onAction,
+  style,
+}) {
+  const desc = subtitle ?? message;
+  const btnLabel = actionTitle ?? action?.label;
+  const btnPress = onAction ?? action?.onPress;
+
   return (
-    <View style={[styles.container, style]}>
-      {icon && <View style={styles.iconWrap}>{icon}</View>}
-      <Text style={styles.title}>{title}</Text>
-      {message && <Text style={styles.message}>{message}</Text>}
-      {action && (
-        <ActionButton onPress={action.onPress} style={styles.button}>
-          {action.label}
-        </ActionButton>
+    <View style={[styles.container, style]} accessibilityRole="text">
+      {typeof icon === 'string' ? (
+        <Ionicons name={icon} size={56} color={`${colors.primary}55`} />
+      ) : (
+        <View style={styles.iconWrap}>{icon}</View>
       )}
+      <Text style={styles.title}>{title}</Text>
+      {desc ? <Text style={styles.subtitle}>{desc}</Text> : null}
+      {btnLabel && btnPress ? (
+        <ActionButton
+          title={btnLabel}
+          onPress={btnPress}
+          variant="secondary"
+          style={styles.btn}
+        />
+      ) : null}
     </View>
   );
 }
+
+export { EmptyState };
 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing['3xl'],
+    paddingVertical: spacing['2xl'],
+    paddingHorizontal: spacing.lg,
   },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.lg,
-    backgroundColor: 'rgba(139,92,246,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
     color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    marginTop: spacing.md,
     textAlign: 'center',
   },
-  message: {
+  subtitle: {
+    color: colors.textMuted,
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    marginTop: spacing.xs,
     textAlign: 'center',
-    marginTop: 4,
+    lineHeight: 20,
     maxWidth: 260,
   },
-  button: {
+  btn: {
     marginTop: spacing.lg,
   },
 });

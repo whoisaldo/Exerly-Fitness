@@ -37,7 +37,7 @@ A modern, full-stack fitness tracking application built with React.js, Node.js, 
 
 ## 🚀 **Live Demo**
 
-🌐 **[View Live Website](https://whoisaldo.github.io/Exerly-Fitness/)**
+🌐 **[View Live Website](https://exerlyfitness.com)**
 
 ## 🛠️ **Technology Stack**
 

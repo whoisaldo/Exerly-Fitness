@@ -1,26 +1,74 @@
-import React from 'react';
-import { Pressable, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import {
+  Text,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { colors, radii, fontSize, fontWeight, gradients } from '../theme/colors';
 
-export function ActionButton({
+/**
+ * Multi-variant action button with haptic feedback.
+ * Accepts label via `title` prop or `children`.
+ * @param {{ title?: string, children?: React.ReactNode, onPress: () => void, variant?: 'primary'|'secondary'|'ghost'|'destructive', loading?: boolean, disabled?: boolean, icon?: React.ReactNode, style?: object, fullWidth?: boolean }} props
+ */
+export default function ActionButton({
+  title,
   children,
+  onPress,
   variant = 'primary',
   loading = false,
+  disabled = false,
   icon,
-  onPress,
-  disabled,
   style,
+  fullWidth = false,
 }) {
-  const isDisabled = disabled || loading;
+  const label = title ?? children;
 
-  if (variant === 'primary') {
+  const handlePress = useCallback(() => {
+    if (loading || disabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress?.();
+  }, [loading, disabled, onPress]);
+
+  const isDisabled = disabled || loading;
+  const isPrimary = variant === 'primary';
+  const isGhost = variant === 'ghost';
+  const isDestructive = variant === 'destructive';
+
+  const labelEl = loading ? (
+    <ActivityIndicator
+      color={isPrimary ? '#fff' : colors.primary}
+      size="small"
+    />
+  ) : (
+    <>
+      {icon}
+      <Text
+        style={[
+          styles.label,
+          isPrimary && styles.labelPrimary,
+          isGhost && styles.labelGhost,
+          isDestructive && styles.labelDestructive,
+        ]}
+      >
+        {label}
+      </Text>
+    </>
+  );
+
+  if (isPrimary) {
     return (
       <Pressable
-        onPress={onPress}
+        onPress={handlePress}
         disabled={isDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={typeof label === 'string' ? label : undefined}
+        accessibilityState={{ disabled: isDisabled }}
         style={({ pressed }) => [
-          styles.base,
+          fullWidth && styles.fullWidth,
           pressed && styles.pressed,
           isDisabled && styles.disabled,
           style,
@@ -32,90 +80,70 @@ export function ActionButton({
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            icon
-          )}
-          <Text style={styles.primaryText}>{children}</Text>
+          {labelEl}
         </LinearGradient>
       </Pressable>
     );
   }
 
-  const isGhost = variant === 'ghost';
-
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={typeof label === 'string' ? label : undefined}
+      accessibilityState={{ disabled: isDisabled }}
       style={({ pressed }) => [
         styles.base,
-        isGhost ? styles.ghost : styles.secondary,
+        variant === 'secondary' && styles.secondary,
+        isGhost && styles.ghost,
+        isDestructive && styles.destructive,
         pressed && styles.pressed,
         isDisabled && styles.disabled,
+        fullWidth && styles.fullWidth,
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.primaryBright} />
-      ) : (
-        icon
-      )}
-      <Text style={isGhost ? styles.ghostText : styles.secondaryText}>
-        {children}
-      </Text>
+      {labelEl}
     </Pressable>
   );
 }
 
+export { ActionButton };
+
 const styles = StyleSheet.create({
   base: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
     borderRadius: radii.md,
-    overflow: 'hidden',
+    paddingHorizontal: 20,
+    minWidth: 44,
+    minHeight: 44,
   },
   gradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    height: 48,
     borderRadius: radii.md,
+    paddingHorizontal: 24,
   },
   secondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    backgroundColor: colors.glassBg,
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.3)',
-    backgroundColor: 'rgba(139,92,246,0.1)',
+    borderColor: colors.borderAccent,
   },
   ghost: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    backgroundColor: 'transparent',
   },
-  primaryText: {
-    color: '#fff',
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-  },
-  secondaryText: {
-    color: colors.primaryBright,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-  },
-  ghostText: {
-    color: colors.textSecondary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
+  destructive: {
+    backgroundColor: `${colors.error}18`,
+    borderWidth: 1,
+    borderColor: `${colors.error}44`,
   },
   pressed: {
     opacity: 0.85,
@@ -123,5 +151,22 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  fullWidth: {
+    width: '100%',
+  },
+  label: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
+  },
+  labelPrimary: {
+    color: '#ffffff',
+  },
+  labelGhost: {
+    color: colors.textMuted,
+  },
+  labelDestructive: {
+    color: colors.error,
   },
 });

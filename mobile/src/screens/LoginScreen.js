@@ -20,8 +20,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
-import { GlassCard } from '../components/GlassCard';
-import { ActionButton } from '../components/ActionButton';
+import GlassCard from '../components/GlassCard';
+import ActionButton from '../components/ActionButton';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
 

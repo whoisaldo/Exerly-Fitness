@@ -15,7 +15,6 @@ import Onboarding  from './components/Onboarding/Onboarding';
 import Credits     from './components/Credits';
 import AIErrorManager from './components/Admin/AIErrorManager';
 import LandingPage from './components/LandingPage';
-import MaintenanceNotice from './components/MaintenanceNotice';
 import MaintenanceHistory from './components/MaintenanceHistory';
 import StatusCheck from './components/StatusCheck';
 import AdminStatusChecker from './components/AdminStatusChecker';
@@ -77,16 +76,6 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  // Show maintenance notice on GitHub Pages deployment
-  // To disable: remove this check or set REACT_APP_MAINTENANCE=false
-  const isGitHubPages = window.location.hostname.includes('github.io');
-  //const maintenanceMode = process.env.REACT_APP_MAINTENANCE !== 'false' && isGitHubPages;
-  const maintenanceMode = false;
-  // Show maintenance notice if enabled
-  if (maintenanceMode) {
-    return <MaintenanceNotice />;
-  }
-
   return (
     <Router>
       <>

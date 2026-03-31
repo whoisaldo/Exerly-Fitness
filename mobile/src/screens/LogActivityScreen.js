@@ -17,8 +17,8 @@ import * as Haptics from 'expo-haptics';
 import Slider from '@react-native-community/slider';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
-import { GlassCard } from '../components/GlassCard';
-import { ActionButton } from '../components/ActionButton';
+import GlassCard from '../components/GlassCard';
+import ActionButton from '../components/ActionButton';
 import apiClient from '../api/client';
 
 const INTENSITIES = [
