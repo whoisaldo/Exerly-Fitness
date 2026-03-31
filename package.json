@@ -24,10 +24,10 @@
     "android": "cd mobile && npx expo start --android"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "concurrently": "^9.0.0",
+    "react-native-worklets": "0.5.1"
   },
   "engines": {
     "node": ">=18.0.0"
   }
 }
-

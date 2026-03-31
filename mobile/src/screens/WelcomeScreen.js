@@ -13,7 +13,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
-import { ActionButton } from '../components/ActionButton';
+import ActionButton from '../components/ActionButton';
 
 const { width, height } = Dimensions.get('window');
 

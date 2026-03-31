@@ -204,7 +204,8 @@ const allowedOrigins = [
   'http://localhost:8083',
   'http://localhost:19000',
   'http://localhost:19006',
-  'https://whoisaldo.github.io',
+  'https://exerlyfitness.com',
+  'https://www.exerlyfitness.com',
 ];
 
 app.use(cors({

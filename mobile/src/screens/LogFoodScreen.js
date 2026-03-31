@@ -16,8 +16,11 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
-import { GlassCard } from '../components/GlassCard';
-import { ActionButton } from '../components/ActionButton';
+import { Ionicons } from '@expo/vector-icons';
+import GlassCard from '../components/GlassCard';
+import ActionButton from '../components/ActionButton';
+import useBarcodeScanner from '../hooks/useBarcodeScanner';
+import { addRecentFood, recentFoods } from '../services/OpenFoodFactsService';
 import apiClient from '../api/client';
 
 const MEAL_TYPES = [

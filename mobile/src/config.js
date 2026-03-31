@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 
 // Your local network IP address - UPDATE THIS if your IP changes
 // Physical devices MUST use the actual IP (localhost won't work on phones)
-const LOCAL_IP = '10.0.0.45'; // Your computer's local IP
+const LOCAL_IP = '10.0.0.170'; // Your computer's current local IP
 const LOCAL_PORT = '3001';
 
 // Production API URL (same as web)
@@ -66,4 +66,3 @@ export default API_CONFIG;
 
 // Helper to get full URL for an endpoint
 export const getApiUrl = (endpoint) => `${API_CONFIG.BASE_URL}${endpoint}`;
-
