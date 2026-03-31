@@ -11,18 +11,28 @@ export default function useFoodLibrary() {
   });
 
   const refreshAll = useCallback(async () => {
-    const [favs, recs, custom, log, totals] = await Promise.all([
-      FoodLibraryService.getFavorites(),
-      FoodLibraryService.getRecents(),
-      FoodLibraryService.getCustomFoods(),
-      FoodLibraryService.getTodayLog(),
-      FoodLibraryService.getDailyTotals(),
-    ]);
-    setFavorites(favs);
-    setRecents(recs);
-    setCustomFoods(custom);
-    setTodayLog(log);
-    setDailyTotals(totals);
+    try {
+      const [favs, recs, custom, log, totals] = await Promise.all([
+        FoodLibraryService.getFavorites(),
+        FoodLibraryService.getRecents(),
+        FoodLibraryService.getCustomFoods(),
+        FoodLibraryService.getTodayLog(),
+        FoodLibraryService.getDailyTotals(),
+      ]);
+      setFavorites(favs);
+      setRecents(recs);
+      setCustomFoods(custom);
+      setTodayLog(log);
+      setDailyTotals(totals);
+    } catch {
+      setFavorites([]);
+      setRecents([]);
+      setCustomFoods([]);
+      setTodayLog([]);
+      setDailyTotals({
+        calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, fiber: 0,
+      });
+    }
   }, []);
 
   useEffect(() => {

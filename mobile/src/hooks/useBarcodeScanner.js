@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  fetchProductByBarcode,
+  fetchByBarcode,
   ProductNotFoundError,
 } from '../services/OpenFoodFactsService';
 
@@ -18,7 +18,10 @@ export default function useBarcodeScanner() {
     setError(null);
     setProduct(null);
     try {
-      const result = await fetchProductByBarcode(barcode);
+      const result = await fetchByBarcode(barcode);
+      if (!result) {
+        throw new ProductNotFoundError(barcode);
+      }
       setProduct(result);
     } catch (err) {
       if (err instanceof ProductNotFoundError) {

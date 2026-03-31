@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Pressable, Text, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -17,7 +17,7 @@ const TAB_ITEMS = [
   { name: 'Home', icon: 'home-outline', iconActive: 'home' },
   { name: 'Progress', icon: 'trending-up-outline', iconActive: 'trending-up' },
   { name: 'Track', icon: 'add', isFab: true },
-  { name: 'Social', icon: 'people-outline', iconActive: 'people' },
+  { name: 'Library', icon: 'book-outline', iconActive: 'book' },
   { name: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ];
 

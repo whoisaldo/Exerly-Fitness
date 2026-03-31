@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,21 +7,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  FlatList,
   Pressable,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, gradients, spacing, radii, fontSize, fontWeight } from '../theme/colors';
 import GlassCard from '../components/GlassCard';
 import ActionButton from '../components/ActionButton';
-import useBarcodeScanner from '../hooks/useBarcodeScanner';
-import { addRecentFood, recentFoods } from '../services/OpenFoodFactsService';
-import apiClient from '../api/client';
+import FoodSearchBar from '../components/library/FoodSearchBar';
+import FoodCard from '../components/library/FoodCard';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import EmptyState from '../components/EmptyState';
+import ErrorBoundary from '../components/ErrorBoundary';
+import useFoodSearch from '../hooks/useFoodSearch';
+import useFoodLibrary from '../hooks/useFoodLibrary';
 
 const MEAL_TYPES = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -30,36 +35,80 @@ const MEAL_TYPES = [
   { id: 'snack', label: 'Snack' },
 ];
 
-export default function LogFoodScreen({ navigation }) {
+function getDefaultMealType() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 10) return 'breakfast';
+  if (hour >= 10 && hour < 14) return 'lunch';
+  if (hour >= 14 && hour < 19) return 'dinner';
+  return 'snack';
+}
+
+function LogFoodScreenInner({ navigation }) {
+  const search = useFoodSearch();
+  const library = useFoodLibrary();
+  const [showManual, setShowManual] = useState(false);
+
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
-  const [carbs, setCarbs] = useState('');
-  const [fat, setFat] = useState('');
-  const [sugar, setSugar] = useState('');
-  const [mealType, setMealType] = useState('lunch');
+  const [mealType, setMealType] = useState(getDefaultMealType());
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
 
-  const handleSubmit = async () => {
-    if (!name || !calories || !protein || !sugar) {
-      Alert.alert('Missing Fields', 'Please fill in name, calories, protein, and sugar');
+  const favIds = useMemo(
+    () => new Set(library.favorites.map((f) => f.id)),
+    [library.favorites],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      library.refreshAll();
+    }, [library.refreshAll]),
+  );
+
+  const handleFoodPress = useCallback(
+    (food) => {
+      navigation.navigate('FoodDetail', { food, mode: 'log', mealType });
+    },
+    [navigation, mealType],
+  );
+
+  const handleBarcodePress = useCallback(() => {
+    navigation.navigate('BarcodeScanner');
+  }, [navigation]);
+
+  const handleManualSubmit = async () => {
+    if (!name || !calories || !protein) {
+      Alert.alert('Missing Fields', 'Please fill in name, calories, and protein');
       return;
     }
-
     setLoading(true);
     try {
-      await apiClient.post('/api/food', {
-        name,
-        calories: parseInt(calories, 10),
-        protein: parseInt(protein, 10),
-        sugar: parseInt(sugar, 10),
-        carbs: carbs ? parseInt(carbs, 10) : null,
-        fat: fat ? parseInt(fat, 10) : null,
+      await library.logFood({
+        id: `manual_${Date.now()}`,
+        name: name.trim(),
+        brand: null,
+        calories: parseFloat(calories) || 0,
+        protein: parseFloat(protein) || 0,
+        carbs: 0,
+        fat: 0,
+        sugar: 0,
+        fiber: 0,
+        sodium: 0,
+        saturatedFat: 0,
+        servingSize: '1 entry',
+        servingGrams: 100,
+        imageUrl: null,
+        source: 'manual',
+        barcode: null,
+        categories: '',
+      }, {
+        grams: 100,
+        servings: 1,
         mealType,
       });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      Alert.alert('Success!', 'Food logged successfully', [
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Logged!', 'Food logged successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
@@ -69,27 +118,7 @@ export default function LogFoodScreen({ navigation }) {
     }
   };
 
-  const renderInput = (label, value, setter, placeholder, required, fieldKey) => (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.label}>
-        {label}
-        {required ? ' *' : ''}
-      </Text>
-      <TextInput
-        style={[
-          styles.input,
-          focusedField === fieldKey && styles.inputFocused,
-        ]}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        value={value}
-        onChangeText={setter}
-        onFocus={() => setFocusedField(fieldKey)}
-        onBlur={() => setFocusedField(null)}
-        keyboardType={fieldKey === 'name' ? 'default' : 'numeric'}
-      />
-    </View>
-  );
+  const isSearching = search.query.length >= 2;
 
   return (
     <LinearGradient
@@ -102,104 +131,261 @@ export default function LogFoodScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.kav}
         >
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <Animated.View entering={FadeInUp.delay(50).duration(500)}>
+          <View style={styles.headerRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={styles.backBtn}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={styles.title}>Log Food</Text>
+            <View style={styles.backBtn} />
+          </View>
+
+          <DailySummary totals={library.dailyTotals} />
+
+          <Animated.View entering={FadeInUp.delay(50).duration(400)} style={styles.searchWrap}>
+            <FoodSearchBar
+              value={search.query}
+              onChangeText={search.setQuery}
+              loading={search.loading && isSearching}
+              onBarcodePress={handleBarcodePress}
+              autoFocus
+            />
+          </Animated.View>
+
+          {!isSearching && !showManual && (
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {library.recents.length > 0 && (
+                <Animated.View entering={FadeInUp.delay(100).duration(400)}>
+                  <Text style={styles.sectionTitle}>Recent</Text>
+                  <FlatList
+                    data={library.recents.slice(0, 5)}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <FoodCard food={item} onPress={handleFoodPress} compact />
+                    )}
+                  />
+                </Animated.View>
+              )}
+
+              {library.favorites.length > 0 && (
+                <Animated.View entering={FadeInUp.delay(150).duration(400)}>
+                  <Text style={styles.sectionTitle}>Favorites</Text>
+                  <FlatList
+                    data={library.favorites.slice(0, 5)}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <FoodCard food={item} onPress={handleFoodPress} compact />
+                    )}
+                  />
+                </Animated.View>
+              )}
+
               <Pressable
-                onPress={() => navigation.goBack()}
-                style={styles.backBtn}
-                hitSlop={12}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setShowManual(true);
+                }}
+                style={styles.manualToggle}
+                accessibilityRole="button"
               >
-                <Text style={styles.backText}>{'\u2190'} Back</Text>
+                <Ionicons name="create-outline" size={18} color={colors.primary} />
+                <Text style={styles.manualToggleText}>Log manually without searching</Text>
               </Pressable>
-              <Text style={styles.title}>Log Food</Text>
-            </Animated.View>
+            </ScrollView>
+          )}
 
-            {/* Form */}
-            <Animated.View entering={FadeInUp.delay(150).duration(600)}>
-              <GlassCard elevated style={styles.card}>
-                <BlurView intensity={15} tint="dark" style={styles.blur}>
-                  <View style={styles.cardInner}>
-                    {/* Food Name */}
-                    {renderInput('Food Name', name, setName, 'e.g., Grilled Chicken Salad', true, 'name')}
+          {isSearching && (
+            <FlatList
+              data={search.results}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <FoodCard
+                  food={item}
+                  onPress={handleFoodPress}
+                  onToggleFavorite={(f) => library.toggleFavorite(f)}
+                  isFavorite={favIds.has(item.id)}
+                />
+              )}
+              ListEmptyComponent={() => {
+                if (search.loading) {
+                  return <LoadingSkeleton variant="row" count={5} style={styles.skeletons} />;
+                }
+                if (search.error) {
+                  return (
+                    <EmptyState
+                      icon="cloud-offline-outline"
+                      title="Search failed"
+                      subtitle={search.error}
+                      actionTitle="Retry"
+                      onAction={search.retry}
+                    />
+                  );
+                }
+                return (
+                  <EmptyState
+                    icon="search-outline"
+                    title={`No results for '${search.query}'`}
+                    actionTitle="Create custom food"
+                    onAction={() => navigation.navigate('CreateFood', {
+                      initialName: search.query.trim(),
+                      logAfterSave: true,
+                      mealType,
+                    })}
+                  />
+                );
+              }}
+              onEndReached={search.loadMore}
+              onEndReachedThreshold={0.3}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            />
+          )}
 
-                    {/* Meal Type Pills */}
-                    <Text style={styles.label}>Meal Type</Text>
-                    <View style={styles.pillRow}>
-                      {MEAL_TYPES.map((type) => {
-                        const active = mealType === type.id;
-                        return (
-                          <Pressable
-                            key={type.id}
-                            onPress={() => {
-                              setMealType(type.id);
-                              Haptics.selectionAsync();
-                            }}
-                            style={[
-                              styles.pill,
-                              active && styles.pillActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.pillText,
-                                active && styles.pillTextActive,
-                              ]}
-                            >
-                              {type.label}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+          {showManual && !isSearching && (
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Animated.View entering={FadeInUp.duration(400)}>
+                <GlassCard elevated style={styles.card}>
+                  <ManualField
+                    label="Food Name *"
+                    value={name}
+                    setter={setName}
+                    placeholder="e.g., Grilled Chicken"
+                    fieldKey="name"
+                    focused={focusedField}
+                    setFocused={setFocusedField}
+                  />
 
-                    {/* Macro Inputs — two-column grid */}
-                    <View style={styles.macroGrid}>
-                      <View style={styles.macroCol}>
-                        {renderInput('Calories', calories, setCalories, '350', true, 'cal')}
-                      </View>
-                      <View style={styles.macroCol}>
-                        {renderInput('Protein (g)', protein, setProtein, '25', true, 'protein')}
-                      </View>
-                    </View>
-
-                    <View style={styles.macroGrid}>
-                      <View style={styles.macroCol}>
-                        {renderInput('Carbs (g)', carbs, setCarbs, '30', false, 'carbs')}
-                      </View>
-                      <View style={styles.macroCol}>
-                        {renderInput('Fat (g)', fat, setFat, '10', false, 'fat')}
-                      </View>
-                    </View>
-
-                    <View style={styles.macroGrid}>
-                      <View style={styles.macroCol}>
-                        {renderInput('Sugar (g)', sugar, setSugar, '5', true, 'sugar')}
-                      </View>
-                      <View style={styles.macroCol} />
-                    </View>
-
-                    {/* Submit */}
-                    <ActionButton
-                      variant="primary"
-                      onPress={handleSubmit}
-                      loading={loading}
-                      style={styles.submitBtn}
-                    >
-                      Log Food
-                    </ActionButton>
+                  <Text style={styles.label}>Meal Type</Text>
+                  <View style={styles.pillRow}>
+                    {MEAL_TYPES.map((type) => {
+                      const active = mealType === type.id;
+                      return (
+                        <Pressable
+                          key={type.id}
+                          onPress={() => {
+                            setMealType(type.id);
+                            Haptics.selectionAsync();
+                          }}
+                          style={[styles.pill, active && styles.pillActive]}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                        >
+                          <Text style={[styles.pillText, active && styles.pillTextActive]}>
+                            {type.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
-                </BlurView>
-              </GlassCard>
-            </Animated.View>
-          </ScrollView>
+
+                  <View style={styles.macroGrid}>
+                    <View style={styles.macroCol}>
+                      <ManualField
+                        label="Calories *"
+                        value={calories}
+                        setter={setCalories}
+                        placeholder="350"
+                        fieldKey="cal"
+                        focused={focusedField}
+                        setFocused={setFocusedField}
+                        numeric
+                      />
+                    </View>
+                    <View style={styles.macroCol}>
+                      <ManualField
+                        label="Protein (g) *"
+                        value={protein}
+                        setter={setProtein}
+                        placeholder="25"
+                        fieldKey="protein"
+                        focused={focusedField}
+                        setFocused={setFocusedField}
+                        numeric
+                      />
+                    </View>
+                  </View>
+
+                  <ActionButton
+                    variant="primary"
+                    onPress={handleManualSubmit}
+                    loading={loading}
+                    style={styles.submitBtn}
+                  >
+                    Log Food
+                  </ActionButton>
+                </GlassCard>
+
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowManual(false);
+                  }}
+                  style={styles.manualToggle}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="search" size={18} color={colors.primary} />
+                  <Text style={styles.manualToggleText}>Search foods instead</Text>
+                </Pressable>
+              </Animated.View>
+            </ScrollView>
+          )}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
+  );
+}
+
+function DailySummary({ totals }) {
+  return (
+    <View style={styles.summaryBar}>
+      <Text style={styles.summaryText}>
+        Today: {Math.round(totals.calories)} cal · {Math.round(totals.protein)}g protein
+      </Text>
+    </View>
+  );
+}
+
+function ManualField({ label, value, setter, placeholder, fieldKey, focused, setFocused, numeric = false }) {
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={[styles.input, focused === fieldKey && styles.inputFocused]}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        value={value}
+        onChangeText={setter}
+        onFocus={() => setFocused(fieldKey)}
+        onBlur={() => setFocused(null)}
+        keyboardType={numeric ? 'numeric' : 'default'}
+      />
+    </View>
+  );
+}
+
+export default function LogFoodScreen(props) {
+  return (
+    <ErrorBoundary>
+      <LogFoodScreenInner {...props} />
+    </ErrorBoundary>
   );
 }
 
@@ -213,41 +399,74 @@ const styles = StyleSheet.create({
   kav: {
     flex: 1,
   },
-  scroll: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing['2xl'],
+    paddingTop: spacing.sm,
   },
   backBtn: {
     minWidth: 44,
     minHeight: 44,
+    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  backText: {
-    color: colors.primaryBright,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
   },
   title: {
-    fontSize: fontSize['2xl'],
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+  },
+  summaryBar: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  summaryText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
+  },
+  searchWrap: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  scroll: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['2xl'],
+  },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['2xl'],
+  },
+  sectionTitle: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  manualToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+    minHeight: 44,
+  },
+  manualToggleText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
   },
   card: {
     padding: 0,
     overflow: 'hidden',
   },
-  blur: {
-    overflow: 'hidden',
-    borderRadius: radii.lg,
-  },
-  cardInner: {
-    padding: spacing.lg,
-  },
   fieldWrap: {
     marginBottom: spacing.sm,
+    padding: spacing.md,
+    paddingBottom: 0,
   },
   label: {
     fontSize: fontSize.sm,
@@ -257,6 +476,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+    paddingHorizontal: spacing.md,
   },
   input: {
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -276,6 +496,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   pill: {
     flex: 1,
@@ -303,12 +524,19 @@ const styles = StyleSheet.create({
   macroGrid: {
     flexDirection: 'row',
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   macroCol: {
     flex: 1,
   },
   submitBtn: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
     minHeight: 52,
+  },
+  skeletons: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
   },
 });

@@ -128,23 +128,19 @@ export async function fetchByBarcode(barcode) {
   const cached = await getBarcodeCached(barcode);
   if (cached) return cached;
 
-  try {
-    const res = await fetch(
-      `${BASE_URL}/api/v0/product/${barcode}.json`,
-      { signal: AbortSignal.timeout(10000) },
-    );
+  const res = await fetch(
+    `${BASE_URL}/api/v0/product/${barcode}.json`,
+    { signal: AbortSignal.timeout(10000) },
+  );
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
 
-    if (json.status !== 1 || !json.product) return null;
+  if (json.status !== 1 || !json.product) return null;
 
-    const product = normalizeProduct(json.product);
-    await addToBarcodeCache(barcode, product);
-    return product;
-  } catch {
-    return null;
-  }
+  const product = normalizeProduct(json.product);
+  await addToBarcodeCache(barcode, product);
+  return product;
 }
 
 async function getBarcodeCached(barcode) {

@@ -6,13 +6,16 @@ import CustomTabBar from './CustomTabBar';
 
 import HomeScreen from '../screens/HomeScreen';
 import ProgressScreen from '../screens/ProgressScreen';
-import SocialScreen from '../screens/SocialScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LogActivityScreen from '../screens/LogActivityScreen';
 import LogFoodScreen from '../screens/LogFoodScreen';
 import LogSleepScreen from '../screens/LogSleepScreen';
 import AICoachScreen from '../screens/AICoachScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import FoodLibraryScreen from '../screens/library/FoodLibraryScreen';
+import FoodDetailScreen from '../screens/library/FoodDetailScreen';
+import CreateFoodScreen from '../screens/library/CreateFoodScreen';
+import BarcodeScreen from '../screens/library/BarcodeScreen';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -28,7 +31,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
-      <Tab.Screen name="Social" component={SocialScreen} />
+      <Tab.Screen name="Library" component={FoodLibraryScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -67,6 +70,21 @@ export default function MainNavigator() {
         name="Notifications"
         component={NotificationsScreen}
         options={{ animation: 'slide_from_right' }}
+      />
+      <RootStack.Screen
+        name="FoodDetail"
+        component={FoodDetailScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <RootStack.Screen
+        name="CreateFood"
+        component={CreateFoodScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <RootStack.Screen
+        name="BarcodeScanner"
+        component={BarcodeScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
     </RootStack.Navigator>
   );
