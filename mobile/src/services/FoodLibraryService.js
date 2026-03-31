@@ -13,19 +13,40 @@ const MAX_FAVORITES = 100;
 const MAX_RECENTS = 30;
 
 let syncQueue = [];
+let isSyncing = false;
 
 function generateId() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function isPositiveNumber(value) {
+  return Number.isFinite(value) && value > 0;
+}
+
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+async function persistSyncQueue() {
+  try {
+    if (syncQueue.length === 0) {
+      await AsyncStorage.removeItem(KEYS.SYNC_QUEUE);
+      return;
+    }
+
+    await AsyncStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(syncQueue));
+  } catch {}
 }
 
 // ---------- Nutrition calculation ----------
 
 export function calculateNutrition(food, grams) {
-  const ratio = grams / 100;
+  const safeGrams = isPositiveNumber(grams) ? grams : 0;
+  const ratio = safeGrams / 100;
   return {
     calories: Math.round((food.calories ?? 0) * ratio),
     protein: Math.round(((food.protein ?? 0) * ratio) * 10) / 10,
@@ -145,14 +166,19 @@ export async function getTodayLog() {
 }
 
 export async function addFoodEntry(food, serving) {
-  const grams = serving.grams ?? food.servingGrams ?? 100;
+  const fallbackGrams = food.servingGrams ?? 100;
+  const grams = serving.grams ?? fallbackGrams;
+  if (!isPositiveNumber(grams)) {
+    throw new Error('Serving size must be greater than 0 grams.');
+  }
+
   const nutrition = calculateNutrition(food, grams);
 
   const entry = {
     id: generateId(),
     food,
     grams,
-    servings: serving.servings ?? 1,
+    servings: serving.servings ?? grams / fallbackGrams,
     mealType: serving.mealType ?? 'snack',
     loggedAt: new Date().toISOString(),
     ...nutrition,
@@ -187,6 +213,9 @@ export async function updateFoodEntry(entryId, serving) {
 
   const entry = store[key][idx];
   const grams = serving.grams ?? entry.grams;
+  if (!isPositiveNumber(grams)) {
+    throw new Error('Serving size must be greater than 0 grams.');
+  }
   const nutrition = calculateNutrition(entry.food, grams);
 
   store[key][idx] = {
@@ -219,11 +248,14 @@ export async function getDailyTotals() {
 
 function queueSync(entry) {
   syncQueue.push(entry);
-  processSyncQueue();
+  persistSyncQueue().then(() => {
+    processSyncQueue();
+  });
 }
 
 async function processSyncQueue() {
-  if (syncQueue.length === 0) return;
+  if (isSyncing || syncQueue.length === 0) return;
+  isSyncing = true;
   const batch = [...syncQueue];
   syncQueue = [];
 
@@ -239,14 +271,15 @@ async function processSyncQueue() {
         mealType: entry.mealType,
       });
     }
+    await persistSyncQueue();
   } catch {
     syncQueue.push(...batch);
-    try {
-      await AsyncStorage.setItem(
-        KEYS.SYNC_QUEUE,
-        JSON.stringify(syncQueue),
-      );
-    } catch {}
+    await persistSyncQueue();
+  } finally {
+    isSyncing = false;
+    if (syncQueue.length > 0) {
+      processSyncQueue();
+    }
   }
 }
 
@@ -255,8 +288,13 @@ export async function retrySyncQueue() {
     const raw = await AsyncStorage.getItem(KEYS.SYNC_QUEUE);
     if (raw) {
       const queued = JSON.parse(raw);
-      syncQueue.push(...queued);
-      await AsyncStorage.removeItem(KEYS.SYNC_QUEUE);
+      const knownIds = new Set(syncQueue.map((entry) => entry.id));
+      queued.forEach((entry) => {
+        if (!knownIds.has(entry.id)) {
+          syncQueue.push(entry);
+        }
+      });
+      await persistSyncQueue();
       processSyncQueue();
     }
   } catch {}
