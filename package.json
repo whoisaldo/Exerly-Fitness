@@ -1,31 +1,28 @@
 {
   "name": "exerly-fitness",
   "version": "1.0.0",
-  "description": "Exerly Fitness — monorepo with backend, frontend, and mobile apps",
+  "description": "Exerly Fitness monorepo with backend, frontend, and an iOS app",
   "private": true,
   "workspaces": [
     "backend",
-    "frontend",
-    "mobile"
+    "frontend"
   ],
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:all": "concurrently -n backend,frontend,mobile -c blue,green,magenta \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mobile\"",
+    "dev:all": "npm run dev",
     "dev:backend": "npm start --prefix backend",
     "dev:frontend": "npm start --prefix frontend",
-    "dev:mobile": "npm start --prefix mobile",
     "local": "concurrently -n backend,frontend -c blue,green \"npm run local:backend\" \"npm run dev:frontend\"",
-    "local:all": "concurrently -n backend,frontend,mobile -c blue,green,magenta \"npm run local:backend\" \"npm run dev:frontend\" \"npm run dev:mobile\"",
+    "local:all": "npm run local",
     "local:backend": "npm run start:local --prefix backend",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../mobile && npm install",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "build:frontend": "npm run build --prefix frontend",
     "start:backend": "npm start --prefix backend",
-    "ios": "cd mobile && npx expo start --ios",
-    "android": "cd mobile && npx expo start --android"
+    "ios": "npm run ios:build",
+    "ios:build": "xcodebuild -project ios/Exerly.xcodeproj -scheme Exerly -destination 'generic/platform=iOS' -derivedDataPath .deriveddata CODE_SIGNING_ALLOWED=NO build"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
-    "react-native-worklets": "0.5.1"
+    "concurrently": "^9.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

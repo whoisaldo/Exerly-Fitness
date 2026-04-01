@@ -193,6 +193,54 @@ function encodeProfile(profile) {
   return JSON.stringify(profile);
 }
 
+function serializeMobileUser(user) {
+  if (!user) return null;
+  const profile = decodeProfile(user.profile) || {};
+  const remainingCredits = user.aiCreditsRemaining ?? null;
+
+  return {
+    _id: user.id != null ? String(user.id) : undefined,
+    email: user.email,
+    name: user.name ?? null,
+    isAdmin: !!user.is_admin,
+    onboardingCompleted: !!user.onboardingCompleted,
+    age: user.age ?? profile.age ?? null,
+    gender: user.gender ?? profile.gender ?? profile.sex ?? null,
+    height: user.height ?? profile.height ?? profile.height_cm ?? null,
+    weight: user.weight ?? profile.weight ?? profile.weight_kg ?? null,
+    activityLevel: profile.activityLevel ?? profile.activity_level ?? null,
+    goal: user.goal ?? profile.goal ?? null,
+    targetWeight: profile.targetWeight ?? profile.target_weight ?? null,
+    aiCreditsRemaining: remainingCredits,
+    dailyAiCreditsUsed: user.aiDailyCreditsUsed ?? 0,
+    hourlyAiCreditsUsed: remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits))
+  };
+}
+
+function buildOnboardingProfile(existingProfile, payload) {
+  const profile = decodeProfile(existingProfile) || {};
+  const height = Number(payload.height);
+  const weight = Number(payload.weight);
+  const targetWeight = payload.targetWeight != null ? Number(payload.targetWeight) : null;
+  const activityLevel = payload.activityLevel || payload.activity_level || profile.activityLevel || profile.activity_level || null;
+
+  return {
+    ...profile,
+    age: parseInt(payload.age, 10),
+    gender: payload.gender,
+    sex: payload.gender,
+    height,
+    height_cm: height,
+    weight,
+    weight_kg: weight,
+    activityLevel,
+    activity_level: activityLevel,
+    goal: payload.goal,
+    targetWeight: targetWeight ?? profile.targetWeight ?? null,
+    target_weight: targetWeight ?? profile.target_weight ?? null
+  };
+}
+
 // ---------- CORS Setup (Allow Mobile) ----------
 const allowedOrigins = [
   'http://localhost:3000',
@@ -264,8 +312,9 @@ app.post('/signup', async (req, res) => {
     const makeAdmin = ADMIN_EMAIL && email === ADMIN_EMAIL;
     
     await dbQuery('INSERT INTO users (name, email, hash, is_admin) VALUES (?,?,?,?)', [name, email, hash, makeAdmin ? 1 : 0]);
+    const createdUser = await dbQuery('SELECT * FROM users WHERE email=?', [email]);
     const token = jwt.sign({ email, name, is_admin: !!makeAdmin }, SECRET, { expiresIn: '12h' });
-    res.json({ message: 'Signup successful', token });
+    res.json({ message: 'Signup successful', token, user: serializeMobileUser(createdUser.rows[0]) });
   } catch (err) {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
@@ -286,7 +335,7 @@ app.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     
     const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!user.is_admin }, SECRET, { expiresIn: '12h' });
-    res.json({ token });
+    res.json({ token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
@@ -323,7 +372,27 @@ app.get('/api/profile', authenticate, async (req, res) => {
   }
 });
 
+app.get('/api/me', authenticate, async (req, res) => {
+  try {
+    const r = await dbQuery('SELECT * FROM users WHERE email=?', [req.user.email]);
+    if (!r.rows[0]) return res.status(404).json({ message: 'User not found' });
+    res.json(serializeMobileUser(r.rows[0]));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching current user', error: err.message });
+  }
+});
+
 app.post('/api/profile', authenticate, async (req, res) => {
+  try {
+    const profile = req.body || {};
+    await dbQuery('UPDATE users SET profile=? WHERE email=?', [encodeProfile(profile), req.user.email]);
+    res.json({ message: 'Profile saved', profile });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving profile', error: err.message });
+  }
+});
+
+app.put('/api/profile', authenticate, async (req, res) => {
   try {
     const profile = req.body || {};
     await dbQuery('UPDATE users SET profile=? WHERE email=?', [encodeProfile(profile), req.user.email]);
@@ -336,20 +405,41 @@ app.post('/api/profile', authenticate, async (req, res) => {
 // ---------- Onboarding ----------
 app.post('/api/user/onboarding', authenticate, async (req, res) => {
   try {
-    const { age, gender, height, weight, goal, experienceLevel, workoutDaysPerWeek, equipmentAccess } = req.body;
+    const {
+      age, gender, height, weight, goal,
+      activityLevel, targetWeight,
+      experienceLevel, workoutDaysPerWeek, equipmentAccess
+    } = req.body;
     
-    if (!age || !gender || !height || !weight || !goal || !experienceLevel) {
+    if (!age || !gender || !height || !weight || !goal) {
       return res.status(400).json({ message: 'All fields are required' });
     }
+
+    const existingUserResult = await dbQuery('SELECT * FROM users WHERE email=?', [req.user.email]);
+    const existingUser = existingUserResult.rows[0];
+    const mergedProfile = buildOnboardingProfile(existingUser?.profile, req.body);
     
     await dbQuery(`
       UPDATE users SET 
         onboardingCompleted=1, age=?, gender=?, height=?, weight=?, 
-        goal=?, experienceLevel=?, workoutDaysPerWeek=?, equipmentAccess=?
+        goal=?, experienceLevel=?, workoutDaysPerWeek=?, equipmentAccess=?, profile=?
       WHERE email=?
-    `, [parseInt(age), gender, height, weight, goal, experienceLevel, parseInt(workoutDaysPerWeek) || 3, equipmentAccess || 'full_gym', req.user.email]);
+    `, [
+      parseInt(age), gender, Number(height), Number(weight), goal,
+      experienceLevel || existingUser?.experienceLevel || 'beginner',
+      parseInt(workoutDaysPerWeek) || 3,
+      equipmentAccess || existingUser?.equipmentAccess || 'full_gym',
+      encodeProfile(mergedProfile),
+      req.user.email
+    ]);
+
+    const updatedUser = await dbQuery('SELECT * FROM users WHERE email=?', [req.user.email]);
     
-    res.json({ message: 'Onboarding completed successfully!' });
+    res.json({
+      message: 'Onboarding completed successfully!',
+      maintenance: calculateMaintenance(mergedProfile),
+      user: serializeMobileUser(updatedUser.rows[0])
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error completing onboarding', error: err.message });
   }
@@ -769,4 +859,3 @@ initDb()
     console.error('Failed to initialize database:', err);
     process.exit(1);
   });
-

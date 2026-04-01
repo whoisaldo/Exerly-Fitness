@@ -172,6 +172,59 @@ function getTodayUTC() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function normalizeProfile(profile) {
+  return profile && typeof profile === 'object' ? profile : {};
+}
+
+function serializeMobileUser(user) {
+  if (!user) return null;
+  const source = typeof user.toObject === 'function' ? user.toObject() : user;
+  const profile = normalizeProfile(source.profile);
+  const remainingCredits = source.aiCreditsRemaining ?? null;
+
+  return {
+    _id: source._id ? String(source._id) : undefined,
+    email: source.email,
+    name: source.name ?? null,
+    isAdmin: typeof source.is_admin === 'boolean' ? source.is_admin : !!source.is_admin,
+    onboardingCompleted: source.onboardingCompleted == null ? false : !!source.onboardingCompleted,
+    age: source.age ?? profile.age ?? null,
+    gender: source.gender ?? profile.gender ?? profile.sex ?? null,
+    height: source.height ?? profile.height ?? profile.height_cm ?? null,
+    weight: source.weight ?? profile.weight ?? profile.weight_kg ?? null,
+    activityLevel: profile.activityLevel ?? profile.activity_level ?? null,
+    goal: source.goal ?? profile.goal ?? null,
+    targetWeight: profile.targetWeight ?? profile.target_weight ?? null,
+    aiCreditsRemaining: remainingCredits,
+    dailyAiCreditsUsed: source.aiDailyCreditsUsed ?? 0,
+    hourlyAiCreditsUsed: remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits))
+  };
+}
+
+function buildOnboardingProfile(existingProfile, payload) {
+  const profile = normalizeProfile(existingProfile);
+  const height = Number(payload.height);
+  const weight = Number(payload.weight);
+  const targetWeight = payload.targetWeight != null ? Number(payload.targetWeight) : null;
+  const activityLevel = payload.activityLevel || payload.activity_level || profile.activityLevel || profile.activity_level || null;
+
+  return {
+    ...profile,
+    age: parseInt(payload.age, 10),
+    gender: payload.gender,
+    sex: payload.gender,
+    height,
+    height_cm: height,
+    weight,
+    weight_kg: weight,
+    activityLevel,
+    activity_level: activityLevel,
+    goal: payload.goal,
+    targetWeight: targetWeight ?? profile.targetWeight ?? null,
+    target_weight: targetWeight ?? profile.target_weight ?? null
+  };
+}
+
 // ---------- AI Credit Management Functions ----------
 function checkHourlyReset(user) {
   const now = new Date();
@@ -314,7 +367,7 @@ app.post('/signup', async (req, res) => {
     
     const user = await User.create({ name, email, hash, is_admin: !!makeAdmin });
     const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!makeAdmin }, SECRET, { expiresIn: '12h' });
-    res.json({ message: 'Signup successful', token });
+    res.json({ message: 'Signup successful', token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
@@ -340,7 +393,7 @@ app.post('/login', async (req, res) => {
     }
     
     const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!user.is_admin }, SECRET, { expiresIn: '12h' });
-    res.json({ token });
+    res.json({ token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
@@ -378,7 +431,27 @@ app.get('/api/profile', authenticate, async (req, res) => {
   }
 });
 
+app.get('/api/me', authenticate, async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(serializeMobileUser(user));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching current user', error: err.message });
+  }
+});
+
 app.post('/api/profile', authenticate, async (req, res) => {
+  try {
+    const profile = req.body || {};
+    await User.updateOne({ email: req.user.email }, { profile });
+    res.json({ message: 'Profile saved', profile });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving profile', error: err.message });
+  }
+});
+
+app.put('/api/profile', authenticate, async (req, res) => {
   try {
     const profile = req.body || {};
     await User.updateOne({ email: req.user.email }, { profile });
@@ -391,34 +464,40 @@ app.post('/api/profile', authenticate, async (req, res) => {
 // ---------- Onboarding ----------
 app.post('/api/user/onboarding', authenticate, async (req, res) => {
   try {
-    const { age, gender, height, weight, goal, experienceLevel, workoutDaysPerWeek, equipmentAccess } = req.body;
+    const {
+      age, gender, height, weight, goal,
+      activityLevel, targetWeight,
+      experienceLevel, workoutDaysPerWeek, equipmentAccess
+    } = req.body;
     
     // Validate required fields
-    if (!age || !gender || !height || !weight || !goal || !experienceLevel) {
+    if (!age || !gender || !height || !weight || !goal) {
       return res.status(400).json({ message: 'All fields are required' });
     }
     
-    // Convert height to cm if needed (assuming frontend sends in cm)
-    const heightInCm = height;
-    const weightInKg = weight;
+    const existingUser = await User.findOne({ email: req.user.email });
+    const mergedProfile = buildOnboardingProfile(existingUser?.profile, req.body);
     
     const updateData = {
       onboardingCompleted: true,
       age: parseInt(age),
       gender,
-      height: heightInCm,
-      weight: weightInKg,
+      height: Number(height),
+      weight: Number(weight),
       goal,
-      experienceLevel,
+      experienceLevel: experienceLevel || existingUser?.experienceLevel || 'beginner',
       workoutDaysPerWeek: parseInt(workoutDaysPerWeek) || 3,
-      equipmentAccess: equipmentAccess || 'full_gym'
+      equipmentAccess: equipmentAccess || existingUser?.equipmentAccess || 'full_gym',
+      profile: mergedProfile
     };
     
     await User.updateOne({ email: req.user.email }, updateData);
+    const updatedUser = await User.findOne({ email: req.user.email });
     
     res.json({ 
       message: 'Onboarding completed successfully!',
-      user: updateData
+      maintenance: calculateMaintenance(mergedProfile),
+      user: serializeMobileUser(updatedUser)
     });
   } catch (err) {
     res.status(500).json({ message: 'Error completing onboarding', error: err.message });
@@ -1037,4 +1116,3 @@ app.listen(PORT, HOST, () => {
   console.log(`🟢 Server running on http://localhost:${PORT}`);
   console.log(`📱 Mobile access: http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_LOCAL_IP'}:${PORT}`);
 });
-
