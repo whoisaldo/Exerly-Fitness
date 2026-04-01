@@ -45,3 +45,16 @@ coverage/
 # Visual Studio artifacts
 *.wsuo
 DocumentLayout.json
+
+# Local native build outputs
+.deriveddata/
+ios/build/
+
+# Xcode user data
+ios/**/*.xcuserstate
+ios/**/xcuserdata/
+ios/**/*.xcuserdatad/
+
+# Local-only folders
+web/
+Exerly-Fitness/
