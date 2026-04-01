@@ -2,12 +2,10 @@
 node_modules/
 
 # Build outputs
-frontend/build/
-frontend/dist/
-frontend/*.tsbuildinfo
-frontend/nul
-mobile/.expo/
-mobile/dist/
+apps/web/build/
+apps/web/dist/
+apps/web/*.tsbuildinfo
+apps/web/nul
 
 # Environment files
 .env
@@ -35,10 +33,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Expo
-mobile/ios/
-mobile/android/
-
 # Coverage
 coverage/
 
@@ -48,13 +42,9 @@ DocumentLayout.json
 
 # Local native build outputs
 .deriveddata/
-ios/build/
+apps/ios/build/
 
 # Xcode user data
-ios/**/*.xcuserstate
-ios/**/xcuserdata/
-ios/**/*.xcuserdatad/
-
-# Local-only folders
-web/
-Exerly-Fitness/
+apps/ios/**/*.xcuserstate
+apps/ios/**/xcuserdata/
+apps/ios/**/*.xcuserdatad/
