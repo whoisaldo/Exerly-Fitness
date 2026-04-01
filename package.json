@@ -1,25 +1,25 @@
 {
   "name": "exerly-fitness",
   "version": "1.0.0",
-  "description": "Exerly Fitness monorepo with backend, frontend, and an iOS app",
+  "description": "Exerly Fitness monorepo with API, web dashboard, and iOS app",
   "private": true,
   "workspaces": [
-    "backend",
-    "frontend"
+    "apps/api",
+    "apps/web"
   ],
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:all": "npm run dev",
-    "dev:backend": "npm start --prefix backend",
-    "dev:frontend": "npm start --prefix frontend",
-    "local": "concurrently -n backend,frontend -c blue,green \"npm run local:backend\" \"npm run dev:frontend\"",
+    "dev:api": "npm start --prefix apps/api",
+    "dev:web": "npm start --prefix apps/web",
+    "local": "concurrently -n api,web -c blue,green \"npm run local:api\" \"npm run dev:web\"",
     "local:all": "npm run local",
-    "local:backend": "npm run start:local --prefix backend",
-    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
-    "build:frontend": "npm run build --prefix frontend",
-    "start:backend": "npm start --prefix backend",
+    "local:api": "npm run start:local --prefix apps/api",
+    "install:all": "npm install && npm install --prefix apps/api && npm install --prefix apps/web",
+    "build:web": "npm run build --prefix apps/web",
+    "start:api": "npm start --prefix apps/api",
     "ios": "npm run ios:build",
-    "ios:build": "xcodebuild -project ios/Exerly.xcodeproj -scheme Exerly -destination 'generic/platform=iOS' -derivedDataPath .deriveddata CODE_SIGNING_ALLOWED=NO build"
+    "ios:build": "xcodebuild -project apps/ios/Exerly.xcodeproj -scheme Exerly -destination 'generic/platform=iOS' -derivedDataPath .deriveddata CODE_SIGNING_ALLOWED=NO build"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
