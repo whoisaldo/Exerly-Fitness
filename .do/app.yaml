@@ -1,0 +1,29 @@
+name: exerly-api
+services:
+  - name: api
+    source_dir: apps/api
+    github:
+      repo: whoisaldo/Exerly-Fitness
+      branch: main
+      deploy_on_push: true
+    run_command: npm start
+    environment_slug: node-js
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    http_port: 8080
+    envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
+      - key: MONGODB_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: ADMIN_EMAILS
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
