@@ -71,7 +71,7 @@ actor APIClient {
            !configuredBaseURL.isEmpty {
             return configuredBaseURL
         }
-        return "http://192.168.1.192:3001"
+        return "https://exerly-fitness-93dyl.ondigitalocean.app"
         #endif
     }
 

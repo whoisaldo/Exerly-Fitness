@@ -283,6 +283,8 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'https://exerlyfitness.com',
   'https://www.exerlyfitness.com',
+  'https://exerly-fitness-93dyl.ondigitalocean.app',
+  'https://whoisaldo.github.io',
   // Mobile app origins (Expo)
   'http://localhost:8081',
   'http://localhost:19000',
