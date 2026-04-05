@@ -14,7 +14,18 @@ final class OnboardingState: ObservableObject {
     @Published var gender: Gender = .male
 
     // Step 3: Height/Weight
-    @Published var useMetric = true
+    @Published var useMetric: Bool = {
+        if UserDefaults.standard.object(forKey: "useMetric") != nil {
+            return UserDefaults.standard.bool(forKey: "useMetric")
+        }
+        if #available(iOS 16, *) {
+            return Locale.current.measurementSystem == .metric
+        } else {
+            return Locale.current.usesMetricSystem
+        }
+    }() {
+        didSet { UserDefaults.standard.set(useMetric, forKey: "useMetric") }
+    }
     @Published var heightCm: Double = 170
     @Published var weightKg: Double = 70
     @Published var heightFeet = 5

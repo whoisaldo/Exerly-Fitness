@@ -32,6 +32,12 @@ struct FloatingLabelTextField: View {
             .foregroundStyle(.exTextPrimary)
             .focused($isFocused)
             .offset(y: 4)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { isFocused = false }
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 18)

@@ -138,7 +138,20 @@ struct Step10Results: View {
     }
 
     private func bodyCard(_ r: WizardResults) -> some View {
-        GlassCard {
+        let low: Double
+        let high: Double
+        let unit: String
+        if state.useMetric {
+            low = r.healthyWeightRange.lowerBound
+            high = r.healthyWeightRange.upperBound
+            unit = "kg"
+        } else {
+            low = WizardService.kgToLbs(r.healthyWeightRange.lowerBound)
+            high = WizardService.kgToLbs(r.healthyWeightRange.upperBound)
+            unit = "lbs"
+        }
+
+        return GlassCard {
             HStack(spacing: 20) {
                 VStack(spacing: 2) {
                     Text(String(format: "%.1f", r.bmi))
@@ -157,10 +170,10 @@ struct Step10Results: View {
                         .foregroundStyle(.exTextMuted)
                 }
                 VStack(spacing: 2) {
-                    Text("\(Int(r.healthyWeightRange.lowerBound))-\(Int(r.healthyWeightRange.upperBound))")
+                    Text("\(Int(low))-\(Int(high))")
                         .font(.exStatSmall)
                         .foregroundStyle(.exTextPrimary)
-                    Text("Healthy kg")
+                    Text("Healthy \(unit)")
                         .font(.exCaption)
                         .foregroundStyle(.exTextMuted)
                 }

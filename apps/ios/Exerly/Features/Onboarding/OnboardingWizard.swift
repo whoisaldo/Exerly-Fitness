@@ -78,6 +78,9 @@ struct OnboardingWizard: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.step)
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
 
     private func completeOnboarding() {

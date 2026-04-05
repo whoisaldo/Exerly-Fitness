@@ -15,7 +15,8 @@ const mongoose = require('mongoose');
 
 const app = express();
 const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+  .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
 
 // MongoDB Connection String - from environment variable
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -365,7 +366,7 @@ app.post('/signup', async (req, res) => {
     if (existing) return res.status(409).json({ message: 'User with this email already exists' });
     
     const hash = await bcrypt.hash(password, 10);
-    const makeAdmin = ADMIN_EMAIL && email === ADMIN_EMAIL;
+    const makeAdmin = ADMIN_EMAILS.includes(email);
     
     const user = await User.create({ name, email, hash, is_admin: !!makeAdmin });
     const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!makeAdmin }, SECRET, { expiresIn: '12h' });
@@ -389,7 +390,7 @@ app.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     
     // Auto-promote admin
-    if (ADMIN_EMAIL && email === ADMIN_EMAIL && !user.is_admin) {
+    if (ADMIN_EMAILS.includes(email) && !user.is_admin) {
       user.is_admin = true;
       await user.save();
     }
@@ -455,9 +456,25 @@ app.post('/api/profile', authenticate, async (req, res) => {
 
 app.put('/api/profile', authenticate, async (req, res) => {
   try {
-    const profile = req.body || {};
-    await User.updateOne({ email: req.user.email }, { profile });
-    res.json({ message: 'Profile saved', profile });
+    const data = req.body || {};
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const updates = {};
+    if (data.name) updates.name = data.name;
+    if (data.age != null) updates.age = parseInt(data.age);
+    if (data.gender) updates.gender = data.gender;
+    if (data.height != null) updates.height = Number(data.height);
+    if (data.weight != null) updates.weight = Number(data.weight);
+    if (data.goal) updates.goal = data.goal;
+    if (data.activityLevel) {
+      const existing = normalizeProfile(user.profile);
+      updates.profile = { ...existing, activityLevel: data.activityLevel, activity_level: data.activityLevel };
+    }
+
+    await User.updateOne({ email: req.user.email }, updates);
+    const updated = await User.findOne({ email: req.user.email });
+    res.json({ message: 'Profile saved', user: serializeMobileUser(updated) });
   } catch (err) {
     res.status(500).json({ message: 'Error saving profile', error: err.message });
   }
@@ -1108,6 +1125,73 @@ app.get('/api/ai/credits', authenticate, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching AI credits', error: err.message });
+  }
+});
+
+// ---------- Change Password ----------
+app.post('/api/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ message: 'Current password and new password are required' });
+    if (newPassword.length < 6)
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const ok = await bcrypt.compare(currentPassword, user.hash);
+    if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
+
+    user.hash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error changing password', error: err.message });
+  }
+});
+
+// ---------- Admin Stats ----------
+app.get('/api/admin/stats', authenticate, requireAdmin, async (_req, res) => {
+  try {
+    const today = getTodayUTC();
+    const [totalUsers, todayActivities, todayFood, todaySleep, totalActivities, totalFood, totalSleep] = await Promise.all([
+      User.countDocuments(),
+      Activity.distinct('email', { entry_date: today }),
+      Food.distinct('email', { entry_date: today }),
+      Sleep.distinct('email', { entry_date: today }),
+      Activity.countDocuments(),
+      Food.countDocuments(),
+      Sleep.countDocuments()
+    ]);
+
+    const activeToday = new Set([...todayActivities, ...todayFood, ...todaySleep]).size;
+
+    res.json({
+      totalUsers,
+      activeToday,
+      totalEntries: totalActivities + totalFood + totalSleep,
+      breakdown: { activities: totalActivities, food: totalFood, sleep: totalSleep }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching admin stats', error: err.message });
+  }
+});
+
+// ---------- Toggle Admin ----------
+app.post('/api/admin/toggle-admin', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { email, isAdmin } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.is_admin = !!isAdmin;
+    await user.save();
+    res.json({ message: `Admin status updated for ${email}`, isAdmin: user.is_admin });
+  } catch (err) {
+    res.status(500).json({ message: 'Error toggling admin', error: err.message });
   }
 });
 

@@ -46,18 +46,36 @@ struct Step4Goals: View {
     @ViewBuilder
     private var targetWeightSection: some View {
         if state.goal == .loseWeight || state.goal == .gainMuscle {
+            let unit = state.useMetric ? "kg" : "lbs"
+            let displayValue = state.useMetric
+                ? state.targetWeightKg
+                : WizardService.kgToLbs(state.targetWeightKg)
+            let range: ClosedRange<Double> = state.useMetric ? 40...150 : 88...330
+            let step: Double = state.useMetric ? 0.5 : 1.0
+
             GlassCard {
                 VStack(spacing: 8) {
                     Text("Target Weight")
                         .font(.exLabel)
                         .foregroundStyle(.exTextSecondary)
                     HStack {
-                        Slider(value: $state.targetWeightKg, in: 40...150, step: 0.5)
-                            .tint(.exPrimary)
-                        Text(String(format: "%.1f kg", state.targetWeightKg))
+                        Slider(
+                            value: Binding(
+                                get: { displayValue },
+                                set: { newValue in
+                                    state.targetWeightKg = state.useMetric
+                                        ? newValue
+                                        : WizardService.lbsToKg(newValue)
+                                }
+                            ),
+                            in: range,
+                            step: step
+                        )
+                        .tint(.exPrimary)
+                        Text(String(format: "%.1f %@", displayValue, unit))
                             .font(.exStatSmall)
                             .foregroundStyle(.exTextPrimary)
-                            .frame(width: 80)
+                            .frame(width: 90)
                     }
                 }
             }

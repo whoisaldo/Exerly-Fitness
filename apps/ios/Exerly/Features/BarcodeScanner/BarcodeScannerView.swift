@@ -1,31 +1,120 @@
 import SwiftUI
 import AVFoundation
 
+// MARK: - Permission state
+
+private enum CameraPermission {
+    case unknown, granted, denied
+}
+
 struct BarcodeScannerView: View {
     @State private var scannedCode: String?
     @State private var foundFood: OpenFoodItem?
     @State private var isLoading = false
     @State private var notFound = false
+    @State private var cameraPermission: CameraPermission = .unknown
+    @State private var isTorchOn = false
+    @State private var hasScanned = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            CameraPreview(scannedCode: $scannedCode)
-                .ignoresSafeArea()
-
-            scanOverlay
-
-            VStack {
-                Spacer()
-                bottomPanel
+            switch cameraPermission {
+            case .unknown:
+                Color.exBackground.ignoresSafeArea()
+                ProgressView()
+                    .tint(.exPrimary)
+            case .denied:
+                permissionDeniedView
+            case .granted:
+                cameraBody
             }
         }
         .navigationTitle("Scan Barcode")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await checkCameraPermission() }
         .onChange(of: scannedCode) { _, code in
-            if let code { Task { await lookup(code) } }
+            if let code {
+                hasScanned = true
+                Task { await lookup(code) }
+            }
         }
     }
+
+    // MARK: - Permission denied UI
+
+    private var permissionDeniedView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "camera.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.exTextSecondary)
+            Text("Camera Access Required")
+                .font(.exHeadline)
+                .foregroundStyle(.exTextPrimary)
+            Text("Allow camera access in Settings to scan barcodes.")
+                .font(.exBody)
+                .foregroundStyle(.exTextSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.exBodyMedium)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.exPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.exBackground.ignoresSafeArea())
+    }
+
+    // MARK: - Main camera body (only shown when permission granted)
+
+    private var cameraBody: some View {
+        ZStack {
+            CameraPreview(scannedCode: $scannedCode, hasScanned: $hasScanned)
+                .ignoresSafeArea()
+
+            scanOverlay
+
+            // Toolbar buttons at top-right
+            VStack {
+                HStack {
+                    Spacer()
+                    torchButton
+                }
+                .padding(.top, 8)
+                .padding(.trailing, 16)
+                Spacer()
+                bottomPanel
+            }
+        }
+    }
+
+    // MARK: - Flashlight toggle
+
+    private var torchButton: some View {
+        Button {
+            toggleTorch()
+        } label: {
+            Image(systemName: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(isTorchOn ? .exPrimary : .white)
+                .padding(10)
+                .background(.ultraThinMaterial)
+                .clipShape(Circle())
+        }
+    }
+
+    // MARK: - Scan overlay
 
     private var scanOverlay: some View {
         GeometryReader { geo in
@@ -107,6 +196,8 @@ struct BarcodeScannerView: View {
         }
     }
 
+    // MARK: - Bottom panel
+
     @ViewBuilder
     private var bottomPanel: some View {
         VStack(spacing: 12) {
@@ -119,6 +210,7 @@ struct BarcodeScannerView: View {
             } else if let food = foundFood {
                 FoodCardView(food: food)
                     .padding(.horizontal, 20)
+                scanAgainButton
             } else if notFound {
                 GlassCard {
                     VStack(spacing: 8) {
@@ -134,6 +226,7 @@ struct BarcodeScannerView: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                scanAgainButton
             } else {
                 Text("Point camera at a barcode")
                     .font(.exBody)
@@ -141,6 +234,56 @@ struct BarcodeScannerView: View {
             }
         }
         .padding(.bottom, 40)
+    }
+
+    private var scanAgainButton: some View {
+        Button {
+            resetScan()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "barcode.viewfinder")
+                Text("Scan Again")
+            }
+            .font(.exBodyMedium)
+            .foregroundStyle(.exPrimary)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(Color.exPrimary.opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: - Helpers
+
+    private func checkCameraPermission() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraPermission = .granted
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            cameraPermission = granted ? .granted : .denied
+        default:
+            cameraPermission = .denied
+        }
+    }
+
+    private func toggleTorch() {
+        guard let device = AVCaptureDevice.default(for: .video),
+              device.hasTorch else { return }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = isTorchOn ? .off : .on
+            device.unlockForConfiguration()
+            isTorchOn.toggle()
+        } catch {}
+    }
+
+    private func resetScan() {
+        scannedCode = nil
+        foundFood = nil
+        notFound = false
+        hasScanned = false
     }
 
     private func lookup(_ barcode: String) async {
@@ -169,13 +312,31 @@ struct ScanLineView: View {
     }
 }
 
+// MARK: - Preview-layer UIView subclass (fixes frame sizing on device)
+
+private class CameraHostView: UIView {
+    var previewLayer: AVCaptureVideoPreviewLayer? {
+        didSet {
+            guard let previewLayer else { return }
+            previewLayer.videoGravity = .resizeAspectFill
+            layer.addSublayer(previewLayer)
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        previewLayer?.frame = bounds
+    }
+}
+
 // MARK: - Camera Preview (UIViewRepresentable)
 
 struct CameraPreview: UIViewRepresentable {
     @Binding var scannedCode: String?
+    @Binding var hasScanned: Bool
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
+    func makeUIView(context: Context) -> CameraHostView {
+        let view = CameraHostView()
         let session = AVCaptureSession()
         context.coordinator.session = session
 
@@ -191,8 +352,7 @@ struct CameraPreview: UIViewRepresentable {
         output.metadataObjectTypes = [.ean8, .ean13, .upce, .code128]
 
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
-        view.layer.addSublayer(previewLayer)
+        view.previewLayer = previewLayer
         context.coordinator.previewLayer = previewLayer
 
         DispatchQueue.global(qos: .userInitiated).async {
@@ -202,8 +362,11 @@ struct CameraPreview: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
-        context.coordinator.previewLayer?.frame = uiView.bounds
+    func updateUIView(_ uiView: CameraHostView, context: Context) {
+        // When hasScanned is reset to false, allow scanning again
+        if !hasScanned {
+            context.coordinator.hasScanned = false
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(scannedCode: $scannedCode) }
@@ -212,7 +375,7 @@ struct CameraPreview: UIViewRepresentable {
         var session: AVCaptureSession?
         var previewLayer: AVCaptureVideoPreviewLayer?
         @Binding var scannedCode: String?
-        private var hasScanned = false
+        var hasScanned = false
 
         init(scannedCode: Binding<String?>) {
             _scannedCode = scannedCode

@@ -3,8 +3,9 @@ import PhotosUI
 import SwiftData
 
 struct PhotosTab: View {
-    @Query(sort: \ProgressPhoto.date, order: .reverse) private var photos: [ProgressPhoto]
+    @EnvironmentObject private var authVM: AuthViewModel
     @Environment(\.modelContext) private var modelContext
+    @State private var photos: [ProgressPhoto] = []
     @State private var selectedItem: PhotosPickerItem?
     @State private var compareMode = false
     @State private var compareA: ProgressPhoto?
@@ -38,6 +39,7 @@ struct PhotosTab: View {
                 }
             }
         }
+        .onAppear { fetchPhotos() }
     }
 
     private var toolbar: some View {
@@ -105,7 +107,18 @@ struct PhotosTab: View {
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {
         guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
-        let photo = ProgressPhoto(imageData: data)
+        let userId = authVM.currentUser?.email
+        let photo = ProgressPhoto(imageData: data, userId: userId)
         modelContext.insert(photo)
+        fetchPhotos()
+    }
+
+    private func fetchPhotos() {
+        let userEmail = authVM.currentUser?.email ?? ""
+        var descriptor = FetchDescriptor<ProgressPhoto>(
+            predicate: #Predicate { $0.userId == userEmail },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        photos = (try? modelContext.fetch(descriptor)) ?? []
     }
 }

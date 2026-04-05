@@ -28,6 +28,7 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [apiHealth, setApiHealth] = useState(null);
+  const [adminStats, setAdminStats] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
 
   const token = localStorage.getItem('token') || '';
@@ -63,8 +64,14 @@ export default function Admin() {
     setUsersLoading(true);
     setError('');
 
-    // Fetch API health status
+    // Fetch API health status + admin stats
     fetchApiHealth();
+    fetch(`${BASE_URL}/api/admin/stats`, {
+      headers: { Authorization: 'Bearer ' + token }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setAdminStats(data); })
+      .catch(() => {});
 
     fetch(`${BASE_URL}/api/admin/users`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -234,9 +241,25 @@ export default function Admin() {
       key: 'is_admin',
       label: 'Role',
       render: (row) => (
-        <Badge variant={row.is_admin ? 'intensity' : 'status'}>
-          {row.is_admin ? 'Admin' : 'User'}
-        </Badge>
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            try {
+              await fetch(`${BASE_URL}/api/admin/toggle-admin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+                body: JSON.stringify({ email: row.email, isAdmin: !row.is_admin })
+              });
+              const res = await fetch(`${BASE_URL}/api/admin/users`, { headers: { Authorization: 'Bearer ' + token } });
+              if (res.ok) setUsers(await res.json());
+            } catch {}
+          }}
+          className="cursor-pointer"
+        >
+          <Badge variant={row.is_admin ? 'intensity' : 'status'}>
+            {row.is_admin ? 'Admin' : 'User'}
+          </Badge>
+        </button>
       ),
     },
     {
@@ -352,7 +375,7 @@ export default function Admin() {
                 </svg>
               }
               label="Active Today"
-              value="--"
+              value={adminStats?.activeToday ?? '--'}
             />
             <StatCard
               icon={
@@ -369,8 +392,8 @@ export default function Admin() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                 </svg>
               }
-              label="AI Credits"
-              value="--"
+              label="Total Entries"
+              value={adminStats?.totalEntries ?? '--'}
             />
           </div>
 

@@ -10,18 +10,37 @@ struct LogActivityView: View {
 
     private let intensities = ["light", "moderate", "intense"]
 
+    /// Calories per minute at moderate intensity for each activity.
+    private let caloriesPerMinute: [String: Double] = [
+        "Running": 10, "Walking": 4, "Cycling": 8, "Swimming": 9,
+        "Yoga": 3, "Weightlifting": 6, "HIIT": 12, "Pilates": 4,
+        "Boxing": 10, "Rowing": 8, "Basketball": 8, "Soccer": 9,
+        "American Football": 8, "Tennis": 7, "Baseball": 5,
+        "Volleyball": 6, "Martial Arts": 10, "Dance": 6,
+        "Rock Climbing": 9, "Hiking": 6, "Jump Rope": 12,
+        "Skateboarding": 5, "Elliptical": 7, "Stair Climbing": 9,
+        "Spinning": 10, "CrossFit": 10, "Stretching": 2.5,
+        "Badminton": 5, "Table Tennis": 4, "Golf": 3.5,
+    ]
+
     private var estimatedCalories: Int {
-        let multiplier: Double = switch intensity {
-        case "light": 4.0
-        case "intense": 9.0
-        default: 6.5
+        let baseRate = caloriesPerMinute[activityType] ?? 6.5
+        let intensityMultiplier: Double = switch intensity {
+        case "light": 0.7
+        case "intense": 1.4
+        default: 1.0
         }
-        return Int(duration * multiplier)
+        return Int(duration * baseRate * intensityMultiplier)
     }
 
     private let suggestions = [
         "Running", "Walking", "Cycling", "Swimming", "Yoga",
-        "Weightlifting", "HIIT", "Pilates", "Boxing", "Rowing"
+        "Weightlifting", "HIIT", "Pilates", "Boxing", "Rowing",
+        "Basketball", "Soccer", "American Football", "Tennis",
+        "Baseball", "Volleyball", "Martial Arts", "Dance",
+        "Rock Climbing", "Hiking", "Jump Rope", "Skateboarding",
+        "Elliptical", "Stair Climbing", "Spinning", "CrossFit",
+        "Stretching", "Badminton", "Table Tennis", "Golf",
     ]
 
     private var filteredSuggestions: [String] {

@@ -3,6 +3,8 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @State private var showImagePicker = false
+    @State private var showEditProfile = false
+    @State private var showChangePassword = false
 
     var body: some View {
         ScrollView {
@@ -19,6 +21,12 @@ struct ProfileView: View {
         .background(Color.exBackground)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileView().environmentObject(authVM)
+        }
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordView()
+        }
     }
 
     private var avatarSection: some View {
@@ -75,8 +83,12 @@ struct ProfileView: View {
     private var settingsSections: some View {
         VStack(spacing: 16) {
             settingsGroup("Account") {
-                settingsRow(icon: "person.circle", title: "Edit Profile")
-                settingsRow(icon: "lock.shield", title: "Change Password")
+                Button { showEditProfile = true } label: {
+                    settingsRowContent(icon: "person.circle", title: "Edit Profile")
+                }
+                Button { showChangePassword = true } label: {
+                    settingsRowContent(icon: "lock.shield", title: "Change Password")
+                }
                 settingsRow(icon: "envelope", title: "Email Preferences")
             }
             settingsGroup("Notifications") {
@@ -86,6 +98,13 @@ struct ProfileView: View {
             settingsGroup("Integrations") {
                 NavigationLink(destination: HealthKitSettingsView()) {
                     settingsRowContent(icon: "heart.circle", title: "Apple Health")
+                }
+            }
+            if authVM.currentUser?.isAdmin == true {
+                settingsGroup("Admin") {
+                    NavigationLink(destination: AdminView().environmentObject(authVM)) {
+                        settingsRowContent(icon: "shield.checkered", title: "Admin Panel")
+                    }
                 }
             }
             settingsGroup("Data") {
@@ -141,7 +160,9 @@ struct ProfileView: View {
 // MARK: - HealthKit Settings
 
 struct HealthKitSettingsView: View {
-    @State private var syncEnabled = false
+    @State private var syncEnabled = UserDefaults.standard.bool(forKey: "healthKitSync")
+    @State private var todaySteps: Int?
+    @State private var todayCalories: Int?
 
     var body: some View {
         VStack(spacing: 20) {
@@ -168,13 +189,13 @@ struct HealthKitSettingsView: View {
             if syncEnabled {
                 GlassCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Syncing")
+                        Text("Today's Data")
                             .font(.exLabel)
                             .foregroundStyle(.exTextSecondary)
-                        syncRow("Steps", icon: "figure.walk")
-                        syncRow("Active Calories", icon: "flame")
-                        syncRow("Workouts", icon: "figure.run")
-                        syncRow("Sleep", icon: "bed.double")
+                        syncRow("Steps", icon: "figure.walk", value: todaySteps.map { "\($0)" })
+                        syncRow("Active Calories", icon: "flame", value: todayCalories.map { "\($0) kcal" })
+                        syncRow("Workouts", icon: "figure.run", value: nil)
+                        syncRow("Sleep", icon: "bed.double", value: nil)
                     }
                 }
             }
@@ -186,13 +207,31 @@ struct HealthKitSettingsView: View {
         .navigationTitle("Apple Health")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: syncEnabled) { _, enabled in
+            UserDefaults.standard.set(enabled, forKey: "healthKitSync")
             if enabled {
-                Task { await HealthKitService.shared.requestAuthorization() }
+                Task {
+                    await HealthKitService.shared.requestAuthorization()
+                    await fetchHealthData()
+                }
+            }
+        }
+        .task {
+            if syncEnabled {
+                await fetchHealthData()
             }
         }
     }
 
-    private func syncRow(_ title: String, icon: String) -> some View {
+    private func fetchHealthData() async {
+        let steps = await HealthKitService.shared.fetchStepsToday()
+        let calories = await HealthKitService.shared.fetchActiveCaloriesToday()
+        await MainActor.run {
+            todaySteps = steps
+            todayCalories = calories
+        }
+    }
+
+    private func syncRow(_ title: String, icon: String, value: String?) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(.exPrimary)
@@ -201,6 +240,11 @@ struct HealthKitSettingsView: View {
                 .font(.exBody)
                 .foregroundStyle(.exTextPrimary)
             Spacer()
+            if let value {
+                Text(value)
+                    .font(.exCaption)
+                    .foregroundStyle(.exTextSecondary)
+            }
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.exSuccess)
         }

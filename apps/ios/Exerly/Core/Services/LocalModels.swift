@@ -91,11 +91,13 @@ final class ProgressPhoto {
     @Attribute(.externalStorage) var imageData: Data?
     var note: String?
     var date: Date
+    var userId: String?
 
-    init(imageData: Data? = nil, note: String? = nil, date: Date = .now) {
+    init(imageData: Data? = nil, note: String? = nil, date: Date = .now, userId: String? = nil) {
         self.imageData = imageData
         self.note = note
         self.date = date
+        self.userId = userId
     }
 }
 
