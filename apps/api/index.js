@@ -916,6 +916,73 @@ app.post('/api/admin/user/:email/reset-today', authenticate, requireAdmin, async
   }
 });
 
+// ---------- Change Password ----------
+app.post('/api/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ message: 'Current and new password required' });
+    if (newPassword.length < 6)
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const ok = await bcrypt.compare(currentPassword, user.hash);
+    if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
+
+    user.hash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error changing password', error: err.message });
+  }
+});
+
+// ---------- Admin Stats ----------
+app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const [totalUsers, todayActivities, todayFood, todaySleep, totalActivities, totalFood, totalSleep] = await Promise.all([
+      User.countDocuments(),
+      Activity.distinct('email', { entry_date: today }),
+      Food.distinct('email', { entry_date: today }),
+      Sleep.distinct('email', { entry_date: today }),
+      Activity.countDocuments(),
+      Food.countDocuments(),
+      Sleep.countDocuments()
+    ]);
+
+    const activeEmails = new Set([...todayActivities, ...todayFood, ...todaySleep]);
+
+    res.json({
+      totalUsers,
+      activeToday: activeEmails.size,
+      totalEntries: totalActivities + totalFood + totalSleep,
+      breakdown: { activities: totalActivities, food: totalFood, sleep: totalSleep }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching admin stats', error: err.message });
+  }
+});
+
+// ---------- Admin Toggle ----------
+app.post('/api/admin/toggle-admin', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { email, isAdmin } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.is_admin = !!isAdmin;
+    await user.save();
+    res.json({ message: `Admin status updated for ${email}`, isAdmin: user.is_admin });
+  } catch (err) {
+    res.status(500).json({ message: 'Error toggling admin', error: err.message });
+  }
+});
+
 // ---------- Dashboard Data ----------
 app.get('/api/dashboard-data', authenticate, async (req, res) => {
   try {
