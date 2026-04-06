@@ -50,7 +50,7 @@ struct BarcodeScannerView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.exTextSecondary)
             Text("Camera Access Required")
-                .font(.exHeadline)
+                .font(.exH2)
                 .foregroundStyle(.exTextPrimary)
             Text("Allow camera access in Settings to scan barcodes.")
                 .font(.exBody)
@@ -289,8 +289,14 @@ struct BarcodeScannerView: View {
     private func lookup(_ barcode: String) async {
         isLoading = true
         notFound = false
-        foundFood = await OpenFoodFactsService.shared.fetchByBarcode(barcode)
-        if foundFood == nil { notFound = true }
+        // Try FatSecret first (verified data), fall back to Open Food Facts
+        if let result = await FatSecretService.shared.fetchByBarcode(barcode) {
+            foundFood = result
+        } else if let result = await OpenFoodFactsService.shared.fetchByBarcode(barcode) {
+            foundFood = result
+        } else {
+            notFound = true
+        }
         isLoading = false
     }
 }
@@ -314,7 +320,7 @@ struct ScanLineView: View {
 
 // MARK: - Preview-layer UIView subclass (fixes frame sizing on device)
 
-private class CameraHostView: UIView {
+class CameraHostView: UIView {
     var previewLayer: AVCaptureVideoPreviewLayer? {
         didSet {
             guard let previewLayer else { return }

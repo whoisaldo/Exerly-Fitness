@@ -22,6 +22,7 @@
 		27E33F78E54772B7E61FADD6 /* Features/Login/LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8268437D2E5C27511BAA860 /* Features/Login/LoginView.swift */; };
 		2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */; };
 		2B9B2ABA5C6B0F222662FBE1 /* Features/Signup/SignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2FBF9359F7A8A34DD4D9308 /* Features/Signup/SignupView.swift */; };
+		F2E1D0C9B8A7F6E5D4C3B2A1 /* Core/Services/FatSecretService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */; };
 		2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */; };
 		2DB3B8BDB97A2646D9A14C74 /* Navigation/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C93AFC5E60B76831F10378 /* Navigation/RootView.swift */; };
 		2E91BECDB10C1043EBB4916E /* Features/LogActivity/LogActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06812EA8FB4EB2F7E611D262 /* Features/LogActivity/LogActivityView.swift */; };
@@ -76,6 +77,9 @@
 		F20FCD4B78D5003A97E9CB21 /* Features/Onboarding/Steps/Step11Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF833DAB4B74F99D48F0A123 /* Features/Onboarding/Steps/Step11Notifications.swift */; };
 		F2480EC8A556A1AD37944EA3 /* Features/Onboarding/Steps/Step4Goals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FA694E08C8D528A3B9CED3 /* Features/Onboarding/Steps/Step4Goals.swift */; };
 		F2D8C631944BF9DA4843CA3F /* Features/Profile/ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929DFD06CA28AC79F7198A4E /* Features/Profile/ProfileView.swift */; };
+		67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */; };
+		1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */; };
+		32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -111,6 +115,7 @@
 		6B57B03678DF5E35DF78F5DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABMenuOverlay.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatSecretService.swift; sourceTree = "<group>"; };
 		84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
 		8A28468EB84B00A331DBB5C9 /* Core/Services/ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
 		8C421089E65E5F3411108253 /* Features/BarcodeScanner/BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
@@ -150,6 +155,9 @@
 		FE1BD18D9394003FBB167A7D /* Features/Onboarding/OnboardingWizard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWizard.swift; sourceTree = "<group>"; };
 		FEF65F875656890F5D7422C7 /* Features/Social/SocialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialView.swift; sourceTree = "<group>"; };
 		FF833DAB4B74F99D48F0A123 /* Features/Onboarding/Steps/Step11Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Step11Notifications.swift; sourceTree = "<group>"; };
+		C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
+		2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
+		664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -191,12 +199,21 @@
 				F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */,
 				9AA7482444A4F61A162F4752 /* Core/Services/LocalModels.swift */,
 				502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */,
 				84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */,
 				38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */,
 				AD0F6B59DAE3CC094FF855B2 /* Core/Services/StreakService.swift */,
 				4ABDE8C432E8F2FA70C4C6EA /* Core/Services/WizardService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		2795EA7F54485C1107907B6C /* Admin */ = {
+			isa = PBXGroup;
+			children = (
+				664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */,
+			);
+			path = Admin;
 			sourceTree = "<group>";
 		};
 		257311A835004EB856B5287B /* AICoach */ = {
@@ -254,6 +271,8 @@
 		544E99E4DCC16D9872B7AEEF /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */,
+				C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */,
 				929DFD06CA28AC79F7198A4E /* Features/Profile/ProfileView.swift */,
 			);
 			path = Profile;
@@ -297,6 +316,7 @@
 		9BC761E8C88FF34DA3DBC6F4 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				2795EA7F54485C1107907B6C /* Admin */,
 				257311A835004EB856B5287B /* AICoach */,
 				CA28802CAAA281973671A633 /* BarcodeScanner */,
 				DA483440703290789AB63D2E /* CreateFood */,
@@ -544,6 +564,7 @@
 				2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */,
 				C741399C860031DBFCF732CF /* Core/Services/LocalModels.swift in Sources */,
 				011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */,
+				F2E1D0C9B8A7F6E5D4C3B2A1 /* Core/Services/FatSecretService.swift in Sources */,
 				2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */,
 				4FA783D2E13188AA8ED43117 /* Core/Services/SocialService.swift in Sources */,
 				A9A391AD3D52AB6E39F7386A /* Core/Services/StreakService.swift in Sources */,
@@ -576,7 +597,10 @@
 				BC53BA947C3530C55929DF88 /* Features/Onboarding/Steps/Step7Diet.swift in Sources */,
 				D6B12B9395CF289E20683239 /* Features/Onboarding/Steps/Step8Sleep.swift in Sources */,
 				A4BD5DB5E0C8317E2067D23B /* Features/Onboarding/Steps/Step9Equipment.swift in Sources */,
+				1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */,
+				67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */,
 				F2D8C631944BF9DA4843CA3F /* Features/Profile/ProfileView.swift in Sources */,
+				32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */,
 				828822D350834FD5235AE326 /* Features/Progress/AchievementsTab.swift in Sources */,
 				C5B2877639F29869465379EB /* Features/Progress/MeasurementsTab.swift in Sources */,
 				5F70DAAEC8AE1A6A9E8F7257 /* Features/Progress/PhotosTab.swift in Sources */,
