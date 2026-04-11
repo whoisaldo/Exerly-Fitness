@@ -22,7 +22,7 @@
 		27E33F78E54772B7E61FADD6 /* Features/Login/LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8268437D2E5C27511BAA860 /* Features/Login/LoginView.swift */; };
 		2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */; };
 		2B9B2ABA5C6B0F222662FBE1 /* Features/Signup/SignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2FBF9359F7A8A34DD4D9308 /* Features/Signup/SignupView.swift */; };
-		F2E1D0C9B8A7F6E5D4C3B2A1 /* Core/Services/FatSecretService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */; };
+
 		2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */; };
 		2DB3B8BDB97A2646D9A14C74 /* Navigation/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C93AFC5E60B76831F10378 /* Navigation/RootView.swift */; };
 		2E91BECDB10C1043EBB4916E /* Features/LogActivity/LogActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06812EA8FB4EB2F7E611D262 /* Features/LogActivity/LogActivityView.swift */; };
@@ -115,7 +115,7 @@
 		6B57B03678DF5E35DF78F5DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABMenuOverlay.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatSecretService.swift; sourceTree = "<group>"; };
+
 		84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
 		8A28468EB84B00A331DBB5C9 /* Core/Services/ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
 		8C421089E65E5F3411108253 /* Features/BarcodeScanner/BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
@@ -199,7 +199,6 @@
 				F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */,
 				9AA7482444A4F61A162F4752 /* Core/Services/LocalModels.swift */,
 				502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* Core/Services/FatSecretService.swift */,
 				84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */,
 				38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */,
 				AD0F6B59DAE3CC094FF855B2 /* Core/Services/StreakService.swift */,
@@ -564,7 +563,6 @@
 				2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */,
 				C741399C860031DBFCF732CF /* Core/Services/LocalModels.swift in Sources */,
 				011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */,
-				F2E1D0C9B8A7F6E5D4C3B2A1 /* Core/Services/FatSecretService.swift in Sources */,
 				2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */,
 				4FA783D2E13188AA8ED43117 /* Core/Services/SocialService.swift in Sources */,
 				A9A391AD3D52AB6E39F7386A /* Core/Services/StreakService.swift in Sources */,

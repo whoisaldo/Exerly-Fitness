@@ -3,8 +3,10 @@ import SwiftUI
 struct FoodDetailView: View {
     let food: OpenFoodItem
     @State private var servingCount: Double = 1
+    @State private var selectedMealType = "Snack"
     @State private var isLogging = false
     @Environment(\.dismiss) private var dismiss
+    private let mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"]
 
     private var scaled: OpenFoodItem {
         food.scaled(by: servingCount)
@@ -15,6 +17,7 @@ struct FoodDetailView: View {
             VStack(spacing: 20) {
                 header
                 servingSelector
+                mealTypePicker
                 nutritionFacts
                 logButton
             }
@@ -75,6 +78,32 @@ struct FoodDetailView: View {
         }
     }
 
+    private var mealTypePicker: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Meal Type")
+                    .font(.exLabel)
+                    .foregroundStyle(.exTextSecondary)
+                HStack(spacing: 8) {
+                    ForEach(mealTypes, id: \.self) { type in
+                        Button {
+                            selectedMealType = type
+                        } label: {
+                            Text(type)
+                                .font(.exSmall)
+                                .fontWeight(selectedMealType == type ? .semibold : .regular)
+                                .foregroundStyle(selectedMealType == type ? .white : .exTextSecondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(selectedMealType == type ? Color.exPrimary : Color.exSurface2)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var nutritionFacts: some View {
         GlassCard {
             VStack(spacing: 12) {
@@ -119,6 +148,10 @@ struct FoodDetailView: View {
             name: scaled.name, calories: scaled.calories,
             protein: scaled.protein, carbs: scaled.carbs,
             fat: scaled.fat, sugar: scaled.sugar,
+            mealType: selectedMealType,
+            barcode: food.barcode,
+            brand: food.brand,
+            fiber: scaled.fiber,
             servingSize: food.servingSize
         )
         do {

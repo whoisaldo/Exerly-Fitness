@@ -262,7 +262,11 @@ struct FoodDTO: Decodable, Identifiable {
     let carbs: Double?
     let fat: Double?
     let sugar: Double?
+    let fiber: Double?
+    let barcode: String?
+    let brand: String?
     let servingSize: String?
+    let mealType: String?
     let date: String?
 
     init(
@@ -273,7 +277,11 @@ struct FoodDTO: Decodable, Identifiable {
         carbs: Double? = nil,
         fat: Double? = nil,
         sugar: Double? = nil,
+        fiber: Double? = nil,
+        barcode: String? = nil,
+        brand: String? = nil,
         servingSize: String? = nil,
+        mealType: String? = nil,
         date: String? = nil
     ) {
         self.id = id
@@ -283,15 +291,20 @@ struct FoodDTO: Decodable, Identifiable {
         self.carbs = carbs
         self.fat = fat
         self.sugar = sugar
+        self.fiber = fiber
+        self.barcode = barcode
+        self.brand = brand
         self.servingSize = servingSize
+        self.mealType = mealType
         self.date = date
     }
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
         case legacyId = "id"
-        case name, calories, protein, carbs, fat, sugar
+        case name, calories, protein, carbs, fat, sugar, fiber, barcode, brand
         case servingSize
+        case servingSizeSnake = "serving_size"
         case mealType = "meal_type"
         case date
         case legacyDate = "entry_date"
@@ -307,7 +320,11 @@ struct FoodDTO: Decodable, Identifiable {
             carbs: container.decodeDouble(forKeys: [.carbs]),
             fat: container.decodeDouble(forKeys: [.fat]),
             sugar: container.decodeDouble(forKeys: [.sugar]),
-            servingSize: container.decodeString(forKeys: [.servingSize, .mealType]),
+            fiber: container.decodeDouble(forKeys: [.fiber]),
+            barcode: container.decodeString(forKeys: [.barcode]),
+            brand: container.decodeString(forKeys: [.brand]),
+            servingSize: container.decodeString(forKeys: [.servingSize, .servingSizeSnake]),
+            mealType: container.decodeString(forKeys: [.mealType]),
             date: container.decodeString(forKeys: [.date, .legacyDate])
         )
     }
@@ -320,21 +337,68 @@ struct FoodRequest: Encodable {
     let carbs: Double?
     let fat: Double?
     let sugar: Double?
+    let mealType: String?
+    let barcode: String?
+    let brand: String?
+    let fiber: Double?
     let servingSize: String?
-
-    enum CodingKeys: String, CodingKey {
-        case name, calories, protein, carbs, fat, sugar, mealType
-    }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         try container.encode(calories, forKey: .calories)
         try container.encode(protein ?? 0, forKey: .protein)
-        try container.encode(carbs, forKey: .carbs)
-        try container.encode(fat, forKey: .fat)
+        try container.encodeIfPresent(carbs, forKey: .carbs)
+        try container.encodeIfPresent(fat, forKey: .fat)
         try container.encode(sugar ?? 0, forKey: .sugar)
-        try container.encode(servingSize, forKey: .mealType)
+        try container.encodeIfPresent(mealType, forKey: .mealType)
+        try container.encodeIfPresent(barcode, forKey: .barcode)
+        try container.encodeIfPresent(brand, forKey: .brand)
+        try container.encodeIfPresent(fiber, forKey: .fiber)
+        try container.encodeIfPresent(servingSize, forKey: .servingSize)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name, calories, protein, carbs, fat, sugar
+        case mealType, barcode, brand, fiber, servingSize
+    }
+}
+
+// MARK: - Barcode Lookup
+
+struct BarcodeLookupRequest: Encodable {
+    let barcode: String
+}
+
+struct BarcodeLookupResponse: Decodable {
+    let found: Bool
+    let food: BarcodeFoodDTO?
+}
+
+struct BarcodeFoodDTO: Decodable {
+    let barcode: String?
+    let name: String
+    let brand: String?
+    let calories: Int
+    let protein: Double
+    let carbs: Double
+    let fat: Double
+    let fiber: Double
+    let sugar: Double
+    let servingSize: String?
+
+    enum CodingKeys: String, CodingKey {
+        case barcode, name, brand, calories, protein, carbs, fat, fiber, sugar
+        case servingSize = "serving_size"
+    }
+
+    func toOpenFoodItem() -> OpenFoodItem {
+        OpenFoodItem(
+            barcode: barcode, name: name, brand: brand,
+            calories: calories, protein: protein, carbs: carbs,
+            fat: fat, fiber: fiber, sugar: sugar,
+            servingSize: servingSize ?? "100g"
+        )
     }
 }
 
