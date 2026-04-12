@@ -99,13 +99,34 @@ const foodSchema = new mongoose.Schema({
   name: { type: String, required: true },
   calories: { type: Number, required: true },
   protein: { type: Number, required: true },
-  sugar: { type: Number, required: true },
+  sugar: Number,
   carbs: Number,
   fat: Number,
+  fiber: Number,
   meal_type: String,
+  barcode: String,
+  brand: String,
+  serving_size: String,
   entry_date: { type: String, required: true, index: true },
   created_at: { type: Date, default: Date.now }
 });
+
+const barcodeCacheSchema = new mongoose.Schema({
+  barcode: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  brand: String,
+  calories: Number,
+  protein: Number,
+  carbs: Number,
+  fat: Number,
+  fiber: Number,
+  sugar: Number,
+  serving_size: String,
+  source: { type: String, enum: ['fatsecret', 'openfoodfacts'] },
+  fetched_at: { type: Date, default: Date.now },
+  expires_at: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+});
+barcodeCacheSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
 
 const sleepSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
@@ -139,6 +160,7 @@ const workoutSchema = new mongoose.Schema({
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ email: 1, entry_date: 1 });
+foodSchema.index({ barcode: 1 }, { sparse: true });
 sleepSchema.index({ email: 1, entry_date: 1 });
 
 // ---------- Models ----------
@@ -149,6 +171,7 @@ const Sleep = mongoose.model('Sleep', sleepSchema);
 const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
 const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
+const BarcodeCache = mongoose.model('BarcodeCache', barcodeCacheSchema);
 
 // Import AIError model from errorLogger to avoid conflicts
 const AIError = require('./utils/errorLogger').AIError;
@@ -601,24 +624,28 @@ app.get('/api/food', authenticate, async (req, res) => {
 
 app.post('/api/food', authenticate, async (req, res) => {
   try {
-    const { name, calories, protein, sugar, carbs, fat, mealType } = req.body;
-    if (!name || calories == null || protein == null || sugar == null)
-      return res.status(400).json({ message: 'Name, calories, protein, and sugar are required' });
+    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    if (!name || calories == null || protein == null)
+      return res.status(400).json({ message: 'Name, calories, and protein are required' });
     if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ message: 'Invalid food name' });
-    if ([calories, protein, sugar].some(v => isNaN(Number(v)))) return res.status(400).json({ message: 'Calories, protein, and sugar must be numbers' });
-    
+    if ([calories, protein].some(v => isNaN(Number(v)))) return res.status(400).json({ message: 'Calories and protein must be numbers' });
+
     const newFood = await Food.create({
       email: req.user.email,
       name: name.trim(),
       calories: Number(calories),
       protein: Number(protein),
-      sugar: Number(sugar),
-      carbs: carbs ? Number(carbs) : null,
-      fat: fat ? Number(fat) : null,
+      sugar: sugar != null ? Number(sugar) : null,
+      carbs: carbs != null ? Number(carbs) : null,
+      fat: fat != null ? Number(fat) : null,
+      fiber: fiber != null ? Number(fiber) : null,
       meal_type: mealType || null,
+      barcode: barcode || null,
+      brand: brand || null,
+      serving_size: servingSize || null,
       entry_date: getTodayUTC()
     });
-    
+
     res.status(201).json(newFood);
   } catch (err) {
     res.status(500).json({ message: 'Error logging food', error: err.message });
@@ -628,16 +655,28 @@ app.post('/api/food', authenticate, async (req, res) => {
 app.put('/api/food/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, calories, protein, sugar, carbs, fat, mealType } = req.body;
-    if (!name || calories == null || protein == null || sugar == null)
-      return res.status(400).json({ message: 'Name, calories, protein, and sugar are required' });
-    
+    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    if (!name || calories == null || protein == null)
+      return res.status(400).json({ message: 'Name, calories, and protein are required' });
+
     const updated = await Food.findOneAndUpdate(
       { _id: id, email: req.user.email },
-      { name: name.trim(), calories: Number(calories), protein: Number(protein), sugar: Number(sugar), carbs: carbs ? Number(carbs) : null, fat: fat ? Number(fat) : null, meal_type: mealType || null },
+      {
+        name: name.trim(),
+        calories: Number(calories),
+        protein: Number(protein),
+        sugar: sugar != null ? Number(sugar) : null,
+        carbs: carbs != null ? Number(carbs) : null,
+        fat: fat != null ? Number(fat) : null,
+        fiber: fiber != null ? Number(fiber) : null,
+        meal_type: mealType || null,
+        barcode: barcode || null,
+        brand: brand || null,
+        serving_size: servingSize || null
+      },
       { new: true }
     );
-    
+
     if (!updated) return res.status(404).json({ message: 'Food entry not found' });
     res.json(updated);
   } catch (err) {
@@ -1156,6 +1195,11 @@ app.post('/api/admin/ai-errors/cleanup', authenticate, requireAdmin, async (req,
     res.status(500).json({ message: 'Error cleaning up AI errors', error: err.message });
   }
 });
+
+// ---------- Barcode Routes ----------
+const { router: barcodeRoutes, initModels: initBarcodeModels } = require('./routes/barcode');
+initBarcodeModels(BarcodeCache);
+app.use('/api/food', authenticate, barcodeRoutes);
 
 // ---------- AI Routes ----------
 const { router: aiRoutes, initModels } = require('./routes/ai');

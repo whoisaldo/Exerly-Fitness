@@ -152,11 +152,39 @@ async function initDb() {
     );
   `);
 
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS barcode_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      barcode TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      brand TEXT,
+      calories REAL,
+      protein REAL,
+      carbs REAL,
+      fat REAL,
+      fiber REAL,
+      sugar REAL,
+      serving_size TEXT,
+      source TEXT,
+      fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      expires_at TEXT
+    );
+  `);
+
   // Create indexes
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_activities_email_date ON activities(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_food_email_date ON food(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_sleep_email_date ON sleep(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_workouts_email ON workouts(email);`);
+  await dbQuery(`CREATE INDEX IF NOT EXISTS idx_barcode_cache ON barcode_cache(barcode);`);
+
+  // Migrate food table — add columns if missing
+  const foodCols = await dbQuery("PRAGMA table_info(food)");
+  const colNames = (foodCols.rows || foodCols).map(c => c.name);
+  if (!colNames.includes('barcode')) await dbQuery('ALTER TABLE food ADD COLUMN barcode TEXT');
+  if (!colNames.includes('brand')) await dbQuery('ALTER TABLE food ADD COLUMN brand TEXT');
+  if (!colNames.includes('fiber')) await dbQuery('ALTER TABLE food ADD COLUMN fiber REAL');
+  if (!colNames.includes('serving_size')) await dbQuery('ALTER TABLE food ADD COLUMN serving_size TEXT');
 
   console.log('✅ Database tables ready');
 }
@@ -509,13 +537,13 @@ app.get('/api/food', authenticate, async (req, res) => {
 
 app.post('/api/food', authenticate, async (req, res) => {
   try {
-    const { name, calories, protein, sugar, carbs, fat, mealType } = req.body;
-    if (!name || calories == null || protein == null || sugar == null)
-      return res.status(400).json({ message: 'Name, calories, protein, and sugar are required' });
-    
+    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    if (!name || calories == null || protein == null)
+      return res.status(400).json({ message: 'Name, calories, and protein are required' });
+
     const result = await dbQuery(
-      `INSERT INTO food (email, name, calories, protein, sugar, carbs, fat, meal_type, entry_date) VALUES (?,?,?,?,?,?,?,?,?)`,
-      [req.user.email, name.trim(), Number(calories), Number(protein), Number(sugar), carbs ? Number(carbs) : null, fat ? Number(fat) : null, mealType || null, getTodayUTC()]
+      `INSERT INTO food (email, name, calories, protein, sugar, carbs, fat, fiber, meal_type, barcode, brand, serving_size, entry_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [req.user.email, name.trim(), Number(calories), Number(protein), sugar != null ? Number(sugar) : null, carbs != null ? Number(carbs) : null, fat != null ? Number(fat) : null, fiber != null ? Number(fiber) : null, mealType || null, barcode || null, brand || null, servingSize || null, getTodayUTC()]
     );
     const inserted = await getLastInserted('food', result.lastID);
     res.status(201).json(inserted);
@@ -527,10 +555,10 @@ app.post('/api/food', authenticate, async (req, res) => {
 app.put('/api/food/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, calories, protein, sugar, carbs, fat, mealType } = req.body;
+    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
     await dbQuery(
-      `UPDATE food SET name=?, calories=?, protein=?, sugar=?, carbs=?, fat=?, meal_type=? WHERE id=? AND email=?`,
-      [name.trim(), Number(calories), Number(protein), Number(sugar), carbs, fat, mealType, id, req.user.email]
+      `UPDATE food SET name=?, calories=?, protein=?, sugar=?, carbs=?, fat=?, fiber=?, meal_type=?, barcode=?, brand=?, serving_size=? WHERE id=? AND email=?`,
+      [name.trim(), Number(calories), Number(protein), sugar != null ? Number(sugar) : null, carbs != null ? Number(carbs) : null, fat != null ? Number(fat) : null, fiber != null ? Number(fiber) : null, mealType || null, barcode || null, brand || null, servingSize || null, id, req.user.email]
     );
     const updated = await dbQuery('SELECT * FROM food WHERE id=?', [id]);
     res.json(updated.rows[0]);
@@ -546,6 +574,63 @@ app.delete('/api/food/:id', authenticate, async (req, res) => {
     res.json({ message: 'Food entry deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting food', error: err.message });
+  }
+});
+
+// ---------- Barcode Lookup (local dev — Open Food Facts only) ----------
+app.post('/api/food/barcode-lookup', authenticate, async (req, res) => {
+  try {
+    const { barcode } = req.body;
+    if (!barcode || typeof barcode !== 'string' || !/^\d{8,14}$/.test(barcode)) {
+      return res.status(400).json({ found: false, message: 'Invalid barcode. Must be 8-14 digits.' });
+    }
+
+    // Check cache
+    const cached = await dbQuery('SELECT * FROM barcode_cache WHERE barcode=?', [barcode]);
+    const row = (cached.rows || cached)[0];
+    if (row) {
+      return res.json({
+        found: true,
+        food: { ...row, cached: true }
+      });
+    }
+
+    // Fetch from Open Food Facts
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    if (!r.ok) return res.status(404).json({ found: false, message: 'Product not found' });
+    const data = await r.json();
+    if (data.status !== 1 || !data.product) {
+      return res.status(404).json({ found: false, message: 'Product not found' });
+    }
+
+    const p = data.product;
+    const name = p.product_name || p.product_name_en || '';
+    if (!name) return res.status(404).json({ found: false, message: 'Product not found' });
+
+    const n = p.nutriments || {};
+    const food = {
+      barcode,
+      name,
+      brand: p.brands || null,
+      calories: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
+      protein: n.proteins_100g || 0,
+      carbs: n.carbohydrates_100g || 0,
+      fat: n.fat_100g || 0,
+      fiber: n.fiber_100g || 0,
+      sugar: n.sugars_100g || 0,
+      serving_size: p.serving_size || '100g',
+      source: 'openfoodfacts'
+    };
+
+    // Cache result
+    await dbQuery(
+      `INSERT OR REPLACE INTO barcode_cache (barcode, name, brand, calories, protein, carbs, fat, fiber, sugar, serving_size, source, expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [food.barcode, food.name, food.brand, food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sugar, food.serving_size, food.source, new Date(Date.now() + 30*24*60*60*1000).toISOString()]
+    );
+
+    res.json({ found: true, food: { ...food, cached: false } });
+  } catch (err) {
+    res.status(500).json({ found: false, message: 'Barcode lookup failed', error: err.message });
   }
 });
 

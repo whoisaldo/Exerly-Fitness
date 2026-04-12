@@ -289,12 +289,14 @@ struct BarcodeScannerView: View {
     private func lookup(_ barcode: String) async {
         isLoading = true
         notFound = false
-        // Try FatSecret first (verified data), fall back to Open Food Facts
-        if let result = await FatSecretService.shared.fetchByBarcode(barcode) {
-            foundFood = result
-        } else if let result = await OpenFoodFactsService.shared.fetchByBarcode(barcode) {
-            foundFood = result
-        } else {
+        do {
+            let response = try await APIClient.shared.barcodeLookup(barcode: barcode)
+            if response.found, let food = response.food {
+                foundFood = food.toOpenFoodItem()
+            } else {
+                notFound = true
+            }
+        } catch {
             notFound = true
         }
         isLoading = false

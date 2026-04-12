@@ -191,6 +191,10 @@ extension APIClient {
         try await deleteVoid("/api/food/\(id)")
     }
 
+    func barcodeLookup(barcode: String) async throws -> BarcodeLookupResponse {
+        try await post("/api/food/barcode-lookup", body: BarcodeLookupRequest(barcode: barcode))
+    }
+
     // MARK: Sleep
 
     func getSleepLogs() async throws -> [SleepDTO] {

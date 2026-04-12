@@ -146,8 +146,10 @@ struct QuickFoodLogSheet: View {
     let onComplete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var servings: Double = 1
+    @State private var selectedMealType = "Snack"
     @State private var isSubmitting = false
 
+    private let mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"]
     var scaledCalories: Int { Int(Double(food.calories) * servings) }
 
     var body: some View {
@@ -156,6 +158,12 @@ struct QuickFoodLogSheet: View {
                 Text(food.name)
                     .font(.exH3)
                     .foregroundStyle(.exTextPrimary)
+
+                if let brand = food.brand {
+                    Text(brand)
+                        .font(.exCaption)
+                        .foregroundStyle(.exTextMuted)
+                }
 
                 GlassCard {
                     HStack {
@@ -167,6 +175,30 @@ struct QuickFoodLogSheet: View {
                             Text(String(format: "%.1f", servings))
                                 .font(.exStatSmall)
                                 .foregroundStyle(.exPrimary)
+                        }
+                    }
+                }
+
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Meal Type")
+                            .font(.exLabel)
+                            .foregroundStyle(.exTextSecondary)
+                        HStack(spacing: 8) {
+                            ForEach(mealTypes, id: \.self) { type in
+                                Button {
+                                    selectedMealType = type
+                                } label: {
+                                    Text(type)
+                                        .font(.exSmall)
+                                        .fontWeight(selectedMealType == type ? .semibold : .regular)
+                                        .foregroundStyle(selectedMealType == type ? .white : .exTextSecondary)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(selectedMealType == type ? Color.exPrimary : Color.exSurface2)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                            }
                         }
                     }
                 }
@@ -203,7 +235,12 @@ struct QuickFoodLogSheet: View {
             protein: food.protein * servings,
             carbs: food.carbs * servings,
             fat: food.fat * servings,
-            sugar: nil, servingSize: food.servingSize
+            sugar: food.sugar * servings,
+            mealType: selectedMealType,
+            barcode: food.barcode,
+            brand: food.brand,
+            fiber: food.fiber * servings,
+            servingSize: food.servingSize
         )
         do {
             let _: FoodDTO = try await APIClient.shared.createFoodLog(req)
