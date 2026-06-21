@@ -465,7 +465,7 @@ export default function LandingPage() {
               <h4 className="text-label text-slate-400 font-semibold uppercase tracking-wider mb-3">Resources</h4>
               <div className="flex flex-col gap-2">
                 <a href="https://github.com/whoisaldo/Exerly-Fitness" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition-colors">GitHub</a>
-                <a href="https://www.linkedin.com/in/ali-younes-41a2b4296/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition-colors">LinkedIn</a>
+                <a href="https://www.linkedin.com/in/alialdoyounes/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition-colors">LinkedIn</a>
                 <button onClick={() => navigate('/status-check')} className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer">Status</button>
               </div>
             </div>

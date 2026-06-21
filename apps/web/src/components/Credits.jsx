@@ -96,7 +96,7 @@ const Credits = () => {
           <h3 className="text-display-sm text-center mb-8">Connect &amp; Explore</h3>
           <div className="grid sm:grid-cols-3 gap-4">
             <a
-              href="https://www.linkedin.com/in/ali-younes-41a2b4296/"
+              href="https://www.linkedin.com/in/alialdoyounes/"
               target="_blank"
               rel="noopener noreferrer"
               className="block"
