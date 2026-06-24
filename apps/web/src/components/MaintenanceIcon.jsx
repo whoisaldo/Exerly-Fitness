@@ -12,11 +12,7 @@ export default function MaintenanceIcon() {
       <Link to="/maintenance-history" className="maintenance-icon" title="Maintenance History">
         🔧
       </Link>
-      <button 
-        className="close-maintenance-icon" 
-        onClick={() => setIsVisible(false)}
-        title="Close"
-      >
+      <button className="close-maintenance-icon" onClick={() => setIsVisible(false)} title="Close">
         ×
       </button>
     </div>

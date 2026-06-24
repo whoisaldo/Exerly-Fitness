@@ -180,34 +180,34 @@
     margin: 10px;
     padding: 15px;
   }
-  
+
   .maintenance-timeline {
     padding-left: 30px;
   }
-  
+
   .timeline-marker {
     left: -30px;
   }
-  
+
   .timeline-icon {
     width: 25px;
     height: 25px;
     font-size: 12px;
   }
-  
+
   .maintenance-header h2 {
     font-size: 1.5rem;
   }
-  
+
   .maintenance-header-info h3 {
     font-size: 1.1rem;
   }
-  
+
   .maintenance-meta {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .maintenance-content {
     padding: 15px;
   }

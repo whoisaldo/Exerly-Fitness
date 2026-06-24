@@ -20,7 +20,7 @@ export default function Profile() {
     target_weight: '',
     target_date: '',
     email_notifications: true,
-    privacy_settings: 'public'
+    privacy_settings: 'public',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,7 +32,7 @@ export default function Profile() {
   const [displayValues, setDisplayValues] = useState({
     height: '',
     weight: '',
-    targetWeight: ''
+    targetWeight: '',
   });
 
   // Load existing profile
@@ -43,16 +43,16 @@ export default function Profile() {
     fetch(`${BASE_URL}/api/profile`, {
       headers: { Authorization: 'Bearer ' + token },
     })
-      .then(res => {
+      .then((res) => {
         if (res.status === 401) {
           logout(navigate);
           throw new Error('Unauthorized');
         }
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         if (data && Object.keys(data).length > 0) {
-          setForm(prev => ({
+          setForm((prev) => ({
             ...prev,
             age: data.age || '',
             sex: data.sex || 'male',
@@ -63,7 +63,7 @@ export default function Profile() {
             target_weight: data.target_weight || '',
             target_date: data.target_date || '',
             email_notifications: data.email_notifications !== false,
-            privacy_settings: data.privacy_settings || 'public'
+            privacy_settings: data.privacy_settings || 'public',
           }));
 
           // Set display values
@@ -71,7 +71,7 @@ export default function Profile() {
             const height = parseFloat(data.height_cm);
             if (!isNaN(height) && height > 0) {
               const displayHeight = useMetric ? height : cmToInches(height);
-              setDisplayValues(prev => ({ ...prev, height: displayHeight.toString() }));
+              setDisplayValues((prev) => ({ ...prev, height: displayHeight.toString() }));
             }
           }
 
@@ -79,7 +79,7 @@ export default function Profile() {
             const weight = parseFloat(data.weight_kg);
             if (!isNaN(weight) && weight > 0) {
               const displayWeight = useMetric ? weight : kgToLbs(weight);
-              setDisplayValues(prev => ({ ...prev, weight: displayWeight.toString() }));
+              setDisplayValues((prev) => ({ ...prev, weight: displayWeight.toString() }));
             }
           }
 
@@ -87,7 +87,10 @@ export default function Profile() {
             const targetWeight = parseFloat(data.target_weight);
             if (!isNaN(targetWeight) && targetWeight > 0) {
               const displayTargetWeight = useMetric ? targetWeight : kgToLbs(targetWeight);
-              setDisplayValues(prev => ({ ...prev, targetWeight: displayTargetWeight.toString() }));
+              setDisplayValues((prev) => ({
+                ...prev,
+                targetWeight: displayTargetWeight.toString(),
+              }));
             }
           }
         }
@@ -96,15 +99,13 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-
-
   // Update display values when unit changes
   useEffect(() => {
     if (form.height_cm) {
       const height = parseFloat(form.height_cm);
       if (!isNaN(height) && height > 0) {
         const displayHeight = useMetric ? height : cmToInches(height);
-        setDisplayValues(prev => ({ ...prev, height: displayHeight.toString() }));
+        setDisplayValues((prev) => ({ ...prev, height: displayHeight.toString() }));
       }
     }
 
@@ -112,7 +113,7 @@ export default function Profile() {
       const weight = parseFloat(form.weight_kg);
       if (!isNaN(weight) && weight > 0) {
         const displayWeight = useMetric ? weight : kgToLbs(weight);
-        setDisplayValues(prev => ({ ...prev, weight: displayWeight.toString() }));
+        setDisplayValues((prev) => ({ ...prev, weight: displayWeight.toString() }));
       }
     }
 
@@ -120,11 +121,10 @@ export default function Profile() {
       const targetWeight = parseFloat(form.target_weight);
       if (!isNaN(targetWeight) && targetWeight > 0) {
         const displayTargetWeight = useMetric ? targetWeight : kgToLbs(targetWeight);
-        setDisplayValues(prev => ({ ...prev, targetWeight: displayTargetWeight.toString() }));
+        setDisplayValues((prev) => ({ ...prev, targetWeight: displayTargetWeight.toString() }));
       }
     }
   }, [useMetric, form.height_cm, form.weight_kg, form.target_weight]);
-
 
   // Unit conversion functions
   const kgToLbs = (kg) => {
@@ -172,26 +172,26 @@ export default function Profile() {
   // Handle height input changes
   const handleHeightChange = (e) => {
     const value = e.target.value;
-    setDisplayValues(prev => ({ ...prev, height: value }));
+    setDisplayValues((prev) => ({ ...prev, height: value }));
   };
 
   // Handle weight input changes
   const handleWeightChange = (e) => {
     const value = e.target.value;
-    setDisplayValues(prev => ({ ...prev, weight: value }));
+    setDisplayValues((prev) => ({ ...prev, weight: value }));
   };
 
   // Handle target weight input changes
   const handleTargetWeightChange = (e) => {
     const value = e.target.value;
-    setDisplayValues(prev => ({ ...prev, targetWeight: value }));
+    setDisplayValues((prev) => ({ ...prev, targetWeight: value }));
   };
 
   // Handle height input blur (convert and store)
   const handleHeightBlur = () => {
     const value = displayValues.height;
     if (!value || value === '') {
-      setForm(prev => ({ ...prev, height_cm: '' }));
+      setForm((prev) => ({ ...prev, height_cm: '' }));
       return;
     }
 
@@ -200,14 +200,14 @@ export default function Profile() {
 
     // Convert to cm for storage
     const heightCm = useMetric ? numValue : inchesToCm(numValue);
-    setForm(prev => ({ ...prev, height_cm: heightCm.toString() }));
+    setForm((prev) => ({ ...prev, height_cm: heightCm.toString() }));
   };
 
   // Handle weight input blur (convert and store)
   const handleWeightBlur = () => {
     const value = displayValues.weight;
     if (!value || value === '') {
-      setForm(prev => ({ ...prev, weight_kg: '' }));
+      setForm((prev) => ({ ...prev, weight_kg: '' }));
       return;
     }
 
@@ -216,14 +216,14 @@ export default function Profile() {
 
     // Convert to kg for storage
     const weightKg = useMetric ? numValue : lbsToKg(numValue);
-    setForm(prev => ({ ...prev, weight_kg: weightKg.toString() }));
+    setForm((prev) => ({ ...prev, weight_kg: weightKg.toString() }));
   };
 
   // Handle target weight input blur (convert and store)
   const handleTargetWeightBlur = () => {
     const value = displayValues.targetWeight;
     if (!value || value === '') {
-      setForm(prev => ({ ...prev, target_weight: '' }));
+      setForm((prev) => ({ ...prev, target_weight: '' }));
       return;
     }
 
@@ -232,11 +232,11 @@ export default function Profile() {
 
     // Convert to kg for storage
     const targetWeightKg = useMetric ? numValue : lbsToKg(numValue);
-    setForm(prev => ({ ...prev, target_weight: targetWeightKg.toString() }));
+    setForm((prev) => ({ ...prev, target_weight: targetWeightKg.toString() }));
   };
 
   // Handle regular form changes for non-converting fields
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
     // Skip the converting fields as they have their own handlers
@@ -245,9 +245,9 @@ export default function Profile() {
     }
 
     if (type === 'checkbox') {
-      setForm(prev => ({ ...prev, [name]: checked }));
+      setForm((prev) => ({ ...prev, [name]: checked }));
     } else {
-      setForm(prev => ({ ...prev, [name]: value }));
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -256,7 +256,7 @@ export default function Profile() {
     setUseMetric(!useMetric);
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) return logout(navigate);
@@ -322,7 +322,7 @@ export default function Profile() {
       light: 'Light exercise 1-3 days/week',
       moderate: 'Moderate exercise 3-5 days/week',
       active: 'Hard exercise 6-7 days/week',
-      'very active': 'Very hard exercise, physical job'
+      'very active': 'Very hard exercise, physical job',
     };
     return descriptions[level] || '';
   };
@@ -360,7 +360,13 @@ export default function Profile() {
             onClick={() => navigate('/dashboard')}
             className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 h-11 px-3 -ml-3 rounded-xl"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             Back to Dashboard
@@ -394,8 +400,17 @@ export default function Profile() {
                 className="mb-6 rounded-xl border border-error/20 bg-error/10 px-4 py-3 flex items-center justify-between"
               >
                 <span className="text-error text-sm font-medium">{error}</span>
-                <button onClick={() => setError('')} className="text-error/60 hover:text-error ml-3 h-6 w-6 flex items-center justify-center">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <button
+                  onClick={() => setError('')}
+                  className="text-error/60 hover:text-error ml-3 h-6 w-6 flex items-center justify-center"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -415,7 +430,9 @@ export default function Profile() {
                 </span>
               </div>
               <h2 className="text-lg font-semibold text-white mb-1">{form.name || 'User'}</h2>
-              <p className="text-white/40 text-sm capitalize">{form.goal?.replace('_', ' ') || 'Maintain Weight'}</p>
+              <p className="text-white/40 text-sm capitalize">
+                {form.goal?.replace('_', ' ') || 'Maintain Weight'}
+              </p>
 
               {/* Unit Toggle */}
               <div className="mt-6 w-full border-t border-border-subtle pt-5">
@@ -423,10 +440,7 @@ export default function Profile() {
                   <span className="text-label text-white/50">
                     {useMetric ? 'Metric (kg, cm)' : 'Imperial (lbs, in)'}
                   </span>
-                  <Toggle
-                    checked={useMetric}
-                    onChange={handleUnitToggle}
-                  />
+                  <Toggle checked={useMetric} onChange={handleUnitToggle} />
                 </div>
               </div>
             </GlassCard>
@@ -435,12 +449,7 @@ export default function Profile() {
             {bmi && bmiInfo && (
               <GlassCard className="flex flex-col items-center py-6 px-6">
                 <h3 className="text-label text-white/50 mb-4">Body Mass Index</h3>
-                <ProgressRing
-                  value={bmiRingValue}
-                  size={120}
-                  strokeWidth={8}
-                  label="BMI"
-                />
+                <ProgressRing value={bmiRingValue} size={120} strokeWidth={8} label="BMI" />
                 <div className="mt-4 text-center">
                   <span className="text-stat text-white">{bmi}</span>
                   <span className={`block mt-1 text-sm font-medium ${bmiColorMap[bmiInfo.color]}`}>
@@ -569,7 +578,9 @@ export default function Profile() {
               <GlassCard className="p-6">
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-white">Activity & Goals</h2>
-                  <p className="text-white/40 text-sm mt-1">Set your fitness activity level and goals</p>
+                  <p className="text-white/40 text-sm mt-1">
+                    Set your fitness activity level and goals
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -587,7 +598,9 @@ export default function Profile() {
                       <option value="active">Active</option>
                       <option value="very active">Very Active</option>
                     </select>
-                    <p className="text-white/30 text-xs mt-1.5">{getActivityLevelDescription(form.activity_level)}</p>
+                    <p className="text-white/30 text-xs mt-1.5">
+                      {getActivityLevelDescription(form.activity_level)}
+                    </p>
                   </div>
 
                   <div>
@@ -651,7 +664,12 @@ export default function Profile() {
                     <span className="text-white text-sm">Email Notifications</span>
                     <Toggle
                       checked={form.email_notifications}
-                      onChange={() => setForm(prev => ({ ...prev, email_notifications: !prev.email_notifications }))}
+                      onChange={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          email_notifications: !prev.email_notifications,
+                        }))
+                      }
                     />
                   </div>
 
@@ -677,7 +695,13 @@ export default function Profile() {
                   variant="primary"
                   loading={saving}
                   icon={
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   }

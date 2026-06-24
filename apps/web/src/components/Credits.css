@@ -317,9 +317,16 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  33% { transform: translate(30px, -30px) rotate(120deg); }
-  66% { transform: translate(-20px, 20px) rotate(240deg); }
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(30px, -30px) rotate(120deg);
+  }
+  66% {
+    transform: translate(-20px, 20px) rotate(240deg);
+  }
 }
 
 /* Responsive Design */
@@ -327,39 +334,39 @@
   .credits-container {
     padding: 80px 15px 30px;
   }
-  
+
   .credits-header h1 {
     font-size: 2.5rem;
   }
-  
+
   .credits-tagline {
     font-size: 1.1rem;
   }
-  
+
   .features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .credits-links {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .social-link {
     width: 100%;
     max-width: 300px;
     justify-content: center;
   }
-  
+
   .creator-name {
     font-size: 2rem;
   }
-  
+
   .version-info {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .back-button {
     top: 20px;
     left: 20px;

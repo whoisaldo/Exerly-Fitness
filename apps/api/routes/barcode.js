@@ -26,12 +26,15 @@ const RATE_LIMIT = 30; // lookups per hour per user
 const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
 
 // Clean up expired entries every 30 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimits) {
-    if (now - entry.windowStart > RATE_WINDOW) rateLimits.delete(key);
-  }
-}, 30 * 60 * 1000);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimits) {
+      if (now - entry.windowStart > RATE_WINDOW) rateLimits.delete(key);
+    }
+  },
+  30 * 60 * 1000
+);
 
 function checkRateLimit(email) {
   const now = Date.now();
@@ -62,9 +65,9 @@ async function getFatSecretToken() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`
+        Authorization: `Basic ${credentials}`,
       },
-      body: 'grant_type=client_credentials&scope=basic barcode'
+      body: 'grant_type=client_credentials&scope=basic barcode',
     });
 
     if (!res.ok) return null;
@@ -83,9 +86,7 @@ async function fetchFromFatSecret(barcode) {
   if (!token) return null;
 
   // Normalize to GTIN-13
-  const gtin13 = barcode.length < 13
-    ? '0'.repeat(13 - barcode.length) + barcode
-    : barcode;
+  const gtin13 = barcode.length < 13 ? '0'.repeat(13 - barcode.length) + barcode : barcode;
 
   const url = new URL('https://platform.fatsecret.com/rest/food/barcode/find-by-id/v2');
   url.searchParams.set('barcode', gtin13);
@@ -94,7 +95,7 @@ async function fetchFromFatSecret(barcode) {
 
   try {
     const res = await fetchWithTimeout(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return null;
 
@@ -116,11 +117,12 @@ async function fetchFromFatSecret(barcode) {
       fiber: parseFloat(serving.fiber || '0'),
       sugar: parseFloat(serving.sugar || '0'),
       // Prefer the human-readable description; otherwise build from metric amount.
-      serving_size: serving.serving_description
-        || (serving.metric_serving_amount != null
-              ? `${serving.metric_serving_amount}${serving.metric_serving_unit || 'g'}`
-              : '1 serving'),
-      source: 'fatsecret'
+      serving_size:
+        serving.serving_description ||
+        (serving.metric_serving_amount != null
+          ? `${serving.metric_serving_amount}${serving.metric_serving_unit || 'g'}`
+          : '1 serving'),
+      source: 'fatsecret',
     };
   } catch {
     return null;
@@ -130,7 +132,9 @@ async function fetchFromFatSecret(barcode) {
 // ---------- Open Food Facts Barcode Lookup ----------
 async function fetchFromOpenFoodFacts(barcode) {
   try {
-    const res = await fetchWithTimeout(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const res = await fetchWithTimeout(
+      `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
+    );
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -152,7 +156,7 @@ async function fetchFromOpenFoodFacts(barcode) {
       fiber: n.fiber_100g || 0,
       sugar: n.sugars_100g || 0,
       serving_size: p.serving_size || '100g',
-      source: 'openfoodfacts'
+      source: 'openfoodfacts',
     };
   } catch {
     return null;
@@ -164,11 +168,15 @@ router.post('/barcode-lookup', async (req, res) => {
   try {
     const { barcode } = req.body;
     if (!barcode || typeof barcode !== 'string' || !/^\d{8,14}$/.test(barcode)) {
-      return res.status(400).json({ found: false, message: 'Invalid barcode. Must be 8-14 digits.' });
+      return res
+        .status(400)
+        .json({ found: false, message: 'Invalid barcode. Must be 8-14 digits.' });
     }
 
     if (!checkRateLimit(req.user.email)) {
-      return res.status(429).json({ found: false, message: 'Rate limit exceeded. Try again later.' });
+      return res
+        .status(429)
+        .json({ found: false, message: 'Rate limit exceeded. Try again later.' });
     }
 
     // Check cache first
@@ -188,8 +196,8 @@ router.post('/barcode-lookup', async (req, res) => {
           sugar: cached.sugar,
           serving_size: cached.serving_size,
           source: cached.source,
-          cached: true
-        }
+          cached: true,
+        },
       });
     }
 
@@ -206,7 +214,11 @@ router.post('/barcode-lookup', async (req, res) => {
     // Cache the result
     await BarcodeCache.findOneAndUpdate(
       { barcode },
-      { ...result, fetched_at: new Date(), expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+      {
+        ...result,
+        fetched_at: new Date(),
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
       { upsert: true }
     );
 

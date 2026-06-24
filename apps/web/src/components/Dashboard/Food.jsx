@@ -30,7 +30,7 @@ export default function Food() {
     sugar: '',
     carbs: '',
     fat: '',
-    mealType: 'Snack'
+    mealType: 'Snack',
   });
   const navigate = useNavigate();
 
@@ -45,7 +45,7 @@ export default function Food() {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${BASE_URL}/api/food`, {
-        headers: { Authorization: 'Bearer ' + token }
+        headers: { Authorization: 'Bearer ' + token },
       });
 
       if (res.status === 401) {
@@ -63,11 +63,11 @@ export default function Food() {
     }
   };
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
@@ -79,9 +79,9 @@ export default function Food() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
+          Authorization: 'Bearer ' + token,
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
 
       if (res.ok) {
@@ -94,7 +94,7 @@ export default function Food() {
           sugar: '',
           carbs: '',
           fat: '',
-          mealType: 'Snack'
+          mealType: 'Snack',
         });
         alert('Food logged successfully!');
       } else if (res.status === 401) {
@@ -119,11 +119,11 @@ export default function Food() {
       const token = localStorage.getItem('token');
       const res = await fetch(`${BASE_URL}/api/food/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+        headers: { Authorization: 'Bearer ' + token },
       });
 
       if (res.ok) {
-        setEntries(entries.filter(entry => entry.id !== id));
+        setEntries(entries.filter((entry) => entry.id !== id));
         alert('Food entry deleted successfully!');
       } else {
         alert('Error deleting food entry');
@@ -150,7 +150,7 @@ export default function Food() {
       totalCarbs: totalCarbs.toFixed(1),
       totalFat: totalFat.toFixed(1),
       avgCalories: (totalCalories / entries.length).toFixed(0),
-      totalEntries: entries.length
+      totalEntries: entries.length,
     };
   };
 
@@ -158,31 +158,46 @@ export default function Food() {
 
   const getMealTypeIcon = (mealType) => {
     switch (mealType?.toLowerCase()) {
-      case 'breakfast': return '🌅';
-      case 'lunch': return '🌞';
-      case 'dinner': return '🌙';
-      case 'snack': return '🍎';
-      default: return '🍽️';
+      case 'breakfast':
+        return '🌅';
+      case 'lunch':
+        return '🌞';
+      case 'dinner':
+        return '🌙';
+      case 'snack':
+        return '🍎';
+      default:
+        return '🍽️';
     }
   };
 
   const getMealTypeColor = (mealType) => {
     switch (mealType?.toLowerCase()) {
-      case 'breakfast': return '#f59e0b';
-      case 'lunch': return '#10b981';
-      case 'dinner': return '#8b5cf6';
-      case 'snack': return '#ec4899';
-      default: return '#6b7280';
+      case 'breakfast':
+        return '#f59e0b';
+      case 'lunch':
+        return '#10b981';
+      case 'dinner':
+        return '#8b5cf6';
+      case 'snack':
+        return '#ec4899';
+      default:
+        return '#6b7280';
     }
   };
 
   const getMealTypeBadgeVariant = (mealType) => {
     switch (mealType?.toLowerCase()) {
-      case 'breakfast': return 'meal';
-      case 'lunch': return 'status';
-      case 'dinner': return 'intensity';
-      case 'snack': return 'severity';
-      default: return 'status';
+      case 'breakfast':
+        return 'meal';
+      case 'lunch':
+        return 'status';
+      case 'dinner':
+        return 'intensity';
+      case 'snack':
+        return 'severity';
+      default:
+        return 'status';
     }
   };
 
@@ -191,7 +206,7 @@ export default function Food() {
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const toggleSection = (meal) => {
-    setCollapsedSections(prev => ({ ...prev, [meal]: !prev[meal] }));
+    setCollapsedSections((prev) => ({ ...prev, [meal]: !prev[meal] }));
   };
 
   // Group entries by meal type
@@ -229,8 +244,18 @@ export default function Food() {
           onClick={() => navigate('/dashboard')}
           className="mb-4 inline-flex h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200"
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+            />
           </svg>
           Dashboard
         </button>
@@ -252,7 +277,9 @@ export default function Food() {
           <GlassCard elevated hover={false}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-100">Macro Distribution</h2>
-              <span className="text-sm font-semibold text-primary-bright">{stats.totalCalories} cal total</span>
+              <span className="text-sm font-semibold text-primary-bright">
+                {stats.totalCalories} cal total
+              </span>
             </div>
 
             <div className="space-y-4">
@@ -271,19 +298,19 @@ export default function Food() {
               </div>
 
               {macroBar(
-                `Protein (${parseFloat(stats.totalCalories) > 0 ? ((parseFloat(stats.totalProtein) * 4 / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
+                `Protein (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalProtein) * 4) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalProtein,
                 parseFloat(stats.totalCalories) / 4,
                 'bg-gradient-to-r from-blue-500 to-blue-400'
               )}
               {macroBar(
-                `Carbs (${parseFloat(stats.totalCalories) > 0 ? ((parseFloat(stats.totalCarbs) * 4 / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
+                `Carbs (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalCarbs) * 4) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalCarbs,
                 parseFloat(stats.totalCalories) / 4,
                 'bg-gradient-to-r from-amber-500 to-amber-400'
               )}
               {macroBar(
-                `Fat (${parseFloat(stats.totalCalories) > 0 ? ((parseFloat(stats.totalFat) * 9 / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
+                `Fat (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalFat) * 9) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalFat,
                 parseFloat(stats.totalCalories) / 9,
                 'bg-gradient-to-r from-emerald-500 to-emerald-400'
@@ -304,8 +331,18 @@ export default function Food() {
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"
+                />
               </svg>
             }
             label="Total Calories"
@@ -313,8 +350,18 @@ export default function Food() {
           />
           <StatCard
             icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+                />
               </svg>
             }
             label="Total Protein"
@@ -322,8 +369,18 @@ export default function Food() {
           />
           <StatCard
             icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513"
+                />
               </svg>
             }
             label="Total Carbs"
@@ -331,8 +388,18 @@ export default function Food() {
           />
           <StatCard
             icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                />
               </svg>
             }
             label="Total Fat"
@@ -358,7 +425,13 @@ export default function Food() {
                   onClick={() => setShowForm(false)}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -368,7 +441,9 @@ export default function Food() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {/* Food Name */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Food Name</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Food Name
+                    </label>
                     <input
                       name="name"
                       type="text"
@@ -381,7 +456,9 @@ export default function Food() {
                   </div>
                   {/* Calories */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Calories</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Calories
+                    </label>
                     <input
                       name="calories"
                       type="number"
@@ -395,7 +472,9 @@ export default function Food() {
                   </div>
                   {/* Protein */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Protein (g)</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Protein (g)
+                    </label>
                     <input
                       name="protein"
                       type="number"
@@ -410,7 +489,9 @@ export default function Food() {
                   </div>
                   {/* Carbs */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Carbs (g)</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Carbs (g)
+                    </label>
                     <input
                       name="carbs"
                       type="number"
@@ -425,7 +506,9 @@ export default function Food() {
                   </div>
                   {/* Fat */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Fat (g)</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Fat (g)
+                    </label>
                     <input
                       name="fat"
                       type="number"
@@ -440,7 +523,9 @@ export default function Food() {
                   </div>
                   {/* Sugar */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Sugar (g)</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Sugar (g)
+                    </label>
                     <input
                       name="sugar"
                       type="number"
@@ -455,7 +540,9 @@ export default function Food() {
                   </div>
                   {/* Meal Type */}
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Meal Type</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Meal Type
+                    </label>
                     <select
                       name="mealType"
                       value={form.mealType}
@@ -500,8 +587,18 @@ export default function Food() {
           <GlassCard hover={false}>
             <EmptyState
               icon={
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5"
+                  />
                 </svg>
               }
               title="No Food Data Yet"
@@ -537,7 +634,11 @@ export default function Food() {
                       stroke="currentColor"
                       strokeWidth={2}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      />
                     </svg>
                   </button>
 
@@ -570,7 +671,9 @@ export default function Food() {
                                     )}
                                   </div>
                                   {entry.entry_date && (
-                                    <p className="mt-1.5 text-xs text-slate-500">{entry.entry_date}</p>
+                                    <p className="mt-1.5 text-xs text-slate-500">
+                                      {entry.entry_date}
+                                    </p>
                                   )}
                                 </div>
 
@@ -579,8 +682,18 @@ export default function Food() {
                                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 opacity-0 transition-all hover:bg-error/10 hover:text-error group-hover:opacity-100"
                                   title="Delete"
                                 >
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                    />
                                   </svg>
                                 </button>
                               </div>
@@ -596,7 +709,7 @@ export default function Food() {
 
             {/* Show any entries with non-standard meal types */}
             {Object.keys(groupedEntries)
-              .filter(m => !mealOrder.includes(m))
+              .filter((m) => !mealOrder.includes(m))
               .map((meal) => {
                 const items = groupedEntries[meal];
                 if (!items || items.length === 0) return null;
@@ -622,7 +735,11 @@ export default function Food() {
                         stroke="currentColor"
                         strokeWidth={2}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                        />
                       </svg>
                     </button>
 
@@ -654,7 +771,9 @@ export default function Food() {
                                       )}
                                     </div>
                                     {entry.entry_date && (
-                                      <p className="mt-1.5 text-xs text-slate-500">{entry.entry_date}</p>
+                                      <p className="mt-1.5 text-xs text-slate-500">
+                                        {entry.entry_date}
+                                      </p>
                                     )}
                                   </div>
                                   <button
@@ -662,8 +781,18 @@ export default function Food() {
                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 opacity-0 transition-all hover:bg-error/10 hover:text-error group-hover:opacity-100"
                                     title="Delete"
                                   >
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                      />
                                     </svg>
                                   </button>
                                 </div>

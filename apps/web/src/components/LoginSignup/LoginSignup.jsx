@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import user_icon     from '../Assets/person.png';
-import email_icon    from '../Assets/email.png';
+import user_icon from '../Assets/person.png';
+import email_icon from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
-import exerly_logo   from '../Assets/ExerlyLogo.jpg';
+import exerly_logo from '../Assets/ExerlyLogo.jpg';
 import { useNavigate, Link } from 'react-router-dom';
 import API_CONFIG from '../../config';
 import { GlassCard, ActionButton } from '../ui';
@@ -52,7 +52,7 @@ const LoginSignup = () => {
       const res = await fetch(`${BASE_URL}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: username, email, password })
+        body: JSON.stringify({ name: username, email, password }),
       });
       const data = await res.json();
 
@@ -81,7 +81,7 @@ const LoginSignup = () => {
       const res = await fetch(`${BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -152,7 +152,10 @@ const LoginSignup = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
-          <GlassCard elevated className="rounded-2xl p-6 sm:p-8 max-w-md mx-auto lg:max-w-none w-full">
+          <GlassCard
+            elevated
+            className="rounded-2xl p-6 sm:p-8 max-w-md mx-auto lg:max-w-none w-full"
+          >
             {/* Logo */}
             <div className="text-center mb-6">
               <img
@@ -241,7 +244,7 @@ const LoginSignup = () => {
                         type="text"
                         placeholder="Full Name"
                         value={username}
-                        onChange={e => setUsername(e.target.value)}
+                        onChange={(e) => setUsername(e.target.value)}
                         className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                         required
                       />
@@ -258,7 +261,7 @@ const LoginSignup = () => {
                   type="email"
                   placeholder="Email Address"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
@@ -272,24 +275,52 @@ const LoginSignup = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-0 bg-transparent border-none cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} width="18" height="18">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      width="18"
+                      height="18"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                      />
                     </svg>
                   ) : (
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} width="18" height="18">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      width="18"
+                      height="18"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                   )}
                 </button>
@@ -318,7 +349,7 @@ const LoginSignup = () => {
             {/* Switch mode */}
             <div className="mt-6 text-center text-sm">
               <span className="text-slate-500">
-                {action === 'Login' ? "Don't have an account?" : "Already have an account?"}
+                {action === 'Login' ? "Don't have an account?" : 'Already have an account?'}
               </span>{' '}
               <button
                 type="button"
@@ -368,7 +399,8 @@ const LoginSignup = () => {
                 Your Fitness, Elevated
               </h2>
               <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
-                Track workouts, monitor nutrition, and achieve your goals with intelligent analytics.
+                Track workouts, monitor nutrition, and achieve your goals with intelligent
+                analytics.
               </p>
               <div className="flex justify-center gap-6 mt-8">
                 {[
@@ -389,7 +421,9 @@ const LoginSignup = () => {
 
       {/* Bottom nav links */}
       <div className="absolute bottom-5 left-0 right-0 flex justify-center items-center gap-3 text-xs text-slate-600 z-10">
-        <Link to="/credits" className="hover:text-slate-400 transition-colors">Credits</Link>
+        <Link to="/credits" className="hover:text-slate-400 transition-colors">
+          Credits
+        </Link>
         <span>&bull;</span>
         <span className="hover:text-slate-400 cursor-pointer transition-colors">About</span>
         <span>&bull;</span>

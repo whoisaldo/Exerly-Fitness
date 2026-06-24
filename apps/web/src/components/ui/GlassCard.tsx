@@ -20,9 +20,5 @@ export function GlassCard({
     ? 'transition-all duration-300 hover:border-violet-500/40 hover:shadow-glow-primary'
     : '';
 
-  return (
-    <Tag className={`${base} p-5 ${hoverClasses} ${className}`}>
-      {children}
-    </Tag>
-  );
+  return <Tag className={`${base} p-5 ${hoverClasses} ${className}`}>{children}</Tag>;
 }

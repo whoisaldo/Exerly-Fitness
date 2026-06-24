@@ -523,12 +523,24 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.stats-card.total-entries { border-left: 4px solid #6c5ce7; }
-.stats-card.workouts { border-left: 4px solid #00b894; }
-.stats-card.calories-burned { border-left: 4px solid #e17055; }
-.stats-card.calories-consumed { border-left: 4px solid #fdcb6e; }
-.stats-card.sleep { border-left: 4px solid #a29bfe; }
-.stats-card.net-calories { border-left: 4px solid #fd79a8; }
+.stats-card.total-entries {
+  border-left: 4px solid #6c5ce7;
+}
+.stats-card.workouts {
+  border-left: 4px solid #00b894;
+}
+.stats-card.calories-burned {
+  border-left: 4px solid #e17055;
+}
+.stats-card.calories-consumed {
+  border-left: 4px solid #fdcb6e;
+}
+.stats-card.sleep {
+  border-left: 4px solid #a29bfe;
+}
+.stats-card.net-calories {
+  border-left: 4px solid #fd79a8;
+}
 
 .card-icon {
   font-size: 2rem;
@@ -641,8 +653,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Empty State */
@@ -681,9 +697,15 @@
   transform: translateX(4px);
 }
 
-.entry-item.activity { border-left: 4px solid #00b894; }
-.entry-item.food { border-left: 4px solid #fdcb6e; }
-.entry-item.sleep { border-left: 4px solid #6c5ce7; }
+.entry-item.activity {
+  border-left: 4px solid #00b894;
+}
+.entry-item.food {
+  border-left: 4px solid #fdcb6e;
+}
+.entry-item.sleep {
+  border-left: 4px solid #6c5ce7;
+}
 
 .entry-icon {
   font-size: 1.25rem;
@@ -743,50 +765,50 @@
     gap: 20px;
     align-items: stretch;
   }
-  
+
   .admin-title {
     font-size: 1.75rem;
   }
-  
+
   .admin-subtitle {
     font-size: 1rem;
   }
-  
+
   .admin-page > *:not(.admin-header):not(.message-banner) {
     padding: 0 24px;
   }
-  
+
   .admin-toolbar {
     flex-direction: column;
     align-items: stretch;
     gap: 20px;
   }
-  
+
   .toolbar-left {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .user-select {
     min-width: auto;
     width: 100%;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .user-card {
     flex-direction: column;
     text-align: center;
     gap: 16px;
   }
-  
+
   .user-meta {
     justify-content: center;
   }
-  
+
   .tab-content {
     gap: 24px;
   }
@@ -796,57 +818,57 @@
   .admin-header {
     padding: 16px 20px;
   }
-  
+
   .admin-title {
     font-size: 1.5rem;
   }
-  
+
   .admin-page > *:not(.admin-header):not(.message-banner) {
     padding: 0 20px;
   }
-  
+
   .admin-toolbar {
     padding: 20px;
   }
-  
+
   .user-card {
     padding: 20px;
   }
-  
+
   .user-avatar {
     width: 60px;
     height: 60px;
     font-size: 1.5rem;
   }
-  
+
   .stats-card {
     padding: 16px;
     flex-direction: column;
     text-align: center;
     gap: 12px;
   }
-  
+
   .card-icon {
     width: 40px;
     height: 40px;
     font-size: 1.5rem;
   }
-  
+
   .entries-tabs {
     padding: 20px;
   }
-  
+
   .entry-item {
     padding: 12px;
     gap: 12px;
   }
-  
+
   .entry-icon {
     width: 32px;
     height: 32px;
     font-size: 1rem;
   }
-  
+
   .entry-details {
     flex-direction: column;
     gap: 8px;

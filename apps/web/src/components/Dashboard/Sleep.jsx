@@ -24,7 +24,7 @@ export default function Sleep() {
     hours: '',
     quality: 'Good',
     bedtime: '',
-    wakeTime: ''
+    wakeTime: '',
   });
   const navigate = useNavigate();
 
@@ -39,7 +39,7 @@ export default function Sleep() {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${BASE_URL}/api/sleep`, {
-        headers: { Authorization: 'Bearer ' + token }
+        headers: { Authorization: 'Bearer ' + token },
       });
 
       if (res.status === 401) {
@@ -57,11 +57,11 @@ export default function Sleep() {
     }
   };
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
@@ -73,14 +73,14 @@ export default function Sleep() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify({
           hours: form.hours,
           quality: form.quality,
           bedtime: form.bedtime,
-          wakeTime: form.wakeTime
-        })
+          wakeTime: form.wakeTime,
+        }),
       });
 
       if (res.ok) {
@@ -110,11 +110,11 @@ export default function Sleep() {
       const token = localStorage.getItem('token');
       const res = await fetch(`${BASE_URL}/api/sleep/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+        headers: { Authorization: 'Bearer ' + token },
       });
 
       if (res.ok) {
-        setEntries(entries.filter(entry => entry.id !== id));
+        setEntries(entries.filter((entry) => entry.id !== id));
         alert('Sleep entry deleted successfully!');
       } else {
         alert('Error deleting sleep entry');
@@ -127,21 +127,31 @@ export default function Sleep() {
 
   const getSleepQualityColor = (quality) => {
     switch (quality?.toLowerCase()) {
-      case 'excellent': return '#10b981';
-      case 'good': return '#3b82f6';
-      case 'fair': return '#f59e0b';
-      case 'poor': return '#ef4444';
-      default: return '#6b7280';
+      case 'excellent':
+        return '#10b981';
+      case 'good':
+        return '#3b82f6';
+      case 'fair':
+        return '#f59e0b';
+      case 'poor':
+        return '#ef4444';
+      default:
+        return '#6b7280';
     }
   };
 
   const getSleepQualityIcon = (quality) => {
     switch (quality?.toLowerCase()) {
-      case 'excellent': return '😴';
-      case 'good': return '😊';
-      case 'fair': return '😐';
-      case 'poor': return '😫';
-      default: return '😴';
+      case 'excellent':
+        return '😴';
+      case 'good':
+        return '😊';
+      case 'fair':
+        return '😐';
+      case 'poor':
+        return '😫';
+      default:
+        return '😴';
     }
   };
 
@@ -156,8 +166,8 @@ export default function Sleep() {
       return acc;
     }, {});
 
-    const mostCommonQuality = Object.entries(qualityCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A';
+    const mostCommonQuality =
+      Object.entries(qualityCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A';
 
     return { avgHours: avgHours.toFixed(1), mostCommonQuality, totalEntries: entries.length };
   };
@@ -166,11 +176,16 @@ export default function Sleep() {
 
   const qualityToBadgeVariant = (quality) => {
     switch (quality?.toLowerCase()) {
-      case 'excellent': return 'status';
-      case 'good': return 'intensity';
-      case 'fair': return 'meal';
-      case 'poor': return 'severity';
-      default: return 'status';
+      case 'excellent':
+        return 'status';
+      case 'good':
+        return 'intensity';
+      case 'fair':
+        return 'meal';
+      case 'poor':
+        return 'severity';
+      default:
+        return 'status';
     }
   };
 
@@ -186,7 +201,13 @@ export default function Sleep() {
               variant="ghost"
               onClick={() => navigate('/dashboard')}
               icon={
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               }

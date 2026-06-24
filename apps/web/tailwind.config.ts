@@ -30,35 +30,17 @@ export default {
         error: '#ef4444',
       },
       fontFamily: {
-        sans: [
-          'Inter',
-          'system-ui',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'sans-serif',
-        ],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       fontSize: {
-        'display-xl': [
-          '4.5rem',
-          { lineHeight: '1', letterSpacing: '-0.025em', fontWeight: '800' },
-        ],
-        display: [
-          '3rem',
-          { lineHeight: '1.1', letterSpacing: '-0.025em', fontWeight: '800' },
-        ],
+        'display-xl': ['4.5rem', { lineHeight: '1', letterSpacing: '-0.025em', fontWeight: '800' }],
+        display: ['3rem', { lineHeight: '1.1', letterSpacing: '-0.025em', fontWeight: '800' }],
         'display-sm': [
           '2.25rem',
           { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' },
         ],
-        stat: [
-          '2rem',
-          { lineHeight: '1', letterSpacing: '-0.01em', fontWeight: '700' },
-        ],
-        label: [
-          '0.6875rem',
-          { lineHeight: '1', letterSpacing: '0.1em', fontWeight: '500' },
-        ],
+        stat: ['2rem', { lineHeight: '1', letterSpacing: '-0.01em', fontWeight: '700' }],
+        label: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.1em', fontWeight: '500' }],
       },
       boxShadow: {
         glow: '0 0 40px rgba(139,92,246,0.08)',
@@ -74,8 +56,7 @@ export default {
         'gradient-surface': 'linear-gradient(180deg, #0f0f1a 0%, #080810 100%)',
         'gradient-card':
           'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(236,72,153,0.04) 100%)',
-        'gradient-page':
-          'linear-gradient(180deg, #080810 0%, #0f0f1a 50%, #1e1b4b 100%)',
+        'gradient-page': 'linear-gradient(180deg, #080810 0%, #0f0f1a 50%, #1e1b4b 100%)',
       },
       animation: {
         float: 'float 8s ease-in-out infinite',

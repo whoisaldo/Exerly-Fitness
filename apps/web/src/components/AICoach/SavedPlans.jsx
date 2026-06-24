@@ -16,7 +16,7 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch (error) {
       return 'Invalid Date';
@@ -33,7 +33,7 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -50,12 +50,12 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
 
   const handleDeletePlan = async (planId) => {
     if (!window.confirm('Are you sure you want to delete this plan?')) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/plans/${planId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -72,21 +72,31 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'workout_plan': return '🏋️';
-      case 'nutrition_advice': return '🍎';
-      case 'progress_analysis': return '📊';
-      case 'custom_question': return '💬';
-      default: return '📋';
+      case 'workout_plan':
+        return '🏋️';
+      case 'nutrition_advice':
+        return '🍎';
+      case 'progress_analysis':
+        return '📊';
+      case 'custom_question':
+        return '💬';
+      default:
+        return '📋';
     }
   };
 
   const getTypeTitle = (type) => {
     switch (type) {
-      case 'workout_plan': return 'Workout Plan';
-      case 'nutrition_advice': return 'Nutrition Advice';
-      case 'progress_analysis': return 'Progress Analysis';
-      case 'custom_question': return 'Custom Question';
-      default: return 'AI Plan';
+      case 'workout_plan':
+        return 'Workout Plan';
+      case 'nutrition_advice':
+        return 'Nutrition Advice';
+      case 'progress_analysis':
+        return 'Progress Analysis';
+      case 'custom_question':
+        return 'Custom Question';
+      default:
+        return 'AI Plan';
     }
   };
 
@@ -112,29 +122,23 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
               </div>
               <span className="plan-date">{formatDate(plan.createdAt)}</span>
             </div>
-            
+
             <div className="plan-preview">
               <p>{(plan.response || '').substring(0, 150)}...</p>
             </div>
-            
+
             <div className="plan-actions">
-              <button 
-                className="plan-btn view-btn" 
-                onClick={() => handleViewPlan(plan)}
-              >
+              <button className="plan-btn view-btn" onClick={() => handleViewPlan(plan)}>
                 View Details
               </button>
-              <button 
-                className="plan-btn apply-btn" 
+              <button
+                className="plan-btn apply-btn"
                 onClick={() => handleApplyPlan(plan)}
                 disabled={plan.applied}
               >
                 {plan.applied ? 'Applied' : 'Apply Plan'}
               </button>
-              <button 
-                className="plan-btn delete-btn" 
-                onClick={() => handleDeletePlan(plan._id)}
-              >
+              <button className="plan-btn delete-btn" onClick={() => handleDeletePlan(plan._id)}>
                 Delete
               </button>
             </div>
@@ -151,22 +155,19 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
                 <span className="plan-modal-icon">{getTypeIcon(selectedPlan.type)}</span>
                 <h2>{getTypeTitle(selectedPlan.type)}</h2>
               </div>
-              <button 
-                className="close-modal-btn" 
-                onClick={() => setShowModal(false)}
-              >
+              <button className="close-modal-btn" onClick={() => setShowModal(false)}>
                 ×
               </button>
             </div>
-            
+
             <div className="plan-modal-content">
               <div className="plan-modal-meta">
-                <span className="plan-modal-date">Created: {formatDate(selectedPlan.createdAt)}</span>
-                {selectedPlan.applied && (
-                  <span className="plan-applied-badge">✓ Applied</span>
-                )}
+                <span className="plan-modal-date">
+                  Created: {formatDate(selectedPlan.createdAt)}
+                </span>
+                {selectedPlan.applied && <span className="plan-applied-badge">✓ Applied</span>}
               </div>
-              
+
               <div className="plan-modal-response">
                 <h3>AI Response</h3>
                 <div className="plan-content">
@@ -178,10 +179,10 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="plan-modal-actions">
-              <button 
-                className="plan-btn apply-btn" 
+              <button
+                className="plan-btn apply-btn"
                 onClick={() => {
                   handleApplyPlan(selectedPlan);
                   setShowModal(false);
@@ -190,8 +191,8 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
               >
                 {selectedPlan.applied ? 'Already Applied' : 'Apply This Plan'}
               </button>
-              <button 
-                className="plan-btn delete-btn" 
+              <button
+                className="plan-btn delete-btn"
                 onClick={() => {
                   handleDeletePlan(selectedPlan._id);
                   setShowModal(false);

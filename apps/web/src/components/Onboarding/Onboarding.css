@@ -79,7 +79,11 @@
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -149,8 +153,8 @@
   font-size: 1rem;
 }
 
-.form-group input[type="number"],
-.form-group input[type="text"] {
+.form-group input[type='number'],
+.form-group input[type='text'] {
   width: 100%;
   padding: 15px;
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -200,13 +204,13 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.radio-option input[type="radio"] {
+.radio-option input[type='radio'] {
   width: 18px;
   height: 18px;
   accent-color: #8b5cf6;
 }
 
-.radio-option input[type="radio"]:checked + span {
+.radio-option input[type='radio']:checked + span {
   color: #8b5cf6;
   font-weight: 600;
 }
@@ -586,35 +590,35 @@
   .onboarding-container {
     padding: 10px;
   }
-  
+
   .onboarding-content {
     padding: 80px 10px 20px;
   }
-  
+
   .onboarding-step h1 {
     font-size: 2rem;
   }
-  
+
   .onboarding-step h2 {
     font-size: 1.5rem;
   }
-  
+
   .goal-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .radio-group {
     grid-template-columns: 1fr;
   }
-  
+
   .onboarding-actions {
     padding: 15px;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 12px 20px;

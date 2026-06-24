@@ -9,7 +9,7 @@ export default function StatusCheck() {
     title: '',
     description: '',
     email: '',
-    severity: 'medium'
+    severity: 'medium',
   });
   const [submitStatus, setSubmitStatus] = useState('');
 
@@ -23,7 +23,7 @@ export default function StatusCheck() {
       setApiHealth({
         status: 'unhealthy',
         error: 'Failed to connect to API',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } finally {
       setLoading(false);
@@ -45,15 +45,15 @@ export default function StatusCheck() {
       // For now, we'll just log the bug report
       // In a real app, this would be sent to a backend endpoint
       console.log('Bug Report Submitted:', bugReport);
-      
+
       setSubmitStatus('success');
       setBugReport({
         title: '',
         description: '',
         email: '',
-        severity: 'medium'
+        severity: 'medium',
       });
-      
+
       setTimeout(() => setSubmitStatus(''), 3000);
     } catch (error) {
       setSubmitStatus('error');
@@ -100,47 +100,48 @@ export default function StatusCheck() {
             <div className="health-content">
               <div className="health-header">
                 <span className="status-icon">{getStatusIcon(apiHealth?.status)}</span>
-                <span 
-                  className="status-text"
-                  style={{ color: getStatusColor(apiHealth?.status) }}
-                >
+                <span className="status-text" style={{ color: getStatusColor(apiHealth?.status) }}>
                   {apiHealth?.status?.toUpperCase() || 'UNKNOWN'}
                 </span>
                 <button className="refresh-btn" onClick={fetchApiHealth}>
                   🔄 Refresh
                 </button>
               </div>
-              
+
               {apiHealth && (
                 <div className="health-details">
                   <div className="health-item">
                     <strong>Last Check:</strong> {new Date(apiHealth.timestamp).toLocaleString()}
                   </div>
-                  
+
                   {apiHealth.uptime && (
                     <div className="health-item">
-                      <strong>Uptime:</strong> {Math.floor(apiHealth.uptime / 3600)}h {Math.floor((apiHealth.uptime % 3600) / 60)}m
+                      <strong>Uptime:</strong> {Math.floor(apiHealth.uptime / 3600)}h{' '}
+                      {Math.floor((apiHealth.uptime % 3600) / 60)}m
                     </div>
                   )}
-                  
+
                   {apiHealth.database && (
                     <div className="health-item">
-                      <strong>Database:</strong> 
-                      <span 
+                      <strong>Database:</strong>
+                      <span
                         className="db-status"
-                        style={{ color: apiHealth.database.status === 'connected' ? '#27ae60' : '#e74c3c' }}
+                        style={{
+                          color: apiHealth.database.status === 'connected' ? '#27ae60' : '#e74c3c',
+                        }}
                       >
                         {apiHealth.database.status?.toUpperCase()}
                       </span>
                     </div>
                   )}
-                  
+
                   {apiHealth.memory && (
                     <div className="health-item">
-                      <strong>Memory Usage:</strong> {apiHealth.memory.used} / {apiHealth.memory.total}
+                      <strong>Memory Usage:</strong> {apiHealth.memory.used} /{' '}
+                      {apiHealth.memory.total}
                     </div>
                   )}
-                  
+
                   {apiHealth.error && (
                     <div className="health-item error">
                       <strong>Error:</strong> {apiHealth.error}
@@ -163,7 +164,7 @@ export default function StatusCheck() {
               type="text"
               id="title"
               value={bugReport.title}
-              onChange={(e) => setBugReport({...bugReport, title: e.target.value})}
+              onChange={(e) => setBugReport({ ...bugReport, title: e.target.value })}
               placeholder="Brief description of the issue"
               required
             />
@@ -174,7 +175,7 @@ export default function StatusCheck() {
             <select
               id="severity"
               value={bugReport.severity}
-              onChange={(e) => setBugReport({...bugReport, severity: e.target.value})}
+              onChange={(e) => setBugReport({ ...bugReport, severity: e.target.value })}
             >
               <option value="low">Low - Minor issue</option>
               <option value="medium">Medium - Moderate issue</option>
@@ -189,7 +190,7 @@ export default function StatusCheck() {
               type="email"
               id="email"
               value={bugReport.email}
-              onChange={(e) => setBugReport({...bugReport, email: e.target.value})}
+              onChange={(e) => setBugReport({ ...bugReport, email: e.target.value })}
               placeholder="your.email@example.com"
             />
           </div>
@@ -199,25 +200,19 @@ export default function StatusCheck() {
             <textarea
               id="description"
               value={bugReport.description}
-              onChange={(e) => setBugReport({...bugReport, description: e.target.value})}
+              onChange={(e) => setBugReport({ ...bugReport, description: e.target.value })}
               placeholder="Please describe the issue in detail. Include steps to reproduce if possible."
               rows="5"
               required
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="submit-btn"
-            disabled={submitStatus === 'submitting'}
-          >
+          <button type="submit" className="submit-btn" disabled={submitStatus === 'submitting'}>
             {submitStatus === 'submitting' ? 'Submitting...' : 'Submit Bug Report'}
           </button>
 
           {submitStatus === 'success' && (
-            <div className="submit-message success">
-              ✅ Bug report submitted successfully!
-            </div>
+            <div className="submit-message success">✅ Bug report submitted successfully!</div>
           )}
 
           {submitStatus === 'error' && (

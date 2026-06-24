@@ -12,13 +12,13 @@ const AIErrorManager = () => {
   const [filters, setFilters] = useState({
     status: '',
     severity: '',
-    errorType: ''
+    errorType: '',
   });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
     total: 0,
-    pages: 0
+    pages: 0,
   });
 
   useEffect(() => {
@@ -32,19 +32,19 @@ const AIErrorManager = () => {
       const queryParams = new URLSearchParams({
         page: pagination.page,
         limit: pagination.limit,
-        ...filters
+        ...filters,
       });
 
       const response = await fetch(`${BASE_URL}/api/admin/ai-errors?${queryParams}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
         setErrors(data.errors);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
-          ...data.pagination
+          ...data.pagination,
         }));
       }
     } catch (error) {
@@ -58,7 +58,7 @@ const AIErrorManager = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/admin/ai-errors/stats`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -77,9 +77,9 @@ const AIErrorManager = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status, adminNotes })
+        body: JSON.stringify({ status, adminNotes }),
       });
 
       if (response.ok) {
@@ -98,7 +98,7 @@ const AIErrorManager = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/admin/ai-errors/${errorId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -111,7 +111,10 @@ const AIErrorManager = () => {
   };
 
   const cleanupOldErrors = async () => {
-    if (!window.confirm('Are you sure you want to clean up old errors? This action cannot be undone.')) return;
+    if (
+      !window.confirm('Are you sure you want to clean up old errors? This action cannot be undone.')
+    )
+      return;
 
     try {
       const token = localStorage.getItem('token');
@@ -119,9 +122,9 @@ const AIErrorManager = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ daysOld: 30 })
+        body: JSON.stringify({ daysOld: 30 }),
       });
 
       if (response.ok) {
@@ -137,21 +140,31 @@ const AIErrorManager = () => {
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case 'CRITICAL': return '#ef4444';
-      case 'HIGH': return '#f97316';
-      case 'MEDIUM': return '#eab308';
-      case 'LOW': return '#22c55e';
-      default: return '#6b7280';
+      case 'CRITICAL':
+        return '#ef4444';
+      case 'HIGH':
+        return '#f97316';
+      case 'MEDIUM':
+        return '#eab308';
+      case 'LOW':
+        return '#22c55e';
+      default:
+        return '#6b7280';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'OPEN': return '#ef4444';
-      case 'INVESTIGATING': return '#f97316';
-      case 'RESOLVED': return '#22c55e';
-      case 'IGNORED': return '#6b7280';
-      default: return '#6b7280';
+      case 'OPEN':
+        return '#ef4444';
+      case 'INVESTIGATING':
+        return '#f97316';
+      case 'RESOLVED':
+        return '#22c55e';
+      case 'IGNORED':
+        return '#6b7280';
+      default:
+        return '#6b7280';
     }
   };
 
@@ -205,9 +218,9 @@ const AIErrorManager = () => {
       <div className="filters-section">
         <div className="filter-group">
           <label>Status:</label>
-          <select 
-            value={filters.status} 
-            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
           >
             <option value="">All</option>
             <option value="OPEN">Open</option>
@@ -218,9 +231,9 @@ const AIErrorManager = () => {
         </div>
         <div className="filter-group">
           <label>Severity:</label>
-          <select 
-            value={filters.severity} 
-            onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
+          <select
+            value={filters.severity}
+            onChange={(e) => setFilters((prev) => ({ ...prev, severity: e.target.value }))}
           >
             <option value="">All</option>
             <option value="CRITICAL">Critical</option>
@@ -231,9 +244,9 @@ const AIErrorManager = () => {
         </div>
         <div className="filter-group">
           <label>Type:</label>
-          <select 
-            value={filters.errorType} 
-            onChange={(e) => setFilters(prev => ({ ...prev, errorType: e.target.value }))}
+          <select
+            value={filters.errorType}
+            onChange={(e) => setFilters((prev) => ({ ...prev, errorType: e.target.value }))}
           >
             <option value="">All</option>
             <option value="API_ERROR">API Error</option>
@@ -259,14 +272,14 @@ const AIErrorManager = () => {
                   <span className="error-code">{error.errorCode}</span>
                 </div>
                 <div className="error-badges">
-                  <span 
-                    className="severity-badge" 
+                  <span
+                    className="severity-badge"
                     style={{ backgroundColor: getSeverityColor(error.severity) }}
                   >
                     {error.severity}
                   </span>
-                  <span 
-                    className="status-badge" 
+                  <span
+                    className="status-badge"
                     style={{ backgroundColor: getStatusColor(error.status) }}
                   >
                     {error.status}
@@ -286,15 +299,17 @@ const AIErrorManager = () => {
       {/* Pagination */}
       {pagination.pages > 1 && (
         <div className="pagination">
-          <button 
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+          <button
+            onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
             disabled={pagination.page === 1}
           >
             Previous
           </button>
-          <span>Page {pagination.page} of {pagination.pages}</span>
-          <button 
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+          <span>
+            Page {pagination.page} of {pagination.pages}
+          </span>
+          <button
+            onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
             disabled={pagination.page === pagination.pages}
           >
             Next
@@ -308,7 +323,9 @@ const AIErrorManager = () => {
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Error Details</h2>
-              <button onClick={() => setSelectedError(null)} className="close-btn">×</button>
+              <button onClick={() => setSelectedError(null)} className="close-btn">
+                ×
+              </button>
             </div>
             <div className="modal-content">
               <div className="error-details">
@@ -362,7 +379,7 @@ const AIErrorManager = () => {
                 )}
               </div>
               <div className="modal-actions">
-                <select 
+                <select
                   onChange={(e) => updateErrorStatus(selectedError._id, e.target.value)}
                   value={selectedError.status}
                 >
@@ -371,10 +388,7 @@ const AIErrorManager = () => {
                   <option value="RESOLVED">Resolved</option>
                   <option value="IGNORED">Ignored</option>
                 </select>
-                <button 
-                  onClick={() => deleteError(selectedError._id)}
-                  className="delete-btn"
-                >
+                <button onClick={() => deleteError(selectedError._id)} className="delete-btn">
                   Delete
                 </button>
               </div>

@@ -8,22 +8,22 @@ const QuickActions = ({ onAction, isLoading, creditsRemaining }) => {
       icon: '🏋️',
       title: 'Workout Plan',
       description: 'Get a personalized workout plan',
-      color: '#8b5cf6'
+      color: '#8b5cf6',
     },
     {
       id: 'nutrition_advice',
       icon: '🍎',
       title: 'Nutrition Advice',
       description: 'Get personalized nutrition guidance',
-      color: '#10b981'
+      color: '#10b981',
     },
     {
       id: 'progress_analysis',
       icon: '📊',
       title: 'Progress Analysis',
       description: 'Analyze your fitness progress',
-      color: '#f59e0b'
-    }
+      color: '#f59e0b',
+    },
   ];
 
   const handleActionClick = (actionId) => {
@@ -47,9 +47,7 @@ const QuickActions = ({ onAction, isLoading, creditsRemaining }) => {
           <div className="action-content">
             <h3>{action.title}</h3>
             <p>{action.description}</p>
-            {creditsRemaining <= 0 && (
-              <span className="no-credits">No credits remaining</span>
-            )}
+            {creditsRemaining <= 0 && <span className="no-credits">No credits remaining</span>}
           </div>
           {isLoading && (
             <div className="loading-overlay">

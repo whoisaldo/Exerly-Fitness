@@ -2,7 +2,17 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, StatCard, PageHeader, PageTransition, ActionButton, Badge, DataTable, EmptyState, LoadingSkeleton } from '../ui';
+import {
+  GlassCard,
+  StatCard,
+  PageHeader,
+  PageTransition,
+  ActionButton,
+  Badge,
+  DataTable,
+  EmptyState,
+  LoadingSkeleton,
+} from '../ui';
 import API_CONFIG from '../../config';
 
 const BASE_URL = API_CONFIG.BASE_URL;
@@ -44,7 +54,7 @@ export default function Admin() {
       setApiHealth({
         status: 'unhealthy',
         error: 'Failed to connect to API',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   }, [BASE_URL]);
@@ -67,16 +77,18 @@ export default function Admin() {
     // Fetch API health status + admin stats
     fetchApiHealth();
     fetch(`${BASE_URL}/api/admin/stats`, {
-      headers: { Authorization: 'Bearer ' + token }
+      headers: { Authorization: 'Bearer ' + token },
     })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setAdminStats(data); })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setAdminStats(data);
+      })
       .catch(() => {});
 
     fetch(`${BASE_URL}/api/admin/users`, {
-      headers: { Authorization: 'Bearer ' + token }
+      headers: { Authorization: 'Bearer ' + token },
     })
-      .then(r => {
+      .then((r) => {
         if (r.status === 401) {
           localStorage.removeItem('token');
           navigate('/');
@@ -88,14 +100,14 @@ export default function Admin() {
         }
         return r.json();
       })
-      .then(list => {
+      .then((list) => {
         const userList = list || [];
         setUsers(userList);
         if (userList.length > 0 && !selectedEmail) {
           setSelectedEmail(userList[0].email);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to load users:', err);
         setError('Failed to load users. Please try again.');
       })
@@ -116,20 +128,20 @@ export default function Admin() {
     setError('');
 
     fetch(`${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`, {
-      headers: { Authorization: 'Bearer ' + token }
+      headers: { Authorization: 'Bearer ' + token },
     })
-      .then(r => {
+      .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(data => {
+      .then((data) => {
         setEntries({
           activities: data.activities || [],
           food: data.food || [],
-          sleep: data.sleep || []
+          sleep: data.sleep || [],
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to load entries:', err);
         setError('Failed to load user entries. Please try again.');
         setEntries({ activities: [], food: [], sleep: [] });
@@ -148,7 +160,7 @@ export default function Admin() {
       burned,
       consumed,
       sleepHrs,
-      totalEntries
+      totalEntries,
     };
   }, [entries]);
 
@@ -165,32 +177,40 @@ export default function Admin() {
       setError('');
       setSuccess('');
 
-      const res = await fetch(`${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/reset-today`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + token }
-      });
+      const res = await fetch(
+        `${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/reset-today`,
+        {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token },
+        }
+      );
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      setSuccess(`Successfully reset today's data for ${selectedEmail}. Removed ${data.counts.activities + data.counts.food + data.counts.sleep} entries.`);
+      setSuccess(
+        `Successfully reset today's data for ${selectedEmail}. Removed ${data.counts.activities + data.counts.food + data.counts.sleep} entries.`
+      );
 
       // Refresh entries
-      const entriesRes = await fetch(`${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`, {
-        headers: { Authorization: 'Bearer ' + token }
-      });
+      const entriesRes = await fetch(
+        `${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`,
+        {
+          headers: { Authorization: 'Bearer ' + token },
+        }
+      );
 
       if (entriesRes.ok) {
         const newEntries = await entriesRes.json();
         setEntries({
           activities: newEntries.activities || [],
           food: newEntries.food || [],
-          sleep: newEntries.sleep || []
+          sleep: newEntries.sleep || [],
         });
       }
     } catch (err) {
       console.error('Reset failed:', err);
-      setError('Failed to reset today\'s data. Please try again.');
+      setError("Failed to reset today's data. Please try again.");
     }
   };
 
@@ -199,8 +219,9 @@ export default function Admin() {
     setSuccess('');
   };
 
-  const selectedUser = useMemo(() =>
-    users.find(u => u.email === selectedEmail), [users, selectedEmail]
+  const selectedUser = useMemo(
+    () => users.find((u) => u.email === selectedEmail),
+    [users, selectedEmail]
   );
 
   if (!me?.is_admin) {
@@ -252,9 +273,11 @@ export default function Admin() {
               await fetch(`${BASE_URL}/api/admin/toggle-admin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-                body: JSON.stringify({ email: row.email, isAdmin: !row.is_admin })
+                body: JSON.stringify({ email: row.email, isAdmin: !row.is_admin }),
               });
-              const res = await fetch(`${BASE_URL}/api/admin/users`, { headers: { Authorization: 'Bearer ' + token } });
+              const res = await fetch(`${BASE_URL}/api/admin/users`, {
+                headers: { Authorization: 'Bearer ' + token },
+              });
               if (res.ok) setUsers(await res.json());
             } catch {}
           }}
@@ -294,27 +317,29 @@ export default function Admin() {
                 <PageHeader title="Admin Console" />
                 <Badge variant="intensity">Admin</Badge>
               </div>
-              <p className="text-white/40 text-sm">Monitor user activity, view logs, and manage data</p>
+              <p className="text-white/40 text-sm">
+                Monitor user activity, view logs, and manage data
+              </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <ActionButton
-                variant="ghost"
-                onClick={() => navigate('/dashboard/admin/ai-errors')}
-              >
+              <ActionButton variant="ghost" onClick={() => navigate('/dashboard/admin/ai-errors')}>
                 AI Errors
               </ActionButton>
-              <ActionButton
-                variant="ghost"
-                onClick={() => navigate('/dashboard/admin/status')}
-              >
+              <ActionButton variant="ghost" onClick={() => navigate('/dashboard/admin/status')}>
                 Status
               </ActionButton>
               <ActionButton
                 variant="secondary"
                 onClick={() => navigate('/dashboard')}
                 icon={
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 }
@@ -334,8 +359,17 @@ export default function Admin() {
                 className="mb-6 rounded-xl border border-error/20 bg-error/10 px-4 py-3 flex items-center justify-between"
               >
                 <span className="text-error text-sm font-medium">{error}</span>
-                <button onClick={clearMessages} className="text-error/60 hover:text-error ml-3 h-6 w-6 flex items-center justify-center">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <button
+                  onClick={clearMessages}
+                  className="text-error/60 hover:text-error ml-3 h-6 w-6 flex items-center justify-center"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -352,8 +386,17 @@ export default function Admin() {
                 className="mb-6 rounded-xl border border-success/20 bg-success/10 px-4 py-3 flex items-center justify-between"
               >
                 <span className="text-success text-sm font-medium">{success}</span>
-                <button onClick={clearMessages} className="text-success/60 hover:text-success ml-3 h-6 w-6 flex items-center justify-center">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <button
+                  onClick={clearMessages}
+                  className="text-success/60 hover:text-success ml-3 h-6 w-6 flex items-center justify-center"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -365,8 +408,18 @@ export default function Admin() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <StatCard
               icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-1.053M18 1.5a3 3 0 11-6 0 3 3 0 016 0zm-9 8.25a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-1.053M18 1.5a3 3 0 11-6 0 3 3 0 016 0zm-9 8.25a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
               }
               label="Total Users"
@@ -374,8 +427,18 @@ export default function Admin() {
             />
             <StatCard
               icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+                  />
                 </svg>
               }
               label="Active Today"
@@ -383,8 +446,18 @@ export default function Admin() {
             />
             <StatCard
               icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                  />
                 </svg>
               }
               label="Total Entries"
@@ -392,8 +465,18 @@ export default function Admin() {
             />
             <StatCard
               icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"
+                  />
                 </svg>
               }
               label="Total Entries"
@@ -408,9 +491,7 @@ export default function Admin() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative px-4 h-11 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-primary'
-                    : 'text-white/40 hover:text-white/70'
+                  activeTab === tab.id ? 'text-primary' : 'text-white/40 hover:text-white/70'
                 }`}
               >
                 {tab.label}
@@ -434,7 +515,7 @@ export default function Admin() {
                     <label className="block text-label text-white/50 mb-2">Select User</label>
                     <select
                       value={selectedEmail}
-                      onChange={e => setSelectedEmail(e.target.value)}
+                      onChange={(e) => setSelectedEmail(e.target.value)}
                       disabled={usersLoading}
                       className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
@@ -443,7 +524,7 @@ export default function Admin() {
                       ) : users.length === 0 ? (
                         <option>No users found</option>
                       ) : (
-                        users.map(u => (
+                        users.map((u) => (
                           <option key={u.email} value={u.email}>
                             {u.name || 'Unnamed User'} -- {u.email}
                             {u.is_admin ? ' (Admin)' : ''}
@@ -457,8 +538,18 @@ export default function Admin() {
                     onClick={resetTodayForUser}
                     className="text-error hover:bg-error/10 border-error/20"
                     icon={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                        />
                       </svg>
                     }
                   >
@@ -477,14 +568,19 @@ export default function Admin() {
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-white font-semibold text-lg">{selectedUser.name || 'Unnamed User'}</h3>
+                      <h3 className="text-white font-semibold text-lg">
+                        {selectedUser.name || 'Unnamed User'}
+                      </h3>
                       <p className="text-white/40 text-sm">{selectedUser.email}</p>
                       <div className="flex items-center gap-3 mt-1">
                         <Badge variant={selectedUser.is_admin ? 'intensity' : 'status'}>
                           {selectedUser.is_admin ? 'Admin' : 'User'}
                         </Badge>
                         <span className="text-white/30 text-xs">
-                          Joined {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : '--'}
+                          Joined{' '}
+                          {selectedUser.created_at
+                            ? new Date(selectedUser.created_at).toLocaleDateString()
+                            : '--'}
                         </span>
                       </div>
                     </div>
@@ -516,8 +612,11 @@ export default function Admin() {
                 </GlassCard>
                 <GlassCard className="p-4 text-center">
                   <p className="text-white/40 text-xs mb-1">Net Calories</p>
-                  <p className={`text-stat ${totals.consumed - totals.burned >= 0 ? 'text-success' : 'text-error'}`}>
-                    {totals.consumed - totals.burned >= 0 ? '+' : ''}{totals.consumed - totals.burned}
+                  <p
+                    className={`text-stat ${totals.consumed - totals.burned >= 0 ? 'text-success' : 'text-error'}`}
+                  >
+                    {totals.consumed - totals.burned >= 0 ? '+' : ''}
+                    {totals.consumed - totals.burned}
                   </p>
                 </GlassCard>
               </div>
@@ -557,13 +656,18 @@ export default function Admin() {
                     <EmptyState title="No activities" message="No activities logged" />
                   ) : (
                     <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {entries.activities.map(activity => (
-                        <div key={`a-${activity.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50">
+                      {entries.activities.map((activity) => (
+                        <div
+                          key={`a-${activity.id}`}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50"
+                        >
                           <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
                             <span className="text-sm">💪</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">{activity.activity}</p>
+                            <p className="text-white text-sm font-medium truncate">
+                              {activity.activity}
+                            </p>
                             <p className="text-white/40 text-xs">
                               {activity.duration_min} min / {activity.calories} kcal
                             </p>
@@ -590,8 +694,11 @@ export default function Admin() {
                     <EmptyState title="No food entries" message="No food logged" />
                   ) : (
                     <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {entries.food.map(food => (
-                        <div key={`f-${food.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50">
+                      {entries.food.map((food) => (
+                        <div
+                          key={`f-${food.id}`}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50"
+                        >
                           <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
                             <span className="text-sm">🍽️</span>
                           </div>
@@ -623,13 +730,18 @@ export default function Admin() {
                     <EmptyState title="No sleep data" message="No sleep logged" />
                   ) : (
                     <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {entries.sleep.map(sleep => (
-                        <div key={`s-${sleep.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50">
+                      {entries.sleep.map((sleep) => (
+                        <div
+                          key={`s-${sleep.id}`}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-surface-2/50"
+                        >
                           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                             <span className="text-sm">😴</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">{sleep.hours} hours</p>
+                            <p className="text-white text-sm font-medium truncate">
+                              {sleep.hours} hours
+                            </p>
                             <p className="text-white/40 text-xs">{sleep.quality}</p>
                           </div>
                           <span className="text-white/20 text-xs shrink-0">
@@ -648,15 +760,25 @@ export default function Admin() {
             <GlassCard className="p-8">
               <EmptyState
                 icon={
-                  <svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  <svg
+                    className="w-10 h-10 text-white/20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                    />
                   </svg>
                 }
                 title="AI Error Management"
                 message="View and manage AI errors from the dedicated error manager."
                 action={{
                   label: 'Open AI Error Manager',
-                  onClick: () => navigate('/dashboard/admin/ai-errors')
+                  onClick: () => navigate('/dashboard/admin/ai-errors'),
                 }}
               />
               <div className="flex flex-wrap gap-2 mt-6 justify-center">
@@ -680,8 +802,12 @@ export default function Admin() {
                 <GlassCard className="p-5">
                   <p className="text-label text-white/40 mb-2">API Health</p>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${apiHealth?.status === 'healthy' ? 'bg-success animate-pulse' : 'bg-error'}`} />
-                    <span className={`font-semibold text-sm ${apiHealth?.status === 'healthy' ? 'text-success' : 'text-error'}`}>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${apiHealth?.status === 'healthy' ? 'bg-success animate-pulse' : 'bg-error'}`}
+                    />
+                    <span
+                      className={`font-semibold text-sm ${apiHealth?.status === 'healthy' ? 'text-success' : 'text-error'}`}
+                    >
                       {apiHealth ? apiHealth.status?.toUpperCase() || 'UNKNOWN' : 'LOADING'}
                     </span>
                   </div>
@@ -690,9 +816,15 @@ export default function Admin() {
                 <GlassCard className="p-5">
                   <p className="text-label text-white/40 mb-2">Database</p>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${apiHealth?.database?.status === 'connected' ? 'bg-success animate-pulse' : 'bg-error'}`} />
-                    <span className={`font-semibold text-sm ${apiHealth?.database?.status === 'connected' ? 'text-success' : 'text-error'}`}>
-                      {apiHealth?.database ? apiHealth.database.status?.toUpperCase() || 'UNKNOWN' : 'LOADING'}
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${apiHealth?.database?.status === 'connected' ? 'bg-success animate-pulse' : 'bg-error'}`}
+                    />
+                    <span
+                      className={`font-semibold text-sm ${apiHealth?.database?.status === 'connected' ? 'text-success' : 'text-error'}`}
+                    >
+                      {apiHealth?.database
+                        ? apiHealth.database.status?.toUpperCase() || 'UNKNOWN'
+                        : 'LOADING'}
                     </span>
                   </div>
                 </GlassCard>
@@ -702,8 +834,7 @@ export default function Admin() {
                   <span className="text-white font-semibold text-sm">
                     {apiHealth?.uptime
                       ? `${Math.floor(apiHealth.uptime / 3600)}h ${Math.floor((apiHealth.uptime % 3600) / 60)}m`
-                      : 'N/A'
-                    }
+                      : 'N/A'}
                   </span>
                 </GlassCard>
 

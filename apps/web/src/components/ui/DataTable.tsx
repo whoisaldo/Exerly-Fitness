@@ -76,9 +76,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
               >
                 {col.label}
-                {col.sortable && (
-                  <SortIcon dir={sortKey === col.key ? sortDir : null} />
-                )}
+                {col.sortable && <SortIcon dir={sortKey === col.key ? sortDir : null} />}
               </th>
             ))}
           </tr>
@@ -88,17 +86,13 @@ export function DataTable<T extends Record<string, unknown>>({
             <tr
               key={i}
               className={`border-b border-border-subtle transition-colors last:border-0 ${
-                onRowClick
-                  ? 'cursor-pointer hover:bg-surface-2/60'
-                  : 'hover:bg-surface-2/30'
+                onRowClick ? 'cursor-pointer hover:bg-surface-2/60' : 'hover:bg-surface-2/30'
               }`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
             >
               {columns.map((col) => (
                 <td key={col.key} className="px-4 py-3 text-slate-200">
-                  {col.render
-                    ? col.render(row[col.key], row)
-                    : String(row[col.key] ?? '')}
+                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? '')}
                 </td>
               ))}
             </tr>

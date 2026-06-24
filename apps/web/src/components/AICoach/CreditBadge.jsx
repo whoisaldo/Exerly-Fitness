@@ -8,7 +8,7 @@ const CreditBadge = ({ credits, onRefresh }) => {
     // Parse the reset time and start countdown
     const [minutes, seconds] = credits.hourly.resetTime.split(':').map(Number);
     let totalSeconds = minutes * 60 + seconds;
-    
+
     const timer = setInterval(() => {
       if (totalSeconds <= 0) {
         setTimeLeft('0:00');
@@ -16,7 +16,7 @@ const CreditBadge = ({ credits, onRefresh }) => {
         clearInterval(timer);
         return;
       }
-      
+
       totalSeconds--;
       const mins = Math.floor(totalSeconds / 60);
       const secs = totalSeconds % 60;
@@ -44,15 +44,13 @@ const CreditBadge = ({ credits, onRefresh }) => {
         <div className="hourly-credits">
           <span className="credit-icon">💬</span>
           <span className="credit-count">{credits.hourly.remaining}/5</span>
-          {credits.hourly.remaining === 0 && (
-            <span className="reset-timer">⏰ {timeLeft}</span>
-          )}
+          {credits.hourly.remaining === 0 && <span className="reset-timer">⏰ {timeLeft}</span>}
         </div>
         <div className="daily-credits">
           <span className="daily-count">{credits.daily.used}/20 today</span>
         </div>
       </div>
-      
+
       {credits.hourly.remaining === 0 && (
         <div className="limit-message">
           <p>⏰ You've used your 5 questions this hour</p>
@@ -60,7 +58,7 @@ const CreditBadge = ({ credits, onRefresh }) => {
           <p>You've used {credits.daily.used}/20 questions today</p>
         </div>
       )}
-      
+
       {credits.daily.used >= 20 && (
         <div className="daily-limit-message">
           <p>🚫 Daily AI Limit Reached</p>

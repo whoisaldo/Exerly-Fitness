@@ -5,10 +5,26 @@ import exerly_logo from './Assets/ExerlyLogo.jpg';
 import { GlassCard, ActionButton, PageTransition } from './ui';
 
 const featureCards = [
-  { icon: '\uD83C\uDFAF', title: 'Smart Tracking', desc: 'Intelligent activity and nutrition tracking with personalized insights' },
-  { icon: '\uD83D\uDCCA', title: 'Analytics Dashboard', desc: 'Comprehensive data visualization and progress monitoring' },
-  { icon: '\u26A1', title: 'Modern Tech', desc: 'Built with React, Node.js, and MongoDB for optimal performance' },
-  { icon: '\uD83D\uDD12', title: 'Secure & Private', desc: 'Your data is protected with enterprise-grade security' },
+  {
+    icon: '\uD83C\uDFAF',
+    title: 'Smart Tracking',
+    desc: 'Intelligent activity and nutrition tracking with personalized insights',
+  },
+  {
+    icon: '\uD83D\uDCCA',
+    title: 'Analytics Dashboard',
+    desc: 'Comprehensive data visualization and progress monitoring',
+  },
+  {
+    icon: '\u26A1',
+    title: 'Modern Tech',
+    desc: 'Built with React, Node.js, and MongoDB for optimal performance',
+  },
+  {
+    icon: '\uD83D\uDD12',
+    title: 'Secure & Private',
+    desc: 'Your data is protected with enterprise-grade security',
+  },
 ];
 
 const Credits = () => {
@@ -51,7 +67,9 @@ const Credits = () => {
             className="w-20 h-20 rounded-2xl object-cover mx-auto mb-5 shadow-glow-primary"
           />
           <h1 className="text-display mb-2">About Exerly</h1>
-          <p className="text-lg text-slate-400">Redefining fitness tracking with modern technology</p>
+          <p className="text-lg text-slate-400">
+            Redefining fitness tracking with modern technology
+          </p>
         </motion.div>
 
         {/* Creator section */}
@@ -62,7 +80,9 @@ const Credits = () => {
           className="mb-14"
         >
           <GlassCard elevated className="text-center py-8 rounded-2xl">
-            <p className="text-sm text-slate-400 uppercase tracking-wider mb-3">Crafted with &#128156; by</p>
+            <p className="text-sm text-slate-400 uppercase tracking-wider mb-3">
+              Crafted with &#128156; by
+            </p>
             <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">
               Ali Younes
             </h2>

@@ -27,7 +27,13 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }
 
 /* Header */
@@ -304,8 +310,12 @@
 }
 
 @keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 /* Sleep History Section */
@@ -421,23 +431,23 @@
     gap: 16px;
     text-align: center;
   }
-  
+
   .sleep-content {
     padding: 24px 20px;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .sleep-title {
     font-size: 1.875rem;
   }
-  
+
   .section-title {
     font-size: 1.5rem;
   }
@@ -447,15 +457,15 @@
   .sleep-header {
     padding: 16px 20px;
   }
-  
+
   .sleep-content {
     padding: 20px 16px;
   }
-  
+
   .stat-card {
     padding: 24px 20px;
   }
-  
+
   .sleep-form-section,
   .sleep-history-section {
     padding: 24px 20px;

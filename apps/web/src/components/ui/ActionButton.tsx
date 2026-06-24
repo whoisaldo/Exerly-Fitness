@@ -13,8 +13,7 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-gradient-primary text-white shadow-glow-primary hover:shadow-glow-lg active:scale-95',
   secondary:
     'border border-primary/30 bg-primary/10 text-primary-bright hover:bg-primary/20 active:scale-95',
-  ghost:
-    'text-slate-300 hover:bg-white/5 hover:text-slate-100',
+  ghost: 'text-slate-300 hover:bg-white/5 hover:text-slate-100',
 };
 
 function Spinner() {

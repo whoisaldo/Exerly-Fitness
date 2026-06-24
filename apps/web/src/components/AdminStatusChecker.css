@@ -237,7 +237,7 @@
   margin-bottom: 0 !important;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   width: auto;
   margin: 0;
 }
@@ -420,31 +420,31 @@
   .admin-status-checker {
     padding: 15px;
   }
-  
+
   .admin-header h1 {
     font-size: 2rem;
   }
-  
+
   .health-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .announcements-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .admin-tools {
     grid-template-columns: 1fr;
   }
-  
+
   .health-actions {
     flex-direction: column;
   }
-  
+
   .action-btn {
     width: 100%;
     justify-content: center;
