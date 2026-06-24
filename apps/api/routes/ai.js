@@ -5,6 +5,9 @@ const AIErrorLogger = require('../utils/errorLogger');
 
 const router = express.Router();
 
+// JWT_SECRET presence is enforced for production in index.js (the entry point,
+// which require()s this module after the check). The dev fallback below matches
+// index.js so locally-issued tokens verify here too.
 const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
 const genAI = (process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
@@ -65,8 +68,10 @@ function checkHourlyReset(user) {
 function checkDailyReset(user) {
   const now = new Date();
   const lastReset = new Date(user.aiDailyResetDate);
+  // Compare UTC calendar days so the boundary is timezone-independent.
+  const lastDay = Number.isNaN(lastReset.getTime()) ? null : lastReset.toISOString().slice(0, 10);
 
-  if (now.toDateString() !== lastReset.toDateString()) {
+  if (lastDay !== now.toISOString().slice(0, 10)) {
     user.aiDailyCreditsUsed = 0;
     user.aiDailyResetDate = now;
     return true;
@@ -89,7 +94,7 @@ function getTimeUntilHourlyReset(user) {
 function getHoursUntilMidnight() {
   const now = new Date();
   const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
+  midnight.setUTCHours(24, 0, 0, 0); // next UTC midnight, matching the daily reset
 
   const diff = midnight - now;
   const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -98,27 +103,18 @@ function getHoursUntilMidnight() {
   return `${hours}h ${minutes}m`;
 }
 
+// Anti-burst guard: at most one AI request per 10s window per user. (The real
+// quota is the hourly/daily credit system; this just blocks rapid spamming.)
 function checkRateLimit(userId) {
   const now = Date.now();
   const windowMs = 10 * 1000;
-
-  if (!rateLimit.has(userId)) {
-    rateLimit.set(userId, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-
   const userLimit = rateLimit.get(userId);
-  if (now > userLimit.resetTime) {
-    rateLimit.set(userId, { count: 1, resetTime: now + windowMs });
+
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimit.set(userId, { resetTime: now + windowMs });
     return true;
   }
-
-  if (userLimit.count >= 1) {
-    return false;
-  }
-
-  userLimit.count += 1;
-  return true;
+  return false;
 }
 
 function serializePlan(plan) {
@@ -146,6 +142,15 @@ function buildContext(user, includeContext) {
 - Experience Level: ${user.experienceLevel || 'Not specified'}
 - Workout Days/Week: ${user.workoutDaysPerWeek || 'Not specified'}
 - Equipment Access: ${user.equipmentAccess || 'Not specified'}`;
+}
+
+// Strip control characters and cap length on free-text user input before it goes
+// into the prompt — limits prompt-injection surface and caps token cost.
+function sanitizeUserText(text, maxLen = 1000) {
+  return String(text || '')
+    .replace(/[\x00-\x1F\x7F]/g, ' ')
+    .trim()
+    .slice(0, maxLen);
 }
 
 function buildPrompt(type, question, context) {
@@ -197,7 +202,7 @@ Provide a progress analysis and recommendations.`;
 
 ${context}
 
-User Question: ${question || 'No specific question provided'}
+User Question: ${sanitizeUserText(question) || 'No specific question provided'}
 
 Instructions:
 - Answer their question directly and helpfully
@@ -304,8 +309,16 @@ router.post('/coach', async (req, res) => {
     }
 
     const finalPrompt = buildPrompt(type, question, buildContext(user, includeContext));
-    const result = await model.generateContent(finalPrompt);
-    const response = result.response.text();
+    // Cap the upstream call so a hung Gemini request can't pin the connection.
+    const result = await Promise.race([
+      model.generateContent(finalPrompt),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AI request timed out')), 25000)),
+    ]);
+    const response = result?.response?.text?.();
+    if (!response || typeof response !== 'string') {
+      throw new Error('Empty response from AI model');
+    }
 
     const aiPlan = await AIPlan.create({
       userId: user._id,

@@ -9,6 +9,17 @@ function initModels(barcodeCacheModel) {
   BarcodeCache = barcodeCacheModel;
 }
 
+// fetch() with an abort timeout so a hung upstream can't pin the request.
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ---------- Rate Limiting ----------
 const rateLimits = new Map();
 const RATE_LIMIT = 30; // lookups per hour per user
@@ -46,20 +57,24 @@ async function getFatSecretToken() {
   if (fsAccessToken && Date.now() < fsTokenExpiry) return fsAccessToken;
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-  const res = await fetch('https://oauth.fatsecret.com/connect/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${credentials}`
-    },
-    body: 'grant_type=client_credentials&scope=basic barcode'
-  });
+  try {
+    const res = await fetchWithTimeout('https://oauth.fatsecret.com/connect/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${credentials}`
+      },
+      body: 'grant_type=client_credentials&scope=basic barcode'
+    });
 
-  if (!res.ok) return null;
-  const data = await res.json();
-  fsAccessToken = data.access_token;
-  fsTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-  return fsAccessToken;
+    if (!res.ok) return null;
+    const data = await res.json();
+    fsAccessToken = data.access_token;
+    fsTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+    return fsAccessToken;
+  } catch {
+    return null; // network error / timeout → fall back to Open Food Facts
+  }
 }
 
 // ---------- FatSecret Barcode Lookup ----------
@@ -78,7 +93,7 @@ async function fetchFromFatSecret(barcode) {
   url.searchParams.set('flag_default_serving', 'true');
 
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) return null;
@@ -88,21 +103,23 @@ async function fetchFromFatSecret(barcode) {
     if (!food || !food.food_name) return null;
 
     const servings = food.servings?.serving;
-    const serving = Array.isArray(servings) ? servings[0] : servings;
+    const serving = (Array.isArray(servings) ? servings[0] : servings) || {};
 
     return {
       barcode,
       name: food.food_name,
       brand: food.brand_name || null,
-      calories: Math.round(parseFloat(serving?.calories || '0')),
-      protein: parseFloat(serving?.protein || '0'),
-      carbs: parseFloat(serving?.carbohydrate || '0'),
-      fat: parseFloat(serving?.fat || '0'),
-      fiber: parseFloat(serving?.fiber || '0'),
-      sugar: parseFloat(serving?.sugar || '0'),
-      serving_size: serving?.serving_description || serving?.metric_serving_amount
-        ? `${serving.metric_serving_amount}${serving.metric_serving_unit || 'g'}`
-        : '1 serving',
+      calories: Math.round(parseFloat(serving.calories || '0')),
+      protein: parseFloat(serving.protein || '0'),
+      carbs: parseFloat(serving.carbohydrate || '0'),
+      fat: parseFloat(serving.fat || '0'),
+      fiber: parseFloat(serving.fiber || '0'),
+      sugar: parseFloat(serving.sugar || '0'),
+      // Prefer the human-readable description; otherwise build from metric amount.
+      serving_size: serving.serving_description
+        || (serving.metric_serving_amount != null
+              ? `${serving.metric_serving_amount}${serving.metric_serving_unit || 'g'}`
+              : '1 serving'),
       source: 'fatsecret'
     };
   } catch {
@@ -113,7 +130,7 @@ async function fetchFromFatSecret(barcode) {
 // ---------- Open Food Facts Barcode Lookup ----------
 async function fetchFromOpenFoodFacts(barcode) {
   try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const res = await fetchWithTimeout(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
     if (!res.ok) return null;
 
     const data = await res.json();
