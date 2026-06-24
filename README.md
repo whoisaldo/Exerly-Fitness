@@ -106,14 +106,35 @@ The API auto-deploys to DigitalOcean App Platform on every push to `main`. Envir
 
 ## Scripts
 
-| Command             | What it does                                       |
-| ------------------- | -------------------------------------------------- |
-| `npm run local`     | API + web in local mode (SQLite, no external deps) |
-| `npm run dev`       | API + web in production mode (MongoDB)             |
-| `npm run dev:api`   | API only                                           |
-| `npm run dev:web`   | Web only                                           |
-| `npm run build:web` | Production build of web dashboard                  |
-| `npm run ios:build` | Build iOS via CLI                                  |
+| Command             | What it does                                        |
+| ------------------- | --------------------------------------------------- |
+| `npm run local`     | API + web in local mode (SQLite, no external deps)  |
+| `npm run dev`       | API + web in production mode (MongoDB)              |
+| `npm run dev:api`   | API only                                            |
+| `npm run dev:web`   | Web only                                            |
+| `npm run build:web` | Production build of web dashboard                   |
+| `npm run ios:build` | Build iOS via CLI                                   |
+| `npm run lint`      | ESLint across api + web                             |
+| `npm run format`    | Apply Prettier formatting                           |
+| `npm run typecheck` | TypeScript type-check (web)                         |
+| `npm test`          | API unit tests (`node:test`)                        |
+| `npm run smoke:api` | Boot API (SQLite) and check `/ping` + `/api/health` |
+
+---
+
+## Continuous Integration
+
+Every push runs verification pipelines in GitHub Actions, and a local `pre-push`
+git hook (husky) runs the fast checks before code leaves your machine.
+
+### Workflows (`.github/workflows/`)
+
+- **CI** (`ci.yml`) — on every push, path-filtered: API (lint · test · boot-smoke), Web (lint · typecheck · `vite build`), iOS SwiftLint (lint-only), and actionlint.
+- **Security** (`security.yml`) — gitleaks secret scan, advisory `npm audit`, and `dependency-review` on PRs.
+- **CodeQL** (`codeql.yml`) — JS/TS static analysis on PRs to `main` + weekly.
+- **Deploy Web** (`deploy-web.yml`) — builds the dashboard to GitHub Pages on push to `main`.
+
+The `pre-push` hook runs lint, format check, typecheck, and API tests; bypass in an emergency with `git push --no-verify`. To make CI **block** merges into `main`, enable required status checks in the repo's branch-protection settings.
 
 ---
 
