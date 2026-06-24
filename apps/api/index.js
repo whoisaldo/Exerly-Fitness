@@ -164,11 +164,19 @@ const workoutSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now }
 });
 
+const waterSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  entry_date: { type: String, required: true, index: true },
+  glasses: { type: Number, default: 0 },
+  updated_at: { type: Date, default: Date.now }
+});
+
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ barcode: 1 }, { sparse: true });
 sleepSchema.index({ email: 1, entry_date: 1 });
+waterSchema.index({ email: 1, entry_date: 1 }, { unique: true });
 
 // ---------- Models ----------
 const User = mongoose.model('User', userSchema);
@@ -179,6 +187,7 @@ const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
 const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
 const BarcodeCache = mongoose.model('BarcodeCache', barcodeCacheSchema);
+const Water = mongoose.model('Water', waterSchema);
 
 // Import AIError model from errorLogger to avoid conflicts
 const AIError = require('./utils/errorLogger').AIError;
@@ -1043,6 +1052,71 @@ app.post('/api/admin/toggle-admin', authenticate, requireAdmin, async (req, res)
 });
 
 // ---------- Dashboard Data ----------
+// ---------- Weekly Dashboard ----------
+app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const days = getLast7UTCDates();
+    const [foodAgg, actAgg] = await Promise.all([
+      Food.aggregate([
+        { $match: { email, entry_date: { $in: days } } },
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
+      ]),
+      Activity.aggregate([
+        { $match: { email, entry_date: { $in: days } } },
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
+      ])
+    ]);
+    const consumedByDay = Object.fromEntries(foodAgg.map(r => [r._id, r.total]));
+    const burnedByDay = Object.fromEntries(actAgg.map(r => [r._id, r.total]));
+    res.json(days.map(date => ({
+      date,
+      label: weekdayLabel(date),
+      consumed: consumedByDay[date] || 0,
+      burned: burnedByDay[date] || 0
+    })));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
+  }
+});
+
+// ---------- Water ----------
+app.get('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const doc = await Water.findOne({ email: req.user.email, entry_date: today });
+    res.json({ glasses: doc?.glasses || 0, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching water', error: err.message });
+  }
+});
+
+app.post('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const { glasses, delta } = req.body || {};
+    let doc;
+    if (delta != null) {
+      doc = await Water.findOneAndUpdate(
+        { email: req.user.email, entry_date: today },
+        { $inc: { glasses: Number(delta) || 0 }, $set: { updated_at: new Date() } },
+        { new: true, upsert: true }
+      );
+      if (doc.glasses < 0) { doc.glasses = 0; await doc.save(); }
+    } else {
+      const g = Math.max(0, Math.round(Number(glasses) || 0));
+      doc = await Water.findOneAndUpdate(
+        { email: req.user.email, entry_date: today },
+        { $set: { glasses: g, updated_at: new Date() } },
+        { new: true, upsert: true }
+      );
+    }
+    res.json({ glasses: doc.glasses, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving water', error: err.message });
+  }
+});
+
 app.get('/api/dashboard-data', authenticate, async (req, res) => {
   try {
     const email = req.user.email;

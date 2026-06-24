@@ -157,6 +157,17 @@ async function initDb() {
   `);
 
   await dbQuery(`
+    CREATE TABLE IF NOT EXISTS water (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      entry_date TEXT NOT NULL,
+      glasses INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(email, entry_date)
+    );
+  `);
+
+  await dbQuery(`
     CREATE TABLE IF NOT EXISTS barcode_cache (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       barcode TEXT UNIQUE NOT NULL,
@@ -180,6 +191,7 @@ async function initDb() {
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_food_email_date ON food(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_sleep_email_date ON sleep(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_workouts_email ON workouts(email);`);
+  await dbQuery(`CREATE INDEX IF NOT EXISTS idx_water_email_date ON water(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_barcode_cache ON barcode_cache(barcode);`);
 
   // Migrate food table — add columns if missing
@@ -786,6 +798,60 @@ app.delete('/api/workouts/:id', authenticate, async (req, res) => {
 });
 
 // ---------- Dashboard Data ----------
+// ---------- Weekly Dashboard ----------
+app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const days = getLast7UTCDates();
+    const since = days[0];
+    const [foodRows, actRows] = await Promise.all([
+      dbQuery('SELECT entry_date, SUM(calories) AS total FROM food WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since]),
+      dbQuery('SELECT entry_date, SUM(calories) AS total FROM activities WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since])
+    ]);
+    const consumedByDay = Object.fromEntries(foodRows.rows.map(r => [r.entry_date, r.total]));
+    const burnedByDay = Object.fromEntries(actRows.rows.map(r => [r.entry_date, r.total]));
+    res.json(days.map(date => ({
+      date,
+      label: weekdayLabel(date),
+      consumed: consumedByDay[date] || 0,
+      burned: burnedByDay[date] || 0
+    })));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
+  }
+});
+
+// ---------- Water ----------
+app.get('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const r = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    res.json({ glasses: r.rows[0]?.glasses || 0, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching water', error: err.message });
+  }
+});
+
+app.post('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const { glasses, delta } = req.body || {};
+    const existing = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    const current = existing.rows[0]?.glasses || 0;
+    const next = delta != null
+      ? Math.max(0, current + (Number(delta) || 0))
+      : Math.max(0, Math.round(Number(glasses) || 0));
+    if (existing.rowCount > 0) {
+      await dbQuery('UPDATE water SET glasses=?, updated_at=CURRENT_TIMESTAMP WHERE email=? AND entry_date=?', [next, req.user.email, today]);
+    } else {
+      await dbQuery('INSERT INTO water (email, entry_date, glasses) VALUES (?,?,?)', [req.user.email, today, next]);
+    }
+    res.json({ glasses: next, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving water', error: err.message });
+  }
+});
+
 app.get('/api/dashboard-data', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
