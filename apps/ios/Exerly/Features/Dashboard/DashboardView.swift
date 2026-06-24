@@ -43,9 +43,14 @@ struct DashboardView: View {
             BentoCard(icon: "moon.fill", title: "Sleep",
                       value: String(format: "%.1f", vm.sleepHours), unit: "hours",
                       color: .exInfo)
-            BentoCard(icon: "drop.fill", title: "Water",
-                      value: "0", unit: "glasses",
-                      color: .exPrimary)
+            Button {
+                Task { await vm.addWater() }
+            } label: {
+                BentoCard(icon: "drop.fill", title: "Water",
+                          value: "\(vm.waterGlasses)", unit: "glasses",
+                          color: .exPrimary)
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -57,10 +62,10 @@ struct DashboardView: View {
                     .foregroundStyle(.exTextSecondary)
 
                 Chart {
-                    ForEach(sampleWeekData, id: \.day) { item in
+                    ForEach(vm.weeklyData) { item in
                         BarMark(
-                            x: .value("Day", item.day),
-                            y: .value("Calories", item.calories)
+                            x: .value("Day", item.label),
+                            y: .value("Calories", item.consumed)
                         )
                         .foregroundStyle(
                             LinearGradient(
@@ -144,10 +149,6 @@ struct DashboardView: View {
         }
     }
 
-    private var sampleWeekData: [(day: String, calories: Int)] {
-        [("Mon", 320), ("Tue", 450), ("Wed", 280), ("Thu", 520),
-         ("Fri", 380), ("Sat", 200), ("Sun", 0)]
-    }
 }
 
 // MARK: - Subviews

@@ -74,7 +74,7 @@ extension APIClient {
                     carbs: raw["carbs"]?.doubleValue,
                     fat: raw["fat"]?.doubleValue,
                     sugar: raw["sugar"]?.doubleValue,
-                    servingSize: raw["meal_type"]?.stringValue,
+                    servingSize: raw["serving_size"]?.stringValue,
                     date: raw["entry_date"]?.stringValue
                 )
                 self.sleep = nil
@@ -259,5 +259,31 @@ extension APIClient {
 
     func getAICredits() async throws -> AICreditsDTO {
         try await get("/api/ai/credits")
+    }
+
+    func sendAICoach(
+        type: String = "custom_question",
+        question: String?,
+        includeContext: Bool = true
+    ) async throws -> AICoachResponseDTO {
+        try await post(
+            "/api/ai/coach",
+            body: AICoachRequest(type: type, question: question, includeContext: includeContext)
+        )
+    }
+
+    // MARK: Weekly + Water
+
+    func getWeeklyDashboard() async throws -> [WeeklyDayDTO] {
+        try await get("/api/dashboard/weekly")
+    }
+
+    func getWater() async throws -> WaterDTO {
+        try await get("/api/water")
+    }
+
+    @discardableResult
+    func addWater(delta: Int) async throws -> WaterDTO {
+        try await post("/api/water", body: WaterUpdateRequest(glasses: nil, delta: delta))
     }
 }

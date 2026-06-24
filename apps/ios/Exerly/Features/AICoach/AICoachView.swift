@@ -23,29 +23,40 @@ final class AICoachViewModel: ObservableObject {
     private let api = APIClient.shared
 
     func loadCredits() async {
-        do { credits = try await api.getAICredits() } catch {}
+        do { credits = try await api.getAICredits() }
+        catch { print("AI credits load failed: \(error)") }
     }
 
     func loadPlans() async {
-        do { savedPlans = try await api.getAIPlans() } catch {}
+        do { savedPlans = try await api.getAIPlans() }
+        catch { print("AI plans load failed: \(error)") }
     }
 
     func send() async {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, !isLoading else { return }
         inputText = ""
         messages.append(ChatMessage(role: .user, content: text, timestamp: Date()))
         isLoading = true
+        defer { isLoading = false }
 
-        // Placeholder — real AI integration would go here
-        try? await Task.sleep(for: .seconds(1.5))
-        messages.append(ChatMessage(
-            role: .assistant,
-            content: "That's a great question! Based on your profile and goals, I'd recommend focusing on progressive overload with compound movements. Would you like me to create a detailed plan?",
-            timestamp: Date()
-        ))
-        isLoading = false
-        await loadCredits()
+        do {
+            let result = try await api.sendAICoach(type: "custom_question", question: text)
+            messages.append(ChatMessage(role: .assistant, content: result.response, timestamp: Date()))
+            await loadCredits()
+            await loadPlans()
+        } catch {
+            messages.append(ChatMessage(role: .assistant, content: Self.friendlyMessage(for: error), timestamp: Date()))
+        }
+    }
+
+    private static func friendlyMessage(for error: Error) -> String {
+        if let apiError = error as? APIError {
+            // The backend returns 429 with a human-readable reason for rate/credit limits.
+            if case .serverError(429, let msg) = apiError { return msg }
+            return apiError.errorDescription ?? "Sorry, I couldn't respond right now. Please try again."
+        }
+        return "Sorry, I couldn't respond right now. Please try again."
     }
 }
 

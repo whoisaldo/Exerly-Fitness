@@ -5,6 +5,8 @@ final class HomeViewModel: ObservableObject {
     @Published var dashboard: DashboardData?
     @Published var recentActivities: [ActivityDTO] = []
     @Published var recentFood: [FoodDTO] = []
+    @Published var weeklyData: [WeeklyDayDTO] = []
+    @Published var waterGlasses: Int = 0
     @Published var isLoading = false
     @Published var error: String?
 
@@ -40,6 +42,18 @@ final class HomeViewModel: ObservableObject {
         } catch {
             self.error = error.localizedDescription
         }
+        // These are secondary; don't fail the whole dashboard if they error.
+        if let weekly = try? await api.getWeeklyDashboard() { weeklyData = weekly }
+        if let water = try? await api.getWater() { waterGlasses = water.glasses }
         isLoading = false
+    }
+
+    func addWater(_ delta: Int = 1) async {
+        do {
+            let updated = try await api.addWater(delta: delta)
+            waterGlasses = updated.glasses
+        } catch {
+            print("Water update failed: \(error)")
+        }
     }
 }
