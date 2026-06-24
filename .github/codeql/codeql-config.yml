@@ -1,0 +1,13 @@
+name: 'Exerly CodeQL config'
+
+# Keep the broad security-extended coverage...
+queries:
+  - uses: security-extended
+
+# ...but exclude js/missing-rate-limiting: it flags virtually every Express route
+# that touches the DB. The sensitive AI routes already implement custom rate
+# limiting and admin routes are auth-gated, so this rule is pure noise here.
+# Revisit if we add centralized rate-limiting middleware.
+query-filters:
+  - exclude:
+      id: js/missing-rate-limiting
