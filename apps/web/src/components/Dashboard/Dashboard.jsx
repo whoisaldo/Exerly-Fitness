@@ -175,6 +175,7 @@ export default function Dashboard() {
       ]);
 
       if (dashRes.status === 401 || recentRes.status === 401) {
+        localStorage.removeItem('token');
         navigate('/');
         return;
       }

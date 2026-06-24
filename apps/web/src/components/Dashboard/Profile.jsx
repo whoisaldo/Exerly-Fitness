@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, PageTransition, ActionButton, Toggle, StatCard, ProgressRing } from '../ui';
 import API_CONFIG from '../../config';
+import { logout } from '../../lib/auth';
 
 const BASE_URL = API_CONFIG.BASE_URL;
 
@@ -37,14 +38,14 @@ export default function Profile() {
   // Load existing profile
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     fetch(`${BASE_URL}/api/profile`, {
       headers: { Authorization: 'Bearer ' + token },
     })
       .then(res => {
         if (res.status === 401) {
-          navigate('/');
+          logout(navigate);
           throw new Error('Unauthorized');
         }
         return res.json();
@@ -258,7 +259,7 @@ export default function Profile() {
   const handleSubmit = async e => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     setSaving(true);
     setError('');

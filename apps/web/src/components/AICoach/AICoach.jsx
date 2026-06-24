@@ -129,7 +129,7 @@ const AICoach = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         if (errorData.error === 'Hourly limit reached') {
           alert(`Hourly limit reached. Next question available in ${errorData.waitTime}`);
           fetchCredits();

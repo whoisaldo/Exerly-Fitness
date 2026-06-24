@@ -35,7 +35,7 @@ const AIErrorManager = () => {
         ...filters
       });
 
-      const response = await fetch(`/api/admin/ai-errors?${queryParams}`, {
+      const response = await fetch(`${BASE_URL}/api/admin/ai-errors?${queryParams}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -73,7 +73,7 @@ const AIErrorManager = () => {
   const updateErrorStatus = async (errorId, status, adminNotes = '') => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/ai-errors/${errorId}/status`, {
+      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/${errorId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ const AIErrorManager = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/ai-errors/${errorId}`, {
+      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/${errorId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -156,7 +156,9 @@ const AIErrorManager = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
+    if (!dateString) return 'Unknown';
+    const d = new Date(dateString);
+    return Number.isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleString();
   };
 
   if (loading) {

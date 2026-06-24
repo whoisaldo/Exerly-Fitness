@@ -83,15 +83,16 @@ const LoginSignup = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        setSuccess('Login successful! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1000);
-      } else {
+      if (!res.ok || !data.token) {
         setError(data.message || 'Login failed');
+        return;
       }
+
+      localStorage.setItem('token', data.token);
+      setSuccess('Login successful! Redirecting...');
+      setTimeout(() => navigate('/dashboard'), 1000);
     } catch (err) {
       setError('Network error. Please try again.');
       console.error(err);

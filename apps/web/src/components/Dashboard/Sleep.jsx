@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import API_CONFIG from '../../config';
+import { logout } from '../../lib/auth';
 import {
   GlassCard,
   StatCard,
@@ -29,7 +30,7 @@ export default function Sleep() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     fetchSleepData();
   }, [navigate]);
@@ -42,7 +43,7 @@ export default function Sleep() {
       });
 
       if (res.status === 401) {
-        navigate('/');
+        logout(navigate);
         return;
       }
 
@@ -66,7 +67,7 @@ export default function Sleep() {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) return navigate('/');
+      if (!token) return logout(navigate);
 
       const res = await fetch(`${BASE_URL}/api/sleep`, {
         method: 'POST',
@@ -88,7 +89,7 @@ export default function Sleep() {
         setForm({ hours: '', quality: 'Good', bedtime: '', wakeTime: '' });
         alert('Sleep logged successfully!');
       } else if (res.status === 401) {
-        navigate('/');
+        logout(navigate);
       } else {
         const errorText = await res.text();
         console.error('Save failed:', errorText);
