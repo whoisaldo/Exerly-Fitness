@@ -1,4 +1,4 @@
-# Exerly
+# Exerly Fitness
 
 **A cross-platform fitness companion that helps you track workouts, nutrition, and sleep — with AI-powered coaching built in.**
 
