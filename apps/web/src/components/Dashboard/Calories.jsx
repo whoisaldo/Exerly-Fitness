@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import API_CONFIG from '../../config';
+import { logout } from '../../lib/auth';
 import {
   GlassCard,
   PageHeader,
@@ -29,14 +30,14 @@ export default function Calories() {
   // Load existing entries
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     fetch(`${BASE_URL}/api/calories`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(res => {
         if (res.status === 401) {
-          navigate('/'); throw new Error('Unauthorized');
+          logout(navigate); throw new Error('Unauthorized');
         }
         if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
         return res.json();
@@ -56,7 +57,7 @@ export default function Calories() {
   const handleSubmit = async e => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     const res = await fetch(`${BASE_URL}/api/calories`, {
       method: 'POST',
@@ -78,7 +79,7 @@ export default function Calories() {
       setEntries([entry, ...entries]);
       setForm({ activity: '', duration_min: '', calories: '', protein: '', sugar: '' });
     } else if (res.status === 401) {
-      navigate('/');
+      logout(navigate);
     } else {
       console.error('Save failed:', await res.text());
     }

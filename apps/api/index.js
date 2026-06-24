@@ -14,6 +14,13 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const app = express();
+
+// Never sign/verify tokens with a publicly-known fallback secret in production.
+// In production JWT_SECRET is mandatory; locally a dev fallback is allowed.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('❌ ERROR: JWT_SECRET environment variable is required in production');
+  process.exit(1);
+}
 const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
   .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
@@ -157,11 +164,19 @@ const workoutSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now }
 });
 
+const waterSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  entry_date: { type: String, required: true, index: true },
+  glasses: { type: Number, default: 0 },
+  updated_at: { type: Date, default: Date.now }
+});
+
 // Create indexes
 activitySchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ email: 1, entry_date: 1 });
 foodSchema.index({ barcode: 1 }, { sparse: true });
 sleepSchema.index({ email: 1, entry_date: 1 });
+waterSchema.index({ email: 1, entry_date: 1 }, { unique: true });
 
 // ---------- Models ----------
 const User = mongoose.model('User', userSchema);
@@ -172,6 +187,7 @@ const Goals = mongoose.model('Goals', goalsSchema);
 const Workout = mongoose.model('Workout', workoutSchema);
 const AIPlan = mongoose.model('AIPlan', aiPlanSchema);
 const BarcodeCache = mongoose.model('BarcodeCache', barcodeCacheSchema);
+const Water = mongoose.model('Water', waterSchema);
 
 // Import AIError model from errorLogger to avoid conflicts
 const AIError = require('./utils/errorLogger').AIError;
@@ -192,9 +208,7 @@ function validateEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function getTodayUTC() {
-  return new Date().toISOString().slice(0, 10);
-}
+const { getTodayUTC, getLast7UTCDates, weekdayLabel } = require('./utils/dateUtils');
 
 function normalizeProfile(profile) {
   return profile && typeof profile === 'object' ? profile : {};
@@ -266,8 +280,11 @@ function checkHourlyReset(user) {
 function checkDailyReset(user) {
   const now = new Date();
   const lastReset = new Date(user.aiDailyResetDate);
-  
-  if (now.toDateString() !== lastReset.toDateString()) {
+  // Compare UTC calendar days so the reset boundary matches getTodayUTC() and the
+  // entry_date logs regardless of the server's local timezone.
+  const lastDay = Number.isNaN(lastReset.getTime()) ? null : lastReset.toISOString().slice(0, 10);
+
+  if (lastDay !== now.toISOString().slice(0, 10)) {
     user.aiDailyCreditsUsed = 0;
     user.aiDailyResetDate = now;
     return true;
@@ -290,8 +307,8 @@ function getTimeUntilHourlyReset(user) {
 function getHoursUntilMidnight() {
   const now = new Date();
   const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
-  
+  midnight.setUTCHours(24, 0, 0, 0); // next UTC midnight, matching the daily reset boundary
+
   const diff = midnight - now;
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -469,7 +486,12 @@ app.get('/api/me', authenticate, async (req, res) => {
 
 app.post('/api/profile', authenticate, async (req, res) => {
   try {
-    const profile = req.body || {};
+    const incoming = req.body || {};
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Merge into the existing profile instead of replacing it, so a partial
+    // update doesn't wipe other fields (e.g. savedWorkouts, activityLevel).
+    const profile = { ...(user.profile || {}), ...incoming };
     await User.updateOne({ email: req.user.email }, { profile });
     res.json({ message: 'Profile saved', profile });
   } catch (err) {
@@ -771,8 +793,15 @@ app.get('/api/goals', authenticate, async (req, res) => {
 
 app.post('/api/goals', authenticate, async (req, res) => {
   try {
-    const { dailyCalories, weeklyWorkouts, dailySteps, weeklyWeight, sleepHours, waterIntake } = req.body;
-    
+    // Accept both camelCase (web) and snake_case (iOS) keys.
+    const b = req.body || {};
+    const dailyCalories = b.dailyCalories ?? b.daily_calories;
+    const weeklyWorkouts = b.weeklyWorkouts ?? b.weekly_workouts;
+    const dailySteps = b.dailySteps ?? b.daily_steps;
+    const weeklyWeight = b.weeklyWeight ?? b.weekly_weight;
+    const sleepHours = b.sleepHours ?? b.sleep_hours;
+    const waterIntake = b.waterIntake ?? b.water_intake;
+
     const goals = await Goals.findOneAndUpdate(
       { email: req.user.email },
       {
@@ -1023,11 +1052,76 @@ app.post('/api/admin/toggle-admin', authenticate, requireAdmin, async (req, res)
 });
 
 // ---------- Dashboard Data ----------
+// ---------- Weekly Dashboard ----------
+app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const days = getLast7UTCDates();
+    const [foodAgg, actAgg] = await Promise.all([
+      Food.aggregate([
+        { $match: { email, entry_date: { $in: days } } },
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
+      ]),
+      Activity.aggregate([
+        { $match: { email, entry_date: { $in: days } } },
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
+      ])
+    ]);
+    const consumedByDay = Object.fromEntries(foodAgg.map(r => [r._id, r.total]));
+    const burnedByDay = Object.fromEntries(actAgg.map(r => [r._id, r.total]));
+    res.json(days.map(date => ({
+      date,
+      label: weekdayLabel(date),
+      consumed: consumedByDay[date] || 0,
+      burned: burnedByDay[date] || 0
+    })));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
+  }
+});
+
+// ---------- Water ----------
+app.get('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const doc = await Water.findOne({ email: req.user.email, entry_date: today });
+    res.json({ glasses: doc?.glasses || 0, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching water', error: err.message });
+  }
+});
+
+app.post('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const { glasses, delta } = req.body || {};
+    let doc;
+    if (delta != null) {
+      doc = await Water.findOneAndUpdate(
+        { email: req.user.email, entry_date: today },
+        { $inc: { glasses: Number(delta) || 0 }, $set: { updated_at: new Date() } },
+        { new: true, upsert: true }
+      );
+      if (doc.glasses < 0) { doc.glasses = 0; await doc.save(); }
+    } else {
+      const g = Math.max(0, Math.round(Number(glasses) || 0));
+      doc = await Water.findOneAndUpdate(
+        { email: req.user.email, entry_date: today },
+        { $set: { glasses: g, updated_at: new Date() } },
+        { new: true, upsert: true }
+      );
+    }
+    res.json({ glasses: doc.glasses, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving water', error: err.message });
+  }
+});
+
 app.get('/api/dashboard-data', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     const [activities, food, sleep, user] = await Promise.all([
       Activity.find({ email, entry_date: today }),
       Food.find({ email, entry_date: today }),
@@ -1065,69 +1159,41 @@ app.get('/api/dashboard-data', authenticate, async (req, res) => {
 });
 
 // ---------- AI Plans Routes ----------
-app.get('/api/ai/plans', authenticate, async (req, res) => {
-  try {
-    const plans = await AIPlan.find({ email: req.user.email }).sort({ created_at: -1 });
-    res.json(plans);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching AI plans', error: err.message });
-  }
-});
-
-app.post('/api/ai/plans', authenticate, async (req, res) => {
-  try {
-    const { plan, answers, userStatsSnapshot } = req.body;
-    if (!plan) return res.status(400).json({ message: 'Plan is required' });
-    
-    const newPlan = await AIPlan.create({
-      email: req.user.email,
-      plan: plan.trim(),
-      answers: answers || [],
-      userStatsSnapshot: userStatsSnapshot || {}
-    });
-    
-    res.status(201).json(newPlan);
-  } catch (err) {
-    res.status(500).json({ message: 'Error saving AI plan', error: err.message });
-  }
-});
-
-app.delete('/api/ai/plans/:id', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await AIPlan.findOneAndDelete({ _id: id, email: req.user.email });
-    if (!deleted) return res.status(404).json({ message: 'AI plan not found' });
-    res.json({ message: 'AI plan deleted', plan: deleted });
-  } catch (err) {
-    res.status(500).json({ message: 'Error deleting AI plan', error: err.message });
-  }
-});
+// Canonical AI plan CRUD lives in routes/ai.js (mounted at /api/ai below) and
+// keys on the AIPlan schema's `userId`. The previous handlers here queried a
+// non-existent `email` field (GET always [], POST 500 on required-field
+// validation, DELETE always 404). Removed so the working router serves these.
 
 // ---------- AI Error Management Routes ----------
 app.get('/api/admin/ai-errors', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, severity, errorType } = req.query;
+    // Parse + bound pagination so bad input can't produce skip(NaN) or unbounded reads.
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const skip = (page - 1) * limit;
-    
-    let filter = {};
-    if (status) filter.status = status;
-    if (severity) filter.severity = severity;
-    if (errorType) filter.errorType = errorType;
-    
+
+    // Only accept primitive string filters — rejects operator injection like
+    // ?status[$ne]=RESOLVED (which arrives as an object, not a string).
+    const { status, severity, errorType } = req.query;
+    const filter = {};
+    if (typeof status === 'string') filter.status = status;
+    if (typeof severity === 'string') filter.severity = severity;
+    if (typeof errorType === 'string') filter.errorType = errorType;
+
     const [errors, total] = await Promise.all([
       AIError.find(filter)
         .sort({ created_at: -1 })
         .skip(skip)
-        .limit(parseInt(limit))
+        .limit(limit)
         .lean(),
       AIError.countDocuments(filter)
     ]);
-    
+
     res.json({
       errors,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page,
+        limit,
         total,
         pages: Math.ceil(total / limit)
       }
@@ -1236,73 +1302,6 @@ app.get('/api/ai/credits', authenticate, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching AI credits', error: err.message });
-  }
-});
-
-// ---------- Change Password ----------
-app.post('/api/change-password', authenticate, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword)
-      return res.status(400).json({ message: 'Current password and new password are required' });
-    if (newPassword.length < 6)
-      return res.status(400).json({ message: 'New password must be at least 6 characters' });
-
-    const user = await User.findOne({ email: req.user.email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const ok = await bcrypt.compare(currentPassword, user.hash);
-    if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
-
-    user.hash = await bcrypt.hash(newPassword, 10);
-    await user.save();
-    res.json({ message: 'Password changed successfully' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error changing password', error: err.message });
-  }
-});
-
-// ---------- Admin Stats ----------
-app.get('/api/admin/stats', authenticate, requireAdmin, async (_req, res) => {
-  try {
-    const today = getTodayUTC();
-    const [totalUsers, todayActivities, todayFood, todaySleep, totalActivities, totalFood, totalSleep] = await Promise.all([
-      User.countDocuments(),
-      Activity.distinct('email', { entry_date: today }),
-      Food.distinct('email', { entry_date: today }),
-      Sleep.distinct('email', { entry_date: today }),
-      Activity.countDocuments(),
-      Food.countDocuments(),
-      Sleep.countDocuments()
-    ]);
-
-    const activeToday = new Set([...todayActivities, ...todayFood, ...todaySleep]).size;
-
-    res.json({
-      totalUsers,
-      activeToday,
-      totalEntries: totalActivities + totalFood + totalSleep,
-      breakdown: { activities: totalActivities, food: totalFood, sleep: totalSleep }
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching admin stats', error: err.message });
-  }
-});
-
-// ---------- Toggle Admin ----------
-app.post('/api/admin/toggle-admin', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const { email, isAdmin } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    user.is_admin = !!isAdmin;
-    await user.save();
-    res.json({ message: `Admin status updated for ${email}`, isAdmin: user.is_admin });
-  } catch (err) {
-    res.status(500).json({ message: 'Error toggling admin', error: err.message });
   }
 });
 

@@ -588,6 +588,45 @@ struct ProfileUpdateRequest: Encodable {
 
 // MARK: - AI
 
+struct AICoachRequest: Encodable {
+    let type: String
+    let question: String?
+    let includeContext: Bool
+
+    enum CodingKeys: String, CodingKey { case type, question, includeContext }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(type, forKey: .type)
+        try c.encodeIfPresent(question, forKey: .question)
+        try c.encode(includeContext, forKey: .includeContext)
+    }
+}
+
+struct AICoachResponseDTO: Decodable {
+    let response: String
+    let creditsRemaining: Int?
+    let dailyUsed: Int?
+    let planId: String?
+}
+
+struct WeeklyDayDTO: Decodable, Identifiable {
+    let date: String
+    let label: String
+    let consumed: Int
+    let burned: Int
+    var id: String { date }
+}
+
+struct WaterDTO: Decodable {
+    let glasses: Int
+}
+
+struct WaterUpdateRequest: Encodable {
+    let glasses: Int?
+    let delta: Int?
+}
+
 struct AIPlanDTO: Decodable, Identifiable {
     let id: String?
     let type: String

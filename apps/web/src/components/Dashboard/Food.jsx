@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_CONFIG from '../../config';
+import { logout } from '../../lib/auth';
 import {
   GlassCard,
   StatCard,
@@ -35,7 +36,7 @@ export default function Food() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return navigate('/');
+    if (!token) return logout(navigate);
 
     fetchFoodData();
   }, [navigate]);
@@ -48,7 +49,7 @@ export default function Food() {
       });
 
       if (res.status === 401) {
-        navigate('/');
+        logout(navigate);
         return;
       }
 
@@ -72,7 +73,7 @@ export default function Food() {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) return navigate('/');
+      if (!token) return logout(navigate);
 
       const res = await fetch(`${BASE_URL}/api/food`, {
         method: 'POST',
@@ -97,7 +98,7 @@ export default function Food() {
         });
         alert('Food logged successfully!');
       } else if (res.status === 401) {
-        navigate('/');
+        logout(navigate);
       } else {
         const errorText = await res.text();
         console.error('Save failed:', errorText);

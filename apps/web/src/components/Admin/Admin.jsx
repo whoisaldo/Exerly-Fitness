@@ -78,6 +78,7 @@ export default function Admin() {
     })
       .then(r => {
         if (r.status === 401) {
+          localStorage.removeItem('token');
           navigate('/');
           return Promise.reject('Unauthorized');
         }
@@ -99,7 +100,10 @@ export default function Admin() {
         setError('Failed to load users. Please try again.');
       })
       .finally(() => setUsersLoading(false));
-  }, [navigate, token, me, selectedEmail]);
+    // selectedEmail intentionally excluded: this effect only loads the users list
+    // (and auto-selects the first user once). Including it would refetch the whole
+    // list on every user selection.
+  }, [navigate, token, me]);
 
   // Load selected user's entries
   useEffect(() => {

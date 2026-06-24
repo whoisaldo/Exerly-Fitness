@@ -40,7 +40,11 @@ function dbQuery(query, params = []) {
 }
 
 // Get inserted row helper
+// Table name is interpolated (SQLite can't parameterize identifiers), so guard it
+// with a whitelist to keep this safe even if a future caller passes user input.
+const INSERTABLE_TABLES = new Set(['activities', 'food', 'sleep', 'workouts', 'goals', 'ai_plans', 'water']);
 async function getLastInserted(table, lastID) {
+  if (!INSERTABLE_TABLES.has(table)) throw new Error(`Invalid table: ${table}`);
   const r = await dbQuery(`SELECT * FROM ${table} WHERE id = ?`, [lastID]);
   return r.rows[0];
 }
@@ -153,6 +157,17 @@ async function initDb() {
   `);
 
   await dbQuery(`
+    CREATE TABLE IF NOT EXISTS water (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      entry_date TEXT NOT NULL,
+      glasses INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(email, entry_date)
+    );
+  `);
+
+  await dbQuery(`
     CREATE TABLE IF NOT EXISTS barcode_cache (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       barcode TEXT UNIQUE NOT NULL,
@@ -176,6 +191,7 @@ async function initDb() {
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_food_email_date ON food(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_sleep_email_date ON sleep(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_workouts_email ON workouts(email);`);
+  await dbQuery(`CREATE INDEX IF NOT EXISTS idx_water_email_date ON water(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_barcode_cache ON barcode_cache(barcode);`);
 
   // Migrate food table — add columns if missing
@@ -206,9 +222,7 @@ function validateEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function getTodayUTC() {
-  return new Date().toISOString().slice(0, 10);
-}
+const { getTodayUTC, getLast7UTCDates, weekdayLabel } = require('./utils/dateUtils');
 
 function decodeProfile(profile) {
   if (typeof profile === 'string') {
@@ -412,7 +426,11 @@ app.get('/api/me', authenticate, async (req, res) => {
 
 app.post('/api/profile', authenticate, async (req, res) => {
   try {
-    const profile = req.body || {};
+    const incoming = req.body || {};
+    // Merge into the existing profile so a partial update doesn't wipe other fields.
+    const row = await dbQuery('SELECT profile FROM users WHERE email=?', [req.user.email]);
+    const existing = decodeProfile(row.rows[0]?.profile) || {};
+    const profile = { ...existing, ...incoming };
     await dbQuery('UPDATE users SET profile=? WHERE email=?', [encodeProfile(profile), req.user.email]);
     res.json({ message: 'Profile saved', profile });
   } catch (err) {
@@ -698,8 +716,15 @@ app.get('/api/goals', authenticate, async (req, res) => {
 
 app.post('/api/goals', authenticate, async (req, res) => {
   try {
-    const { dailyCalories, weeklyWorkouts, dailySteps, weeklyWeight, sleepHours, waterIntake } = req.body;
-    
+    // Accept both camelCase (web) and snake_case (iOS) keys.
+    const b = req.body || {};
+    const dailyCalories = b.dailyCalories ?? b.daily_calories ?? null;
+    const weeklyWorkouts = b.weeklyWorkouts ?? b.weekly_workouts ?? null;
+    const dailySteps = b.dailySteps ?? b.daily_steps ?? null;
+    const weeklyWeight = b.weeklyWeight ?? b.weekly_weight ?? null;
+    const sleepHours = b.sleepHours ?? b.sleep_hours ?? null;
+    const waterIntake = b.waterIntake ?? b.water_intake ?? null;
+
     // Check if exists
     const existing = await dbQuery('SELECT id FROM goals WHERE email=?', [req.user.email]);
     if (existing.rowCount > 0) {
@@ -773,11 +798,65 @@ app.delete('/api/workouts/:id', authenticate, async (req, res) => {
 });
 
 // ---------- Dashboard Data ----------
+// ---------- Weekly Dashboard ----------
+app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const days = getLast7UTCDates();
+    const since = days[0];
+    const [foodRows, actRows] = await Promise.all([
+      dbQuery('SELECT entry_date, SUM(calories) AS total FROM food WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since]),
+      dbQuery('SELECT entry_date, SUM(calories) AS total FROM activities WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since])
+    ]);
+    const consumedByDay = Object.fromEntries(foodRows.rows.map(r => [r.entry_date, r.total]));
+    const burnedByDay = Object.fromEntries(actRows.rows.map(r => [r.entry_date, r.total]));
+    res.json(days.map(date => ({
+      date,
+      label: weekdayLabel(date),
+      consumed: consumedByDay[date] || 0,
+      burned: burnedByDay[date] || 0
+    })));
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
+  }
+});
+
+// ---------- Water ----------
+app.get('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const r = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    res.json({ glasses: r.rows[0]?.glasses || 0, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching water', error: err.message });
+  }
+});
+
+app.post('/api/water', authenticate, async (req, res) => {
+  try {
+    const today = getTodayUTC();
+    const { glasses, delta } = req.body || {};
+    const existing = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    const current = existing.rows[0]?.glasses || 0;
+    const next = delta != null
+      ? Math.max(0, current + (Number(delta) || 0))
+      : Math.max(0, Math.round(Number(glasses) || 0));
+    if (existing.rowCount > 0) {
+      await dbQuery('UPDATE water SET glasses=?, updated_at=CURRENT_TIMESTAMP WHERE email=? AND entry_date=?', [next, req.user.email, today]);
+    } else {
+      await dbQuery('INSERT INTO water (email, entry_date, glasses) VALUES (?,?,?)', [req.user.email, today, next]);
+    }
+    res.json({ glasses: next, entry_date: today });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving water', error: err.message });
+  }
+});
+
 app.get('/api/dashboard-data', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     const [activities, food, sleep, user] = await Promise.all([
       dbQuery('SELECT calories FROM activities WHERE email=? AND entry_date=?', [email, today]),
       dbQuery('SELECT calories FROM food WHERE email=? AND entry_date=?', [email, today]),
@@ -893,22 +972,43 @@ app.delete('/api/ai/plans/:id', authenticate, async (req, res) => {
   }
 });
 
-// ---------- AI Generate (Mock) ----------
+// ---------- AI Generate / Coach (Mock) ----------
+const MOCK_AI_RESPONSES = {
+  workout_plan: "🏋️ **Your Personalized Workout Plan**\n\n**Day 1 - Upper Body**\n- Bench Press: 3x10\n- Rows: 3x10\n- Shoulder Press: 3x8\n\n**Day 2 - Lower Body**\n- Squats: 4x8\n- Lunges: 3x10\n- Calf Raises: 3x15\n\n*Note: This is a mock response for local development*",
+  nutrition_advice: "🥗 **Nutrition Recommendations**\n\n- Aim for 1g protein per lb of body weight\n- Eat plenty of vegetables\n- Stay hydrated with 8 glasses of water\n- Limit processed foods\n\n*Note: This is a mock response for local development*",
+  progress_analysis: "📊 **Progress Analysis**\n\nYou're doing great! Keep up the consistent effort.\n\n- Workouts this week: Good consistency\n- Nutrition: On track\n- Sleep: Could improve\n\n*Note: This is a mock response for local development*",
+  custom_question: "💡 **AI Coach Response**\n\nThank you for your question! In local development mode, AI responses are mocked.\n\nTo get real AI responses, connect to the production backend with MongoDB and Gemini API.\n\n*Note: This is a mock response for local development*"
+};
+
 app.post('/api/ai/generate', authenticate, async (req, res) => {
-  const { type } = req.body;
-  
-  const mockResponses = {
-    workout_plan: "🏋️ **Your Personalized Workout Plan**\n\n**Day 1 - Upper Body**\n- Bench Press: 3x10\n- Rows: 3x10\n- Shoulder Press: 3x8\n\n**Day 2 - Lower Body**\n- Squats: 4x8\n- Lunges: 3x10\n- Calf Raises: 3x15\n\n*Note: This is a mock response for local development*",
-    nutrition_advice: "🥗 **Nutrition Recommendations**\n\n- Aim for 1g protein per lb of body weight\n- Eat plenty of vegetables\n- Stay hydrated with 8 glasses of water\n- Limit processed foods\n\n*Note: This is a mock response for local development*",
-    progress_analysis: "📊 **Progress Analysis**\n\nYou're doing great! Keep up the consistent effort.\n\n- Workouts this week: Good consistency\n- Nutrition: On track\n- Sleep: Could improve\n\n*Note: This is a mock response for local development*",
-    custom_question: "💡 **AI Coach Response**\n\nThank you for your question! In local development mode, AI responses are mocked.\n\nTo get real AI responses, connect to the production backend with MongoDB and Gemini API.\n\n*Note: This is a mock response for local development*"
-  };
-  
+  const { type } = req.body || {};
   res.json({
     success: true,
-    response: mockResponses[type] || mockResponses.custom_question,
+    response: MOCK_AI_RESPONSES[type] || MOCK_AI_RESPONSES.custom_question,
     creditsRemaining: { hourly: 5, daily: 0 }
   });
+});
+
+// Mirrors the production POST /api/ai/coach contract so web/iOS behave the same
+// in local mode (production uses Gemini; here we return a saved mock plan).
+app.post('/api/ai/coach', authenticate, async (req, res) => {
+  try {
+    const { type = 'custom_question', question } = req.body || {};
+    const response = MOCK_AI_RESPONSES[type] || MOCK_AI_RESPONSES.custom_question;
+    const result = await dbQuery(
+      'INSERT INTO ai_plans (email, type, prompt, response) VALUES (?,?,?,?)',
+      [req.user.email, type, question || '', response]
+    );
+    const inserted = await getLastInserted('ai_plans', result.lastID);
+    res.json({
+      response,
+      creditsRemaining: 5,
+      dailyUsed: 0,
+      planId: String(inserted?.id ?? '')
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'AI coach failed', error: err.message });
+  }
 });
 
 // ---------- Admin Routes ----------

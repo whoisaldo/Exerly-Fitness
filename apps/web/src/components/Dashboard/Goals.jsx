@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_CONFIG from '../../config';
+import { logout } from '../../lib/auth';
 import {
   GlassCard,
   PageHeader,
@@ -30,7 +31,7 @@ export default function Goals() {
     const fetchGoals = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return navigate('/');
+        if (!token) return logout(navigate);
 
         const res = await fetch(`${BASE_URL}/api/goals`, {
           headers: { Authorization: 'Bearer ' + token }
@@ -68,7 +69,7 @@ export default function Goals() {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) return navigate('/');
+      if (!token) return logout(navigate);
 
       const res = await fetch(`${BASE_URL}/api/goals`, {
         method: 'POST',
@@ -83,7 +84,7 @@ export default function Goals() {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else if (res.status === 401) {
-        navigate('/');
+        logout(navigate);
       } else {
         alert('Error saving goals');
       }
@@ -149,7 +150,10 @@ export default function Goals() {
               {activeGoals.map(([key, value], i) => {
                 const config = goalConfig[key];
                 if (!config) return null;
-                const pct = Math.min(100, Math.round((Math.abs(parseFloat(value)) / config.max) * 100));
+                const num = parseFloat(value);
+                const pct = Number.isFinite(num) && config.max
+                  ? Math.min(100, Math.round((Math.abs(num) / config.max) * 100))
+                  : 0;
 
                 return (
                   <motion.div

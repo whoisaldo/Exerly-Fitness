@@ -114,7 +114,7 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
             </div>
             
             <div className="plan-preview">
-              <p>{plan.response.substring(0, 150)}...</p>
+              <p>{(plan.response || '').substring(0, 150)}...</p>
             </div>
             
             <div className="plan-actions">

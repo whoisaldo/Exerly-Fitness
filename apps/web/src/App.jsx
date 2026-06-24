@@ -10,7 +10,6 @@ import Food        from './components/Dashboard/Food';
 import Goals       from './components/Dashboard/Goals';
 import Sleep       from './components/Dashboard/Sleep';
 import Profile     from './components/Dashboard/Profile';
-import AICoach     from './components/Dashboard/AICoach';
 import Onboarding  from './components/Onboarding/Onboarding';
 import Credits     from './components/Credits';
 import AIErrorManager from './components/Admin/AIErrorManager';

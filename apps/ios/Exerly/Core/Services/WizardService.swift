@@ -294,7 +294,15 @@ struct WizardService {
         bmi: Double, age: Int, gender: Gender
     ) -> Double {
         let sexFactor: Double = gender == .male ? 1 : 0
-        return 1.20 * bmi + 0.23 * Double(age) - 10.8 * sexFactor - 5.4
+        let raw = 1.20 * bmi + 0.23 * Double(age) - 10.8 * sexFactor - 5.4
+        // The formula can produce non-physical values for extreme inputs; clamp it.
+        return min(75, max(2, raw))
+    }
+
+    // Convert a 24-hour hour to its 12-hour clock value (0 and 12 → 12).
+    private static func hour12(_ hour24: Int) -> Int {
+        let h = hour24 % 12
+        return h == 0 ? 12 : h
     }
 
     // MARK: Healthy Weight Range
@@ -330,8 +338,8 @@ struct WizardService {
         let bedH = bedMinutes / 60
         let bedM = bedMinutes % 60
         return SleepSchedule(
-            bedtime: String(format: "%d:%02d %@", bedH > 12 ? bedH - 12 : bedH, bedM, bedH >= 12 ? "PM" : "AM"),
-            wakeTime: String(format: "%d:%02d %@", wakeHour > 12 ? wakeHour - 12 : wakeHour, wakeMinute, wakeHour >= 12 ? "PM" : "AM"),
+            bedtime: String(format: "%d:%02d %@", Self.hour12(bedH), bedM, bedH >= 12 ? "PM" : "AM"),
+            wakeTime: String(format: "%d:%02d %@", Self.hour12(wakeHour), wakeMinute, wakeHour >= 12 ? "PM" : "AM"),
             durationHours: durationHours
         )
     }
