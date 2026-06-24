@@ -1,0 +1,25 @@
+# Exerly pre-push checks — the fast local gate before code leaves the machine.
+# Heavy steps (web build, API boot-smoke) run in cloud CI, not here.
+# Emergency bypass: git push --no-verify
+set -e
+
+echo "🔍 pre-push: eslint"
+npm run lint
+
+echo "🎨 pre-push: prettier --check"
+npm run format:check
+
+echo "🧩 pre-push: typecheck (web)"
+npm run typecheck
+
+echo "🧪 pre-push: api tests"
+npm test --silent
+
+if command -v swiftlint >/dev/null 2>&1; then
+  echo "🧹 pre-push: swiftlint"
+  swiftlint lint --quiet --config .swiftlint.yml
+else
+  echo "ℹ️  swiftlint not installed — skipping (cloud CI still lints Swift)"
+fi
+
+echo "✔ pre-push checks passed"

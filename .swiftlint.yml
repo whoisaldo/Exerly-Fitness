@@ -1,0 +1,29 @@
+# SwiftLint config for the Exerly iOS app.
+# Lint-only in CI (no app build); also runs locally via the pre-push hook.
+# Starts lenient so the existing 71-file codebase passes; tighten over time.
+included:
+  - apps/ios/Exerly
+
+excluded:
+  - apps/ios/Exerly/Assets.xcassets
+
+# Noisy/opinionated rules disabled for the initial baseline.
+disabled_rules:
+  - line_length
+  - todo
+  - type_body_length
+  - file_length
+  - function_body_length
+  - cyclomatic_complexity
+  - identifier_name
+  - type_name
+  - large_tuple
+  - force_cast
+  - nesting
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - collection_alignment
+  - redundant_nil_coalescing

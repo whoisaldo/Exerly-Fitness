@@ -9,16 +9,19 @@ const router = express.Router();
 // which require()s this module after the check). The dev fallback below matches
 // index.js so locally-issued tokens verify here too.
 const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
-const genAI = (process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
-  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
+const genAI =
+  process.env.GEMINI_API_KEY || process.env.AI_API_KEY
+    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
+    : null;
+const model = genAI
+  ? genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-lite',
+      generationConfig: {
+        maxOutputTokens: 500,
+        temperature: 0.7,
+      },
+    })
   : null;
-const model = genAI ? genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash-lite',
-  generationConfig: {
-    maxOutputTokens: 500,
-    temperature: 0.7,
-  },
-}) : null;
 
 let User;
 let AIPlan;
@@ -147,10 +150,13 @@ function buildContext(user, includeContext) {
 // Strip control characters and cap length on free-text user input before it goes
 // into the prompt — limits prompt-injection surface and caps token cost.
 function sanitizeUserText(text, maxLen = 1000) {
-  return String(text || '')
-    .replace(/[\x00-\x1F\x7F]/g, ' ')
-    .trim()
-    .slice(0, maxLen);
+  return (
+    String(text || '')
+      // eslint-disable-next-line no-control-regex -- intentional control-char strip
+      .replace(/[\x00-\x1F\x7F]/g, ' ')
+      .trim()
+      .slice(0, maxLen)
+  );
 }
 
 function buildPrompt(type, question, context) {
@@ -256,7 +262,8 @@ router.post('/coach', async (req, res) => {
     const prompt = buildPrompt(type, question, '');
     if (!prompt && type !== 'custom_question') {
       return res.status(400).json({
-        error: 'Invalid type. Must be workout_plan, nutrition_advice, progress_analysis, or custom_question',
+        error:
+          'Invalid type. Must be workout_plan, nutrition_advice, progress_analysis, or custom_question',
       });
     }
 
@@ -280,7 +287,9 @@ router.post('/coach', async (req, res) => {
         severity: 'LOW',
       });
       errorLogged = true;
-      return res.status(429).json({ error: 'Rate limit exceeded. Please wait 10 seconds before trying again.' });
+      return res
+        .status(429)
+        .json({ error: 'Rate limit exceeded. Please wait 10 seconds before trying again.' });
     }
 
     checkHourlyReset(user);
@@ -313,7 +322,8 @@ router.post('/coach', async (req, res) => {
     const result = await Promise.race([
       model.generateContent(finalPrompt),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('AI request timed out')), 25000)),
+        setTimeout(() => reject(new Error('AI request timed out')), 25000)
+      ),
     ]);
     const response = result?.response?.text?.();
     if (!response || typeof response !== 'string') {
@@ -348,13 +358,15 @@ router.post('/coach', async (req, res) => {
     console.error('AI Coach Error:', error);
 
     if (!errorLogged) {
-      const errorType = error.name === 'GoogleGenerativeAIFetchError'
-        ? 'AI_MODEL_ERROR'
-        : (error.code === 'ENOTFOUND' ? 'NETWORK_ERROR' : 'UNKNOWN_ERROR');
-      const errorCode = error.status ? `HTTP_${error.status}` : (error.code || 'UNKNOWN_ERROR');
-      const severity = errorType === 'AI_MODEL_ERROR'
-        ? 'HIGH'
-        : (errorType === 'NETWORK_ERROR' ? 'MEDIUM' : 'LOW');
+      const errorType =
+        error.name === 'GoogleGenerativeAIFetchError'
+          ? 'AI_MODEL_ERROR'
+          : error.code === 'ENOTFOUND'
+            ? 'NETWORK_ERROR'
+            : 'UNKNOWN_ERROR';
+      const errorCode = error.status ? `HTTP_${error.status}` : error.code || 'UNKNOWN_ERROR';
+      const severity =
+        errorType === 'AI_MODEL_ERROR' ? 'HIGH' : errorType === 'NETWORK_ERROR' ? 'MEDIUM' : 'LOW';
 
       await AIErrorLogger.logError({
         email: req.user?.email || 'unknown',
@@ -461,13 +473,16 @@ router.patch('/plans/:id/apply', async (req, res) => {
   }
 });
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [userId, userLimit] of rateLimit.entries()) {
-    if (now > userLimit.resetTime) {
-      rateLimit.delete(userId);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [userId, userLimit] of rateLimit.entries()) {
+      if (now > userLimit.resetTime) {
+        rateLimit.delete(userId);
+      }
     }
-  }
-}, 60 * 60 * 1000);
+  },
+  60 * 60 * 1000
+);
 
 module.exports = { router, initModels };
