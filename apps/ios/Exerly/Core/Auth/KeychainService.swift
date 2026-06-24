@@ -7,7 +7,8 @@ final class KeychainService {
 
     private init() {}
 
-    func saveToken(_ token: String) {
+    @discardableResult
+    func saveToken(_ token: String) -> Bool {
         delete(key: tokenKey)
         let data = Data(token.utf8)
         let query: [String: Any] = [
@@ -16,7 +17,12 @@ final class KeychainService {
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
-        SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status != errSecSuccess {
+            print("⚠️ KeychainService: failed to persist token (OSStatus \(status))")
+            return false
+        }
+        return true
     }
 
     func getToken() -> String? {

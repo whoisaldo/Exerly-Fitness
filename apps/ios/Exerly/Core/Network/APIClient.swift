@@ -1,5 +1,11 @@
 import Foundation
 
+extension Notification.Name {
+    /// Posted when an authenticated request is rejected with 401, so the auth
+    /// layer can clear state and return the user to the login screen.
+    static let exerlySessionExpired = Notification.Name("exerlySessionExpired")
+}
+
 // MARK: - API Error
 
 enum APIError: LocalizedError {
@@ -153,6 +159,13 @@ actor APIClient {
                 throw APIError.decodingError(error)
             }
         case 401:
+            // A 401 on an authenticated request means the stored token is no longer
+            // valid: clear it and signal the auth layer to log the user out, instead
+            // of leaving a dead token that loops on every subsequent request.
+            if authenticated {
+                KeychainService.shared.deleteToken()
+                NotificationCenter.default.post(name: .exerlySessionExpired, object: nil)
+            }
             throw APIError.unauthorized
         default:
             let messageResponse = try? decoder.decode(APIMessageResponse.self, from: data)

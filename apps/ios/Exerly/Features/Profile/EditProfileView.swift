@@ -68,9 +68,9 @@ struct EditProfileView: View {
     private func loadCurrent() {
         let user = authVM.currentUser
         name = user?.name ?? ""
-        age = user?.age != nil ? "\(user!.age!)" : ""
-        weight = user?.weight != nil ? String(format: "%.0f", user!.weight!) : ""
-        height = user?.height != nil ? String(format: "%.0f", user!.height!) : ""
+        age = user?.age.map(String.init) ?? ""
+        weight = user?.weight.map { String(format: "%.0f", $0) } ?? ""
+        height = user?.height.map { String(format: "%.0f", $0) } ?? ""
     }
 
     private func save() async {

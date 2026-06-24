@@ -20,6 +20,19 @@ final class AuthViewModel: ObservableObject {
 
     init() {
         Task { await checkAuth() }
+        // When any authenticated request hits a 401, the API client clears the
+        // token and posts this; reflect that by returning to the login screen.
+        NotificationCenter.default.addObserver(
+            forName: .exerlySessionExpired, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.handleSessionExpired() }
+        }
+    }
+
+    private func handleSessionExpired() {
+        guard authState != .unauthenticated else { return }
+        currentUser = nil
+        authState = .unauthenticated
     }
 
     private func finalizeAuthenticatedSession(token: String, fallbackUser: UserDTO? = nil) async throws {

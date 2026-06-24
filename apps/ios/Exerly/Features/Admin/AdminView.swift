@@ -43,6 +43,7 @@ struct AdminView: View {
     @State private var stats: AdminStats?
     @State private var isLoading = true
     @State private var selectedTab = 0
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +65,15 @@ struct AdminView: View {
         .navigationTitle("Admin Panel")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadData() }
+        .alert(
+            "Couldn't load admin data",
+            isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        ) {
+            Button("Retry") { Task { await loadData() } }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private var picker: some View {
@@ -180,7 +190,7 @@ struct AdminView: View {
                 stats = s
             }
         } catch {
-            // Silently fail — user can pull to retry
+            await MainActor.run { errorMessage = error.localizedDescription }
         }
         isLoading = false
     }
