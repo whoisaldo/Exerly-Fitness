@@ -21,21 +21,25 @@ An AI coaching assistant (powered by Google Gemini) can generate workout plans, 
 ## Core Features
 
 **Tracking**
+
 - Log workouts from 30+ activity types (gym exercises, sports, cardio) with intensity and calorie estimation
 - Scan food barcodes with the camera — nutritional data pulled from FatSecret and Open Food Facts APIs
 - Track sleep with bedtime/wake time and quality ratings
 - Set daily and weekly goals with progress monitoring
 
 **Intelligence**
+
 - 12-step onboarding wizard that calculates BMI, TDEE, macro targets, and generates a weekly plan
 - AI coach that answers fitness questions, builds workout plans, and analyzes progress
 - Auto-detects metric/imperial units from device locale
 
 **Health Integration**
+
 - Apple HealthKit: reads steps and active calories, writes workouts
 - Progress photo tracking with compare mode (stored per-user on device)
 
 **Admin**
+
 - Admin panel on both iOS and web for user management and system monitoring
 - Toggle admin privileges, view aggregate stats, manage AI error logs
 
@@ -60,15 +64,15 @@ The backend runs a single Express server that connects to MongoDB Atlas in produ
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| iOS | SwiftUI, HealthKit, AVFoundation, SwiftData |
-| Web | React 19, TypeScript, Vite, Tailwind CSS, Framer Motion |
-| API | Node.js, Express 5, Mongoose, JWT, bcrypt |
-| Database | MongoDB Atlas (production), SQLite (local dev) |
-| AI | Google Gemini 2.0 Flash |
-| Food Data | FatSecret API (primary), Open Food Facts (fallback) |
-| Hosting | DigitalOcean App Platform (API), GitHub Pages (web) |
+| Layer     | Technology                                              |
+| --------- | ------------------------------------------------------- |
+| iOS       | SwiftUI, HealthKit, AVFoundation, SwiftData             |
+| Web       | React 19, TypeScript, Vite, Tailwind CSS, Framer Motion |
+| API       | Node.js, Express 5, Mongoose, JWT, bcrypt               |
+| Database  | MongoDB Atlas (production), SQLite (local dev)          |
+| AI        | Google Gemini 2.0 Flash                                 |
+| Food Data | FatSecret API (primary), Open Food Facts (fallback)     |
+| Hosting   | DigitalOcean App Platform (API), GitHub Pages (web)     |
 
 ---
 
@@ -102,14 +106,14 @@ The API auto-deploys to DigitalOcean App Platform on every push to `main`. Envir
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run local` | API + web in local mode (SQLite, no external deps) |
-| `npm run dev` | API + web in production mode (MongoDB) |
-| `npm run dev:api` | API only |
-| `npm run dev:web` | Web only |
-| `npm run build:web` | Production build of web dashboard |
-| `npm run ios:build` | Build iOS via CLI |
+| Command             | What it does                                       |
+| ------------------- | -------------------------------------------------- |
+| `npm run local`     | API + web in local mode (SQLite, no external deps) |
+| `npm run dev`       | API + web in production mode (MongoDB)             |
+| `npm run dev:api`   | API only                                           |
+| `npm run dev:web`   | Web only                                           |
+| `npm run build:web` | Production build of web dashboard                  |
+| `npm run ios:build` | Build iOS via CLI                                  |
 
 ---
 

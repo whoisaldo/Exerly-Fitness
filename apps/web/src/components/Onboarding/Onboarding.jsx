@@ -16,7 +16,7 @@ const Onboarding = () => {
     goal: '',
     experienceLevel: '',
     workoutDaysPerWeek: 3,
-    equipmentAccess: 'full_gym'
+    equipmentAccess: 'full_gym',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -25,16 +25,16 @@ const Onboarding = () => {
   const totalSteps = 5;
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: ''
+        [field]: '',
       }));
     }
   };
@@ -68,7 +68,11 @@ const Onboarding = () => {
         }
         break;
       case 5:
-        if (!formData.workoutDaysPerWeek || formData.workoutDaysPerWeek < 1 || formData.workoutDaysPerWeek > 7) {
+        if (
+          !formData.workoutDaysPerWeek ||
+          formData.workoutDaysPerWeek < 1 ||
+          formData.workoutDaysPerWeek > 7
+        ) {
           newErrors.workoutDaysPerWeek = 'Please select 1-7 days per week';
         }
         if (!formData.equipmentAccess) {
@@ -83,12 +87,12 @@ const Onboarding = () => {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = async () => {
@@ -102,9 +106,9 @@ const Onboarding = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -115,7 +119,6 @@ const Onboarding = () => {
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-
     } catch (error) {
       console.error('Onboarding error:', error);
       setErrors({ submit: 'Failed to complete onboarding. Please try again.' });
@@ -150,7 +153,9 @@ const Onboarding = () => {
               &#128170;
             </motion.div>
             <h1 className="text-display-sm mb-3">Welcome to Exerly Fitness!</h1>
-            <p className="text-slate-400 text-lg mb-8">Let's personalize your experience in 2 minutes</p>
+            <p className="text-slate-400 text-lg mb-8">
+              Let's personalize your experience in 2 minutes
+            </p>
             <div className="flex flex-col gap-3 max-w-xs mx-auto">
               {[
                 { icon: '\uD83C\uDFAF', text: 'Personalized workout plans' },
@@ -170,7 +175,9 @@ const Onboarding = () => {
         return (
           <div>
             <h2 className="text-display-sm mb-2 text-center">Basic Information</h2>
-            <p className="text-slate-400 text-center mb-6">Help us understand your starting point</p>
+            <p className="text-slate-400 text-center mb-6">
+              Help us understand your starting point
+            </p>
 
             <div className="space-y-4 max-w-md mx-auto">
               {/* Age */}
@@ -192,7 +199,7 @@ const Onboarding = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Gender</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {['Male', 'Female', 'Other', 'Prefer not to say'].map(option => (
+                  {['Male', 'Female', 'Other', 'Prefer not to say'].map((option) => (
                     <button
                       key={option}
                       type="button"
@@ -213,7 +220,9 @@ const Onboarding = () => {
               {/* Height & Weight */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Height (cm)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Height (cm)
+                  </label>
                   <input
                     type="number"
                     value={formData.height}
@@ -226,7 +235,9 @@ const Onboarding = () => {
                   {errors.height && <p className="text-xs text-error mt-1">{errors.height}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Weight (kg)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Weight (kg)
+                  </label>
                   <input
                     type="number"
                     value={formData.weight}
@@ -247,21 +258,48 @@ const Onboarding = () => {
         return (
           <div>
             <h2 className="text-display-sm mb-2 text-center">What's your main fitness goal?</h2>
-            <p className="text-slate-400 text-center mb-6">Choose the goal that motivates you most</p>
+            <p className="text-slate-400 text-center mb-6">
+              Choose the goal that motivates you most
+            </p>
 
             <div className="grid sm:grid-cols-2 gap-3 max-w-lg mx-auto">
               {[
-                { id: 'lose_weight', icon: '\uD83D\uDD25', title: 'Lose Weight', desc: 'Burn fat and get lean' },
-                { id: 'build_muscle', icon: '\uD83D\uDCAA', title: 'Build Muscle', desc: 'Gain strength and size' },
-                { id: 'improve_endurance', icon: '\uD83C\uDFC3', title: 'Improve Endurance', desc: 'Build cardiovascular fitness' },
-                { id: 'stay_healthy', icon: '\u2696\uFE0F', title: 'Stay Healthy', desc: 'Maintain current fitness' }
-              ].map(goal => (
+                {
+                  id: 'lose_weight',
+                  icon: '\uD83D\uDD25',
+                  title: 'Lose Weight',
+                  desc: 'Burn fat and get lean',
+                },
+                {
+                  id: 'build_muscle',
+                  icon: '\uD83D\uDCAA',
+                  title: 'Build Muscle',
+                  desc: 'Gain strength and size',
+                },
+                {
+                  id: 'improve_endurance',
+                  icon: '\uD83C\uDFC3',
+                  title: 'Improve Endurance',
+                  desc: 'Build cardiovascular fitness',
+                },
+                {
+                  id: 'stay_healthy',
+                  icon: '\u2696\uFE0F',
+                  title: 'Stay Healthy',
+                  desc: 'Maintain current fitness',
+                },
+              ].map((goal) => (
                 <div
                   key={goal.id}
                   role="button"
                   tabIndex={0}
                   onClick={() => handleInputChange('goal', goal.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleInputChange('goal', goal.id); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleInputChange('goal', goal.id);
+                    }
+                  }}
                 >
                   <GlassCard
                     hover
@@ -286,20 +324,45 @@ const Onboarding = () => {
         return (
           <div>
             <h2 className="text-display-sm mb-2 text-center">What's your fitness experience?</h2>
-            <p className="text-slate-400 text-center mb-6">This helps us create the right plan for you</p>
+            <p className="text-slate-400 text-center mb-6">
+              This helps us create the right plan for you
+            </p>
 
             <div className="grid sm:grid-cols-3 gap-3 max-w-xl mx-auto">
               {[
-                { id: 'beginner', icon: '\uD83C\uDF31', title: 'Beginner', desc: '0-6 months experience', subtext: 'New to working out' },
-                { id: 'intermediate', icon: '\uD83D\uDE80', title: 'Intermediate', desc: '6 months - 2 years', subtext: 'Some experience' },
-                { id: 'advanced', icon: '\uD83D\uDC8E', title: 'Advanced', desc: '2+ years experience', subtext: 'Very experienced' }
-              ].map(level => (
+                {
+                  id: 'beginner',
+                  icon: '\uD83C\uDF31',
+                  title: 'Beginner',
+                  desc: '0-6 months experience',
+                  subtext: 'New to working out',
+                },
+                {
+                  id: 'intermediate',
+                  icon: '\uD83D\uDE80',
+                  title: 'Intermediate',
+                  desc: '6 months - 2 years',
+                  subtext: 'Some experience',
+                },
+                {
+                  id: 'advanced',
+                  icon: '\uD83D\uDC8E',
+                  title: 'Advanced',
+                  desc: '2+ years experience',
+                  subtext: 'Very experienced',
+                },
+              ].map((level) => (
                 <div
                   key={level.id}
                   role="button"
                   tabIndex={0}
                   onClick={() => handleInputChange('experienceLevel', level.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleInputChange('experienceLevel', level.id); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleInputChange('experienceLevel', level.id);
+                    }
+                  }}
                 >
                   <GlassCard
                     hover
@@ -317,7 +380,9 @@ const Onboarding = () => {
                 </div>
               ))}
             </div>
-            {errors.experienceLevel && <p className="text-xs text-error mt-3 text-center">{errors.experienceLevel}</p>}
+            {errors.experienceLevel && (
+              <p className="text-xs text-error mt-3 text-center">{errors.experienceLevel}</p>
+            )}
           </div>
         );
 
@@ -325,21 +390,27 @@ const Onboarding = () => {
         return (
           <div>
             <h2 className="text-display-sm mb-2 text-center">Your workout schedule</h2>
-            <p className="text-slate-400 text-center mb-6">How often can you commit to working out?</p>
+            <p className="text-slate-400 text-center mb-6">
+              How often can you commit to working out?
+            </p>
 
             <div className="space-y-8 max-w-lg mx-auto">
               {/* Days per week slider */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-slate-300">Days per week</label>
-                  <span className="text-lg font-bold text-primary-bright">{formData.workoutDaysPerWeek}</span>
+                  <span className="text-lg font-bold text-primary-bright">
+                    {formData.workoutDaysPerWeek}
+                  </span>
                 </div>
                 <input
                   type="range"
                   min="1"
                   max="7"
                   value={formData.workoutDaysPerWeek}
-                  onChange={(e) => handleInputChange('workoutDaysPerWeek', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleInputChange('workoutDaysPerWeek', parseInt(e.target.value))
+                  }
                   className="w-full h-2 rounded-full appearance-none cursor-pointer bg-surface-3 accent-violet-500"
                   style={{ accentColor: '#8b5cf6' }}
                 />
@@ -347,24 +418,48 @@ const Onboarding = () => {
                   <span className="text-xs text-slate-500">1 day</span>
                   <span className="text-xs text-slate-500">7 days</span>
                 </div>
-                {errors.workoutDaysPerWeek && <p className="text-xs text-error mt-1">{errors.workoutDaysPerWeek}</p>}
+                {errors.workoutDaysPerWeek && (
+                  <p className="text-xs text-error mt-1">{errors.workoutDaysPerWeek}</p>
+                )}
               </div>
 
               {/* Equipment access */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">Equipment access</label>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Equipment access
+                </label>
                 <div className="grid sm:grid-cols-3 gap-3">
                   {[
-                    { id: 'full_gym', icon: '\u2705', title: 'Full Gym Access', desc: 'I have access to a complete gym' },
-                    { id: 'home_gym', icon: '\uD83C\uDFE0', title: 'Home Gym', desc: 'Limited equipment at home' },
-                    { id: 'no_equipment', icon: '\uD83D\uDEAB', title: 'No Equipment', desc: 'Bodyweight exercises only' }
-                  ].map(equipment => (
+                    {
+                      id: 'full_gym',
+                      icon: '\u2705',
+                      title: 'Full Gym Access',
+                      desc: 'I have access to a complete gym',
+                    },
+                    {
+                      id: 'home_gym',
+                      icon: '\uD83C\uDFE0',
+                      title: 'Home Gym',
+                      desc: 'Limited equipment at home',
+                    },
+                    {
+                      id: 'no_equipment',
+                      icon: '\uD83D\uDEAB',
+                      title: 'No Equipment',
+                      desc: 'Bodyweight exercises only',
+                    },
+                  ].map((equipment) => (
                     <div
                       key={equipment.id}
                       role="button"
                       tabIndex={0}
                       onClick={() => handleInputChange('equipmentAccess', equipment.id)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleInputChange('equipmentAccess', equipment.id); } }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleInputChange('equipmentAccess', equipment.id);
+                        }
+                      }}
                     >
                       <GlassCard
                         hover
@@ -375,13 +470,17 @@ const Onboarding = () => {
                         }`}
                       >
                         <span className="text-2xl mb-1.5 block">{equipment.icon}</span>
-                        <h4 className="font-semibold text-white text-xs mb-0.5">{equipment.title}</h4>
+                        <h4 className="font-semibold text-white text-xs mb-0.5">
+                          {equipment.title}
+                        </h4>
                         <p className="text-xs text-slate-400">{equipment.desc}</p>
                       </GlassCard>
                     </div>
                   ))}
                 </div>
-                {errors.equipmentAccess && <p className="text-xs text-error mt-2">{errors.equipmentAccess}</p>}
+                {errors.equipmentAccess && (
+                  <p className="text-xs text-error mt-2">{errors.equipmentAccess}</p>
+                )}
               </div>
             </div>
           </div>
@@ -429,11 +528,22 @@ const Onboarding = () => {
               <h3 className="text-sm font-semibold text-white mb-3">Your Profile Summary:</h3>
               <div className="space-y-2">
                 {[
-                  { label: 'Goal', value: formData.goal.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) },
-                  { label: 'Experience', value: formData.experienceLevel.charAt(0).toUpperCase() + formData.experienceLevel.slice(1) },
+                  {
+                    label: 'Goal',
+                    value: formData.goal.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+                  },
+                  {
+                    label: 'Experience',
+                    value:
+                      formData.experienceLevel.charAt(0).toUpperCase() +
+                      formData.experienceLevel.slice(1),
+                  },
                   { label: 'Workouts', value: `${formData.workoutDaysPerWeek} days/week` },
                 ].map((item) => (
-                  <div key={item.label} className="flex justify-between py-1.5 border-b border-border-subtle last:border-0">
+                  <div
+                    key={item.label}
+                    className="flex justify-between py-1.5 border-b border-border-subtle last:border-0"
+                  >
                     <span className="text-sm text-slate-400">{item.label}</span>
                     <span className="text-sm font-medium text-white">{item.value}</span>
                   </div>
@@ -487,9 +597,11 @@ const Onboarding = () => {
           {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
             <React.Fragment key={step}>
               {step > 1 && (
-                <div className={`flex-1 h-px mx-1 transition-colors duration-300 ${
-                  step <= currentStep ? 'bg-primary/50' : 'bg-surface-3'
-                }`} />
+                <div
+                  className={`flex-1 h-px mx-1 transition-colors duration-300 ${
+                    step <= currentStep ? 'bg-primary/50' : 'bg-surface-3'
+                  }`}
+                />
               )}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 shrink-0 ${
@@ -501,7 +613,13 @@ const Onboarding = () => {
                 }`}
               >
                 {step < currentStep ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
@@ -512,7 +630,9 @@ const Onboarding = () => {
           ))}
         </div>
 
-        <p className="text-xs text-slate-500 text-center">{currentStep} of {totalSteps}</p>
+        <p className="text-xs text-slate-500 text-center">
+          {currentStep} of {totalSteps}
+        </p>
       </div>
 
       {/* Step content */}

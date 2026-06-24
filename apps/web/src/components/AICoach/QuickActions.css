@@ -105,8 +105,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Mobile Responsive */
@@ -115,20 +119,20 @@
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .action-card {
     padding: 20px;
   }
-  
+
   .action-icon {
     font-size: 2rem;
     margin-bottom: 12px;
   }
-  
+
   .action-content h3 {
     font-size: 1.1rem;
   }
-  
+
   .action-content p {
     font-size: 0.9rem;
   }

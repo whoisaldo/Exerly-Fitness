@@ -23,7 +23,7 @@ export default function Calories() {
     duration_min: '',
     calories: '',
     protein: '',
-    sugar: ''
+    sugar: '',
   });
   const navigate = useNavigate();
 
@@ -33,16 +33,17 @@ export default function Calories() {
     if (!token) return logout(navigate);
 
     fetch(`${BASE_URL}/api/calories`, {
-      headers: { Authorization: 'Bearer ' + token }
+      headers: { Authorization: 'Bearer ' + token },
     })
-      .then(res => {
+      .then((res) => {
         if (res.status === 401) {
-          logout(navigate); throw new Error('Unauthorized');
+          logout(navigate);
+          throw new Error('Unauthorized');
         }
         if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         if (Array.isArray(data)) setEntries(data);
         else setEntries([]);
       })
@@ -50,11 +51,10 @@ export default function Calories() {
   }, [navigate]);
 
   // Update form state
-  const handleChange = e =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   // Submit new macro entry
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) return logout(navigate);
@@ -63,15 +63,15 @@ export default function Calories() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token
+        Authorization: 'Bearer ' + token,
       },
       body: JSON.stringify({
         activity: form.activity,
         duration_min: form.duration_min,
         calories: form.calories,
         protein: form.protein,
-        sugar: form.sugar
-      })
+        sugar: form.sugar,
+      }),
     });
 
     if (res.ok) {
@@ -94,10 +94,25 @@ export default function Calories() {
   const caloriePercent = Math.min(100, Math.round((totalCalories / dailyGoal) * 100));
 
   const macroCards = [
-    { label: 'Activity', value: `${totalDuration} min`, pct: Math.min(100, Math.round((totalDuration / 120) * 100)), color: 'bg-primary' },
+    {
+      label: 'Activity',
+      value: `${totalDuration} min`,
+      pct: Math.min(100, Math.round((totalDuration / 120) * 100)),
+      color: 'bg-primary',
+    },
     { label: 'Calories', value: `${totalCalories} kcal`, pct: caloriePercent, color: 'bg-error' },
-    { label: 'Protein', value: `${totalProtein} g`, pct: Math.min(100, Math.round((totalProtein / 150) * 100)), color: 'bg-success' },
-    { label: 'Sugar', value: `${totalSugar} g`, pct: Math.min(100, Math.round((totalSugar / 50) * 100)), color: 'bg-warning' },
+    {
+      label: 'Protein',
+      value: `${totalProtein} g`,
+      pct: Math.min(100, Math.round((totalProtein / 150) * 100)),
+      color: 'bg-success',
+    },
+    {
+      label: 'Sugar',
+      value: `${totalSugar} g`,
+      pct: Math.min(100, Math.round((totalSugar / 50) * 100)),
+      color: 'bg-warning',
+    },
   ];
 
   return (
@@ -112,7 +127,13 @@ export default function Calories() {
               variant="ghost"
               onClick={() => navigate('/dashboard')}
               icon={
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               }
@@ -124,7 +145,9 @@ export default function Calories() {
 
         {/* Calorie Balance Hero */}
         <GlassCard elevated className="flex flex-col items-center py-10">
-          <p className="text-label uppercase tracking-wider text-slate-400">Daily Calorie Balance</p>
+          <p className="text-label uppercase tracking-wider text-slate-400">
+            Daily Calorie Balance
+          </p>
           <div className="mt-4">
             <ProgressRing value={caloriePercent} size={140} strokeWidth={8} label="of goal" />
           </div>
@@ -222,9 +245,7 @@ export default function Calories() {
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <ActionButton type="submit">
-                Log Entry
-              </ActionButton>
+              <ActionButton type="submit">Log Entry</ActionButton>
             </div>
           </form>
         </GlassCard>
@@ -262,7 +283,9 @@ export default function Calories() {
                       </div>
                       <div>
                         <p className="font-semibold text-slate-100">{entry.activity}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{entry.duration_min} min &middot; {entry.entry_date}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {entry.duration_min} min &middot; {entry.entry_date}
+                        </p>
                       </div>
                     </div>
 

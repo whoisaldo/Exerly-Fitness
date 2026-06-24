@@ -3,15 +3,15 @@ import React, { lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import LoginSignup from './components/LoginSignup/LoginSignup';
-import Dashboard   from './components/Dashboard/Dashboard';
-import Workouts    from './components/Dashboard/Workouts';
-import Activities  from './components/Dashboard/Activities';
-import Food        from './components/Dashboard/Food';
-import Goals       from './components/Dashboard/Goals';
-import Sleep       from './components/Dashboard/Sleep';
-import Profile     from './components/Dashboard/Profile';
-import Onboarding  from './components/Onboarding/Onboarding';
-import Credits     from './components/Credits';
+import Dashboard from './components/Dashboard/Dashboard';
+import Workouts from './components/Dashboard/Workouts';
+import Activities from './components/Dashboard/Activities';
+import Food from './components/Dashboard/Food';
+import Goals from './components/Dashboard/Goals';
+import Sleep from './components/Dashboard/Sleep';
+import Profile from './components/Dashboard/Profile';
+import Onboarding from './components/Onboarding/Onboarding';
+import Credits from './components/Credits';
 import AIErrorManager from './components/Admin/AIErrorManager';
 import LandingPage from './components/LandingPage';
 import MaintenanceHistory from './components/MaintenanceHistory';
@@ -33,9 +33,14 @@ function decodeJWT(token) {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(
-      atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
-    ));
+    return JSON.parse(
+      decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+    );
   } catch {
     return null;
   }
@@ -50,11 +55,12 @@ function AdminRoute({ children }) {
   if (!payload?.email) return <Navigate to="/" replace />;
 
   const email = payload.email.toLowerCase();
-  const isAdmin = payload.is_admin ||
+  const isAdmin =
+    payload.is_admin ||
     (import.meta.env.VITE_ADMIN_EMAILS || '')
       .toLowerCase()
       .split(',')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean)
       .includes(email);
 
@@ -88,32 +94,108 @@ export default function App() {
           <Route path="/status-check" element={<StatusCheck />} />
 
           {/* Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/dashboard/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
-          <Route path="/dashboard/activities" element={<ProtectedRoute><Activities /></ProtectedRoute>} />
-          <Route path="/dashboard/food" element={<ProtectedRoute><Food /></ProtectedRoute>} />
-          <Route path="/dashboard/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
-          <Route path="/dashboard/sleep" element={<ProtectedRoute><Sleep /></ProtectedRoute>} />
-          <Route path="/dashboard/ai-coach" element={
-            <ProtectedRoute>
-              <Suspense fallback={<LazyFallback />}>
-                <NewAICoach />
-              </Suspense>
-            </ProtectedRoute>
-          } />
-          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/workouts"
+            element={
+              <ProtectedRoute>
+                <Workouts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/activities"
+            element={
+              <ProtectedRoute>
+                <Activities />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/food"
+            element={
+              <ProtectedRoute>
+                <Food />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/goals"
+            element={
+              <ProtectedRoute>
+                <Goals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sleep"
+            element={
+              <ProtectedRoute>
+                <Sleep />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/ai-coach"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<LazyFallback />}>
+                  <NewAICoach />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Routes */}
-          <Route path="/dashboard/admin" element={
-            <AdminRoute>
-              <Suspense fallback={<LazyFallback />}>
-                <Admin />
-              </Suspense>
-            </AdminRoute>
-          } />
-          <Route path="/dashboard/admin/status" element={<AdminRoute><AdminStatusChecker /></AdminRoute>} />
-          <Route path="/dashboard/admin/ai-errors" element={<AdminRoute><AIErrorManager /></AdminRoute>} />
+          <Route
+            path="/dashboard/admin"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<LazyFallback />}>
+                  <Admin />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/status"
+            element={
+              <AdminRoute>
+                <AdminStatusChecker />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/ai-errors"
+            element={
+              <AdminRoute>
+                <AIErrorManager />
+              </AdminRoute>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

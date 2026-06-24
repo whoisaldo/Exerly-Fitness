@@ -1,0 +1,130 @@
+name: CI
+
+# Verification pipeline. Runs on every push to every branch so problems are
+# caught before code is merged or auto-deployed. Check-runs attach to the commit
+# SHA, so these satisfy branch-protection "required status checks" on PRs too.
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      ios: ${{ steps.filter.outputs.ios }}
+      root: ${{ steps.filter.outputs.root }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+            web:
+              - 'apps/web/**'
+            ios:
+              - 'apps/ios/**'
+              - '.swiftlint.yml'
+            root:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'eslint.config.js'
+              - '.prettierrc.json'
+              - '.prettierignore'
+              - '.nvmrc'
+              - '.github/workflows/**'
+              - 'scripts/**'
+
+  api:
+    name: API · lint · test · smoke
+    needs: changes
+    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint (eslint)
+        run: npx eslint apps/api
+      - name: Format check (prettier)
+        run: npx prettier --check "apps/api/**/*.{js,json}"
+      - name: Unit tests (node:test)
+        run: npm test -w apps/api
+      - name: API boot smoke test (SQLite, no external services)
+        run: bash scripts/smoke-api.sh
+        env:
+          DB_MODE: local
+          JWT_SECRET: ci-smoke-secret
+          PORT: '3001'
+
+  web:
+    name: Web · lint · typecheck · build
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.root == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint (eslint)
+        run: npx eslint apps/web
+      - name: Format check (prettier)
+        run: npx prettier --check "apps/web/**/*.{ts,tsx,js,jsx,css,json}"
+      - name: Typecheck (tsc)
+        run: npm run typecheck
+      - name: Build (vite)
+        run: npm run build --prefix apps/web
+        env:
+          VITE_API_URL: https://exerly-fitness-93dyl.ondigitalocean.app
+          VITE_ADMIN_EMAILS: whois.younes@gmail.com
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+  swiftlint:
+    name: iOS · swiftlint (lint-only)
+    needs: changes
+    if: ${{ needs.changes.outputs.ios == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SwiftLint (official Docker image)
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work \
+            ghcr.io/realm/swiftlint:latest \
+            swiftlint lint --config .swiftlint.yml --reporter github-actions-logging
+
+  lint-workflows:
+    name: Lint workflow YAML (actionlint)
+    needs: changes
+    if: ${{ needs.changes.outputs.root == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color

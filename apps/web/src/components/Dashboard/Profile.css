@@ -27,7 +27,11 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
   padding: 20px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 /* Profile Header */
@@ -544,8 +548,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Loading State */
@@ -575,51 +583,51 @@
   .profile-page {
     padding: 16px;
   }
-  
+
   .profile-header {
     margin-bottom: 24px;
   }
-  
+
   .back-btn {
     position: relative;
     margin-bottom: 20px;
   }
-  
+
   .profile-title {
     font-size: 2rem;
   }
-  
+
   .profile-content {
     gap: 24px;
   }
-  
+
   .profile-overview,
   .profile-form-section {
     padding: 24px;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .overview-stats {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
   }
-  
+
   .bmi-section {
     flex-direction: column;
     text-align: center;
     gap: 16px;
   }
-  
+
   .unit-toggle {
     flex-direction: column;
     gap: 12px;
     padding: 12px;
   }
-  
+
   .unit-option {
     font-size: 0.85rem;
     padding: 6px 12px;
@@ -630,7 +638,7 @@
   .overview-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .submit-btn {
     width: 100%;
     padding: 16px 24px;

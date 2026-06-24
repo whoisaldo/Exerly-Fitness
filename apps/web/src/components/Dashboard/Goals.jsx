@@ -22,7 +22,7 @@ export default function Goals() {
     dailySteps: '',
     weeklyWeight: '',
     sleepHours: '',
-    waterIntake: ''
+    waterIntake: '',
   });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,7 +34,7 @@ export default function Goals() {
         if (!token) return logout(navigate);
 
         const res = await fetch(`${BASE_URL}/api/goals`, {
-          headers: { Authorization: 'Bearer ' + token }
+          headers: { Authorization: 'Bearer ' + token },
         });
 
         if (res.ok) {
@@ -46,7 +46,7 @@ export default function Goals() {
               dailySteps: data.daily_steps || '',
               weeklyWeight: data.weekly_weight || '',
               sleepHours: data.sleep_hours || '',
-              waterIntake: data.water_intake || ''
+              waterIntake: data.water_intake || '',
             });
           }
         }
@@ -60,7 +60,7 @@ export default function Goals() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setGoals(prev => ({ ...prev, [name]: value }));
+    setGoals((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -75,9 +75,9 @@ export default function Goals() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
+          Authorization: 'Bearer ' + token,
         },
-        body: JSON.stringify(goals)
+        body: JSON.stringify(goals),
       });
 
       if (res.ok) {
@@ -103,17 +103,29 @@ export default function Goals() {
       dailySteps: '',
       weeklyWeight: '',
       sleepHours: '',
-      waterIntake: ''
+      waterIntake: '',
     });
   };
 
   const goalConfig = {
-    dailyCalories: { icon: '🔥', label: 'Daily Calories', unit: 'kcal', color: 'calories', max: 3000 },
-    weeklyWorkouts: { icon: '💪', label: 'Weekly Workouts', unit: 'times', color: 'workouts', max: 7 },
+    dailyCalories: {
+      icon: '🔥',
+      label: 'Daily Calories',
+      unit: 'kcal',
+      color: 'calories',
+      max: 3000,
+    },
+    weeklyWorkouts: {
+      icon: '💪',
+      label: 'Weekly Workouts',
+      unit: 'times',
+      color: 'workouts',
+      max: 7,
+    },
     dailySteps: { icon: '👟', label: 'Daily Steps', unit: 'steps', color: 'steps', max: 15000 },
     weeklyWeight: { icon: '⚖️', label: 'Weekly Weight', unit: 'kg', color: 'weight', max: 5 },
     sleepHours: { icon: '😴', label: 'Daily Sleep', unit: 'hours', color: 'sleep', max: 10 },
-    waterIntake: { icon: '💧', label: 'Daily Water', unit: 'L', color: 'water', max: 4 }
+    waterIntake: { icon: '💧', label: 'Daily Water', unit: 'L', color: 'water', max: 4 },
   };
 
   const activeGoals = Object.entries(goals).filter(([, value]) => value);
@@ -131,7 +143,13 @@ export default function Goals() {
               variant="ghost"
               onClick={() => navigate('/dashboard')}
               icon={
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               }
@@ -151,9 +169,10 @@ export default function Goals() {
                 const config = goalConfig[key];
                 if (!config) return null;
                 const num = parseFloat(value);
-                const pct = Number.isFinite(num) && config.max
-                  ? Math.min(100, Math.round((Math.abs(num) / config.max) * 100))
-                  : 0;
+                const pct =
+                  Number.isFinite(num) && config.max
+                    ? Math.min(100, Math.round((Math.abs(num) / config.max) * 100))
+                    : 0;
 
                 return (
                   <motion.div
@@ -165,9 +184,12 @@ export default function Goals() {
                     <GlassCard className="flex items-center gap-5">
                       <ProgressRing value={pct} size={72} strokeWidth={5} label={config.unit} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs uppercase tracking-wider text-slate-400">{config.label}</p>
+                        <p className="text-xs uppercase tracking-wider text-slate-400">
+                          {config.label}
+                        </p>
                         <p className="mt-1 truncate text-xl font-bold text-slate-50">
-                          {value} <span className="text-sm font-normal text-slate-400">{config.unit}</span>
+                          {value}{' '}
+                          <span className="text-sm font-normal text-slate-400">{config.unit}</span>
                         </p>
                       </div>
                       <span className="text-2xl">{config.icon}</span>
@@ -179,7 +201,9 @@ export default function Goals() {
               {/* Add Goal dashed card */}
               <button
                 type="button"
-                onClick={() => document.getElementById('goals-form')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() =>
+                  document.getElementById('goals-form')?.scrollIntoView({ behavior: 'smooth' })
+                }
                 className="flex min-h-[6rem] items-center justify-center rounded-2xl border-2 border-dashed border-border-subtle text-slate-400 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary-bright"
               >
                 <span className="text-2xl mr-2">+</span>
@@ -223,7 +247,11 @@ export default function Goals() {
                       placeholder={`e.g., ${config.max > 100 ? Math.round(config.max * 0.7) : config.max}`}
                       className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 pr-14 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                       min={key === 'weeklyWeight' ? undefined : '0'}
-                      step={key === 'waterIntake' || key === 'sleepHours' || key === 'weeklyWeight' ? '0.1' : '1'}
+                      step={
+                        key === 'waterIntake' || key === 'sleepHours' || key === 'weeklyWeight'
+                          ? '0.1'
+                          : '1'
+                      }
                       max={key === 'weeklyWorkouts' ? '7' : key === 'sleepHours' ? '24' : undefined}
                     />
                     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
@@ -260,7 +288,13 @@ export default function Goals() {
                 transition={{ duration: 0.3 }}
                 className="mt-5 flex items-center gap-2 rounded-xl bg-success/10 border border-success/20 px-4 py-3 text-sm font-medium text-success"
               >
-                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 Goals saved successfully!
@@ -274,10 +308,26 @@ export default function Goals() {
           <h2 className="mb-4 text-lg font-semibold text-slate-100">Goal Setting Tips</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: '🎯', title: 'Be Specific', desc: 'Set clear, measurable goals instead of vague ones like "get fit"' },
-              { icon: '📈', title: 'Start Small', desc: 'Begin with achievable goals and gradually increase difficulty' },
-              { icon: '⏰', title: 'Set Deadlines', desc: 'Give yourself realistic timeframes to stay motivated' },
-              { icon: '📝', title: 'Track Progress', desc: 'Monitor your achievements to see how far you\'ve come' },
+              {
+                icon: '🎯',
+                title: 'Be Specific',
+                desc: 'Set clear, measurable goals instead of vague ones like "get fit"',
+              },
+              {
+                icon: '📈',
+                title: 'Start Small',
+                desc: 'Begin with achievable goals and gradually increase difficulty',
+              },
+              {
+                icon: '⏰',
+                title: 'Set Deadlines',
+                desc: 'Give yourself realistic timeframes to stay motivated',
+              },
+              {
+                icon: '📝',
+                title: 'Track Progress',
+                desc: "Monitor your achievements to see how far you've come",
+              },
             ].map((tip, i) => (
               <motion.div
                 key={tip.title}

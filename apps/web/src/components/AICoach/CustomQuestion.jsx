@@ -7,17 +7,17 @@ const CustomQuestion = ({ onQuestion, isLoading, creditsRemaining }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!question.trim()) {
       alert('Please enter a question');
       return;
     }
-    
+
     if (creditsRemaining <= 0) {
       alert('You have no hourly credits remaining. Please wait for the next reset.');
       return;
     }
-    
+
     onQuestion('custom_question', question);
     setQuestion('');
     setIsExpanded(false);
@@ -31,11 +31,11 @@ const CustomQuestion = ({ onQuestion, isLoading, creditsRemaining }) => {
   };
 
   const exampleQuestions = [
-    "How can I improve my squat form?",
-    "What should I eat before a workout?",
-    "How often should I rest between sets?",
+    'How can I improve my squat form?',
+    'What should I eat before a workout?',
+    'How often should I rest between sets?',
     "What's the best way to build muscle?",
-    "How can I stay motivated to work out?"
+    'How can I stay motivated to work out?',
   ];
 
   return (
@@ -67,14 +67,10 @@ const CustomQuestion = ({ onQuestion, isLoading, creditsRemaining }) => {
             className="ask-button"
             disabled={!question.trim() || isLoading || creditsRemaining <= 0}
           >
-            {isLoading ? (
-              <div className="button-spinner"></div>
-            ) : (
-              'Ask Coach'
-            )}
+            {isLoading ? <div className="button-spinner"></div> : 'Ask Coach'}
           </button>
         </div>
-        
+
         {creditsRemaining <= 0 && (
           <div className="no-credits-message">
             ⏰ No credits remaining. Next question available after reset.

@@ -1,0 +1,19 @@
+title = "Exerly gitleaks config"
+
+# Start from gitleaks' built-in ruleset, then add project-specific allowlisting.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe sample/placeholder values that are not real secrets"
+paths = [
+  '''.*\.env\.example$''',
+  '''README\.md''',
+]
+regexes = [
+  '''your-jwt-secret-here''',
+  '''your-gemini-api-key''',
+  '''your-fatsecret-client-id''',
+  '''your-fatsecret-client-secret''',
+  '''mongodb\+srv://user:password@cluster''',
+]

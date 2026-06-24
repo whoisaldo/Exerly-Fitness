@@ -103,8 +103,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .no-credits-message {
@@ -176,21 +180,21 @@
   .custom-question {
     padding: 20px;
   }
-  
+
   .input-container {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .ask-button {
     width: 100%;
     min-width: auto;
   }
-  
+
   .examples-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .example-question {
     padding: 10px 12px;
     font-size: 0.85rem;

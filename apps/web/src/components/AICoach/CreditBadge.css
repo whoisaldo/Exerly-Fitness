@@ -27,7 +27,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -65,10 +66,12 @@
 }
 
 @keyframes blink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0.5;
   }
 }
@@ -146,24 +149,24 @@
   .credit-badge {
     padding: 12px;
   }
-  
+
   .hourly-credits {
     flex-wrap: wrap;
   }
-  
+
   .credit-count {
     font-size: 1rem;
   }
-  
+
   .reset-timer {
     font-size: 0.8rem;
   }
-  
+
   .limit-message,
   .daily-limit-message {
     padding: 12px;
   }
-  
+
   .limit-message p,
   .daily-limit-message p {
     font-size: 0.8rem;

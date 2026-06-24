@@ -23,15 +23,17 @@ const db = new sqlite3.Database('./fitness-local.db', (err) => {
 function dbQuery(query, params = []) {
   return new Promise((resolve, reject) => {
     const sqliteQuery = query.replace(/\$\d+/g, '?');
-    
-    if (sqliteQuery.trim().toUpperCase().startsWith('SELECT') || 
-        sqliteQuery.trim().toUpperCase().includes('RETURNING')) {
+
+    if (
+      sqliteQuery.trim().toUpperCase().startsWith('SELECT') ||
+      sqliteQuery.trim().toUpperCase().includes('RETURNING')
+    ) {
       db.all(sqliteQuery.replace(/RETURNING \*/gi, ''), params, (err, rows) => {
         if (err) reject(err);
         else resolve({ rows: rows || [], rowCount: rows?.length || 0 });
       });
     } else {
-      db.run(sqliteQuery, params, function(err) {
+      db.run(sqliteQuery, params, function (err) {
         if (err) reject(err);
         else resolve({ rows: [], rowCount: this.changes, lastID: this.lastID });
       });
@@ -42,7 +44,15 @@ function dbQuery(query, params = []) {
 // Get inserted row helper
 // Table name is interpolated (SQLite can't parameterize identifiers), so guard it
 // with a whitelist to keep this safe even if a future caller passes user input.
-const INSERTABLE_TABLES = new Set(['activities', 'food', 'sleep', 'workouts', 'goals', 'ai_plans', 'water']);
+const INSERTABLE_TABLES = new Set([
+  'activities',
+  'food',
+  'sleep',
+  'workouts',
+  'goals',
+  'ai_plans',
+  'water',
+]);
 async function getLastInserted(table, lastID) {
   if (!INSERTABLE_TABLES.has(table)) throw new Error(`Invalid table: ${table}`);
   const r = await dbQuery(`SELECT * FROM ${table} WHERE id = ?`, [lastID]);
@@ -187,7 +197,9 @@ async function initDb() {
   `);
 
   // Create indexes
-  await dbQuery(`CREATE INDEX IF NOT EXISTS idx_activities_email_date ON activities(email, entry_date);`);
+  await dbQuery(
+    `CREATE INDEX IF NOT EXISTS idx_activities_email_date ON activities(email, entry_date);`
+  );
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_food_email_date ON food(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_sleep_email_date ON sleep(email, entry_date);`);
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_workouts_email ON workouts(email);`);
@@ -195,12 +207,13 @@ async function initDb() {
   await dbQuery(`CREATE INDEX IF NOT EXISTS idx_barcode_cache ON barcode_cache(barcode);`);
 
   // Migrate food table — add columns if missing
-  const foodCols = await dbQuery("PRAGMA table_info(food)");
-  const colNames = (foodCols.rows || foodCols).map(c => c.name);
+  const foodCols = await dbQuery('PRAGMA table_info(food)');
+  const colNames = (foodCols.rows || foodCols).map((c) => c.name);
   if (!colNames.includes('barcode')) await dbQuery('ALTER TABLE food ADD COLUMN barcode TEXT');
   if (!colNames.includes('brand')) await dbQuery('ALTER TABLE food ADD COLUMN brand TEXT');
   if (!colNames.includes('fiber')) await dbQuery('ALTER TABLE food ADD COLUMN fiber REAL');
-  if (!colNames.includes('serving_size')) await dbQuery('ALTER TABLE food ADD COLUMN serving_size TEXT');
+  if (!colNames.includes('serving_size'))
+    await dbQuery('ALTER TABLE food ADD COLUMN serving_size TEXT');
 
   console.log('✅ Database tables ready');
 }
@@ -212,9 +225,14 @@ function calculateMaintenance(profile) {
   if (!age || !height_cm || !weight_kg) return null;
   const s = sex === 'male' ? 5 : -161;
   const bmr = 10 * Number(weight_kg) + 6.25 * Number(height_cm) - 5 * Number(age) + s;
-  const multiplier = {
-    sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, 'very active': 1.9
-  }[activity_level] || 1.2;
+  const multiplier =
+    {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      'very active': 1.9,
+    }[activity_level] || 1.2;
   return Math.round(bmr * multiplier);
 }
 
@@ -226,7 +244,11 @@ const { getTodayUTC, getLast7UTCDates, weekdayLabel } = require('./utils/dateUti
 
 function decodeProfile(profile) {
   if (typeof profile === 'string') {
-    try { return JSON.parse(profile); } catch { return null; }
+    try {
+      return JSON.parse(profile);
+    } catch {
+      return null;
+    }
   }
   return profile;
 }
@@ -255,7 +277,8 @@ function serializeMobileUser(user) {
     targetWeight: profile.targetWeight ?? profile.target_weight ?? null,
     aiCreditsRemaining: remainingCredits,
     dailyAiCreditsUsed: user.aiDailyCreditsUsed ?? 0,
-    hourlyAiCreditsUsed: remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits))
+    hourlyAiCreditsUsed:
+      remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits)),
   };
 }
 
@@ -264,7 +287,12 @@ function buildOnboardingProfile(existingProfile, payload) {
   const height = Number(payload.height);
   const weight = Number(payload.weight);
   const targetWeight = payload.targetWeight != null ? Number(payload.targetWeight) : null;
-  const activityLevel = payload.activityLevel || payload.activity_level || profile.activityLevel || profile.activity_level || null;
+  const activityLevel =
+    payload.activityLevel ||
+    payload.activity_level ||
+    profile.activityLevel ||
+    profile.activity_level ||
+    null;
 
   return {
     ...profile,
@@ -279,7 +307,7 @@ function buildOnboardingProfile(existingProfile, payload) {
     activity_level: activityLevel,
     goal: payload.goal,
     targetWeight: targetWeight ?? profile.targetWeight ?? null,
-    target_weight: targetWeight ?? profile.target_weight ?? null
+    target_weight: targetWeight ?? profile.target_weight ?? null,
   };
 }
 
@@ -298,25 +326,31 @@ const allowedOrigins = [
   'https://www.exerlyfitness.com',
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    // Check string origins
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Allow local network IPs (for mobile)
-    if (/^http:\/\/(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    
-    return callback(null, false);
-  },
-  credentials: true,
-  optionsSuccessStatus: 204,
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      // Check string origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow local network IPs (for mobile)
+      if (
+        /^http:\/\/(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(
+          origin
+        )
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    credentials: true,
+    optionsSuccessStatus: 204,
+  })
+);
 
 app.use(express.json());
 
@@ -331,10 +365,10 @@ app.get('/api/health', async (_req, res) => {
     database: { status: 'connected', type: 'SQLite (Local)' },
     memory: {
       used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
     },
     mode: 'LOCAL DEVELOPMENT',
-    version: '1.0.0-local'
+    version: '1.0.0-local',
   });
 });
 
@@ -346,17 +380,27 @@ app.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Name, email & password required' });
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email format' });
     email = email.toLowerCase();
-    
+
     const existing = await dbQuery('SELECT 1 FROM users WHERE email=?', [email]);
-    if (existing.rowCount > 0) return res.status(409).json({ message: 'User with this email already exists' });
-    
+    if (existing.rowCount > 0)
+      return res.status(409).json({ message: 'User with this email already exists' });
+
     const hash = await bcrypt.hash(password, 10);
     const makeAdmin = ADMIN_EMAIL && email === ADMIN_EMAIL;
-    
-    await dbQuery('INSERT INTO users (name, email, hash, is_admin) VALUES (?,?,?,?)', [name, email, hash, makeAdmin ? 1 : 0]);
+
+    await dbQuery('INSERT INTO users (name, email, hash, is_admin) VALUES (?,?,?,?)', [
+      name,
+      email,
+      hash,
+      makeAdmin ? 1 : 0,
+    ]);
     const createdUser = await dbQuery('SELECT * FROM users WHERE email=?', [email]);
     const token = jwt.sign({ email, name, is_admin: !!makeAdmin }, SECRET, { expiresIn: '12h' });
-    res.json({ message: 'Signup successful', token, user: serializeMobileUser(createdUser.rows[0]) });
+    res.json({
+      message: 'Signup successful',
+      token,
+      user: serializeMobileUser(createdUser.rows[0]),
+    });
   } catch (err) {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
@@ -365,18 +409,23 @@ app.post('/signup', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     let { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!email || !password)
+      return res.status(400).json({ message: 'Email and password required' });
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email format' });
     email = email.toLowerCase();
-    
+
     const r = await dbQuery('SELECT * FROM users WHERE email=?', [email]);
     const user = r.rows[0];
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-    
+
     const ok = await bcrypt.compare(password, user.hash);
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    
-    const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!user.is_admin }, SECRET, { expiresIn: '12h' });
+
+    const token = jwt.sign(
+      { email: user.email, name: user.name, is_admin: !!user.is_admin },
+      SECRET,
+      { expiresIn: '12h' }
+    );
     res.json({ token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
@@ -431,7 +480,10 @@ app.post('/api/profile', authenticate, async (req, res) => {
     const row = await dbQuery('SELECT profile FROM users WHERE email=?', [req.user.email]);
     const existing = decodeProfile(row.rows[0]?.profile) || {};
     const profile = { ...existing, ...incoming };
-    await dbQuery('UPDATE users SET profile=? WHERE email=?', [encodeProfile(profile), req.user.email]);
+    await dbQuery('UPDATE users SET profile=? WHERE email=?', [
+      encodeProfile(profile),
+      req.user.email,
+    ]);
     res.json({ message: 'Profile saved', profile });
   } catch (err) {
     res.status(500).json({ message: 'Error saving profile', error: err.message });
@@ -441,7 +493,10 @@ app.post('/api/profile', authenticate, async (req, res) => {
 app.put('/api/profile', authenticate, async (req, res) => {
   try {
     const profile = req.body || {};
-    await dbQuery('UPDATE users SET profile=? WHERE email=?', [encodeProfile(profile), req.user.email]);
+    await dbQuery('UPDATE users SET profile=? WHERE email=?', [
+      encodeProfile(profile),
+      req.user.email,
+    ]);
     res.json({ message: 'Profile saved', profile });
   } catch (err) {
     res.status(500).json({ message: 'Error saving profile', error: err.message });
@@ -452,11 +507,18 @@ app.put('/api/profile', authenticate, async (req, res) => {
 app.post('/api/user/onboarding', authenticate, async (req, res) => {
   try {
     const {
-      age, gender, height, weight, goal,
-      activityLevel, targetWeight,
-      experienceLevel, workoutDaysPerWeek, equipmentAccess
+      age,
+      gender,
+      height,
+      weight,
+      goal,
+      activityLevel,
+      targetWeight,
+      experienceLevel,
+      workoutDaysPerWeek,
+      equipmentAccess,
     } = req.body;
-    
+
     if (!age || !gender || !height || !weight || !goal) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -464,27 +526,34 @@ app.post('/api/user/onboarding', authenticate, async (req, res) => {
     const existingUserResult = await dbQuery('SELECT * FROM users WHERE email=?', [req.user.email]);
     const existingUser = existingUserResult.rows[0];
     const mergedProfile = buildOnboardingProfile(existingUser?.profile, req.body);
-    
-    await dbQuery(`
+
+    await dbQuery(
+      `
       UPDATE users SET 
         onboardingCompleted=1, age=?, gender=?, height=?, weight=?, 
         goal=?, experienceLevel=?, workoutDaysPerWeek=?, equipmentAccess=?, profile=?
       WHERE email=?
-    `, [
-      parseInt(age), gender, Number(height), Number(weight), goal,
-      experienceLevel || existingUser?.experienceLevel || 'beginner',
-      parseInt(workoutDaysPerWeek) || 3,
-      equipmentAccess || existingUser?.equipmentAccess || 'full_gym',
-      encodeProfile(mergedProfile),
-      req.user.email
-    ]);
+    `,
+      [
+        parseInt(age),
+        gender,
+        Number(height),
+        Number(weight),
+        goal,
+        experienceLevel || existingUser?.experienceLevel || 'beginner',
+        parseInt(workoutDaysPerWeek) || 3,
+        equipmentAccess || existingUser?.equipmentAccess || 'full_gym',
+        encodeProfile(mergedProfile),
+        req.user.email,
+      ]
+    );
 
     const updatedUser = await dbQuery('SELECT * FROM users WHERE email=?', [req.user.email]);
-    
+
     res.json({
       message: 'Onboarding completed successfully!',
       maintenance: calculateMaintenance(mergedProfile),
-      user: serializeMobileUser(updatedUser.rows[0])
+      user: serializeMobileUser(updatedUser.rows[0]),
     });
   } catch (err) {
     res.status(500).json({ message: 'Error completing onboarding', error: err.message });
@@ -494,7 +563,9 @@ app.post('/api/user/onboarding', authenticate, async (req, res) => {
 // ---------- Activities ----------
 app.get('/api/activities', authenticate, async (req, res) => {
   try {
-    const r = await dbQuery('SELECT * FROM activities WHERE email=? ORDER BY id DESC', [req.user.email]);
+    const r = await dbQuery('SELECT * FROM activities WHERE email=? ORDER BY id DESC', [
+      req.user.email,
+    ]);
     res.json(r.rows);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching activities', error: err.message });
@@ -506,10 +577,18 @@ app.post('/api/activities', authenticate, async (req, res) => {
     const { activity, duration_min, calories, intensity, type } = req.body;
     if (!activity || duration_min == null || calories == null)
       return res.status(400).json({ message: 'Activity, duration, and calories are required' });
-    
+
     const result = await dbQuery(
       `INSERT INTO activities (email, activity, duration_min, calories, intensity, type, entry_date) VALUES (?,?,?,?,?,?,?)`,
-      [req.user.email, activity.trim(), Number(duration_min), Number(calories), intensity || null, type || null, getTodayUTC()]
+      [
+        req.user.email,
+        activity.trim(),
+        Number(duration_min),
+        Number(calories),
+        intensity || null,
+        type || null,
+        getTodayUTC(),
+      ]
     );
     const inserted = await getLastInserted('activities', result.lastID);
     res.status(201).json(inserted);
@@ -555,13 +634,39 @@ app.get('/api/food', authenticate, async (req, res) => {
 
 app.post('/api/food', authenticate, async (req, res) => {
   try {
-    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    const {
+      name,
+      calories,
+      protein,
+      sugar,
+      carbs,
+      fat,
+      mealType,
+      barcode,
+      brand,
+      fiber,
+      servingSize,
+    } = req.body;
     if (!name || calories == null || protein == null)
       return res.status(400).json({ message: 'Name, calories, and protein are required' });
 
     const result = await dbQuery(
       `INSERT INTO food (email, name, calories, protein, sugar, carbs, fat, fiber, meal_type, barcode, brand, serving_size, entry_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [req.user.email, name.trim(), Number(calories), Number(protein), sugar != null ? Number(sugar) : null, carbs != null ? Number(carbs) : null, fat != null ? Number(fat) : null, fiber != null ? Number(fiber) : null, mealType || null, barcode || null, brand || null, servingSize || null, getTodayUTC()]
+      [
+        req.user.email,
+        name.trim(),
+        Number(calories),
+        Number(protein),
+        sugar != null ? Number(sugar) : null,
+        carbs != null ? Number(carbs) : null,
+        fat != null ? Number(fat) : null,
+        fiber != null ? Number(fiber) : null,
+        mealType || null,
+        barcode || null,
+        brand || null,
+        servingSize || null,
+        getTodayUTC(),
+      ]
     );
     const inserted = await getLastInserted('food', result.lastID);
     res.status(201).json(inserted);
@@ -573,10 +678,36 @@ app.post('/api/food', authenticate, async (req, res) => {
 app.put('/api/food/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    const {
+      name,
+      calories,
+      protein,
+      sugar,
+      carbs,
+      fat,
+      mealType,
+      barcode,
+      brand,
+      fiber,
+      servingSize,
+    } = req.body;
     await dbQuery(
       `UPDATE food SET name=?, calories=?, protein=?, sugar=?, carbs=?, fat=?, fiber=?, meal_type=?, barcode=?, brand=?, serving_size=? WHERE id=? AND email=?`,
-      [name.trim(), Number(calories), Number(protein), sugar != null ? Number(sugar) : null, carbs != null ? Number(carbs) : null, fat != null ? Number(fat) : null, fiber != null ? Number(fiber) : null, mealType || null, barcode || null, brand || null, servingSize || null, id, req.user.email]
+      [
+        name.trim(),
+        Number(calories),
+        Number(protein),
+        sugar != null ? Number(sugar) : null,
+        carbs != null ? Number(carbs) : null,
+        fat != null ? Number(fat) : null,
+        fiber != null ? Number(fiber) : null,
+        mealType || null,
+        barcode || null,
+        brand || null,
+        servingSize || null,
+        id,
+        req.user.email,
+      ]
     );
     const updated = await dbQuery('SELECT * FROM food WHERE id=?', [id]);
     res.json(updated.rows[0]);
@@ -600,7 +731,9 @@ app.post('/api/food/barcode-lookup', authenticate, async (req, res) => {
   try {
     const { barcode } = req.body;
     if (!barcode || typeof barcode !== 'string' || !/^\d{8,14}$/.test(barcode)) {
-      return res.status(400).json({ found: false, message: 'Invalid barcode. Must be 8-14 digits.' });
+      return res
+        .status(400)
+        .json({ found: false, message: 'Invalid barcode. Must be 8-14 digits.' });
     }
 
     // Check cache
@@ -609,7 +742,7 @@ app.post('/api/food/barcode-lookup', authenticate, async (req, res) => {
     if (row) {
       return res.json({
         found: true,
-        food: { ...row, cached: true }
+        food: { ...row, cached: true },
       });
     }
 
@@ -637,13 +770,26 @@ app.post('/api/food/barcode-lookup', authenticate, async (req, res) => {
       fiber: n.fiber_100g || 0,
       sugar: n.sugars_100g || 0,
       serving_size: p.serving_size || '100g',
-      source: 'openfoodfacts'
+      source: 'openfoodfacts',
     };
 
     // Cache result
     await dbQuery(
       `INSERT OR REPLACE INTO barcode_cache (barcode, name, brand, calories, protein, carbs, fat, fiber, sugar, serving_size, source, expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [food.barcode, food.name, food.brand, food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sugar, food.serving_size, food.source, new Date(Date.now() + 30*24*60*60*1000).toISOString()]
+      [
+        food.barcode,
+        food.name,
+        food.brand,
+        food.calories,
+        food.protein,
+        food.carbs,
+        food.fat,
+        food.fiber,
+        food.sugar,
+        food.serving_size,
+        food.source,
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      ]
     );
 
     res.json({ found: true, food: { ...food, cached: false } });
@@ -667,10 +813,17 @@ app.post('/api/sleep', authenticate, async (req, res) => {
     const { hours, quality, bedtime, wakeTime } = req.body;
     if (hours == null || !quality)
       return res.status(400).json({ message: 'Hours and quality are required' });
-    
+
     const result = await dbQuery(
       `INSERT INTO sleep (email, hours, quality, bedtime, wake_time, entry_date) VALUES (?,?,?,?,?,?)`,
-      [req.user.email, Number(hours), quality.trim(), bedtime || null, wakeTime || null, getTodayUTC()]
+      [
+        req.user.email,
+        Number(hours),
+        quality.trim(),
+        bedtime || null,
+        wakeTime || null,
+        getTodayUTC(),
+      ]
     );
     const inserted = await getLastInserted('sleep', result.lastID);
     res.status(201).json(inserted);
@@ -730,15 +883,31 @@ app.post('/api/goals', authenticate, async (req, res) => {
     if (existing.rowCount > 0) {
       await dbQuery(
         `UPDATE goals SET daily_calories=?, weekly_workouts=?, daily_steps=?, weekly_weight=?, sleep_hours=?, water_intake=?, updated_at=CURRENT_TIMESTAMP WHERE email=?`,
-        [dailyCalories, weeklyWorkouts, dailySteps, weeklyWeight, sleepHours, waterIntake, req.user.email]
+        [
+          dailyCalories,
+          weeklyWorkouts,
+          dailySteps,
+          weeklyWeight,
+          sleepHours,
+          waterIntake,
+          req.user.email,
+        ]
       );
     } else {
       await dbQuery(
         `INSERT INTO goals (email, daily_calories, weekly_workouts, daily_steps, weekly_weight, sleep_hours, water_intake) VALUES (?,?,?,?,?,?,?)`,
-        [req.user.email, dailyCalories, weeklyWorkouts, dailySteps, weeklyWeight, sleepHours, waterIntake]
+        [
+          req.user.email,
+          dailyCalories,
+          weeklyWorkouts,
+          dailySteps,
+          weeklyWeight,
+          sleepHours,
+          waterIntake,
+        ]
       );
     }
-    
+
     const goals = await dbQuery('SELECT * FROM goals WHERE email=?', [req.user.email]);
     res.json({ message: 'Goals saved', goals: goals.rows[0] });
   } catch (err) {
@@ -749,8 +918,10 @@ app.post('/api/goals', authenticate, async (req, res) => {
 // ---------- Workouts ----------
 app.get('/api/workouts', authenticate, async (req, res) => {
   try {
-    const r = await dbQuery('SELECT * FROM workouts WHERE email=? ORDER BY id DESC', [req.user.email]);
-    res.json(r.rows.map(w => ({ ...w, exercises: w.exercises ? JSON.parse(w.exercises) : [] })));
+    const r = await dbQuery('SELECT * FROM workouts WHERE email=? ORDER BY id DESC', [
+      req.user.email,
+    ]);
+    res.json(r.rows.map((w) => ({ ...w, exercises: w.exercises ? JSON.parse(w.exercises) : [] })));
   } catch (err) {
     res.status(500).json({ message: 'Error fetching workouts', error: err.message });
   }
@@ -760,11 +931,12 @@ app.post('/api/workouts', authenticate, async (req, res) => {
   try {
     const { name, exercises } = req.body;
     if (!name) return res.status(400).json({ message: 'Workout name is required' });
-    
-    const result = await dbQuery(
-      `INSERT INTO workouts (email, name, exercises) VALUES (?,?,?)`,
-      [req.user.email, name.trim(), JSON.stringify(exercises || [])]
-    );
+
+    const result = await dbQuery(`INSERT INTO workouts (email, name, exercises) VALUES (?,?,?)`, [
+      req.user.email,
+      name.trim(),
+      JSON.stringify(exercises || []),
+    ]);
     const inserted = await getLastInserted('workouts', result.lastID);
     res.status(201).json({ ...inserted, exercises: JSON.parse(inserted.exercises || '[]') });
   } catch (err) {
@@ -805,17 +977,25 @@ app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
     const days = getLast7UTCDates();
     const since = days[0];
     const [foodRows, actRows] = await Promise.all([
-      dbQuery('SELECT entry_date, SUM(calories) AS total FROM food WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since]),
-      dbQuery('SELECT entry_date, SUM(calories) AS total FROM activities WHERE email=? AND entry_date >= ? GROUP BY entry_date', [email, since])
+      dbQuery(
+        'SELECT entry_date, SUM(calories) AS total FROM food WHERE email=? AND entry_date >= ? GROUP BY entry_date',
+        [email, since]
+      ),
+      dbQuery(
+        'SELECT entry_date, SUM(calories) AS total FROM activities WHERE email=? AND entry_date >= ? GROUP BY entry_date',
+        [email, since]
+      ),
     ]);
-    const consumedByDay = Object.fromEntries(foodRows.rows.map(r => [r.entry_date, r.total]));
-    const burnedByDay = Object.fromEntries(actRows.rows.map(r => [r.entry_date, r.total]));
-    res.json(days.map(date => ({
-      date,
-      label: weekdayLabel(date),
-      consumed: consumedByDay[date] || 0,
-      burned: burnedByDay[date] || 0
-    })));
+    const consumedByDay = Object.fromEntries(foodRows.rows.map((r) => [r.entry_date, r.total]));
+    const burnedByDay = Object.fromEntries(actRows.rows.map((r) => [r.entry_date, r.total]));
+    res.json(
+      days.map((date) => ({
+        date,
+        label: weekdayLabel(date),
+        consumed: consumedByDay[date] || 0,
+        burned: burnedByDay[date] || 0,
+      }))
+    );
   } catch (err) {
     res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
   }
@@ -825,7 +1005,10 @@ app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
 app.get('/api/water', authenticate, async (req, res) => {
   try {
     const today = getTodayUTC();
-    const r = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    const r = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [
+      req.user.email,
+      today,
+    ]);
     res.json({ glasses: r.rows[0]?.glasses || 0, entry_date: today });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching water', error: err.message });
@@ -836,15 +1019,26 @@ app.post('/api/water', authenticate, async (req, res) => {
   try {
     const today = getTodayUTC();
     const { glasses, delta } = req.body || {};
-    const existing = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [req.user.email, today]);
+    const existing = await dbQuery('SELECT glasses FROM water WHERE email=? AND entry_date=?', [
+      req.user.email,
+      today,
+    ]);
     const current = existing.rows[0]?.glasses || 0;
-    const next = delta != null
-      ? Math.max(0, current + (Number(delta) || 0))
-      : Math.max(0, Math.round(Number(glasses) || 0));
+    const next =
+      delta != null
+        ? Math.max(0, current + (Number(delta) || 0))
+        : Math.max(0, Math.round(Number(glasses) || 0));
     if (existing.rowCount > 0) {
-      await dbQuery('UPDATE water SET glasses=?, updated_at=CURRENT_TIMESTAMP WHERE email=? AND entry_date=?', [next, req.user.email, today]);
+      await dbQuery(
+        'UPDATE water SET glasses=?, updated_at=CURRENT_TIMESTAMP WHERE email=? AND entry_date=?',
+        [next, req.user.email, today]
+      );
     } else {
-      await dbQuery('INSERT INTO water (email, entry_date, glasses) VALUES (?,?,?)', [req.user.email, today, next]);
+      await dbQuery('INSERT INTO water (email, entry_date, glasses) VALUES (?,?,?)', [
+        req.user.email,
+        today,
+        next,
+      ]);
     }
     res.json({ glasses: next, entry_date: today });
   } catch (err) {
@@ -863,30 +1057,34 @@ app.get('/api/dashboard-data', authenticate, async (req, res) => {
       dbQuery('SELECT hours FROM sleep WHERE email=? AND entry_date=?', [email, today]),
       dbQuery('SELECT profile FROM users WHERE email=?', [email]),
     ]);
-    
+
     const totalBurned = activities.rows.reduce((sum, r) => sum + Number(r.calories), 0);
     const workoutCount = activities.rowCount;
     const totalConsumed = food.rows.reduce((sum, r) => sum + Number(r.calories), 0);
     const totalSleepHours = sleep.rows.reduce((sum, r) => sum + Number(r.hours), 0);
     const maintenance = calculateMaintenance(decodeProfile(user.rows[0]?.profile));
-    
+
     const cards = [
       { label: 'Total Workouts', value: workoutCount, route: '/dashboard/activities' },
       { label: 'Calories Burned', value: `${totalBurned} kcal`, route: '/dashboard/activities' },
       { label: 'Calories Consumed', value: `${totalConsumed} kcal`, route: '/dashboard/food' },
       { label: 'Sleep (hrs)', value: `${totalSleepHours}`, route: '/dashboard/sleep' },
     ];
-    
+
     if (req.user?.is_admin) {
       cards.unshift({ label: 'Admin', value: 'Open', route: '/dashboard/admin' });
     }
-    
+
     if (maintenance) {
       const net = totalConsumed - totalBurned - maintenance;
-      cards.push({ label: 'Maintenance (est.)', value: `${maintenance} kcal`, route: '/dashboard/profile' });
+      cards.push({
+        label: 'Maintenance (est.)',
+        value: `${maintenance} kcal`,
+        route: '/dashboard/profile',
+      });
       cards.push({ label: 'Net vs. Maint.', value: `${net} kcal`, route: '/dashboard/food' });
     }
-    
+
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching dashboard data', error: err.message });
@@ -898,13 +1096,22 @@ app.get('/api/recent', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     const [activities, food, sleep] = await Promise.all([
-      dbQuery('SELECT *, "activity" as type FROM activities WHERE email=? AND entry_date=? ORDER BY id DESC', [email, today]),
-      dbQuery('SELECT *, "food" as type FROM food WHERE email=? AND entry_date=? ORDER BY id DESC', [email, today]),
-      dbQuery('SELECT *, "sleep" as type FROM sleep WHERE email=? AND entry_date=? ORDER BY id DESC', [email, today]),
+      dbQuery(
+        'SELECT *, "activity" as type FROM activities WHERE email=? AND entry_date=? ORDER BY id DESC',
+        [email, today]
+      ),
+      dbQuery(
+        'SELECT *, "food" as type FROM food WHERE email=? AND entry_date=? ORDER BY id DESC',
+        [email, today]
+      ),
+      dbQuery(
+        'SELECT *, "sleep" as type FROM sleep WHERE email=? AND entry_date=? ORDER BY id DESC',
+        [email, today]
+      ),
     ]);
-    
+
     let logs = [...activities.rows, ...food.rows, ...sleep.rows];
     logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     res.json(logs);
@@ -918,13 +1125,13 @@ app.post('/api/reset-today', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     await Promise.all([
       dbQuery('DELETE FROM activities WHERE email=? AND entry_date=?', [email, today]),
       dbQuery('DELETE FROM food WHERE email=? AND entry_date=?', [email, today]),
       dbQuery('DELETE FROM sleep WHERE email=? AND entry_date=?', [email, today]),
     ]);
-    
+
     res.json({ message: "Today's logs deleted" });
   } catch (err) {
     res.status(500).json({ message: 'Error resetting today', error: err.message });
@@ -935,14 +1142,16 @@ app.post('/api/reset-today', authenticate, async (req, res) => {
 app.get('/api/ai/credits', authenticate, async (req, res) => {
   res.json({
     hourly: { remaining: 5, limit: 5, resetTime: '60:00' },
-    daily: { used: 0, limit: 20, resetTime: '24h 0m' }
+    daily: { used: 0, limit: 20, resetTime: '24h 0m' },
   });
 });
 
 // ---------- AI Plans (Mock) ----------
 app.get('/api/ai/plans', authenticate, async (req, res) => {
   try {
-    const r = await dbQuery('SELECT * FROM ai_plans WHERE email=? ORDER BY id DESC', [req.user.email]);
+    const r = await dbQuery('SELECT * FROM ai_plans WHERE email=? ORDER BY id DESC', [
+      req.user.email,
+    ]);
     res.json(r.rows);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching AI plans', error: err.message });
@@ -974,10 +1183,14 @@ app.delete('/api/ai/plans/:id', authenticate, async (req, res) => {
 
 // ---------- AI Generate / Coach (Mock) ----------
 const MOCK_AI_RESPONSES = {
-  workout_plan: "🏋️ **Your Personalized Workout Plan**\n\n**Day 1 - Upper Body**\n- Bench Press: 3x10\n- Rows: 3x10\n- Shoulder Press: 3x8\n\n**Day 2 - Lower Body**\n- Squats: 4x8\n- Lunges: 3x10\n- Calf Raises: 3x15\n\n*Note: This is a mock response for local development*",
-  nutrition_advice: "🥗 **Nutrition Recommendations**\n\n- Aim for 1g protein per lb of body weight\n- Eat plenty of vegetables\n- Stay hydrated with 8 glasses of water\n- Limit processed foods\n\n*Note: This is a mock response for local development*",
-  progress_analysis: "📊 **Progress Analysis**\n\nYou're doing great! Keep up the consistent effort.\n\n- Workouts this week: Good consistency\n- Nutrition: On track\n- Sleep: Could improve\n\n*Note: This is a mock response for local development*",
-  custom_question: "💡 **AI Coach Response**\n\nThank you for your question! In local development mode, AI responses are mocked.\n\nTo get real AI responses, connect to the production backend with MongoDB and Gemini API.\n\n*Note: This is a mock response for local development*"
+  workout_plan:
+    '🏋️ **Your Personalized Workout Plan**\n\n**Day 1 - Upper Body**\n- Bench Press: 3x10\n- Rows: 3x10\n- Shoulder Press: 3x8\n\n**Day 2 - Lower Body**\n- Squats: 4x8\n- Lunges: 3x10\n- Calf Raises: 3x15\n\n*Note: This is a mock response for local development*',
+  nutrition_advice:
+    '🥗 **Nutrition Recommendations**\n\n- Aim for 1g protein per lb of body weight\n- Eat plenty of vegetables\n- Stay hydrated with 8 glasses of water\n- Limit processed foods\n\n*Note: This is a mock response for local development*',
+  progress_analysis:
+    "📊 **Progress Analysis**\n\nYou're doing great! Keep up the consistent effort.\n\n- Workouts this week: Good consistency\n- Nutrition: On track\n- Sleep: Could improve\n\n*Note: This is a mock response for local development*",
+  custom_question:
+    '💡 **AI Coach Response**\n\nThank you for your question! In local development mode, AI responses are mocked.\n\nTo get real AI responses, connect to the production backend with MongoDB and Gemini API.\n\n*Note: This is a mock response for local development*',
 };
 
 app.post('/api/ai/generate', authenticate, async (req, res) => {
@@ -985,7 +1198,7 @@ app.post('/api/ai/generate', authenticate, async (req, res) => {
   res.json({
     success: true,
     response: MOCK_AI_RESPONSES[type] || MOCK_AI_RESPONSES.custom_question,
-    creditsRemaining: { hourly: 5, daily: 0 }
+    creditsRemaining: { hourly: 5, daily: 0 },
   });
 });
 
@@ -1004,7 +1217,7 @@ app.post('/api/ai/coach', authenticate, async (req, res) => {
       response,
       creditsRemaining: 5,
       dailyUsed: 0,
-      planId: String(inserted?.id ?? '')
+      planId: String(inserted?.id ?? ''),
     });
   } catch (err) {
     res.status(500).json({ message: 'AI coach failed', error: err.message });
@@ -1014,7 +1227,9 @@ app.post('/api/ai/coach', authenticate, async (req, res) => {
 // ---------- Admin Routes ----------
 app.get('/api/admin/users', authenticate, requireAdmin, async (_req, res) => {
   try {
-    const r = await dbQuery('SELECT id, name, email, created_at, is_admin FROM users ORDER BY id DESC');
+    const r = await dbQuery(
+      'SELECT id, name, email, created_at, is_admin FROM users ORDER BY id DESC'
+    );
     res.json(r.rows);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching users', error: err.message });
@@ -1033,14 +1248,16 @@ initDb()
       console.log('  🏋️  EXERLY FITNESS - LOCAL DEVELOPMENT SERVER');
       console.log('═══════════════════════════════════════════════════════════');
       console.log(`  🟢 Server:    http://localhost:${PORT}`);
-      console.log(`  📱 Mobile:    http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_IP'}:${PORT}`);
+      console.log(
+        `  📱 Mobile:    http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_IP'}:${PORT}`
+      );
       console.log(`  💾 Database:  SQLite (fitness-local.db)`);
       console.log(`  🔧 Mode:      LOCAL DEVELOPMENT (No MongoDB required)`);
       console.log('═══════════════════════════════════════════════════════════');
       console.log('');
     });
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Failed to initialize database:', err);
     process.exit(1);
   });

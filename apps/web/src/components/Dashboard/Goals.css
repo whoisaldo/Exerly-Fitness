@@ -266,8 +266,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Success Message */
@@ -336,12 +340,24 @@
   transition: transform 0.3s ease;
 }
 
-.goal-card.calories::before { background: linear-gradient(90deg, #e17055, #d63031); }
-.goal-card.workouts::before { background: linear-gradient(90deg, #00b894, #00cec9); }
-.goal-card.steps::before { background: linear-gradient(90deg, #6c5ce7, #a29bfe); }
-.goal-card.weight::before { background: linear-gradient(90deg, #fd79a8, #fdcb6e); }
-.goal-card.sleep::before { background: linear-gradient(90deg, #a29bfe, #6c5ce7); }
-.goal-card.water::before { background: linear-gradient(90deg, #00cec9, #00b894); }
+.goal-card.calories::before {
+  background: linear-gradient(90deg, #e17055, #d63031);
+}
+.goal-card.workouts::before {
+  background: linear-gradient(90deg, #00b894, #00cec9);
+}
+.goal-card.steps::before {
+  background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+}
+.goal-card.weight::before {
+  background: linear-gradient(90deg, #fd79a8, #fdcb6e);
+}
+.goal-card.sleep::before {
+  background: linear-gradient(90deg, #a29bfe, #6c5ce7);
+}
+.goal-card.water::before {
+  background: linear-gradient(90deg, #00cec9, #00b894);
+}
 
 .goal-card:hover::before {
   transform: scaleX(1);
@@ -464,11 +480,11 @@
   .goals-content {
     padding: 24px;
   }
-  
+
   .goals-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
-  
+
   .tips-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
@@ -478,49 +494,49 @@
   .goals-header {
     padding: 20px 24px;
   }
-  
+
   .header-left {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .goals-title {
     font-size: 1.75rem;
   }
-  
+
   .goals-subtitle {
     font-size: 1rem;
   }
-  
+
   .goals-content {
     padding: 20px;
   }
-  
+
   .goals-form-section {
     padding: 24px;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .goals-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .tips-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .form-actions {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .action-btn {
     width: 100%;
     max-width: 300px;
@@ -531,50 +547,50 @@
   .goals-header {
     padding: 16px 20px;
   }
-  
+
   .goals-title {
     font-size: 1.5rem;
   }
-  
+
   .goals-content {
     padding: 16px;
   }
-  
+
   .goals-form-section {
     padding: 20px;
   }
-  
+
   .form-grid {
     gap: 16px;
   }
-  
+
   .form-input {
     padding: 14px 16px;
     padding-right: 50px;
   }
-  
+
   .input-unit {
     right: 16px;
     font-size: 0.8rem;
   }
-  
+
   .goal-card {
     padding: 16px;
     flex-direction: column;
     text-align: center;
     gap: 12px;
   }
-  
+
   .goal-icon {
     width: 40px;
     height: 40px;
     font-size: 1.5rem;
   }
-  
+
   .tip-card {
     padding: 20px;
   }
-  
+
   .tip-icon {
     font-size: 2rem;
   }

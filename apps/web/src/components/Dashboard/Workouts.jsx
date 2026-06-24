@@ -26,7 +26,7 @@ export default function Workouts() {
     duration: '',
     difficulty: 'medium',
     description: '',
-    exercises: []
+    exercises: [],
   });
 
   const workoutTypes = [
@@ -35,13 +35,13 @@ export default function Workouts() {
     { value: 'flexibility', label: 'Flexibility', icon: '🧘' },
     { value: 'hiit', label: 'HIIT', icon: '⚡' },
     { value: 'yoga', label: 'Yoga', icon: '🧘‍♀️' },
-    { value: 'sports', label: 'Sports', icon: '⚽' }
+    { value: 'sports', label: 'Sports', icon: '⚽' },
   ];
 
   const difficultyLevels = [
     { value: 'beginner', label: 'Beginner', color: '#00b894' },
     { value: 'medium', label: 'Medium', color: '#fdcb6e' },
-    { value: 'advanced', label: 'Advanced', color: '#e17055' }
+    { value: 'advanced', label: 'Advanced', color: '#e17055' },
   ];
 
   const sampleWorkouts = [
@@ -53,7 +53,7 @@ export default function Workouts() {
       difficulty: 'medium',
       description: 'Complete full body workout targeting all major muscle groups',
       exercises: ['Squats', 'Push-ups', 'Rows', 'Lunges', 'Planks'],
-      lastUsed: '2024-01-15'
+      lastUsed: '2024-01-15',
     },
     {
       id: 2,
@@ -63,7 +63,7 @@ export default function Workouts() {
       difficulty: 'advanced',
       description: 'High-intensity interval training for maximum calorie burn',
       exercises: ['Burpees', 'Mountain Climbers', 'Jump Squats', 'High Knees'],
-      lastUsed: '2024-01-14'
+      lastUsed: '2024-01-14',
     },
     {
       id: 3,
@@ -72,9 +72,9 @@ export default function Workouts() {
       duration: 20,
       difficulty: 'beginner',
       description: 'Gentle morning yoga sequence to start your day',
-      exercises: ['Sun Salutation', 'Warrior Poses', 'Tree Pose', 'Child\'s Pose'],
-      lastUsed: '2024-01-13'
-    }
+      exercises: ['Sun Salutation', 'Warrior Poses', 'Tree Pose', "Child's Pose"],
+      lastUsed: '2024-01-13',
+    },
   ];
 
   useEffect(() => {
@@ -87,23 +87,23 @@ export default function Workouts() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const addExercise = () => {
     const exercise = prompt('Enter exercise name:');
     if (exercise && exercise.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        exercises: [...prev.exercises, exercise.trim()]
+        exercises: [...prev.exercises, exercise.trim()],
       }));
     }
   };
 
   const removeExercise = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      exercises: prev.exercises.filter((_, i) => i !== index)
+      exercises: prev.exercises.filter((_, i) => i !== index),
     }));
   };
 
@@ -118,17 +118,17 @@ export default function Workouts() {
     const newWorkout = {
       id: Date.now(),
       ...formData,
-      lastUsed: new Date().toISOString().split('T')[0]
+      lastUsed: new Date().toISOString().split('T')[0],
     };
 
-    setWorkouts(prev => [newWorkout, ...prev]);
+    setWorkouts((prev) => [newWorkout, ...prev]);
     setFormData({
       name: '',
       type: 'strength',
       duration: '',
       difficulty: 'medium',
       description: '',
-      exercises: []
+      exercises: [],
     });
     setShowForm(false);
   };
@@ -140,34 +140,40 @@ export default function Workouts() {
 
   const deleteWorkout = (id) => {
     if (window.confirm('Are you sure you want to delete this workout?')) {
-      setWorkouts(prev => prev.filter(w => w.id !== id));
+      setWorkouts((prev) => prev.filter((w) => w.id !== id));
     }
   };
 
   const getWorkoutTypeIcon = (type) => {
-    return workoutTypes.find(t => t.value === type)?.icon || '💪';
+    return workoutTypes.find((t) => t.value === type)?.icon || '💪';
   };
 
   const getDifficultyColor = (difficulty) => {
-    return difficultyLevels.find(d => d.value === difficulty)?.color || '#fdcb6e';
+    return difficultyLevels.find((d) => d.value === difficulty)?.color || '#fdcb6e';
   };
 
   const getDifficultyBadgeVariant = (difficulty) => {
     switch (difficulty) {
-      case 'beginner': return 'status';
-      case 'medium': return 'meal';
-      case 'advanced': return 'severity';
-      default: return 'meal';
+      case 'beginner':
+        return 'status';
+      case 'medium':
+        return 'meal';
+      case 'advanced':
+        return 'severity';
+      default:
+        return 'meal';
     }
   };
 
-  const avgDuration = workouts.length > 0
-    ? Math.round(workouts.reduce((sum, w) => sum + w.duration, 0) / workouts.length)
-    : 0;
+  const avgDuration =
+    workouts.length > 0
+      ? Math.round(workouts.reduce((sum, w) => sum + w.duration, 0) / workouts.length)
+      : 0;
 
-  const mostUsedType = workouts.length > 0
-    ? workoutTypes.find(t => t.value === workouts[0].type)?.label || 'Strength'
-    : 'None';
+  const mostUsedType =
+    workouts.length > 0
+      ? workoutTypes.find((t) => t.value === workouts[0].type)?.label || 'Strength'
+      : 'None';
 
   if (loading) {
     return (
@@ -198,7 +204,13 @@ export default function Workouts() {
                 variant="ghost"
                 onClick={() => navigate('/dashboard')}
                 icon={
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 }
@@ -247,7 +259,7 @@ export default function Workouts() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 16 }}
                 transition={{ duration: 0.25 }}
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
                 <GlassCard elevated className="!p-6">
@@ -258,8 +270,18 @@ export default function Workouts() {
                       onClick={() => setShowForm(false)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
                     >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -286,7 +308,7 @@ export default function Workouts() {
                           onChange={handleInputChange}
                           className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
-                          {workoutTypes.map(type => (
+                          {workoutTypes.map((type) => (
                             <option key={type.value} value={type.value}>
                               {type.icon} {type.label}
                             </option>
@@ -318,7 +340,7 @@ export default function Workouts() {
                           onChange={handleInputChange}
                           className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
-                          {difficultyLevels.map(level => (
+                          {difficultyLevels.map((level) => (
                             <option key={level.value} value={level.value}>
                               {level.label}
                             </option>
@@ -344,7 +366,11 @@ export default function Workouts() {
                       <label className="text-label text-slate-300">Exercises</label>
                       <div className="flex flex-wrap gap-2">
                         {formData.exercises.map((exercise, index) => (
-                          <Badge key={index} variant="intensity" className="gap-1.5 py-1 pl-3 pr-1.5">
+                          <Badge
+                            key={index}
+                            variant="intensity"
+                            className="gap-1.5 py-1 pl-3 pr-1.5"
+                          >
                             {exercise}
                             <button
                               type="button"
@@ -374,9 +400,7 @@ export default function Workouts() {
                       >
                         Cancel
                       </ActionButton>
-                      <ActionButton type="submit">
-                        Create Workout
-                      </ActionButton>
+                      <ActionButton type="submit">Create Workout</ActionButton>
                     </div>
                   </form>
                 </GlassCard>
@@ -425,7 +449,13 @@ export default function Workouts() {
 }
 
 /* ---------- Workout card with expandable exercises ---------- */
-function WorkoutCard({ workout, getWorkoutTypeIcon, getDifficultyBadgeVariant, startWorkout, deleteWorkout }) {
+function WorkoutCard({
+  workout,
+  getWorkoutTypeIcon,
+  getDifficultyBadgeVariant,
+  startWorkout,
+  deleteWorkout,
+}) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -447,7 +477,9 @@ function WorkoutCard({ workout, getWorkoutTypeIcon, getDifficultyBadgeVariant, s
       <div className="mt-4 flex-1">
         <h3 className="font-semibold text-slate-100">{workout.name}</h3>
         {workout.description && (
-          <p className="mt-1 text-xs leading-relaxed text-slate-400 line-clamp-2">{workout.description}</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-400 line-clamp-2">
+            {workout.description}
+          </p>
         )}
 
         {/* Exercises - expandable */}
@@ -455,7 +487,7 @@ function WorkoutCard({ workout, getWorkoutTypeIcon, getDifficultyBadgeVariant, s
           <div className="mt-3">
             <button
               type="button"
-              onClick={() => setExpanded(prev => !prev)}
+              onClick={() => setExpanded((prev) => !prev)}
               className="flex items-center gap-1.5 text-xs font-medium text-primary-bright transition-colors hover:text-primary"
             >
               <Badge variant="intensity">{workout.exercises.length} exercises</Badge>
@@ -507,8 +539,18 @@ function WorkoutCard({ workout, getWorkoutTypeIcon, getDifficultyBadgeVariant, s
             onClick={() => deleteWorkout(workout.id)}
             className="h-8 rounded-lg px-2.5 text-xs text-slate-400 opacity-0 transition-all hover:bg-error/10 hover:text-error group-hover:opacity-100"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
         </div>

@@ -23,7 +23,10 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
-  .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  .toLowerCase()
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 // MongoDB Connection String - from environment variable
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -38,9 +41,10 @@ if (!MONGODB_URI) {
 // ---------- MongoDB Connection ----------
 console.log('🔵 Connecting to MongoDB Atlas...');
 console.log('🔍 Using connection string:', MONGODB_URI.replace(/\/\/.*@/, '//***:***@')); // Hide password in logs
-mongoose.connect(MONGODB_URI)
+mongoose
+  .connect(MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch(err => {
+  .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
     console.error('\n💡 Troubleshooting:');
     console.error('   1. Verify your MongoDB Atlas password');
@@ -58,7 +62,7 @@ const userSchema = new mongoose.Schema({
   profile: { type: mongoose.Schema.Types.Mixed, default: {} },
   is_admin: { type: Boolean, default: false },
   created_at: { type: Date, default: Date.now },
-  
+
   // Onboarding data
   onboardingCompleted: { type: Boolean, default: false },
   age: { type: Number },
@@ -69,12 +73,12 @@ const userSchema = new mongoose.Schema({
   experienceLevel: { type: String }, // beginner, intermediate, advanced
   workoutDaysPerWeek: { type: Number, default: 3 },
   equipmentAccess: { type: String }, // full_gym, home_gym, no_equipment
-  
+
   // AI Credit System
   aiCreditsRemaining: { type: Number, default: 5 }, // 0-5, resets hourly
   aiDailyCreditsUsed: { type: Number, default: 0 }, // 0-20, resets daily
   aiLastCreditReset: { type: Date, default: Date.now }, // Timestamp of last hourly reset
-  aiDailyResetDate: { type: Date, default: Date.now } // Date of last daily reset
+  aiDailyResetDate: { type: Date, default: Date.now }, // Date of last daily reset
 });
 
 const activitySchema = new mongoose.Schema({
@@ -85,7 +89,7 @@ const activitySchema = new mongoose.Schema({
   intensity: String,
   type: String,
   entry_date: { type: String, required: true, index: true },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
 });
 
 const aiPlanSchema = new mongoose.Schema({
@@ -97,8 +101,8 @@ const aiPlanSchema = new mongoose.Schema({
   applied: { type: Boolean, default: false },
   creditsUsedAtTime: {
     hourly: { type: Number },
-    daily: { type: Number }
-  }
+    daily: { type: Number },
+  },
 });
 
 const foodSchema = new mongoose.Schema({
@@ -115,7 +119,7 @@ const foodSchema = new mongoose.Schema({
   brand: String,
   serving_size: String,
   entry_date: { type: String, required: true, index: true },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
 });
 
 const barcodeCacheSchema = new mongoose.Schema({
@@ -131,7 +135,7 @@ const barcodeCacheSchema = new mongoose.Schema({
   serving_size: String,
   source: { type: String, enum: ['fatsecret', 'openfoodfacts'] },
   fetched_at: { type: Date, default: Date.now },
-  expires_at: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+  expires_at: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
 });
 barcodeCacheSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
 
@@ -142,7 +146,7 @@ const sleepSchema = new mongoose.Schema({
   bedtime: String,
   wake_time: String,
   entry_date: { type: String, required: true, index: true },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
 });
 
 const goalsSchema = new mongoose.Schema({
@@ -153,7 +157,7 @@ const goalsSchema = new mongoose.Schema({
   weekly_weight: Number,
   sleep_hours: Number,
   water_intake: Number,
-  updated_at: { type: Date, default: Date.now }
+  updated_at: { type: Date, default: Date.now },
 });
 
 const workoutSchema = new mongoose.Schema({
@@ -161,14 +165,14 @@ const workoutSchema = new mongoose.Schema({
   name: { type: String, required: true },
   exercises: { type: mongoose.Schema.Types.Mixed, default: [] },
   created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
+  updated_at: { type: Date, default: Date.now },
 });
 
 const waterSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   entry_date: { type: String, required: true, index: true },
   glasses: { type: Number, default: 0 },
-  updated_at: { type: Date, default: Date.now }
+  updated_at: { type: Date, default: Date.now },
 });
 
 // Create indexes
@@ -198,9 +202,14 @@ function calculateMaintenance(profile) {
   const { age, sex, height_cm, weight_kg, activity_level } = profile;
   const s = sex === 'male' ? 5 : -161;
   const bmr = 10 * Number(weight_kg) + 6.25 * Number(height_cm) - 5 * Number(age) + s;
-  const multiplier = {
-    sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, 'very active': 1.9
-  }[activity_level] || 1.2;
+  const multiplier =
+    {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      'very active': 1.9,
+    }[activity_level] || 1.2;
   return Math.round(bmr * multiplier);
 }
 
@@ -235,7 +244,8 @@ function serializeMobileUser(user) {
     targetWeight: profile.targetWeight ?? profile.target_weight ?? null,
     aiCreditsRemaining: remainingCredits,
     dailyAiCreditsUsed: source.aiDailyCreditsUsed ?? 0,
-    hourlyAiCreditsUsed: remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits))
+    hourlyAiCreditsUsed:
+      remainingCredits == null ? null : Math.max(0, 5 - Number(remainingCredits)),
   };
 }
 
@@ -244,7 +254,12 @@ function buildOnboardingProfile(existingProfile, payload) {
   const height = Number(payload.height);
   const weight = Number(payload.weight);
   const targetWeight = payload.targetWeight != null ? Number(payload.targetWeight) : null;
-  const activityLevel = payload.activityLevel || payload.activity_level || profile.activityLevel || profile.activity_level || null;
+  const activityLevel =
+    payload.activityLevel ||
+    payload.activity_level ||
+    profile.activityLevel ||
+    profile.activity_level ||
+    null;
 
   return {
     ...profile,
@@ -259,7 +274,7 @@ function buildOnboardingProfile(existingProfile, payload) {
     activity_level: activityLevel,
     goal: payload.goal,
     targetWeight: targetWeight ?? profile.targetWeight ?? null,
-    target_weight: targetWeight ?? profile.target_weight ?? null
+    target_weight: targetWeight ?? profile.target_weight ?? null,
   };
 }
 
@@ -268,7 +283,7 @@ function checkHourlyReset(user) {
   const now = new Date();
   const lastReset = new Date(user.aiLastCreditReset);
   const hoursSince = (now - lastReset) / (1000 * 60 * 60);
-  
+
   if (hoursSince >= 1) {
     user.aiCreditsRemaining = 5;
     user.aiLastCreditReset = now;
@@ -297,10 +312,10 @@ function getTimeUntilHourlyReset(user) {
   const lastReset = new Date(user.aiLastCreditReset);
   const nextReset = new Date(lastReset.getTime() + 60 * 60 * 1000);
   const diff = nextReset - now;
-  
+
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);
-  
+
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
@@ -312,7 +327,7 @@ function getHoursUntilMidnight() {
   const diff = midnight - now;
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   return `${hours}h ${minutes}m`;
 }
 
@@ -336,29 +351,31 @@ const allowedOrigins = [
   /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/,
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    // Check if origin matches any allowed origin (string or regex)
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (typeof allowed === 'string') {
-        return allowed === origin;
-      } else if (allowed instanceof RegExp) {
-        return allowed.test(origin);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      // Check if origin matches any allowed origin (string or regex)
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (typeof allowed === 'string') {
+          return allowed === origin;
+        } else if (allowed instanceof RegExp) {
+          return allowed.test(origin);
+        }
+        return false;
+      });
+
+      if (isAllowed) {
+        return callback(null, true);
+      } else {
+        return callback(null, false);
       }
-      return false;
-    });
-    
-    if (isAllowed) {
-      return callback(null, true);
-    } else {
-      return callback(null, false);
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 204,
-}));
+    },
+    credentials: true,
+    optionsSuccessStatus: 204,
+  })
+);
 app.use(express.json());
 
 // Health check endpoints
@@ -374,21 +391,21 @@ app.get('/api/health', async (_req, res) => {
       database: {
         status: dbStatus,
         readyState: mongoose.connection.readyState,
-        name: mongoose.connection.name
+        name: mongoose.connection.name,
       },
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
       },
-      version: '1.0.0'
+      version: '1.0.0',
     };
-    
+
     res.status(200).json(healthStatus);
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -401,15 +418,17 @@ app.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Name, email & password required' });
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email format' });
     email = email.toLowerCase();
-    
+
     const existing = await User.findOne({ email });
     if (existing) return res.status(409).json({ message: 'User with this email already exists' });
-    
+
     const hash = await bcrypt.hash(password, 10);
     const makeAdmin = ADMIN_EMAILS.includes(email);
-    
+
     const user = await User.create({ name, email, hash, is_admin: !!makeAdmin });
-    const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!makeAdmin }, SECRET, { expiresIn: '12h' });
+    const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!makeAdmin }, SECRET, {
+      expiresIn: '12h',
+    });
     res.json({ message: 'Signup successful', token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Signup failed', error: err.message });
@@ -419,23 +438,28 @@ app.post('/signup', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     let { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!email || !password)
+      return res.status(400).json({ message: 'Email and password required' });
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email format' });
     email = email.toLowerCase();
-    
+
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-    
+
     const ok = await bcrypt.compare(password, user.hash);
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    
+
     // Auto-promote admin
     if (ADMIN_EMAILS.includes(email) && !user.is_admin) {
       user.is_admin = true;
       await user.save();
     }
-    
-    const token = jwt.sign({ email: user.email, name: user.name, is_admin: !!user.is_admin }, SECRET, { expiresIn: '12h' });
+
+    const token = jwt.sign(
+      { email: user.email, name: user.name, is_admin: !!user.is_admin },
+      SECRET,
+      { expiresIn: '12h' }
+    );
     res.json({ token, user: serializeMobileUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
@@ -445,7 +469,10 @@ app.post('/login', async (req, res) => {
 // ---------- Auth Middleware ----------
 function authenticate(req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'Authorization header missing. Please provide a Bearer token.' });
+  if (!auth)
+    return res
+      .status(401)
+      .json({ message: 'Authorization header missing. Please provide a Bearer token.' });
   const parts = auth.split(' ');
   if (parts.length !== 2 || parts[0] !== 'Bearer') {
     return res.status(401).json({ message: 'Invalid authorization format. Use: Bearer <token>' });
@@ -514,7 +541,11 @@ app.put('/api/profile', authenticate, async (req, res) => {
     if (data.goal) updates.goal = data.goal;
     if (data.activityLevel) {
       const existing = normalizeProfile(user.profile);
-      updates.profile = { ...existing, activityLevel: data.activityLevel, activity_level: data.activityLevel };
+      updates.profile = {
+        ...existing,
+        activityLevel: data.activityLevel,
+        activity_level: data.activityLevel,
+      };
     }
 
     await User.updateOne({ email: req.user.email }, updates);
@@ -529,19 +560,26 @@ app.put('/api/profile', authenticate, async (req, res) => {
 app.post('/api/user/onboarding', authenticate, async (req, res) => {
   try {
     const {
-      age, gender, height, weight, goal,
-      activityLevel, targetWeight,
-      experienceLevel, workoutDaysPerWeek, equipmentAccess
+      age,
+      gender,
+      height,
+      weight,
+      goal,
+      activityLevel,
+      targetWeight,
+      experienceLevel,
+      workoutDaysPerWeek,
+      equipmentAccess,
     } = req.body;
-    
+
     // Validate required fields
     if (!age || !gender || !height || !weight || !goal) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-    
+
     const existingUser = await User.findOne({ email: req.user.email });
     const mergedProfile = buildOnboardingProfile(existingUser?.profile, req.body);
-    
+
     const updateData = {
       onboardingCompleted: true,
       age: parseInt(age),
@@ -552,16 +590,16 @@ app.post('/api/user/onboarding', authenticate, async (req, res) => {
       experienceLevel: experienceLevel || existingUser?.experienceLevel || 'beginner',
       workoutDaysPerWeek: parseInt(workoutDaysPerWeek) || 3,
       equipmentAccess: equipmentAccess || existingUser?.equipmentAccess || 'full_gym',
-      profile: mergedProfile
+      profile: mergedProfile,
     };
-    
+
     await User.updateOne({ email: req.user.email }, updateData);
     const updatedUser = await User.findOne({ email: req.user.email });
-    
-    res.json({ 
+
+    res.json({
       message: 'Onboarding completed successfully!',
       maintenance: calculateMaintenance(mergedProfile),
-      user: serializeMobileUser(updatedUser)
+      user: serializeMobileUser(updatedUser),
     });
   } catch (err) {
     res.status(500).json({ message: 'Error completing onboarding', error: err.message });
@@ -582,11 +620,16 @@ app.post('/api/activities', authenticate, async (req, res) => {
   try {
     const { activity, duration_min, calories, intensity, type } = req.body;
     if (!activity || duration_min == null || calories == null)
-      return res.status(400).json({ message: 'Activity, duration (min), and calories are required' });
-    if (typeof activity !== 'string' || !activity.trim()) return res.status(400).json({ message: 'Invalid activity' });
-    if (isNaN(Number(duration_min)) || Number(duration_min) <= 0) return res.status(400).json({ message: 'Duration must be positive number' });
-    if (isNaN(Number(calories)) || Number(calories) < 0) return res.status(400).json({ message: 'Calories must be non-negative number' });
-    
+      return res
+        .status(400)
+        .json({ message: 'Activity, duration (min), and calories are required' });
+    if (typeof activity !== 'string' || !activity.trim())
+      return res.status(400).json({ message: 'Invalid activity' });
+    if (isNaN(Number(duration_min)) || Number(duration_min) <= 0)
+      return res.status(400).json({ message: 'Duration must be positive number' });
+    if (isNaN(Number(calories)) || Number(calories) < 0)
+      return res.status(400).json({ message: 'Calories must be non-negative number' });
+
     const newActivity = await Activity.create({
       email: req.user.email,
       activity: activity.trim(),
@@ -594,9 +637,9 @@ app.post('/api/activities', authenticate, async (req, res) => {
       calories: Number(calories),
       intensity: intensity || null,
       type: type || null,
-      entry_date: getTodayUTC()
+      entry_date: getTodayUTC(),
     });
-    
+
     res.status(201).json(newActivity);
   } catch (err) {
     res.status(500).json({ message: 'Error logging activity', error: err.message });
@@ -609,13 +652,19 @@ app.put('/api/activities/:id', authenticate, async (req, res) => {
     const { activity, duration_min, calories, intensity, type } = req.body;
     if (!activity || duration_min == null || calories == null)
       return res.status(400).json({ message: 'Activity, duration, and calories are required' });
-    
+
     const updated = await Activity.findOneAndUpdate(
       { _id: id, email: req.user.email },
-      { activity: activity.trim(), duration_min: Number(duration_min), calories: Number(calories), intensity, type },
+      {
+        activity: activity.trim(),
+        duration_min: Number(duration_min),
+        calories: Number(calories),
+        intensity,
+        type,
+      },
       { new: true }
     );
-    
+
     if (!updated) return res.status(404).json({ message: 'Activity not found' });
     res.json(updated);
   } catch (err) {
@@ -646,11 +695,25 @@ app.get('/api/food', authenticate, async (req, res) => {
 
 app.post('/api/food', authenticate, async (req, res) => {
   try {
-    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    const {
+      name,
+      calories,
+      protein,
+      sugar,
+      carbs,
+      fat,
+      mealType,
+      barcode,
+      brand,
+      fiber,
+      servingSize,
+    } = req.body;
     if (!name || calories == null || protein == null)
       return res.status(400).json({ message: 'Name, calories, and protein are required' });
-    if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ message: 'Invalid food name' });
-    if ([calories, protein].some(v => isNaN(Number(v)))) return res.status(400).json({ message: 'Calories and protein must be numbers' });
+    if (typeof name !== 'string' || !name.trim())
+      return res.status(400).json({ message: 'Invalid food name' });
+    if ([calories, protein].some((v) => isNaN(Number(v))))
+      return res.status(400).json({ message: 'Calories and protein must be numbers' });
 
     const newFood = await Food.create({
       email: req.user.email,
@@ -665,7 +728,7 @@ app.post('/api/food', authenticate, async (req, res) => {
       barcode: barcode || null,
       brand: brand || null,
       serving_size: servingSize || null,
-      entry_date: getTodayUTC()
+      entry_date: getTodayUTC(),
     });
 
     res.status(201).json(newFood);
@@ -677,7 +740,19 @@ app.post('/api/food', authenticate, async (req, res) => {
 app.put('/api/food/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, calories, protein, sugar, carbs, fat, mealType, barcode, brand, fiber, servingSize } = req.body;
+    const {
+      name,
+      calories,
+      protein,
+      sugar,
+      carbs,
+      fat,
+      mealType,
+      barcode,
+      brand,
+      fiber,
+      servingSize,
+    } = req.body;
     if (!name || calories == null || protein == null)
       return res.status(400).json({ message: 'Name, calories, and protein are required' });
 
@@ -694,7 +769,7 @@ app.put('/api/food/:id', authenticate, async (req, res) => {
         meal_type: mealType || null,
         barcode: barcode || null,
         brand: brand || null,
-        serving_size: servingSize || null
+        serving_size: servingSize || null,
       },
       { new: true }
     );
@@ -732,18 +807,20 @@ app.post('/api/sleep', authenticate, async (req, res) => {
     const { hours, quality, bedtime, wakeTime } = req.body;
     if (hours == null || !quality)
       return res.status(400).json({ message: 'Hours and quality are required' });
-    if (isNaN(Number(hours)) || Number(hours) < 0) return res.status(400).json({ message: 'Hours must be a non-negative number' });
-    if (typeof quality !== 'string' || !quality.trim()) return res.status(400).json({ message: 'Quality must be a non-empty string' });
-    
+    if (isNaN(Number(hours)) || Number(hours) < 0)
+      return res.status(400).json({ message: 'Hours must be a non-negative number' });
+    if (typeof quality !== 'string' || !quality.trim())
+      return res.status(400).json({ message: 'Quality must be a non-empty string' });
+
     const newSleep = await Sleep.create({
       email: req.user.email,
       hours: Number(hours),
       quality: quality.trim(),
       bedtime: bedtime || null,
       wake_time: wakeTime || null,
-      entry_date: getTodayUTC()
+      entry_date: getTodayUTC(),
     });
-    
+
     res.status(201).json(newSleep);
   } catch (err) {
     res.status(500).json({ message: 'Error logging sleep', error: err.message });
@@ -756,13 +833,18 @@ app.put('/api/sleep/:id', authenticate, async (req, res) => {
     const { hours, quality, bedtime, wakeTime } = req.body;
     if (hours == null || !quality)
       return res.status(400).json({ message: 'Hours and quality are required' });
-    
+
     const updated = await Sleep.findOneAndUpdate(
       { _id: id, email: req.user.email },
-      { hours: Number(hours), quality: quality.trim(), bedtime: bedtime || null, wake_time: wakeTime || null },
+      {
+        hours: Number(hours),
+        quality: quality.trim(),
+        bedtime: bedtime || null,
+        wake_time: wakeTime || null,
+      },
       { new: true }
     );
-    
+
     if (!updated) return res.status(404).json({ message: 'Sleep entry not found' });
     res.json(updated);
   } catch (err) {
@@ -811,11 +893,11 @@ app.post('/api/goals', authenticate, async (req, res) => {
         weekly_weight: weeklyWeight || null,
         sleep_hours: sleepHours || null,
         water_intake: waterIntake || null,
-        updated_at: new Date()
+        updated_at: new Date(),
       },
       { new: true, upsert: true }
     );
-    
+
     res.json({ message: 'Goals saved successfully', goals });
   } catch (err) {
     res.status(500).json({ message: 'Error saving goals', error: err.message });
@@ -836,13 +918,13 @@ app.post('/api/workouts', authenticate, async (req, res) => {
   try {
     const { name, exercises } = req.body;
     if (!name) return res.status(400).json({ message: 'Workout name is required' });
-    
+
     const newWorkout = await Workout.create({
       email: req.user.email,
       name: name.trim(),
-      exercises: exercises || []
+      exercises: exercises || [],
     });
-    
+
     res.status(201).json(newWorkout);
   } catch (err) {
     res.status(500).json({ message: 'Error creating workout', error: err.message });
@@ -854,13 +936,13 @@ app.put('/api/workouts/:id', authenticate, async (req, res) => {
     const { id } = req.params;
     const { name, exercises } = req.body;
     if (!name) return res.status(400).json({ message: 'Workout name is required' });
-    
+
     const updated = await Workout.findOneAndUpdate(
       { _id: id, email: req.user.email },
       { name: name.trim(), exercises: exercises || [], updated_at: new Date() },
       { new: true }
     );
-    
+
     if (!updated) return res.status(404).json({ message: 'Workout not found' });
     res.json(updated);
   } catch (err) {
@@ -884,19 +966,19 @@ app.get('/api/recent', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     const [activities, foods, sleeps] = await Promise.all([
       Activity.find({ email, entry_date: today }).sort({ _id: -1 }),
       Food.find({ email, entry_date: today }).sort({ _id: -1 }),
-      Sleep.find({ email, entry_date: today }).sort({ _id: -1 })
+      Sleep.find({ email, entry_date: today }).sort({ _id: -1 }),
     ]);
-    
+
     let logs = [
-      ...activities.map(r => ({ ...r.toObject(), type: 'activity', entry_time: r.created_at })),
-      ...foods.map(r => ({ ...r.toObject(), type: 'food', entry_time: r.created_at })),
-      ...sleeps.map(r => ({ ...r.toObject(), type: 'sleep', entry_time: r.created_at }))
+      ...activities.map((r) => ({ ...r.toObject(), type: 'activity', entry_time: r.created_at })),
+      ...foods.map((r) => ({ ...r.toObject(), type: 'food', entry_time: r.created_at })),
+      ...sleeps.map((r) => ({ ...r.toObject(), type: 'sleep', entry_time: r.created_at })),
     ];
-    
+
     logs.sort((a, b) => new Date(b.entry_time) - new Date(a.entry_time));
     res.json(logs);
   } catch (err) {
@@ -909,30 +991,30 @@ app.post('/api/reset-today', authenticate, async (req, res) => {
   try {
     const email = req.user.email;
     const today = getTodayUTC();
-    
+
     const [acts, foods, sleeps] = await Promise.all([
       Activity.find({ email, entry_date: today }),
       Food.find({ email, entry_date: today }),
-      Sleep.find({ email, entry_date: today })
+      Sleep.find({ email, entry_date: today }),
     ]);
-    
+
     await Promise.all([
       Activity.deleteMany({ email, entry_date: today }),
       Food.deleteMany({ email, entry_date: today }),
-      Sleep.deleteMany({ email, entry_date: today })
+      Sleep.deleteMany({ email, entry_date: today }),
     ]);
-    
+
     res.json({
-      message: 'Today\'s logs deleted',
+      message: "Today's logs deleted",
       removed: {
         activities: acts,
         food: foods,
-        sleep: sleeps
+        sleep: sleeps,
       },
-      counts: { activities: acts.length, food: foods.length, sleep: sleeps.length }
+      counts: { activities: acts.length, food: foods.length, sleep: sleeps.length },
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error resetting today\'s logs', error: err.message });
+    res.status(500).json({ message: "Error resetting today's logs", error: err.message });
   }
 });
 
@@ -950,13 +1032,13 @@ app.get('/api/admin/user/:email/entries', authenticate, requireAdmin, async (req
   try {
     let email = String(req.params.email || '').toLowerCase();
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email' });
-    
+
     const [activities, food, sleep] = await Promise.all([
       Activity.find({ email }).sort({ _id: -1 }),
       Food.find({ email }).sort({ _id: -1 }),
-      Sleep.find({ email }).sort({ _id: -1 })
+      Sleep.find({ email }).sort({ _id: -1 }),
     ]);
-    
+
     res.json({ activities, food, sleep });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching user entries', error: err.message });
@@ -968,16 +1050,16 @@ app.post('/api/admin/user/:email/reset-today', authenticate, requireAdmin, async
     let email = String(req.params.email || '').toLowerCase();
     if (!validateEmail(email)) return res.status(400).json({ message: 'Invalid email' });
     const today = getTodayUTC();
-    
+
     const [a, f, s] = await Promise.all([
       Activity.deleteMany({ email, entry_date: today }),
       Food.deleteMany({ email, entry_date: today }),
-      Sleep.deleteMany({ email, entry_date: today })
+      Sleep.deleteMany({ email, entry_date: today }),
     ]);
-    
-    res.json({ 
-      message: 'User today reset', 
-      counts: { activities: a.deletedCount, food: f.deletedCount, sleep: s.deletedCount } 
+
+    res.json({
+      message: 'User today reset',
+      counts: { activities: a.deletedCount, food: f.deletedCount, sleep: s.deletedCount },
     });
   } catch (err) {
     res.status(500).json({ message: 'Error resetting user today', error: err.message });
@@ -1011,14 +1093,22 @@ app.post('/api/change-password', authenticate, async (req, res) => {
 app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
   try {
     const today = getTodayUTC();
-    const [totalUsers, todayActivities, todayFood, todaySleep, totalActivities, totalFood, totalSleep] = await Promise.all([
+    const [
+      totalUsers,
+      todayActivities,
+      todayFood,
+      todaySleep,
+      totalActivities,
+      totalFood,
+      totalSleep,
+    ] = await Promise.all([
       User.countDocuments(),
       Activity.distinct('email', { entry_date: today }),
       Food.distinct('email', { entry_date: today }),
       Sleep.distinct('email', { entry_date: today }),
       Activity.countDocuments(),
       Food.countDocuments(),
-      Sleep.countDocuments()
+      Sleep.countDocuments(),
     ]);
 
     const activeEmails = new Set([...todayActivities, ...todayFood, ...todaySleep]);
@@ -1027,7 +1117,7 @@ app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
       totalUsers,
       activeToday: activeEmails.size,
       totalEntries: totalActivities + totalFood + totalSleep,
-      breakdown: { activities: totalActivities, food: totalFood, sleep: totalSleep }
+      breakdown: { activities: totalActivities, food: totalFood, sleep: totalSleep },
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching admin stats', error: err.message });
@@ -1060,21 +1150,23 @@ app.get('/api/dashboard/weekly', authenticate, async (req, res) => {
     const [foodAgg, actAgg] = await Promise.all([
       Food.aggregate([
         { $match: { email, entry_date: { $in: days } } },
-        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } },
       ]),
       Activity.aggregate([
         { $match: { email, entry_date: { $in: days } } },
-        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } }
-      ])
+        { $group: { _id: '$entry_date', total: { $sum: '$calories' } } },
+      ]),
     ]);
-    const consumedByDay = Object.fromEntries(foodAgg.map(r => [r._id, r.total]));
-    const burnedByDay = Object.fromEntries(actAgg.map(r => [r._id, r.total]));
-    res.json(days.map(date => ({
-      date,
-      label: weekdayLabel(date),
-      consumed: consumedByDay[date] || 0,
-      burned: burnedByDay[date] || 0
-    })));
+    const consumedByDay = Object.fromEntries(foodAgg.map((r) => [r._id, r.total]));
+    const burnedByDay = Object.fromEntries(actAgg.map((r) => [r._id, r.total]));
+    res.json(
+      days.map((date) => ({
+        date,
+        label: weekdayLabel(date),
+        consumed: consumedByDay[date] || 0,
+        burned: burnedByDay[date] || 0,
+      }))
+    );
   } catch (err) {
     res.status(500).json({ message: 'Error fetching weekly dashboard', error: err.message });
   }
@@ -1102,7 +1194,10 @@ app.post('/api/water', authenticate, async (req, res) => {
         { $inc: { glasses: Number(delta) || 0 }, $set: { updated_at: new Date() } },
         { new: true, upsert: true }
       );
-      if (doc.glasses < 0) { doc.glasses = 0; await doc.save(); }
+      if (doc.glasses < 0) {
+        doc.glasses = 0;
+        await doc.save();
+      }
     } else {
       const g = Math.max(0, Math.round(Number(glasses) || 0));
       doc = await Water.findOneAndUpdate(
@@ -1126,32 +1221,36 @@ app.get('/api/dashboard-data', authenticate, async (req, res) => {
       Activity.find({ email, entry_date: today }),
       Food.find({ email, entry_date: today }),
       Sleep.find({ email, entry_date: today }),
-      User.findOne({ email })
+      User.findOne({ email }),
     ]);
-    
+
     const totalBurned = activities.reduce((sum, r) => sum + Number(r.calories), 0);
     const workoutCount = activities.length;
     const totalConsumed = food.reduce((sum, r) => sum + Number(r.calories), 0);
     const totalSleepHours = sleep.reduce((sum, r) => sum + Number(r.hours), 0);
     const maintenance = calculateMaintenance(user?.profile || null);
-    
+
     const cards = [
       { label: 'Total Workouts', value: workoutCount, route: '/dashboard/activities' },
       { label: 'Calories Burned', value: `${totalBurned} kcal`, route: '/dashboard/activities' },
       { label: 'Calories Consumed', value: `${totalConsumed} kcal`, route: '/dashboard/food' },
-      { label: 'Sleep (hrs)', value: `${totalSleepHours}`, route: '/dashboard/sleep' }
+      { label: 'Sleep (hrs)', value: `${totalSleepHours}`, route: '/dashboard/sleep' },
     ];
-    
+
     if (req.user?.is_admin) {
       cards.unshift({ label: 'Admin', value: 'Open', route: '/dashboard/admin' });
     }
-    
+
     if (maintenance) {
       const net = totalConsumed - totalBurned - maintenance;
-      cards.push({ label: 'Maintenance (est.)', value: `${maintenance} kcal`, route: '/dashboard/profile' });
+      cards.push({
+        label: 'Maintenance (est.)',
+        value: `${maintenance} kcal`,
+        route: '/dashboard/profile',
+      });
       cards.push({ label: 'Net vs. Maint.', value: `${net} kcal`, route: '/dashboard/food' });
     }
-    
+
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching dashboard data', error: err.message });
@@ -1181,12 +1280,8 @@ app.get('/api/admin/ai-errors', authenticate, requireAdmin, async (req, res) => 
     if (typeof errorType === 'string') filter.errorType = errorType;
 
     const [errors, total] = await Promise.all([
-      AIError.find(filter)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      AIError.countDocuments(filter)
+      AIError.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).lean(),
+      AIError.countDocuments(filter),
     ]);
 
     res.json({
@@ -1195,8 +1290,8 @@ app.get('/api/admin/ai-errors', authenticate, requireAdmin, async (req, res) => 
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching AI errors', error: err.message });
@@ -1229,9 +1324,9 @@ app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (re
     const { status, adminNotes } = req.body;
     const AIErrorLogger = require('./utils/errorLogger');
     const error = await AIErrorLogger.updateErrorStatus(
-      req.params.id, 
-      status, 
-      adminNotes, 
+      req.params.id,
+      status,
+      adminNotes,
       req.user.email
     );
     if (!error) return res.status(404).json({ message: 'Error not found' });
@@ -1279,26 +1374,26 @@ app.get('/api/ai/credits', authenticate, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     // Check and reset credits if needed
     checkHourlyReset(user);
     checkDailyReset(user);
     await user.save();
-    
+
     const timeUntilHourlyReset = getTimeUntilHourlyReset(user);
     const hoursUntilMidnight = getHoursUntilMidnight();
-    
+
     res.json({
       hourly: {
         remaining: user.aiCreditsRemaining,
         limit: 5,
-        resetTime: timeUntilHourlyReset
+        resetTime: timeUntilHourlyReset,
       },
       daily: {
         used: user.aiDailyCreditsUsed,
         limit: 20,
-        resetTime: hoursUntilMidnight
-      }
+        resetTime: hoursUntilMidnight,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching AI credits', error: err.message });
@@ -1310,5 +1405,7 @@ const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
 app.listen(PORT, HOST, () => {
   console.log(`🟢 Server running on http://localhost:${PORT}`);
-  console.log(`📱 Mobile access: http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_LOCAL_IP'}:${PORT}`);
+  console.log(
+    `📱 Mobile access: http://${require('os').networkInterfaces()['en0']?.[0]?.address || 'YOUR_LOCAL_IP'}:${PORT}`
+  );
 });

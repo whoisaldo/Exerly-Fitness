@@ -11,34 +11,38 @@ export default function LandingPage() {
     users: 0,
     activities: 0,
     meals: 0,
-    hours: 0
+    hours: 0,
   });
 
   const features = [
     {
       icon: '\uD83C\uDFAF',
       title: 'Smart Activity Tracking',
-      description: 'Track workouts, runs, and daily activities with intelligent categorization and intensity monitoring.',
-      image: '\uD83C\uDFC3\u200D\u2642\uFE0F'
+      description:
+        'Track workouts, runs, and daily activities with intelligent categorization and intensity monitoring.',
+      image: '\uD83C\uDFC3\u200D\u2642\uFE0F',
     },
     {
       icon: '\uD83C\uDF4E',
       title: 'Nutrition Management',
-      description: 'Log meals with detailed macro tracking including protein, carbs, fat, and sugar monitoring.',
-      image: '\uD83D\uDCCA'
+      description:
+        'Log meals with detailed macro tracking including protein, carbs, fat, and sugar monitoring.',
+      image: '\uD83D\uDCCA',
     },
     {
       icon: '\uD83D\uDE34',
       title: 'Sleep Analytics',
-      description: 'Monitor sleep patterns with bedtime and wake time tracking for optimal recovery.',
-      image: '\uD83C\uDF19'
+      description:
+        'Monitor sleep patterns with bedtime and wake time tracking for optimal recovery.',
+      image: '\uD83C\uDF19',
     },
     {
       icon: '\uD83D\uDCC8',
       title: 'Progress Dashboard',
-      description: 'Comprehensive analytics with goal tracking, progress charts, and personalized insights.',
-      image: '\uD83D\uDCCA'
-    }
+      description:
+        'Comprehensive analytics with goal tracking, progress charts, and personalized insights.',
+      image: '\uD83D\uDCCA',
+    },
   ];
 
   const techStack = [
@@ -47,25 +51,25 @@ export default function LandingPage() {
     { name: 'MongoDB', icon: '\uD83C\uDF43', description: 'NoSQL Database' },
     { name: 'Express.js', icon: '\uD83D\uDE80', description: 'Web Framework' },
     { name: 'JWT Auth', icon: '\uD83D\uDD10', description: 'Secure Authentication' },
-    { name: 'RESTful API', icon: '\uD83C\uDF10', description: 'Scalable Architecture' }
+    { name: 'RESTful API', icon: '\uD83C\uDF10', description: 'Scalable Architecture' },
   ];
 
   const testimonials = [
     {
-      text: "Exerly has transformed how I track my fitness journey. The interface is intuitive and the analytics are incredibly detailed.",
-      author: "Sarah Chen",
-      role: "Fitness Enthusiast"
+      text: 'Exerly has transformed how I track my fitness journey. The interface is intuitive and the analytics are incredibly detailed.',
+      author: 'Sarah Chen',
+      role: 'Fitness Enthusiast',
     },
     {
-      text: "The macro tracking feature is exactly what I needed for my nutrition goals. Clean, simple, and effective.",
-      author: "Mike Rodriguez",
-      role: "Health Coach"
+      text: 'The macro tracking feature is exactly what I needed for my nutrition goals. Clean, simple, and effective.',
+      author: 'Mike Rodriguez',
+      role: 'Health Coach',
     },
     {
       text: "As a developer, I'm impressed by the clean codebase and modern tech stack. Great work!",
-      author: "Alex Thompson",
-      role: "Full-Stack Developer"
-    }
+      author: 'Alex Thompson',
+      role: 'Full-Stack Developer',
+    },
   ];
 
   // Animate stats on load
@@ -86,7 +90,7 @@ export default function LandingPage() {
           users: Math.floor(targets.users * easeOut),
           activities: Math.floor(targets.activities * easeOut),
           meals: Math.floor(targets.meals * easeOut),
-          hours: Math.floor(targets.hours * easeOut)
+          hours: Math.floor(targets.hours * easeOut),
         });
 
         if (step >= steps) {
@@ -181,15 +185,24 @@ export default function LandingPage() {
                 with Smart Analytics
               </h1>
               <p className="text-lg text-slate-400 leading-relaxed mb-8 max-w-xl">
-                Track activities, monitor nutrition, analyze sleep patterns, and achieve your goals with
-                Exerly's comprehensive fitness management platform built with cutting-edge technology.
+                Track activities, monitor nutrition, analyze sleep patterns, and achieve your goals
+                with Exerly's comprehensive fitness management platform built with cutting-edge
+                technology.
               </p>
               <div className="flex flex-wrap gap-4">
-                <ActionButton variant="primary" onClick={() => navigate('/login')} className="min-h-11 px-7 text-base">
+                <ActionButton
+                  variant="primary"
+                  onClick={() => navigate('/login')}
+                  className="min-h-11 px-7 text-base"
+                >
                   Get Started
                   <span className="ml-1">&rarr;</span>
                 </ActionButton>
-                <ActionButton variant="secondary" onClick={() => navigate('/credits')} className="min-h-11 px-7 text-base">
+                <ActionButton
+                  variant="secondary"
+                  onClick={() => navigate('/credits')}
+                  className="min-h-11 px-7 text-base"
+                >
                   See Demo
                 </ActionButton>
               </div>
@@ -325,7 +338,9 @@ export default function LandingPage() {
               >
                 <GlassCard elevated className="rounded-2xl">
                   <div className="flex items-center justify-between mb-5">
-                    <span className="text-sm font-medium text-white">{features[currentFeature].title}</span>
+                    <span className="text-sm font-medium text-white">
+                      {features[currentFeature].title}
+                    </span>
                     <span className="text-2xl">{features[currentFeature].image}</span>
                   </div>
                   <div className="space-y-3">
@@ -334,10 +349,16 @@ export default function LandingPage() {
                       { lbl: 'Weekly Goal', val: '6/7 days' },
                       { lbl: 'Trend', val: '+12%', accent: true },
                     ].map((row) => (
-                      <div key={row.lbl} className="flex items-center justify-between py-2.5 border-b border-border-subtle last:border-0">
+                      <div
+                        key={row.lbl}
+                        className="flex items-center justify-between py-2.5 border-b border-border-subtle last:border-0"
+                      >
                         <span className="text-sm text-slate-400">{row.lbl}</span>
-                        <span className={`text-sm font-semibold ${row.accent ? 'text-success' : 'text-white'}`}>
-                          {row.accent && '\u2197 '}{row.val}
+                        <span
+                          className={`text-sm font-semibold ${row.accent ? 'text-success' : 'text-white'}`}
+                        >
+                          {row.accent && '\u2197 '}
+                          {row.val}
                         </span>
                       </div>
                     ))}
@@ -425,11 +446,19 @@ export default function LandingPage() {
               Join thousands of users who are already achieving their health goals with Exerly.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <ActionButton variant="primary" onClick={() => navigate('/login')} className="min-h-12 px-8 text-base">
+              <ActionButton
+                variant="primary"
+                onClick={() => navigate('/login')}
+                className="min-h-12 px-8 text-base"
+              >
                 Get Started Free
                 <span className="ml-1">🚀</span>
               </ActionButton>
-              <ActionButton variant="secondary" onClick={() => navigate('/credits')} className="min-h-12 px-8 text-base">
+              <ActionButton
+                variant="secondary"
+                onClick={() => navigate('/credits')}
+                className="min-h-12 px-8 text-base"
+              >
                 Learn More
               </ActionButton>
             </div>
@@ -453,20 +482,58 @@ export default function LandingPage() {
             </div>
             {/* Product links */}
             <div>
-              <h4 className="text-label text-slate-400 font-semibold uppercase tracking-wider mb-3">Product</h4>
+              <h4 className="text-label text-slate-400 font-semibold uppercase tracking-wider mb-3">
+                Product
+              </h4>
               <div className="flex flex-col gap-2">
-                <button onClick={() => navigate('/login')} className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer">Try Demo</button>
-                <button onClick={() => navigate('/login')} className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer">Login</button>
-                <button onClick={() => navigate('/credits')} className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer">About</button>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer"
+                >
+                  Try Demo
+                </button>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => navigate('/credits')}
+                  className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer"
+                >
+                  About
+                </button>
               </div>
             </div>
             {/* Resources links */}
             <div>
-              <h4 className="text-label text-slate-400 font-semibold uppercase tracking-wider mb-3">Resources</h4>
+              <h4 className="text-label text-slate-400 font-semibold uppercase tracking-wider mb-3">
+                Resources
+              </h4>
               <div className="flex flex-col gap-2">
-                <a href="https://github.com/whoisaldo/Exerly-Fitness" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition-colors">GitHub</a>
-                <a href="https://www.linkedin.com/in/alialdoyounes/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition-colors">LinkedIn</a>
-                <button onClick={() => navigate('/status-check')} className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer">Status</button>
+                <a
+                  href="https://github.com/whoisaldo/Exerly-Fitness"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-500 hover:text-white transition-colors"
+                >
+                  GitHub
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/alialdoyounes/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-500 hover:text-white transition-colors"
+                >
+                  LinkedIn
+                </a>
+                <button
+                  onClick={() => navigate('/status-check')}
+                  className="text-sm text-slate-500 hover:text-white transition-colors text-left min-h-0 p-0 bg-transparent border-none cursor-pointer"
+                >
+                  Status
+                </button>
               </div>
             </div>
           </div>

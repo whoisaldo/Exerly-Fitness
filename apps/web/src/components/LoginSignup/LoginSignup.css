@@ -27,7 +27,13 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
   min-height: 100vh;
   overflow-x: hidden;
@@ -113,8 +119,13 @@ body {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
 }
 
 /* Main Card */
@@ -162,8 +173,12 @@ body {
 }
 
 @keyframes logoGlow {
-  from { filter: drop-shadow(0 4px 12px rgba(108, 92, 231, 0.3)); }
-  to { filter: drop-shadow(0 4px 20px rgba(108, 92, 231, 0.6)); }
+  from {
+    filter: drop-shadow(0 4px 12px rgba(108, 92, 231, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 4px 20px rgba(108, 92, 231, 0.6));
+  }
 }
 
 .brand-name {
@@ -365,8 +380,12 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 /* Switch Mode */
@@ -431,19 +450,19 @@ body {
     padding: 32px 24px;
     margin: 20px;
   }
-  
+
   .brand-name {
     font-size: 2rem;
   }
-  
+
   .form-title {
     font-size: 1.5rem;
   }
-  
+
   .input-group {
     padding: 14px 16px;
   }
-  
+
   .submit-btn {
     padding: 14px 20px;
   }
@@ -453,15 +472,15 @@ body {
   .auth-container {
     padding: 16px;
   }
-  
+
   .auth-card {
     padding: 24px 20px;
   }
-  
+
   .brand-name {
     font-size: 1.75rem;
   }
-  
+
   .form-title {
     font-size: 1.25rem;
   }

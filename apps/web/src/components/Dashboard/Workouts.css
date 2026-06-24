@@ -687,8 +687,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */
@@ -696,7 +700,7 @@
   .workouts-content {
     padding: 24px;
   }
-  
+
   .workouts-grid {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
@@ -709,51 +713,51 @@
     gap: 20px;
     align-items: stretch;
   }
-  
+
   .header-left {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .workouts-title {
     font-size: 1.75rem;
   }
-  
+
   .workouts-subtitle {
     font-size: 1rem;
   }
-  
+
   .workouts-content {
     padding: 20px;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .workouts-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .form-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .workout-footer {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .workout-actions {
     justify-content: center;
   }
@@ -763,44 +767,44 @@
   .workouts-header {
     padding: 16px 20px;
   }
-  
+
   .workouts-title {
     font-size: 1.5rem;
   }
-  
+
   .workouts-content {
     padding: 16px;
   }
-  
+
   .modal-content {
     margin: 10px;
     max-height: 95vh;
   }
-  
+
   .modal-header {
     padding: 20px 20px 0;
   }
-  
+
   .workout-form {
     padding: 0 20px 20px;
   }
-  
+
   .workout-card {
     padding: 20px;
   }
-  
+
   .workout-header {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
   }
-  
+
   .workout-meta {
     flex-direction: row;
     align-items: center;
     gap: 12px;
   }
-  
+
   .workout-type-icon {
     width: 50px;
     height: 50px;

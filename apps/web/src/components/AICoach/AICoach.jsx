@@ -11,7 +11,7 @@ const AICoach = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [credits, setCredits] = useState({
     hourly: { remaining: 5, limit: 5, resetTime: '0:00' },
-    daily: { used: 0, limit: 20, resetTime: '0h 0m' }
+    daily: { used: 0, limit: 20, resetTime: '0h 0m' },
   });
   const [savedPlans, setSavedPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +62,7 @@ const AICoach = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/profile`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -78,7 +78,7 @@ const AICoach = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/credits`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -94,7 +94,7 @@ const AICoach = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/plans`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -123,9 +123,9 @@ const AICoach = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -145,10 +145,10 @@ const AICoach = () => {
       const data = await response.json();
 
       // Update credits
-      setCredits(prev => ({
+      setCredits((prev) => ({
         ...prev,
         hourly: { ...prev.hourly, remaining: data.creditsRemaining },
-        daily: { ...prev.daily, used: data.dailyUsed }
+        daily: { ...prev.daily, used: data.dailyUsed },
       }));
 
       // Refresh saved plans
@@ -156,7 +156,6 @@ const AICoach = () => {
 
       // Show the response in a modal (React state instead of DOM manipulation)
       showAIResponse(data.response, type);
-
     } catch (error) {
       console.error('Error with quick action:', error);
       alert('Error getting AI response. Please try again.');
@@ -178,7 +177,7 @@ const AICoach = () => {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch (error) {
       return 'Invalid Date';
@@ -190,7 +189,7 @@ const AICoach = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -212,7 +211,7 @@ const AICoach = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/api/ai/plans/${planId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -229,21 +228,31 @@ const AICoach = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'workout_plan': return '🏋️';
-      case 'nutrition_advice': return '🍎';
-      case 'progress_analysis': return '📊';
-      case 'custom_question': return '💬';
-      default: return '📋';
+      case 'workout_plan':
+        return '🏋️';
+      case 'nutrition_advice':
+        return '🍎';
+      case 'progress_analysis':
+        return '📊';
+      case 'custom_question':
+        return '💬';
+      default:
+        return '📋';
     }
   };
 
   const getTypeTitle = (type) => {
     switch (type) {
-      case 'workout_plan': return 'Workout Plan';
-      case 'nutrition_advice': return 'Nutrition Advice';
-      case 'progress_analysis': return 'Progress Analysis';
-      case 'custom_question': return 'Custom Question';
-      default: return 'AI Plan';
+      case 'workout_plan':
+        return 'Workout Plan';
+      case 'nutrition_advice':
+        return 'Nutrition Advice';
+      case 'progress_analysis':
+        return 'Progress Analysis';
+      case 'custom_question':
+        return 'Custom Question';
+      default:
+        return 'AI Plan';
     }
   };
 
@@ -294,11 +303,11 @@ const AICoach = () => {
   };
 
   const exampleQuestions = [
-    "How can I improve my squat form?",
-    "What should I eat before a workout?",
-    "How often should I rest between sets?",
+    'How can I improve my squat form?',
+    'What should I eat before a workout?',
+    'How often should I rest between sets?',
     "What's the best way to build muscle?",
-    "How can I stay motivated to work out?"
+    'How can I stay motivated to work out?',
   ];
 
   const quickActions = [
@@ -322,7 +331,7 @@ const AICoach = () => {
       title: 'Progress Analysis',
       description: 'Analyze your fitness progress and trends',
       gradient: 'from-warning/20 to-warning/5',
-    }
+    },
   ];
 
   return (
@@ -334,7 +343,13 @@ const AICoach = () => {
             onClick={() => navigate('/dashboard')}
             className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 h-11 px-3 -ml-3 rounded-xl"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             Back to Dashboard
@@ -350,9 +365,14 @@ const AICoach = () => {
           {/* Left Sidebar */}
           <div className="w-full lg:w-80 shrink-0 space-y-6">
             {/* Credit Badge */}
-            <GlassCard elevated className={`p-5 border ${statusBorderMap[creditStatus]} ${statusBgMap[creditStatus]}`}>
+            <GlassCard
+              elevated
+              className={`p-5 border ${statusBorderMap[creditStatus]} ${statusBgMap[creditStatus]}`}
+            >
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-sm`}>
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-sm`}
+                >
                   <span className="text-lg">💬</span>
                 </div>
                 <div>
@@ -371,7 +391,11 @@ const AICoach = () => {
                 <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      creditStatus === 'good' ? 'bg-success' : creditStatus === 'warning' ? 'bg-warning' : 'bg-error'
+                      creditStatus === 'good'
+                        ? 'bg-success'
+                        : creditStatus === 'warning'
+                          ? 'bg-warning'
+                          : 'bg-error'
                     }`}
                     style={{ width: `${(credits.hourly.remaining / 5) * 100}%` }}
                   />
@@ -391,8 +415,18 @@ const AICoach = () => {
                 {credits.hourly.remaining === 0 && (
                   <div className="mt-2 pt-3 border-t border-border-subtle">
                     <div className="flex items-center gap-2 text-warning text-xs">
-                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-3.5 h-3.5 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span>Resets in {timeLeft}</span>
                     </div>
@@ -402,7 +436,9 @@ const AICoach = () => {
                 {credits.daily.used >= 20 && (
                   <div className="mt-2 pt-3 border-t border-border-subtle text-center">
                     <p className="text-error text-xs font-medium">Daily limit reached</p>
-                    <p className="text-white/30 text-xs mt-1">Resets at {credits.daily.resetTime}</p>
+                    <p className="text-white/30 text-xs mt-1">
+                      Resets at {credits.daily.resetTime}
+                    </p>
                   </div>
                 )}
               </div>
@@ -423,14 +459,18 @@ const AICoach = () => {
                     onClick={() => handleQuickAction(action.id)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shrink-0`}>
+                      <div
+                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shrink-0`}
+                      >
                         <span className="text-lg">{action.icon}</span>
                       </div>
                       <div className="text-left min-w-0">
                         <h4 className="text-white text-sm font-medium group-hover:text-primary-bright transition-colors">
                           {action.title}
                         </h4>
-                        <p className="text-white/40 text-xs mt-0.5 leading-relaxed">{action.description}</p>
+                        <p className="text-white/40 text-xs mt-0.5 leading-relaxed">
+                          {action.description}
+                        </p>
                       </div>
                     </div>
                     {isLoading && (
@@ -453,8 +493,18 @@ const AICoach = () => {
                   <GlassCard className="p-5">
                     <EmptyState
                       icon={
-                        <svg className="w-8 h-8 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          className="w-8 h-8 text-white/20"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
                       }
                       title="No saved plans yet"
@@ -477,13 +527,17 @@ const AICoach = () => {
                               {getTypeTitle(plan.type)}
                             </h4>
                             {plan.applied && (
-                              <Badge variant="status" className="text-[10px] shrink-0">Applied</Badge>
+                              <Badge variant="status" className="text-[10px] shrink-0">
+                                Applied
+                              </Badge>
                             )}
                           </div>
                           <p className="text-white/30 text-xs leading-relaxed line-clamp-2">
                             {plan.response?.substring(0, 100)}...
                           </p>
-                          <p className="text-white/20 text-[10px] mt-1.5">{formatDate(plan.createdAt)}</p>
+                          <p className="text-white/20 text-[10px] mt-1.5">
+                            {formatDate(plan.createdAt)}
+                          </p>
                         </div>
                       </div>
                     </GlassCard>
@@ -530,8 +584,18 @@ const AICoach = () => {
                       variant="primary"
                       loading={isLoading}
                       icon={
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
                         </svg>
                       }
                     >
@@ -586,9 +650,7 @@ const AICoach = () => {
                           </h4>
                           <p className="text-white/30 text-xs">{formatDate(plan.createdAt)}</p>
                         </div>
-                        {plan.applied && (
-                          <Badge variant="status">Applied</Badge>
-                        )}
+                        {plan.applied && <Badge variant="status">Applied</Badge>}
                       </div>
                       <p className="text-white/40 text-sm leading-relaxed line-clamp-3">
                         {plan.response?.substring(0, 200)}...
@@ -623,14 +685,27 @@ const AICoach = () => {
                   {/* Modal Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle shrink-0">
                     <h3 className="text-white font-semibold">
-                      AI {responseModal.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      AI{' '}
+                      {responseModal.type
+                        .replace('_', ' ')
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </h3>
                     <button
                       onClick={() => setResponseModal({ open: false, content: '', type: '' })}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -681,20 +756,32 @@ const AICoach = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{getTypeIcon(planModal.plan.type)}</span>
                       <div>
-                        <h3 className="text-white font-semibold">{getTypeTitle(planModal.plan.type)}</h3>
-                        <p className="text-white/30 text-xs mt-0.5">{formatDate(planModal.plan.createdAt)}</p>
+                        <h3 className="text-white font-semibold">
+                          {getTypeTitle(planModal.plan.type)}
+                        </h3>
+                        <p className="text-white/30 text-xs mt-0.5">
+                          {formatDate(planModal.plan.createdAt)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {planModal.plan.applied && (
-                        <Badge variant="status">Applied</Badge>
-                      )}
+                      {planModal.plan.applied && <Badge variant="status">Applied</Badge>}
                       <button
                         onClick={() => setPlanModal({ open: false, plan: null })}
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
                       >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -704,7 +791,9 @@ const AICoach = () => {
                   <div className="px-6 py-5 overflow-y-auto flex-1">
                     <div className="text-white/80 text-sm leading-relaxed">
                       {planModal.plan.response.split('\n').map((line, index) => (
-                        <p key={index} className={line.trim() === '' ? 'h-3' : 'mb-1.5'}>{line}</p>
+                        <p key={index} className={line.trim() === '' ? 'h-3' : 'mb-1.5'}>
+                          {line}
+                        </p>
                       ))}
                     </div>
                   </div>

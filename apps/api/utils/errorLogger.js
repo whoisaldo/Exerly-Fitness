@@ -4,10 +4,17 @@ const aiErrorSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   userId: { type: String, required: true, index: true },
   sessionId: { type: String, required: true, index: true },
-  errorType: { 
-    type: String, 
+  errorType: {
+    type: String,
     required: true,
-    enum: ['API_ERROR', 'RATE_LIMIT', 'VALIDATION_ERROR', 'NETWORK_ERROR', 'AI_MODEL_ERROR', 'UNKNOWN_ERROR']
+    enum: [
+      'API_ERROR',
+      'RATE_LIMIT',
+      'VALIDATION_ERROR',
+      'NETWORK_ERROR',
+      'AI_MODEL_ERROR',
+      'UNKNOWN_ERROR',
+    ],
   },
   errorCode: { type: String, required: true },
   errorMessage: { type: String, required: true },
@@ -17,21 +24,21 @@ const aiErrorSchema = new mongoose.Schema({
   requestData: { type: mongoose.Schema.Types.Mixed, default: {} },
   responseData: { type: mongoose.Schema.Types.Mixed, default: {} },
   stackTrace: { type: String },
-  severity: { 
-    type: String, 
+  severity: {
+    type: String,
     enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-    default: 'MEDIUM'
+    default: 'MEDIUM',
   },
-  status: { 
-    type: String, 
+  status: {
+    type: String,
     enum: ['OPEN', 'INVESTIGATING', 'RESOLVED', 'IGNORED'],
-    default: 'OPEN'
+    default: 'OPEN',
   },
   adminNotes: { type: String, default: '' },
   resolvedBy: { type: String, default: '' },
   resolvedAt: { type: Date },
   created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
+  updated_at: { type: Date, default: Date.now },
 });
 
 let AIError;
@@ -56,7 +63,7 @@ class AIErrorLogger {
     requestData = {},
     responseData = {},
     stackTrace,
-    severity = 'MEDIUM'
+    severity = 'MEDIUM',
   }) {
     try {
       const error = new AIError({
@@ -73,11 +80,11 @@ class AIErrorLogger {
         responseData,
         stackTrace,
         severity,
-        status: 'OPEN'
+        status: 'OPEN',
       });
 
       await error.save();
-      
+
       // Log to console for immediate debugging
       console.error(`🚨 AI Error Logged:`, {
         email,
@@ -85,7 +92,7 @@ class AIErrorLogger {
         errorCode,
         errorMessage,
         severity,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return error;
@@ -103,11 +110,11 @@ class AIErrorLogger {
             _id: {
               errorType: '$errorType',
               severity: '$severity',
-              status: '$status'
+              status: '$status',
             },
             count: { $sum: 1 },
-            latestError: { $max: '$created_at' }
-          }
+            latestError: { $max: '$created_at' },
+          },
         },
         {
           $group: {
@@ -118,11 +125,11 @@ class AIErrorLogger {
                 severity: '$_id.severity',
                 status: '$_id.status',
                 count: '$count',
-                latestError: '$latestError'
-              }
-            }
-          }
-        }
+                latestError: '$latestError',
+              },
+            },
+          },
+        },
       ]);
 
       const totalErrors = await AIError.countDocuments();
@@ -133,7 +140,7 @@ class AIErrorLogger {
         totalErrors,
         openErrors,
         criticalErrors,
-        byType: stats
+        byType: stats,
       };
     } catch (error) {
       console.error('Failed to get error stats:', error);
@@ -158,7 +165,7 @@ class AIErrorLogger {
     try {
       const updateData = {
         status,
-        updated_at: new Date()
+        updated_at: new Date(),
       };
 
       if (status === 'RESOLVED') {
@@ -179,10 +186,7 @@ class AIErrorLogger {
 
   static async getErrorsByUser(email, limit = 20) {
     try {
-      return await AIError.find({ email })
-        .sort({ created_at: -1 })
-        .limit(limit)
-        .lean();
+      return await AIError.find({ email }).sort({ created_at: -1 }).limit(limit).lean();
     } catch (error) {
       console.error('Failed to get errors by user:', error);
       return [];
@@ -205,7 +209,7 @@ class AIErrorLogger {
 
       const result = await AIError.deleteMany({
         created_at: { $lt: cutoffDate },
-        status: { $in: ['RESOLVED', 'IGNORED'] }
+        status: { $in: ['RESOLVED', 'IGNORED'] },
       });
 
       console.log(`Deleted ${result.deletedCount} old AI errors`);

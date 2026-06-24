@@ -1,0 +1,16 @@
+# Dependencies / lockfiles
+node_modules
+package-lock.json
+
+# Build outputs
+apps/web/dist
+apps/web/build
+**/*.tsbuildinfo
+.deriveddata
+coverage
+
+# Native iOS sources are handled by SwiftLint, not Prettier
+apps/ios
+
+# Generated / data
+*.db

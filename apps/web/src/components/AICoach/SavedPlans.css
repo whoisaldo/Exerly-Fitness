@@ -286,37 +286,37 @@
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .plan-card {
     padding: 15px;
   }
-  
+
   .plan-actions {
     flex-direction: column;
   }
-  
+
   .plan-btn {
     min-width: auto;
   }
-  
+
   .plan-modal {
     max-height: 90vh;
     margin: 10px;
   }
-  
+
   .plan-modal-header {
     padding: 15px;
   }
-  
+
   .plan-modal-content {
     padding: 15px;
   }
-  
+
   .plan-modal-actions {
     padding: 15px;
     flex-direction: column;
   }
-  
+
   .plan-modal-actions .plan-btn {
     min-width: auto;
   }
