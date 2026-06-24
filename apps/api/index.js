@@ -648,7 +648,10 @@ app.post('/api/activities', authenticate, async (req, res) => {
 
 app.put('/api/activities/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const { activity, duration_min, calories, intensity, type } = req.body;
     if (!activity || duration_min == null || calories == null)
       return res.status(400).json({ message: 'Activity, duration, and calories are required' });
@@ -674,7 +677,10 @@ app.put('/api/activities/:id', authenticate, async (req, res) => {
 
 app.delete('/api/activities/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const deleted = await Activity.findOneAndDelete({ _id: id, email: req.user.email });
     if (!deleted) return res.status(404).json({ message: 'Activity not found' });
     res.json({ message: 'Activity deleted', activity: deleted });
@@ -739,7 +745,10 @@ app.post('/api/food', authenticate, async (req, res) => {
 
 app.put('/api/food/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const {
       name,
       calories,
@@ -783,7 +792,10 @@ app.put('/api/food/:id', authenticate, async (req, res) => {
 
 app.delete('/api/food/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const deleted = await Food.findOneAndDelete({ _id: id, email: req.user.email });
     if (!deleted) return res.status(404).json({ message: 'Food entry not found' });
     res.json({ message: 'Food entry deleted', food: deleted });
@@ -829,7 +841,10 @@ app.post('/api/sleep', authenticate, async (req, res) => {
 
 app.put('/api/sleep/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const { hours, quality, bedtime, wakeTime } = req.body;
     if (hours == null || !quality)
       return res.status(400).json({ message: 'Hours and quality are required' });
@@ -854,7 +869,10 @@ app.put('/api/sleep/:id', authenticate, async (req, res) => {
 
 app.delete('/api/sleep/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const deleted = await Sleep.findOneAndDelete({ _id: id, email: req.user.email });
     if (!deleted) return res.status(404).json({ message: 'Sleep entry not found' });
     res.json({ message: 'Sleep entry deleted', sleep: deleted });
@@ -933,7 +951,10 @@ app.post('/api/workouts', authenticate, async (req, res) => {
 
 app.put('/api/workouts/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const { name, exercises } = req.body;
     if (!name) return res.status(400).json({ message: 'Workout name is required' });
 
@@ -952,7 +973,10 @@ app.put('/api/workouts/:id', authenticate, async (req, res) => {
 
 app.delete('/api/workouts/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Coerce the route param to a string so it can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }). Express params are strings,
+    // but this makes the safety explicit and satisfies static analysis.
+    const id = String(req.params.id);
     const deleted = await Workout.findOneAndDelete({ _id: id, email: req.user.email });
     if (!deleted) return res.status(404).json({ message: 'Workout not found' });
     res.json({ message: 'Workout deleted', workout: deleted });
@@ -1311,7 +1335,7 @@ app.get('/api/admin/ai-errors/stats', authenticate, requireAdmin, async (req, re
 app.get('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const AIErrorLogger = require('./utils/errorLogger');
-    const error = await AIErrorLogger.getErrorById(req.params.id);
+    const error = await AIErrorLogger.getErrorById(String(req.params.id));
     if (!error) return res.status(404).json({ message: 'Error not found' });
     res.json(error);
   } catch (err) {
@@ -1324,7 +1348,7 @@ app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (re
     const { status, adminNotes } = req.body;
     const AIErrorLogger = require('./utils/errorLogger');
     const error = await AIErrorLogger.updateErrorStatus(
-      req.params.id,
+      String(req.params.id),
       status,
       adminNotes,
       req.user.email
@@ -1338,7 +1362,7 @@ app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (re
 
 app.delete('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    const deleted = await AIError.findByIdAndDelete(req.params.id);
+    const deleted = await AIError.findByIdAndDelete(String(req.params.id));
     if (!deleted) return res.status(404).json({ message: 'Error not found' });
     res.json({ message: 'AI error deleted successfully' });
   } catch (err) {
