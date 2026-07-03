@@ -99,7 +99,7 @@ struct MeasurementsTab: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 56, height: 56)
-                .background(LinearGradient.exPrimaryGradient)
+                .background(Color.exPrimary)
                 .clipShape(Circle())
                 .primaryGlow()
         }

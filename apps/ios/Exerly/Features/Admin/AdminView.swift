@@ -93,7 +93,7 @@ struct AdminView: View {
                 if let stats {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         statCard("Total Users", value: "\(stats.totalUsers)", icon: "person.3.fill", color: .exPrimary)
-                        statCard("Active Today", value: "\(stats.activeToday)", icon: "bolt.fill", color: .exAccent)
+                        statCard("Active Today", value: "\(stats.activeToday)", icon: "bolt.fill", color: .exWarning)
                         statCard("Total Entries", value: "\(stats.totalEntries)", icon: "list.bullet", color: .exSuccess)
                         statCard("Activities", value: "\(stats.breakdown?.activities ?? 0)", icon: "figure.run", color: .orange)
                         statCard("Food Logs", value: "\(stats.breakdown?.food ?? 0)", icon: "fork.knife", color: .green)

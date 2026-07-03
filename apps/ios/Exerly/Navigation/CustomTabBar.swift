@@ -31,7 +31,7 @@ struct CustomTabBar: View {
                 Text(tab.label)
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundStyle(selectedTab == tab ? .exPrimary : .exTextMuted)
+            .foregroundStyle(selectedTab == tab ? .exPrimary : .exTextSecondary)
             .frame(maxWidth: .infinity)
             .overlay(alignment: .top) {
                 if selectedTab == tab {
@@ -39,7 +39,6 @@ struct CustomTabBar: View {
                         .fill(Color.exPrimary)
                         .frame(width: 24, height: 3)
                         .offset(y: -10)
-                        .shadow(color: .exPrimary.opacity(0.5), radius: 6)
                 }
             }
         }
@@ -53,7 +52,7 @@ struct CustomTabBar: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(LinearGradient.exPrimaryGradient)
+                    .fill(Color.exPrimary)
                     .frame(width: 56, height: 56)
                     .primaryGlow(radius: 12, opacity: 0.5)
 

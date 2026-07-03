@@ -60,7 +60,7 @@ struct PhotosTab: View {
             } label: {
                 Label(compareMode ? "Done" : "Compare", systemImage: "arrow.left.arrow.right")
                     .font(.exLabel)
-                    .foregroundStyle(compareMode ? .exAccent : .exTextSecondary)
+                    .foregroundStyle(compareMode ? .exPrimary : .exTextSecondary)
             }
         }
         .padding(.horizontal, 20)

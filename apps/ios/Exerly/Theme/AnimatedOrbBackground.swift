@@ -58,7 +58,3 @@ struct PulseLineShape: Shape {
         return path
     }
 }
-
-/// Compatibility alias; call sites migrate to PulseBackground in the
-/// screens pass, after which this can be removed.
-typealias AnimatedOrbBackground = PulseBackground

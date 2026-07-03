@@ -45,9 +45,9 @@ struct OnboardingWizard: View {
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.exSurface2)
+                Capsule().fill(Color.white.opacity(0.08))
                 Capsule()
-                    .fill(LinearGradient.exPrimaryGradient)
+                    .fill(Color.exPrimary)
                     .frame(width: geo.size.width * progress)
                     .animation(.spring(response: 0.4), value: state.step)
             }

@@ -148,7 +148,7 @@ struct LogActivityView: View {
                 Spacer()
                 Text("\(estimatedCalories) kcal")
                     .font(.exStatSmall)
-                    .foregroundStyle(.exAccent)
+                    .foregroundStyle(.exPrimary)
             }
         }
     }

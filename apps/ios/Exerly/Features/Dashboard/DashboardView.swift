@@ -67,13 +67,7 @@ struct DashboardView: View {
                             x: .value("Day", item.label),
                             y: .value("Calories", item.consumed)
                         )
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.exPrimary, .exSecondary],
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
-                        )
+                        .foregroundStyle(Color.exPrimary)
                         .cornerRadius(4)
                     }
                 }
@@ -103,7 +97,7 @@ struct DashboardView: View {
                 HStack(spacing: 16) {
                     MacroPill(label: "Protein", grams: 0, color: .exPrimary)
                     MacroPill(label: "Carbs", grams: 0, color: .exSuccess)
-                    MacroPill(label: "Fat", grams: 0, color: .exAccent)
+                    MacroPill(label: "Fat", grams: 0, color: .exWarning)
                 }
             }
         }
