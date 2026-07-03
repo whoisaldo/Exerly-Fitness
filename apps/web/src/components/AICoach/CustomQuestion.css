@@ -1,11 +1,10 @@
 /* Custom Question Styles */
 .custom-question {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-hair);
   border-radius: 16px;
   padding: 25px;
   margin-top: 20px;
-  backdrop-filter: blur(10px);
 }
 
 .question-header {
@@ -13,14 +12,14 @@
 }
 
 .question-header h3 {
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0 0 8px 0;
 }
 
 .question-header p {
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   font-size: 0.95rem;
   margin: 0;
 }
@@ -37,11 +36,11 @@
 
 .question-input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-3);
+  border: 2px solid var(--color-border-hair);
   border-radius: 12px;
   padding: 15px;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
@@ -51,12 +50,12 @@
 
 .question-input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary);
+  background: var(--color-surface-3);
 }
 
 .question-input::placeholder {
-  color: #a0a0a0;
+  color: var(--color-text-muted);
 }
 
 .question-input:disabled {
@@ -65,7 +64,7 @@
 }
 
 .ask-button {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: var(--color-primary);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -83,7 +82,7 @@
 
 .ask-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .ask-button:disabled {
@@ -116,7 +115,7 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
   padding: 12px;
-  color: #ef4444;
+  color: var(--color-error);
   font-size: 0.9rem;
   font-weight: 500;
   text-align: center;
@@ -139,7 +138,7 @@
 }
 
 .examples-label {
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   margin: 0 0 15px 0;
   font-weight: 500;
@@ -152,11 +151,11 @@
 }
 
 .example-question {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-hair);
   border-radius: 8px;
   padding: 12px 15px;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -165,8 +164,8 @@
 }
 
 .example-question:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-3);
+  border-color: var(--color-border-strong);
   transform: translateY(-1px);
 }
 

@@ -12,17 +12,16 @@
 .maintenance-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: var(--color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
   text-decoration: none;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  box-shadow: var(--color-elev-shadow);
   transition: all 0.3s ease;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
 }
@@ -41,8 +40,8 @@
 
 .maintenance-icon:hover {
   transform: translateY(-3px) scale(1.1);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
-  background: linear-gradient(135deg, #a855f7, #c084fc);
+  box-shadow: var(--color-elev-shadow);
+  background: var(--color-primary-bright);
 }
 
 .maintenance-icon:hover::before {
@@ -67,7 +66,6 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .close-maintenance-icon:hover {

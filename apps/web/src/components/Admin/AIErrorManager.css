@@ -1,8 +1,8 @@
 /* AI Error Manager Styles */
 .ai-error-manager {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-  color: #ffffff;
+  background: var(--color-deep);
+  color: var(--color-text-primary);
   padding: 20px;
 }
 
@@ -12,20 +12,16 @@
   align-items: center;
   margin-bottom: 30px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
+  background: var(--color-surface-2);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
 }
 
 .error-manager-header h1 {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-text-primary);
 }
 
 .header-actions {
@@ -50,17 +46,17 @@
 
 .cleanup-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .refresh-btn {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: var(--color-primary);
   color: white;
 }
 
 .refresh-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  box-shadow: var(--color-elev-shadow);
 }
 
 /* Stats Overview */
@@ -72,29 +68,28 @@
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
+  background: var(--color-surface-2);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-3);
   transform: translateY(-2px);
 }
 
 .stat-number {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #8b5cf6;
+  color: var(--color-primary);
   margin-bottom: 5px;
 }
 
 .stat-label {
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -105,10 +100,9 @@
   gap: 20px;
   margin-bottom: 30px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
+  background: var(--color-surface-2);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
   flex-wrap: wrap;
 }
 
@@ -120,30 +114,30 @@
 }
 
 .filter-group label {
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .filter-group select {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
 }
 
 .filter-group select:focus {
-  border-color: #8b5cf6;
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-primary);
+  background: var(--color-surface-3);
 }
 
 .filter-group select option {
-  background: #1a1a2e;
-  color: #ffffff;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
 }
 
 /* Errors List */
@@ -155,19 +149,18 @@
 }
 
 .error-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
+  background: var(--color-surface-2);
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .error-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-3);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .error-header {
@@ -185,7 +178,7 @@
 
 .error-type {
   background: rgba(139, 92, 246, 0.2);
-  color: #c084fc;
+  color: var(--color-primary-bright);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -193,7 +186,7 @@
 }
 
 .error-code {
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   font-family: monospace;
 }
@@ -213,7 +206,7 @@
 }
 
 .error-message {
-  color: #e2e8f0;
+  color: var(--color-text-primary);
   font-size: 1rem;
   margin-bottom: 10px;
   line-height: 1.4;
@@ -223,7 +216,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
 }
 
@@ -238,7 +231,7 @@
 .no-errors {
   text-align: center;
   padding: 60px 20px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
 }
 
@@ -252,9 +245,9 @@
 }
 
 .pagination button {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -262,7 +255,7 @@
 }
 
 .pagination button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-surface-3);
   transform: translateY(-1px);
 }
 
@@ -272,7 +265,7 @@
 }
 
 .pagination span {
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -283,8 +276,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(12px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -293,15 +286,14 @@
 }
 
 .error-modal {
-  background: rgba(15, 15, 35, 0.95);
-  backdrop-filter: blur(20px);
+  background: var(--color-surface-2);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
   max-width: 800px;
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .modal-header {
@@ -309,12 +301,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-border-hair);
 }
 
 .modal-header h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -322,7 +314,7 @@
 .close-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-size: 24px;
   cursor: pointer;
   padding: 5px;
@@ -332,7 +324,7 @@
 
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .modal-content {
@@ -353,19 +345,19 @@
 }
 
 .detail-row label {
-  color: #8b5cf6;
+  color: var(--color-primary);
   font-weight: 600;
   font-size: 0.9rem;
 }
 
 .detail-row span {
-  color: #e2e8f0;
+  color: var(--color-text-primary);
   font-size: 0.95rem;
 }
 
 .stack-trace {
   background: rgba(0, 0, 0, 0.3);
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   padding: 15px;
   border-radius: 8px;
   font-family: monospace;
@@ -381,22 +373,22 @@
   gap: 15px;
   align-items: center;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--color-border-hair);
 }
 
 .modal-actions select {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 0.9rem;
   outline: none;
 }
 
 .modal-actions select option {
-  background: #1a1a2e;
-  color: #ffffff;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
 }
 
 .delete-btn {
@@ -412,13 +404,13 @@
 
 .delete-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .loading {
   text-align: center;
   padding: 60px 20px;
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
 }
 

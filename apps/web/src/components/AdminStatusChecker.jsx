@@ -106,26 +106,26 @@ export default function AdminStatusChecker() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'healthy':
-        return '#27ae60';
+        return 'var(--color-success)';
       case 'unhealthy':
-        return '#e74c3c';
+        return 'var(--color-error)';
       default:
-        return '#f39c12';
+        return 'var(--color-warning)';
     }
   };
 
   const getAnnouncementTypeColor = (type) => {
     switch (type) {
       case 'info':
-        return '#3498db';
+        return 'var(--color-primary)';
       case 'warning':
-        return '#f39c12';
+        return 'var(--color-warning)';
       case 'error':
-        return '#e74c3c';
+        return 'var(--color-error)';
       case 'success':
-        return '#27ae60';
+        return 'var(--color-success)';
       default:
-        return '#95a5a6';
+        return 'var(--color-text-muted)';
     }
   };
 
@@ -173,7 +173,10 @@ export default function AdminStatusChecker() {
                 <div className="metric-value">
                   <span
                     style={{
-                      color: apiHealth?.database?.status === 'connected' ? '#27ae60' : '#e74c3c',
+                      color:
+                        apiHealth?.database?.status === 'connected'
+                          ? 'var(--color-success)'
+                          : 'var(--color-error)',
                       fontWeight: 'bold',
                     }}
                   >

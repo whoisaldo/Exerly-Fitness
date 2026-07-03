@@ -1,6 +1,6 @@
 // frontend/src/App.jsx
 import React, { lazy, Suspense } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import LoginSignup from './components/LoginSignup/LoginSignup';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -27,6 +27,15 @@ const LazyFallback = () => (
     <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
   </div>
 );
+
+// Reset scroll position on route change (HashRouter preserves scroll otherwise)
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 // Enhanced JWT decoder with better error handling
 function decodeJWT(token) {
@@ -83,6 +92,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <Router>
+      <ScrollToTop />
       <>
         <MaintenanceIcon />
         <Routes>

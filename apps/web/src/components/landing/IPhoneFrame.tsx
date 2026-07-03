@@ -23,7 +23,7 @@ export function IPhoneFrame({ className = '' }: { className?: string }) {
         <div className="mb-4 flex items-center justify-between px-1">
           <div>
             <div className="text-[10px] uppercase tracking-widest text-slate-500">Good morning</div>
-            <div className="text-base font-bold text-slate-50">Athlete</div>
+            <div className="text-base font-bold text-slate-50">John Doe</div>
           </div>
           <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-surface-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-slate-400">

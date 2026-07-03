@@ -7,29 +7,28 @@
 }
 
 .action-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
+  border: 2px solid var(--color-border-hair);
   border-radius: 16px;
   padding: 25px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
 }
 
 .action-card:hover:not(.disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-3);
   border-color: var(--action-color);
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .action-card.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface-1);
+  border-color: var(--color-border-hair);
 }
 
 .action-card::before {
@@ -62,20 +61,20 @@
 .action-content h3 {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text-primary);
   margin: 0 0 8px 0;
 }
 
 .action-content p {
   font-size: 0.95rem;
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   margin: 0 0 10px 0;
   line-height: 1.5;
 }
 
 .no-credits {
   font-size: 0.8rem;
-  color: #ef4444;
+  color: var(--color-error);
   font-weight: 500;
   display: block;
   margin-top: 8px;
@@ -99,7 +98,7 @@
   width: 30px;
   height: 30px;
   border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid #8b5cf6;
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

@@ -75,11 +75,11 @@ export default function StatusCheck() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'healthy':
-        return '#27ae60';
+        return 'var(--color-success)';
       case 'unhealthy':
-        return '#e74c3c';
+        return 'var(--color-error)';
       default:
-        return '#f39c12';
+        return 'var(--color-warning)';
     }
   };
 
@@ -127,7 +127,10 @@ export default function StatusCheck() {
                       <span
                         className="db-status"
                         style={{
-                          color: apiHealth.database.status === 'connected' ? '#27ae60' : '#e74c3c',
+                          color:
+                            apiHealth.database.status === 'connected'
+                              ? 'var(--color-success)'
+                              : 'var(--color-error)',
                         }}
                       >
                         {apiHealth.database.status?.toUpperCase()}
