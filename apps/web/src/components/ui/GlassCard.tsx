@@ -17,7 +17,7 @@ export function GlassCard({
 }: GlassCardProps) {
   const base = elevated ? 'glass-elevated' : 'glass';
   const hoverClasses = hover
-    ? 'transition-all duration-300 hover:border-violet-500/40 hover:shadow-glow-primary'
+    ? 'transition-all duration-300 hover:border-white/[0.14] hover:-translate-y-px'
     : '';
 
   return <Tag className={`${base} p-5 ${hoverClasses} ${className}`}>{children}</Tag>;

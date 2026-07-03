@@ -37,29 +37,23 @@ export function ProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-white/5"
+          className="text-white/[0.08]"
         />
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke="url(#ring-gradient)"
+          stroke="#8b5cf6"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={mounted ? offset : circumference}
           className="transition-[stroke-dashoffset] duration-1000 ease-out"
         />
-        <defs>
-          <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#ec4899" />
-          </linearGradient>
-        </defs>
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-lg font-bold text-slate-50">{clamped}%</span>
+        <span className="text-lg font-bold tabular-nums text-slate-50">{clamped}%</span>
         {label && <span className="text-xs text-slate-400">{label}</span>}
       </div>
     </div>

@@ -6,21 +6,24 @@
   :root {
     --color-primary: #8b5cf6;
     --color-primary-bright: #a78bfa;
-    --color-primary-glow: rgba(139, 92, 246, 0.15);
+    --color-primary-glow: rgba(139, 92, 246, 0.1);
     --color-secondary: #a855f7;
     --color-accent: #ec4899;
-    --color-accent-glow: rgba(236, 72, 153, 0.15);
-    --color-deep: #080810;
-    --color-surface-1: #0f0f1a;
-    --color-surface-2: #161625;
-    --color-surface-3: #1e1e32;
-    --color-dark: #1e1b4b;
+    --color-accent-glow: rgba(236, 72, 153, 0.1);
+    --color-deep: #0a0a0f;
+    --color-surface-1: #101016;
+    --color-surface-2: #15151d;
+    --color-surface-3: #1b1b24;
+    --color-dark: #101016;
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --color-error: #ef4444;
-    --color-text-primary: #f8fafc;
-    --color-text-secondary: #94a3b8;
-    --color-text-muted: #475569;
+    --color-text-primary: #e9ebf1;
+    --color-text-secondary: #9aa3b5;
+    --color-text-muted: #626c80;
+    --color-border-hair: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.12);
+    --color-elev-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 
   html {
@@ -28,8 +31,16 @@
   }
 
   body {
-    @apply font-sans antialiased min-h-screen bg-deep text-slate-50 overflow-x-hidden;
+    @apply font-sans antialiased min-h-screen bg-deep text-slate-100 overflow-x-hidden;
+    font-size: 15px;
+    line-height: 1.6;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Visible keyboard focus everywhere */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 
   /* Custom scrollbar — Webkit */
@@ -41,33 +52,50 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.25);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.45);
+    background: rgba(255, 255, 255, 0.28);
   }
 
   /* Custom scrollbar — Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 
   /* Selection */
   ::selection {
-    background: rgba(139, 92, 246, 0.3);
-    color: #f8fafc;
+    background: rgba(139, 92, 246, 0.35);
+    color: #f7f8fa;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
-  /* Glassmorphism cards */
+  /* Surface cards — solid fills with hairline borders (names kept from the
+     original glassmorphism system so existing call sites keep working) */
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+    @apply bg-surface-2 border border-white/[0.08] rounded-2xl;
   }
   .glass-elevated {
-    @apply bg-white/[0.06] backdrop-blur-xl border border-violet-500/20 rounded-2xl shadow-glow;
+    @apply bg-surface-3 border border-white/[0.1] rounded-2xl shadow-glow;
+  }
+
+  /* The only sanctioned blur: sticky nav / overlays */
+  .nav-blur {
+    @apply bg-deep/80 backdrop-blur-md border-b border-white/[0.08];
   }
 
   /* Label typography preset */
