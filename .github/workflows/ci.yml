@@ -99,7 +99,7 @@ jobs:
           VITE_API_URL: https://exerly-fitness-93dyl.ondigitalocean.app
           VITE_ADMIN_EMAILS: whois.younes@gmail.com
       - name: Upload web build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: apps/web/dist
