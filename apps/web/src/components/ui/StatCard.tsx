@@ -44,7 +44,7 @@ export function StatCard({ icon, label, value, trend, sparkline, className = '' 
 
   return (
     <div
-      className={`glass p-5 transition-all duration-300 hover:border-violet-500/40 hover:shadow-glow-primary ${className}`}
+      className={`glass p-5 transition-all duration-300 hover:border-white/[0.14] hover:-translate-y-px ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

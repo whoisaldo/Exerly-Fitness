@@ -211,7 +211,7 @@ struct QuickFoodLogSheet: View {
                         Spacer()
                         Text("\(scaledCalories) kcal")
                             .font(.exStatSmall)
-                            .foregroundStyle(.exAccent)
+                            .foregroundStyle(.exPrimary)
                     }
                 }
 

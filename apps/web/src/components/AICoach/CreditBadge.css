@@ -1,27 +1,26 @@
 /* Credit Badge Styles */
 .credit-badge {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-hair);
   border-radius: 12px;
   padding: 15px;
-  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
 .credit-badge.good {
-  border-color: #10b981;
+  border-color: var(--color-success);
   background: rgba(16, 185, 129, 0.1);
 }
 
 .credit-badge.warning {
-  border-color: #f59e0b;
+  border-color: var(--color-warning);
   background: rgba(245, 158, 11, 0.1);
 }
 
 .credit-badge.critical {
-  border-color: #ef4444;
+  border-color: var(--color-error);
   background: rgba(239, 68, 68, 0.1);
   animation: pulse 2s infinite;
 }
@@ -55,12 +54,12 @@
 
 .credit-count {
   font-size: 1.1rem;
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .reset-timer {
   font-size: 0.9rem;
-  color: #ef4444;
+  color: var(--color-error);
   font-weight: 600;
   animation: blink 1s infinite;
 }
@@ -78,7 +77,7 @@
 
 .daily-credits {
   font-size: 0.9rem;
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
 }
 
 .daily-count {
@@ -108,12 +107,12 @@
 .limit-message p {
   margin: 0 0 8px 0;
   font-size: 0.9rem;
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .limit-message p:last-child {
   margin-bottom: 0;
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
 }
 
 .daily-limit-message {
@@ -129,18 +128,18 @@
 .daily-limit-message p {
   margin: 0 0 10px 0;
   font-size: 0.9rem;
-  color: #ffffff;
+  color: var(--color-text-primary);
 }
 
 .daily-limit-message p:first-child {
   font-size: 1rem;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 .daily-limit-message p:last-child {
   margin-bottom: 0;
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
 }
 

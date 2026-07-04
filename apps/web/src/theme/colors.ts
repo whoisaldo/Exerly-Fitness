@@ -7,49 +7,50 @@
  * Tailwind classes are the primary styling method — use these tokens
  * only when you need raw hex/rgba values in JS/TS.
  *
- * Mobile equivalent: mobile/src/theme/colors.js
+ * iOS equivalent: apps/ios/Exerly/Theme/Colors.swift
  */
 
 export const colors = {
   primary: '#8b5cf6',
   primaryBright: '#a78bfa',
-  primaryGlow: 'rgba(139,92,246,0.15)',
+  primaryGlow: 'rgba(139,92,246,0.10)',
   secondary: '#a855f7',
   accent: '#ec4899',
-  accentGlow: 'rgba(236,72,153,0.15)',
+  accentGlow: 'rgba(236,72,153,0.10)',
 
-  deep: '#080810',
-  surface1: '#0f0f1a',
-  surface2: '#161625',
-  surface3: '#1e1e32',
-  dark: '#1e1b4b',
+  deep: '#0a0a0f',
+  surface1: '#101016',
+  surface2: '#15151d',
+  surface3: '#1b1b24',
+  dark: '#101016',
 
-  borderSubtle: 'rgba(255,255,255,0.06)',
+  borderSubtle: 'rgba(255,255,255,0.08)',
+  borderStrong: 'rgba(255,255,255,0.12)',
   borderAccent: 'rgba(139,92,246,0.4)',
 
   success: '#10b981',
   warning: '#f59e0b',
   error: '#ef4444',
 
-  textPrimary: '#f8fafc',
-  textSecondary: '#94a3b8',
-  textMuted: '#475569',
+  textPrimary: '#e9ebf1',
+  textSecondary: '#9aa3b5',
+  textMuted: '#626c80',
 
   glass: {
-    base: 'rgba(255,255,255,0.03)',
-    elevated: 'rgba(255,255,255,0.06)',
-    border: 'rgba(255,255,255,0.06)',
-    borderElevated: 'rgba(139,92,246,0.2)',
-    glow: 'rgba(139,92,246,0.08)',
+    base: '#15151d',
+    elevated: '#1b1b24',
+    border: 'rgba(255,255,255,0.08)',
+    borderElevated: 'rgba(255,255,255,0.10)',
+    glow: 'rgba(0,0,0,0.35)',
   },
 } as const;
 
 export const gradients = {
-  primary: ['#8b5cf6', '#a855f7'] as const,
-  accent: ['#ec4899', '#a855f7'] as const,
-  surface: ['#0f0f1a', '#080810'] as const,
-  card: ['rgba(139,92,246,0.08)', 'rgba(236,72,153,0.04)'] as const,
-  page: ['#080810', '#0f0f1a', '#1e1b4b'] as const,
+  primary: ['#8b5cf6', '#7c4ff0'] as const,
+  accent: ['#a78bfa', '#8b5cf6'] as const,
+  surface: ['#101016', '#0a0a0f'] as const,
+  card: ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0)'] as const,
+  page: ['#0a0a0f', '#101016'] as const,
 } as const;
 
 export type Colors = typeof colors;

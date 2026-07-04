@@ -68,7 +68,7 @@ struct Step10Results: View {
                     .foregroundStyle(.exTextSecondary)
                 HStack(spacing: 16) {
                     macroItem("Protein", value: r.proteinGrams, color: .exPrimary)
-                    macroItem("Fat", value: r.fatGrams, color: .exAccent)
+                    macroItem("Fat", value: r.fatGrams, color: .exWarning)
                     macroItem("Carbs", value: r.carbGrams, color: .exSuccess)
                 }
             }
@@ -132,7 +132,7 @@ struct Step10Results: View {
                 Spacer()
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 28))
-                    .foregroundStyle(.exAccent)
+                    .foregroundStyle(.exInfo)
             }
         }
     }

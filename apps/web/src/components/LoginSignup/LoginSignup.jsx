@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import user_icon from '../Assets/person.png';
 import email_icon from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
-import exerly_logo from '../Assets/ExerlyLogo.jpg';
 import { useNavigate, Link } from 'react-router-dom';
 import API_CONFIG from '../../config';
-import { GlassCard, ActionButton } from '../ui';
+import { GlassCard, ActionButton, ExerlyMark, PulseLine } from '../ui';
 
 const BASE_URL = API_CONFIG.BASE_URL;
 
@@ -114,25 +113,12 @@ const LoginSignup = () => {
 
   return (
     <div className="min-h-screen bg-deep flex items-center justify-center relative overflow-hidden px-4 py-8">
-      {/* Animated background orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-[-20%] right-[-15%] w-[500px] h-[500px] rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
-          animate={{ x: [0, 30, 0], y: [0, -40, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-[-15%] left-[-10%] w-[450px] h-[450px] rounded-full opacity-15"
-          style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }}
-          animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute top-[30%] left-[40%] w-[300px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
-          animate={{ x: [0, -15, 0], y: [0, 15, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      {/* Quiet backdrop: soft top wash + signature pulse line */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-surface-1/70 to-transparent" />
+        <PulseLine
+          className="absolute left-1/2 top-14 h-8 w-80 -translate-x-1/2 text-primary/25"
+          strokeWidth={1.5}
         />
       </div>
 
@@ -158,11 +144,7 @@ const LoginSignup = () => {
           >
             {/* Logo */}
             <div className="text-center mb-6">
-              <img
-                src={exerly_logo}
-                alt="Exerly Logo"
-                className="w-14 h-14 rounded-xl object-cover mx-auto mb-3 shadow-glow-sm"
-              />
+              <ExerlyMark size={48} withWordmark={false} className="mb-3" />
               <h1 className="text-xl font-bold text-white">Exerly</h1>
               <p className="text-sm text-slate-500 mt-0.5">Transform Your Fitness Journey</p>
             </div>
@@ -370,34 +352,14 @@ const LoginSignup = () => {
           className="hidden lg:flex flex-col items-center justify-center text-center"
         >
           <div className="relative w-full max-w-sm">
-            {/* Decorative floating orbs */}
-            <motion.div
-              className="absolute -top-12 -left-8 w-24 h-24 rounded-full opacity-30"
-              style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
-              animate={{ y: [0, -12, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-              className="absolute -bottom-8 -right-6 w-20 h-20 rounded-full opacity-25"
-              style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }}
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
             <GlassCard className="rounded-2xl py-12">
               <motion.div
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <img
-                  src={exerly_logo}
-                  alt="Exerly"
-                  className="w-24 h-24 rounded-2xl object-cover mx-auto mb-6 shadow-glow-primary"
-                />
+                <ExerlyMark size={96} withWordmark={false} className="mb-6" />
               </motion.div>
-              <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                Your Fitness, Elevated
-              </h2>
+              <h2 className="text-2xl font-bold text-slate-50 mb-2">Your Fitness, Elevated</h2>
               <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
                 Track workouts, monitor nutrition, and achieve your goals with intelligent
                 analytics.

@@ -564,20 +564,9 @@ const Onboarding = () => {
 
   return (
     <PageTransition className="min-h-screen bg-deep text-white flex flex-col">
-      {/* Background orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-0">
-        <motion.div
-          className="absolute top-[-15%] right-[-10%] w-[450px] h-[450px] rounded-full opacity-15"
-          style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
-          animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-[-10%] left-[-5%] w-[350px] h-[350px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }}
-          animate={{ x: [0, -15, 0], y: [0, 15, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        />
+      {/* Quiet backdrop wash */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-0" aria-hidden="true">
+        <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-surface-1/70 to-transparent" />
       </div>
 
       {/* Header with progress */}

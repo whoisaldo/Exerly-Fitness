@@ -44,7 +44,7 @@ struct ActionButton: View {
     private var background: some View {
         switch variant {
         case .primary:
-            LinearGradient.exPrimaryGradient
+            Color.exPrimary
         case .secondary:
             Color.exSurface2
         case .ghost:
@@ -68,7 +68,7 @@ struct ActionButton: View {
                 .stroke(Color.exBorder, lineWidth: 1)
         case .ghost:
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.exPrimary.opacity(0.3), lineWidth: 1)
+                .stroke(Color.exBorder, lineWidth: 1)
         default:
             EmptyView()
         }

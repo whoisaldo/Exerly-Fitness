@@ -140,7 +140,7 @@ The `pre-push` hook runs lint, format check, typecheck, and API tests; bypass in
 
 ## License
 
-Copyright 2025 Ali Younes. All rights reserved.
+Copyright 2026 [Eternal Reverse](https://eternalreverse.dev). All rights reserved.
 
 This repository is publicly viewable for evaluation purposes. You may clone and run it locally to review functionality. Copying, distributing, modifying, or using this code in any other project without written permission is prohibited.
 

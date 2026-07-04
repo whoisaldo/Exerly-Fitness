@@ -14,15 +14,12 @@ struct CalorieRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.exSurface2, lineWidth: lineWidth)
+                .stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    AngularGradient(
-                        colors: [.exPrimary, .exSecondary, .exAccent],
-                        center: .center
-                    ),
+                    Color.exPrimary,
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))

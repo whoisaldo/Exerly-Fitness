@@ -1077,9 +1077,9 @@ export default function Dashboard() {
         transition={{ delay: 0.4 }}
         className="mt-8"
       >
-        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-600/10 via-fuchsia-600/5 to-transparent p-6 shadow-glow-primary sm:p-8">
-          <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
-          <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-fuchsia-500/10 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-surface-2 p-6 shadow-glow sm:p-8">
+          <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-transparent" />
 
           <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

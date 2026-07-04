@@ -223,7 +223,7 @@ struct FoodCardView: View {
                 HStack(spacing: 8) {
                     macroPill("P", value: food.protein, color: .exPrimary)
                     macroPill("C", value: food.carbs, color: .exSuccess)
-                    macroPill("F", value: food.fat, color: .exAccent)
+                    macroPill("F", value: food.fat, color: .exWarning)
                 }
             }
             Spacer()

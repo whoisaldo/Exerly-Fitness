@@ -67,13 +67,12 @@ struct LogSleepView: View {
         ZStack {
             Circle()
                 .trim(from: 0, to: 0.75)
-                .stroke(Color.exSurface2, lineWidth: 10)
+                .stroke(Color.white.opacity(0.08), lineWidth: 10)
                 .rotationEffect(.degrees(135))
             Circle()
                 .trim(from: 0, to: min(0.75, max(0, hours / 16 * 0.75)))
                 .stroke(
-                    LinearGradient(colors: [.exPrimary, .exAccent],
-                                   startPoint: .leading, endPoint: .trailing),
+                    Color.exPrimary,
                     style: StrokeStyle(lineWidth: 10, lineCap: .round)
                 )
                 .rotationEffect(.degrees(135))

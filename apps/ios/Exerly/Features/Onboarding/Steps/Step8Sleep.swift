@@ -90,7 +90,7 @@ struct Step8Sleep: View {
         GlassCard {
             HStack {
                 Image(systemName: "moon.fill")
-                    .foregroundStyle(.exAccent)
+                    .foregroundStyle(.exInfo)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Suggested Bedtime")
                         .font(.exCaption)

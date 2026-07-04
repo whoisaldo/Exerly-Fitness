@@ -291,7 +291,7 @@ export default function Food() {
                 </div>
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-3">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-700 ease-out"
+                    className="h-full rounded-full bg-accent transition-all duration-700 ease-out"
                     style={{ width: '100%' }}
                   />
                 </div>

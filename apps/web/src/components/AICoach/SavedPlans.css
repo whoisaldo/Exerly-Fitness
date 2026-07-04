@@ -11,19 +11,18 @@
 }
 
 .plan-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-hair);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .plan-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-3);
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--color-elev-shadow);
 }
 
 .plan-header {
@@ -46,14 +45,14 @@
 .plan-type-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #8b5cf6;
+  color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .plan-date {
   font-size: 0.8rem;
-  color: #a0a0a0;
+  color: var(--color-text-muted);
 }
 
 .plan-preview {
@@ -61,7 +60,7 @@
 }
 
 .plan-preview p {
-  color: #ffffff;
+  color: var(--color-text-primary);
   line-height: 1.5;
   font-size: 0.95rem;
   margin: 0;
@@ -86,14 +85,14 @@
 }
 
 .view-btn {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--color-primary-bright);
+  border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .view-btn:hover {
-  background: rgba(59, 130, 246, 0.3);
-  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .apply-btn {
@@ -127,8 +126,8 @@
 .no-plans {
   text-align: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-1);
+  border: 2px dashed var(--color-border-hair);
   border-radius: 16px;
   margin-top: 20px;
 }
@@ -141,12 +140,12 @@
 
 .no-plans h3 {
   font-size: 1.3rem;
-  color: #ffffff;
+  color: var(--color-text-primary);
   margin: 0 0 10px 0;
 }
 
 .no-plans p {
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   margin: 0;
   font-size: 0.95rem;
 }
@@ -167,13 +166,13 @@
 }
 
 .plan-modal {
-  background: #1a1a2e;
+  background: var(--color-surface-2);
   border-radius: 16px;
   max-width: 700px;
   width: 100%;
   max-height: 80vh;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-hair);
   display: flex;
   flex-direction: column;
 }
@@ -183,8 +182,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--color-border-hair);
+  background: var(--color-surface-3);
 }
 
 .plan-modal-title {
@@ -198,7 +197,7 @@
 }
 
 .plan-modal-title h2 {
-  color: #ffffff;
+  color: var(--color-text-primary);
   margin: 0;
   font-size: 1.3rem;
 }
@@ -206,7 +205,7 @@
 .close-modal-btn {
   background: none;
   border: none;
-  color: #a0a0a0;
+  color: var(--color-text-secondary);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 5px;
@@ -215,7 +214,7 @@
 }
 
 .close-modal-btn:hover {
-  color: #ffffff;
+  color: var(--color-text-primary);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -231,12 +230,12 @@
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-border-hair);
 }
 
 .plan-modal-date {
   font-size: 0.9rem;
-  color: #a0a0a0;
+  color: var(--color-text-muted);
 }
 
 .plan-applied-badge {
@@ -250,13 +249,13 @@
 }
 
 .plan-modal-response h3 {
-  color: #ffffff;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   margin: 0 0 15px 0;
 }
 
 .plan-content {
-  color: #ffffff;
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 
@@ -267,8 +266,8 @@
 
 .plan-modal-actions {
   padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--color-border-hair);
+  background: var(--color-surface-3);
   display: flex;
   gap: 15px;
   justify-content: flex-end;

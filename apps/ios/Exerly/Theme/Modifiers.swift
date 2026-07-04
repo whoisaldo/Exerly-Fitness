@@ -30,7 +30,8 @@ struct PrimaryGlowModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .shadow(color: Color.exPrimary.opacity(opacity), radius: radius, y: 4)
+            .shadow(color: Color.black.opacity(0.35), radius: radius * 0.6, y: 4)
+            .shadow(color: Color.exPrimary.opacity(opacity * 0.4), radius: radius * 0.4, y: 2)
     }
 }
 
@@ -44,7 +45,7 @@ extension View {
 
 extension View {
     func accentGlow(radius: CGFloat = 16, opacity: Double = 0.3) -> some View {
-        shadow(color: Color.exAccent.opacity(opacity), radius: radius, y: 4)
+        shadow(color: Color.black.opacity(min(opacity, 0.35)), radius: radius * 0.6, y: 4)
     }
 }
 

@@ -140,7 +140,7 @@ struct AICoachView: View {
                     .padding(12)
                     .background(
                         msg.role == .user
-                            ? AnyShapeStyle(LinearGradient.exPrimaryGradient)
+                            ? AnyShapeStyle(Color.exPrimary)
                             : AnyShapeStyle(Color.exGlassBg)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16))

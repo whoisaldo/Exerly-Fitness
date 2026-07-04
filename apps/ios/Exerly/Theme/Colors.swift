@@ -9,15 +9,15 @@ extension Color {
     static let exAccent = Color(hex: "ec4899")
 
     // Surfaces
-    static let exBackground = Color(hex: "080810")
-    static let exSurface1 = Color(hex: "0f0f1a")
-    static let exSurface2 = Color(hex: "161625")
-    static let exSurface3 = Color(hex: "1e1e30")
+    static let exBackground = Color(hex: "0a0a0f")
+    static let exSurface1 = Color(hex: "101016")
+    static let exSurface2 = Color(hex: "15151d")
+    static let exSurface3 = Color(hex: "1b1b24")
 
     // Text
-    static let exTextPrimary = Color(hex: "f8fafc")
-    static let exTextSecondary = Color(hex: "94a3b8")
-    static let exTextMuted = Color(hex: "475569")
+    static let exTextPrimary = Color(hex: "f7f8fa")
+    static let exTextSecondary = Color(hex: "9aa3b5")
+    static let exTextMuted = Color(hex: "626c80")
 
     // Status
     static let exSuccess = Color(hex: "22c55e")
@@ -26,12 +26,12 @@ extension Color {
     static let exInfo = Color(hex: "3b82f6")
 
     // Borders
-    static let exBorder = Color.white.opacity(0.06)
+    static let exBorder = Color.white.opacity(0.08)
     static let exBorderFocused = Color(hex: "8b5cf6").opacity(0.5)
 
-    // Glass
-    static let exGlassBg = Color.white.opacity(0.03)
-    static let exGlassBorder = Color.white.opacity(0.06)
+    // Cards (names kept from the old glass system; now solid surfaces + hairlines)
+    static let exGlassBg = Color(hex: "15151d")
+    static let exGlassBorder = Color.white.opacity(0.08)
 }
 
 // MARK: - ShapeStyle Convenience
@@ -87,19 +87,19 @@ extension Color {
 
 extension LinearGradient {
     static let exPrimaryGradient = LinearGradient(
-        colors: [Color(hex: "8b5cf6"), Color(hex: "a855f7")],
+        colors: [Color(hex: "8b5cf6"), Color(hex: "7c4ff0")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let exAccentGradient = LinearGradient(
-        colors: [Color(hex: "ec4899"), Color(hex: "f43f5e")],
+        colors: [Color(hex: "a78bfa"), Color(hex: "8b5cf6")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let exSurfaceGradient = LinearGradient(
-        colors: [Color(hex: "0f0f1a"), Color(hex: "161625")],
+        colors: [Color(hex: "101016"), Color(hex: "0a0a0f")],
         startPoint: .top,
         endPoint: .bottom
     )

@@ -562,7 +562,7 @@ export default function Admin() {
               {selectedUser && (
                 <GlassCard className="p-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow-primary shrink-0">
+                    <div className="w-14 h-14 rounded-full bg-gradient-primary flex items-center justify-center shrink-0">
                       <span className="text-white text-xl font-bold">
                         {selectedUser.name ? selectedUser.name.charAt(0).toUpperCase() : 'U'}
                       </span>

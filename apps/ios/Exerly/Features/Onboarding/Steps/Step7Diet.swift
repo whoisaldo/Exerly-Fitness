@@ -79,7 +79,7 @@ struct Step7Diet: View {
                             .foregroundStyle(selected ? .white : .exTextSecondary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(selected ? Color.exAccent : Color.exGlassBg)
+                            .background(selected ? Color.exPrimary : Color.exGlassBg)
                             .clipShape(Capsule())
                     }
                 }
