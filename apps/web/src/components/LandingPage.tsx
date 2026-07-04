@@ -1,5 +1,6 @@
 import { LandingNav } from './landing/LandingNav';
 import { Hero } from './landing/Hero';
+import { DemoSection } from './landing/DemoSection';
 import { StatsBand } from './landing/StatsBand';
 import { FeaturesGrid } from './landing/FeaturesGrid';
 import { PlatformSection } from './landing/PlatformSection';
@@ -13,6 +14,7 @@ export default function LandingPage() {
       <LandingNav />
       <main>
         <Hero />
+        <DemoSection />
         <StatsBand />
         <FeaturesGrid />
         <PlatformSection />
