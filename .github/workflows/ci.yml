@@ -26,7 +26,7 @@ jobs:
       ios: ${{ steps.filter.outputs.ios }}
       root: ${{ steps.filter.outputs.root }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -54,7 +54,7 @@ jobs:
     if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -80,7 +80,7 @@ jobs:
     if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.root == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -111,7 +111,7 @@ jobs:
     if: ${{ needs.changes.outputs.ios == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: SwiftLint (official Docker image)
         run: |
           docker run --rm -v "$PWD:/work" -w /work \
@@ -124,7 +124,7 @@ jobs:
     if: ${{ needs.changes.outputs.root == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker://rhysd/actionlint:latest
         with:
           args: -color
