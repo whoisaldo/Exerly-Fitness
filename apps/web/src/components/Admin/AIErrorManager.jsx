@@ -12,7 +12,7 @@ import {
 const { BASE_URL } = API_CONFIG;
 
 const fieldClasses =
-  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
+  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
 
 const pillBase =
   'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium';
@@ -162,7 +162,7 @@ const AIErrorManager = () => {
       case 'LOW':
         return 'bg-success/15 text-success border-success/20';
       default:
-        return 'bg-white/[0.06] text-slate-400 border-white/[0.1]';
+        return 'bg-white/6 text-slate-400 border-white/10';
     }
   };
 
@@ -175,9 +175,9 @@ const AIErrorManager = () => {
       case 'RESOLVED':
         return 'bg-success/15 text-success border-success/20';
       case 'IGNORED':
-        return 'bg-white/[0.06] text-slate-400 border-white/[0.1]';
+        return 'bg-white/6 text-slate-400 border-white/10';
       default:
-        return 'bg-white/[0.06] text-slate-400 border-white/[0.1]';
+        return 'bg-white/6 text-slate-400 border-white/10';
     }
   };
 
@@ -389,7 +389,9 @@ const AIErrorManager = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="mt-2 break-words text-sm text-slate-400">{error.errorMessage}</p>
+                  <p className="mt-2 wrap-break-word text-sm text-slate-400">
+                    {error.errorMessage}
+                  </p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                     <span>{error.email}</span>
                     <span className="tabular-nums">{formatDate(error.created_at)}</span>
@@ -433,7 +435,7 @@ const AIErrorManager = () => {
               className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <GlassCard elevated hover={false} className="!p-6">
+              <GlassCard elevated hover={false} className="p-6!">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-100">Error Details</h2>
                   <button
@@ -455,37 +457,37 @@ const AIErrorManager = () => {
                 </div>
 
                 <div>
-                  <div className="flex justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">Error Type</span>
                     <span className="text-right text-sm text-slate-200">
                       {selectedError.errorType}
                     </span>
                   </div>
-                  <div className="flex justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">Error Code</span>
                     <span className="break-all text-right font-mono text-xs text-slate-200">
                       {selectedError.errorCode}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">Severity</span>
                     <span className={`${pillBase} ${getSeverityClasses(selectedError.severity)}`}>
                       {selectedError.severity}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">Status</span>
                     <span className={`${pillBase} ${getStatusClasses(selectedError.status)}`}>
                       {selectedError.status}
                     </span>
                   </div>
-                  <div className="flex justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">User</span>
                     <span className="break-all text-right text-sm text-slate-200">
                       {selectedError.email}
                     </span>
                   </div>
-                  <div className="flex justify-between gap-3 border-b border-white/[0.06] py-2">
+                  <div className="flex justify-between gap-3 border-b border-white/6 py-2">
                     <span className="shrink-0 text-sm text-slate-500">Session ID</span>
                     <span className="break-all text-right font-mono text-xs text-slate-200">
                       {selectedError.sessionId}
@@ -501,7 +503,7 @@ const AIErrorManager = () => {
 
                 <div className="mt-4">
                   <p className="label">Message</p>
-                  <p className="mt-1.5 break-words text-sm leading-relaxed text-slate-200">
+                  <p className="mt-1.5 wrap-break-word text-sm leading-relaxed text-slate-200">
                     {selectedError.errorMessage}
                   </p>
                 </div>
@@ -509,7 +511,7 @@ const AIErrorManager = () => {
                 {selectedError.stackTrace && (
                   <div className="mt-4">
                     <p className="label">Stack Trace</p>
-                    <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-xl bg-surface-1 p-3 font-mono text-xs text-slate-300">
+                    <pre className="mt-1.5 whitespace-pre-wrap wrap-break-word rounded-xl bg-surface-1 p-3 font-mono text-xs text-slate-300">
                       {selectedError.stackTrace}
                     </pre>
                   </div>
@@ -518,13 +520,13 @@ const AIErrorManager = () => {
                 {selectedError.adminNotes && (
                   <div className="mt-4">
                     <p className="label">Admin Notes</p>
-                    <p className="mt-1.5 break-words text-sm text-slate-200">
+                    <p className="mt-1.5 wrap-break-word text-sm text-slate-200">
                       {selectedError.adminNotes}
                     </p>
                   </div>
                 )}
 
-                <div className="mt-6 flex flex-col gap-3 border-t border-white/[0.06] pt-5 sm:flex-row sm:items-end sm:justify-between">
+                <div className="mt-6 flex flex-col gap-3 border-t border-white/6 pt-5 sm:flex-row sm:items-end sm:justify-between">
                   <div className="w-full sm:w-56">
                     <label className="label mb-1.5 block" htmlFor="update-error-status">
                       Update Status

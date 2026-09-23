@@ -11,7 +11,7 @@ import {
 } from './ui';
 
 const fieldClasses =
-  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
+  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
 
 export default function AdminStatusChecker() {
   const [apiHealth, setApiHealth] = useState(null);
@@ -229,7 +229,7 @@ export default function AdminStatusChecker() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-wrap gap-3 border-t border-white/[0.06] pt-5">
+            <div className="mt-5 flex flex-wrap gap-3 border-t border-white/6 pt-5">
               <ActionButton
                 variant="secondary"
                 onClick={fetchDetailedHealth}
@@ -328,7 +328,7 @@ export default function AdminStatusChecker() {
                 </label>
                 <textarea
                   id="announcement-message"
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                   value={systemAnnouncement.message}
                   onChange={(e) =>
                     setSystemAnnouncement({ ...systemAnnouncement, message: e.target.value })
@@ -351,7 +351,7 @@ export default function AdminStatusChecker() {
                 Active (visible to users)
               </label>
 
-              <div className="border-t border-white/[0.06] pt-5">
+              <div className="border-t border-white/6 pt-5">
                 <ActionButton
                   type="submit"
                   loading={submitStatus === 'submitting'}

@@ -1,6 +1,153 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #8b5cf6;
+  --color-primary-bright: #a78bfa;
+  --color-primary-glow: rgba(139, 92, 246, 0.1);
+
+  --color-secondary: #a855f7;
+
+  --color-accent: #ec4899;
+  --color-accent-glow: rgba(236, 72, 153, 0.1);
+
+  --color-deep: #0a0a0f;
+  --color-deep-bg: #0a0a0f;
+
+  --color-surface-1: #101016;
+  --color-surface-2: #15151d;
+  --color-surface-3: #1b1b24;
+
+  --color-dark: #101016;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.12);
+  --color-border-accent: rgba(139, 92, 246, 0.4);
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --color-slate-50: #f7f8fa;
+  --color-slate-100: #e9ebf1;
+  --color-slate-200: #d4d8e2;
+  --color-slate-300: #b8becc;
+  --color-slate-400: #9aa3b5;
+  --color-slate-500: #808a9e;
+  --color-slate-600: #626c80;
+  --color-slate-700: #474e60;
+  --color-slate-800: #2e3340;
+  --color-slate-900: #1d2028;
+  --color-slate-950: #131519;
+
+  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --text-display-xl: 4.5rem;
+  --text-display-xl--line-height: 1;
+  --text-display-xl--letter-spacing: -0.025em;
+  --text-display-xl--font-weight: 800;
+  --text-display: 3rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 800;
+  --text-display-sm: 2.25rem;
+  --text-display-sm--line-height: 1.15;
+  --text-display-sm--letter-spacing: -0.02em;
+  --text-display-sm--font-weight: 700;
+  --text-stat: 2rem;
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.01em;
+  --text-stat--font-weight: 700;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1;
+  --text-label--letter-spacing: 0.1em;
+  --text-label--font-weight: 500;
+
+  --shadow-glow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-glow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-glow-primary: 0 4px 16px rgba(139, 92, 246, 0.18);
+  --shadow-glow-accent: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-glow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --background-image-gradient-primary: linear-gradient(135deg, #8b5cf6, #7c4ff0);
+  --background-image-gradient-accent: linear-gradient(135deg, #a78bfa, #8b5cf6);
+
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-pulse-draw: pulse-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+
+  --backdrop-blur-xs: 2px;
+
+  --breakpoint-xs: 475px;
+
+  @keyframes slide-up {
+    0% {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes pulse-draw {
+    0% {
+      stroke-dashoffset: 1;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility glass {
+  /* Surface cards — solid fills with hairline borders (names kept from the
+     original glassmorphism system so existing call sites keep working) */
+  @apply bg-surface-2 border border-white/8 rounded-2xl;
+}
+
+@utility glass-elevated {
+  @apply bg-surface-3 border border-white/10 rounded-2xl shadow-glow;
+}
+
+@utility nav-blur {
+  /* The only sanctioned blur: sticky nav / overlays */
+  @apply bg-deep/80 backdrop-blur-md border-b border-white/8;
+}
+
+@utility label {
+  /* Label typography preset */
+  @apply text-label uppercase tracking-widest text-slate-400;
+}
+
+@utility stat-value {
+  /* Stat number typography */
+  @apply text-stat tabular-nums font-bold text-slate-50;
+}
 
 @layer base {
   :root {
@@ -80,31 +227,5 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
-  }
-}
-
-@layer components {
-  /* Surface cards — solid fills with hairline borders (names kept from the
-     original glassmorphism system so existing call sites keep working) */
-  .glass {
-    @apply bg-surface-2 border border-white/[0.08] rounded-2xl;
-  }
-  .glass-elevated {
-    @apply bg-surface-3 border border-white/[0.1] rounded-2xl shadow-glow;
-  }
-
-  /* The only sanctioned blur: sticky nav / overlays */
-  .nav-blur {
-    @apply bg-deep/80 backdrop-blur-md border-b border-white/[0.08];
-  }
-
-  /* Label typography preset */
-  .label {
-    @apply text-label uppercase tracking-widest text-slate-400;
-  }
-
-  /* Stat number typography */
-  .stat-value {
-    @apply text-stat tabular-nums font-bold text-slate-50;
   }
 }

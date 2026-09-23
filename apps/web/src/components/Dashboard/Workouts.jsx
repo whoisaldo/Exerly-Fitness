@@ -262,7 +262,7 @@ export default function Workouts() {
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
-                <GlassCard elevated className="!p-6">
+                <GlassCard elevated className="p-6!">
                   {/* Modal Header */}
                   <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-slate-100">Create New Workout</h2>
@@ -296,7 +296,7 @@ export default function Workouts() {
                           value={formData.name}
                           onChange={handleInputChange}
                           placeholder="e.g., Full Body Strength"
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                           required
                         />
                       </div>
@@ -306,7 +306,7 @@ export default function Workouts() {
                           name="type"
                           value={formData.type}
                           onChange={handleInputChange}
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
                           {workoutTypes.map((type) => (
                             <option key={type.value} value={type.value}>
@@ -326,7 +326,7 @@ export default function Workouts() {
                           value={formData.duration}
                           onChange={handleInputChange}
                           placeholder="45"
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                           min="5"
                           max="180"
                           required
@@ -338,7 +338,7 @@ export default function Workouts() {
                           name="difficulty"
                           value={formData.difficulty}
                           onChange={handleInputChange}
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
                           {difficultyLevels.map((level) => (
                             <option key={level.value} value={level.value}>
@@ -357,7 +357,7 @@ export default function Workouts() {
                         onChange={handleInputChange}
                         placeholder="Describe your workout..."
                         rows="3"
-                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                       />
                     </div>
 
@@ -531,7 +531,7 @@ function WorkoutCard({
           <ActionButton
             variant="primary"
             onClick={() => startWorkout(workout)}
-            className="!px-3.5 !py-1.5 !text-xs"
+            className="px-3.5! py-1.5! text-xs!"
           >
             Start
           </ActionButton>

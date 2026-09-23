@@ -897,7 +897,7 @@ export default function Dashboard() {
                     icon={cardIconMap[label] || <span className="text-base">{icon}</span>}
                     label={label}
                     value={value}
-                    className={`h-full min-h-[7rem] ${color === 'negative' ? 'border-error/20' : ''}`}
+                    className={`h-full min-h-28 ${color === 'negative' ? 'border-error/20' : ''}`}
                   />
                 </Link>
               </motion.div>
@@ -1077,9 +1077,9 @@ export default function Dashboard() {
         transition={{ delay: 0.4 }}
         className="mt-8"
       >
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-surface-2 p-6 shadow-glow sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface-2 p-6 shadow-glow sm:p-8">
           <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary/6 to-transparent" />
 
           <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

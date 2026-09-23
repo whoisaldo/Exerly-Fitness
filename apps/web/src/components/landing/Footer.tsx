@@ -9,7 +9,7 @@ export function Footer() {
   const navigate = useNavigate();
 
   return (
-    <footer className="border-t border-white/[0.08] bg-surface-1">
+    <footer className="border-t border-white/8 bg-surface-1">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-3">
           {/* Brand */}
@@ -62,7 +62,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/[0.08] pt-6 text-center">
+        <div className="mt-12 border-t border-white/8 pt-6 text-center">
           <p className="text-xs text-slate-500">
             &copy; 2026 Exerly &mdash; An{' '}
             <a

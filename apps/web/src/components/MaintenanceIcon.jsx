@@ -12,7 +12,7 @@ export default function MaintenanceIcon() {
         to="/maintenance-history"
         title="Maintenance History"
         aria-label="Maintenance history"
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.1] bg-surface-3 text-slate-300 shadow-glow transition-colors hover:border-white/[0.2] hover:text-slate-50"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-surface-3 text-slate-300 shadow-glow transition-colors hover:border-white/20 hover:text-slate-50"
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -28,7 +28,7 @@ export default function MaintenanceIcon() {
         onClick={() => setIsVisible(false)}
         title="Close"
         aria-label="Hide maintenance shortcut"
-        className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white/[0.1] bg-surface-2 text-slate-500 opacity-0 transition-opacity hover:text-slate-200 group-hover:opacity-100"
+        className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-surface-2 text-slate-500 opacity-0 transition-opacity hover:text-slate-200 group-hover:opacity-100"
       >
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path

@@ -517,7 +517,7 @@ export default function Admin() {
                       value={selectedEmail}
                       onChange={(e) => setSelectedEmail(e.target.value)}
                       disabled={usersLoading}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
                       {usersLoading ? (
                         <option>Loading users...</option>

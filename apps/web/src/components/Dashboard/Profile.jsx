@@ -510,7 +510,7 @@ export default function Profile() {
                       min="13"
                       max="120"
                       required
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
                     />
                   </div>
 
@@ -520,7 +520,7 @@ export default function Profile() {
                       name="sex"
                       value={form.sex}
                       onChange={handleChange}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="male">Male</option>
                       <option value="female">Female</option>
@@ -543,7 +543,7 @@ export default function Profile() {
                       min={useMetric ? 100 : 40}
                       max={useMetric ? 250 : 100}
                       required
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
                     />
                     <p className="text-white/30 text-xs mt-1.5">
                       {useMetric ? 'Centimeters (100-250 cm)' : 'Inches (40-100 inches)'}
@@ -565,7 +565,7 @@ export default function Profile() {
                       min={useMetric ? 30 : 66}
                       max={useMetric ? 300 : 661}
                       required
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
                     />
                     <p className="text-white/30 text-xs mt-1.5">
                       {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
@@ -590,7 +590,7 @@ export default function Profile() {
                       name="activity_level"
                       value={form.activity_level}
                       onChange={handleChange}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="sedentary">Sedentary</option>
                       <option value="light">Light</option>
@@ -609,7 +609,7 @@ export default function Profile() {
                       name="goal"
                       value={form.goal}
                       onChange={handleChange}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="lose">Lose Weight</option>
                       <option value="maintain">Maintain Weight</option>
@@ -632,7 +632,7 @@ export default function Profile() {
                       onBlur={handleTargetWeightBlur}
                       min={useMetric ? 30 : 66}
                       max={useMetric ? 300 : 661}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white placeholder-white/30 outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
                     />
                     <p className="text-white/30 text-xs mt-1.5">
                       {useMetric ? 'Kilograms (30-300 kg)' : 'Pounds (66-661 lbs)'}
@@ -646,7 +646,7 @@ export default function Profile() {
                       type="date"
                       value={form.target_date}
                       onChange={handleChange}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors"
                     />
                   </div>
                 </div>
@@ -679,7 +679,7 @@ export default function Profile() {
                       name="privacy_settings"
                       value={form.privacy_settings}
                       onChange={handleChange}
-                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
+                      className="w-full bg-surface-2 border border-border-subtle rounded-xl h-11 px-4 text-white outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors appearance-none cursor-pointer"
                     >
                       <option value="public">Public Profile</option>
                       <option value="friends">Friends Only</option>

@@ -11,8 +11,8 @@ interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-white shadow-glow-primary hover:bg-primary-bright active:scale-[0.98]',
   secondary:
-    'border border-white/[0.12] bg-surface-3 text-slate-100 hover:border-white/[0.2] hover:bg-surface-2 active:scale-[0.98]',
-  ghost: 'text-slate-300 hover:bg-white/[0.06] hover:text-slate-50',
+    'border border-white/12 bg-surface-3 text-slate-100 hover:border-white/20 hover:bg-surface-2 active:scale-[0.98]',
+  ghost: 'text-slate-300 hover:bg-white/6 hover:text-slate-50',
 };
 
 function Spinner() {
@@ -41,7 +41,7 @@ export function ActionButton({
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-deep disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-deep disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${className}`}
       {...rest}
     >
       {loading ? <Spinner /> : icon}

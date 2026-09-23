@@ -4,7 +4,7 @@ import API_CONFIG from '../config';
 import { PageTransition, PageHeader, GlassCard, ActionButton } from './ui';
 
 const INPUT_CLASSES =
-  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
+  'h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50';
 
 const STATUS_META = {
   healthy: { label: 'Operational', text: 'text-success', bar: 'bg-success' },
@@ -22,7 +22,7 @@ const dayLabel = (daysAgo) => {
 
 function HealthRow({ label, children }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 border-b border-white/[0.06] py-2.5 last:border-0">
+    <div className="flex items-baseline justify-between gap-3 border-b border-white/6 py-2.5 last:border-0">
       <span className="text-sm text-slate-500">{label}</span>
       <span className="text-right text-sm text-slate-200">{children}</span>
     </div>
@@ -262,7 +262,7 @@ export default function StatusCheck() {
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             to="/maintenance-history"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.12] bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/[0.2] hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/20 hover:bg-surface-2"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -276,7 +276,7 @@ export default function StatusCheck() {
           </Link>
           <Link
             to="/credits"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.12] bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/[0.2] hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/20 hover:bg-surface-2"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
@@ -291,7 +291,7 @@ export default function StatusCheck() {
           </Link>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.12] bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/[0.2] hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-surface-3 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-all duration-200 hover:border-white/20 hover:bg-surface-2"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path

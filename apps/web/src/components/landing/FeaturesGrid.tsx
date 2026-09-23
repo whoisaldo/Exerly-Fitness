@@ -85,7 +85,7 @@ export function FeaturesGrid() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
-              className="group rounded-2xl border border-white/[0.08] bg-surface-2 p-7 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]"
+              className="group rounded-2xl border border-white/8 bg-surface-2 p-7 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]"
             >
               <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">

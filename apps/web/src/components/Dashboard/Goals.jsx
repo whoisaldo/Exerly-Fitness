@@ -204,7 +204,7 @@ export default function Goals() {
                 onClick={() =>
                   document.getElementById('goals-form')?.scrollIntoView({ behavior: 'smooth' })
                 }
-                className="flex min-h-[6rem] items-center justify-center rounded-2xl border-2 border-dashed border-border-subtle text-slate-400 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary-bright"
+                className="flex min-h-24 items-center justify-center rounded-2xl border-2 border-dashed border-border-subtle text-slate-400 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary-bright"
               >
                 <span className="text-2xl mr-2">+</span>
                 <span className="text-sm font-medium">Add Goal</span>
@@ -245,7 +245,7 @@ export default function Goals() {
                       value={goals[key]}
                       onChange={handleChange}
                       placeholder={`e.g., ${config.max > 100 ? Math.round(config.max * 0.7) : config.max}`}
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 pr-14 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 pr-14 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                       min={key === 'weeklyWeight' ? undefined : '0'}
                       step={
                         key === 'waterIntake' || key === 'sleepHours' || key === 'weeklyWeight'

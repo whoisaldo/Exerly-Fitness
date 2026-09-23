@@ -15,7 +15,7 @@ export function PlatformSection() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section id="platforms" className="border-y border-white/[0.08] bg-surface-1 py-20 lg:py-28">
+    <section id="platforms" className="border-y border-white/8 bg-surface-1 py-20 lg:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mx-auto mb-16 max-w-2xl text-center"

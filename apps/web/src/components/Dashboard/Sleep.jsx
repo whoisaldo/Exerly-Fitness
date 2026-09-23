@@ -276,7 +276,7 @@ export default function Sleep() {
                   placeholder="7.5"
                   value={form.hours}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                   required
                 />
               </div>
@@ -289,7 +289,7 @@ export default function Sleep() {
                   name="quality"
                   value={form.quality}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                   required
                 >
                   <option value="Excellent">Excellent</option>
@@ -310,7 +310,7 @@ export default function Sleep() {
                   type="time"
                   value={form.bedtime}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                 />
               </div>
 
@@ -323,7 +323,7 @@ export default function Sleep() {
                   type="time"
                   value={form.wakeTime}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                 />
               </div>
             </div>

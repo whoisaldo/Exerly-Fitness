@@ -393,7 +393,7 @@ export default function Activities() {
                       value={form.activity}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Duration */}
@@ -409,7 +409,7 @@ export default function Activities() {
                       value={form.duration_min}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Calories */}
@@ -425,7 +425,7 @@ export default function Activities() {
                       value={form.calories}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Intensity */}
@@ -438,7 +438,7 @@ export default function Activities() {
                       value={form.intensity}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     >
                       <option value="Low">Low</option>
                       <option value="Moderate">Moderate</option>
