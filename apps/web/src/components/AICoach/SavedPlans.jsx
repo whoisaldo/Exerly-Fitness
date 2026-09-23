@@ -1,3 +1,4 @@
+import { getToken, authenticatedFetch } from '../../lib/api';
 import React, { useState } from 'react';
 import API_CONFIG from '../../config';
 import './SavedPlans.css';
@@ -30,8 +31,8 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
 
   const handleApplyPlan = async (plan) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -52,8 +53,8 @@ const SavedPlans = ({ plans, onRefresh, creditsRemaining }) => {
     if (!window.confirm('Are you sure you want to delete this plan?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/plans/${planId}`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/plans/${planId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

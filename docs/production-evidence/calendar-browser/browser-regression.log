@@ -1,0 +1,57 @@
+
+> exerly-fitness@1.0.0 test:web
+> playwright test --output /tmp/exerly-calendar-browser-all-v2
+
+[WebServer] (node:71534) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 43 tests using 1 worker
+
+(node:71541) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 apps/web/e2e/account-calendar.spec.ts:26:5 › Account Etc/GMT+12, browser Pacific/Kiritimati › Today and every logging form use the account calendar (6.6s)
+  ✓   2 apps/web/e2e/account-calendar.spec.ts:26:5 › Account Pacific/Kiritimati, browser Etc/GMT+12 › Today and every logging form use the account calendar (6.6s)
+  ✓   3 apps/web/e2e/account-calendar.spec.ts:78:1 › a timezone change preserves an explicitly selected day and its unsent water operation (5.7s)
+  ✓   4 apps/web/e2e/account-calendar.spec.ts:120:1 › an open food flow keeps its calendar day when the account passes midnight (4.0s)
+  ✓   5 apps/web/e2e/account-calendar.spec.ts:147:1 › calendar days stay Gregorian across leap days, year changes, DST and skipped local dates (22ms)
+  ✓   6 apps/web/e2e/activity-sleep.spec.ts:5:3 › activity drafts, lost responses, conflicts, deletion and date moves preserve one record (4.1s)
+  ✓   7 apps/web/e2e/activity-sleep.spec.ts:5:3 › sleep drafts, lost responses, conflicts, deletion and date moves preserve one record (4.3s)
+  -   8 apps/web/e2e/activity-sleep.spec.ts:176:1 › native activity and sleep edits return from the browser with the same identities
+  ✓   9 apps/web/e2e/diary-status.spec.ts:4:1 › diary status preserves drafts, reviews conflicts and replays a lost acknowledgement once (6.4s)
+  ✓  10 apps/web/e2e/legacy-session-upgrade.spec.ts:7:1 › legacy upgrade replays one persisted operation across response loss, two tabs and reload (2.1s)
+  ✓  11 apps/web/e2e/legacy-session-upgrade.spec.ts:68:1 › legacy upgrade waits for durable browser storage before sending a request (1.6s)
+  ✓  12 apps/web/e2e/log-account-isolation.spec.ts:4:1 › a delayed log acknowledgement stays with its account after signing out (7.9s)
+  ✓  13 apps/web/e2e/measurements.spec.ts:4:1 › measurements agree across the diary, reviewed conflicts, retries, undo and export (6.2s)
+  ✓  14 apps/web/e2e/modern-sessions.spec.ts:15:1 › malformed refresh responses and storage failures retain the original recovery operation (5.0s)
+  ✓  15 apps/web/e2e/modern-sessions.spec.ts:60:1 › browser signup creates one rotating session and opens unfinished setup (1.7s)
+  ✓  16 apps/web/e2e/modern-sessions.spec.ts:110:1 › another tab signing in and out invalidates an earlier anonymous login response (8.1s)
+  ✓  17 apps/web/e2e/modern-sessions.spec.ts:162:1 › offline sign-out reports that server revocation could not be confirmed (3.8s)
+  ✓  18 apps/web/e2e/modern-sessions.spec.ts:176:1 › leaving sign-in cannot apply its delayed response (3.0s)
+  ✓  19 apps/web/e2e/modern-sessions.spec.ts:211:1 › a rejected password confirmation preserves the valid signed-in session (4.2s)
+  ✓  20 apps/web/e2e/modern-sessions.spec.ts:237:1 › two tabs share one refresh operation and keep the same server session (6.8s)
+  ✓  21 apps/web/e2e/modern-sessions.spec.ts:301:1 › a lost refresh response survives reload and preserves an unfinished activity draft (3.5s)
+  ✓  22 apps/web/e2e/modern-sessions.spec.ts:345:1 › access rejection retries an unchanged write once after refresh (3.8s)
+  ✓  23 apps/web/e2e/modern-sessions.spec.ts:377:1 › sign-out revokes the browser session and remote revocation clears every tab (7.5s)
+  ✓  24 apps/web/e2e/modern-sessions.spec.ts:423:1 › credentials are isolated by API and a scoped legacy session upgrades once (2.7s)
+  ✓  25 apps/web/e2e/preferences.spec.ts:39:1 › all profile preferences survive browser reload and update only accepted preference fields (7.7s)
+  ✓  26 apps/web/e2e/preferences.spec.ts:133:1 › lost preference acknowledgement replays the same operation after reload without undoing a later device edit (3.2s)
+  ✓  27 apps/web/e2e/preferences.spec.ts:170:1 › two browser tabs require review and merge only the edited fields (5.9s)
+  ✓  28 apps/web/e2e/preferences.spec.ts:209:1 › offline preference drafts retain invalid text and can be corrected and sent after reconnecting (4.9s)
+  ✓  29 apps/web/e2e/preferences.spec.ts:239:1 › local storage failure prevents sending and keeps the open preference answers (3.1s)
+  ✓  30 apps/web/e2e/preferences.spec.ts:275:1 › an unreadable saved preference draft is kept and blocks replacement writes (3.1s)
+  ✓  31 apps/web/e2e/preferences.spec.ts:294:1 › a late preference save cannot change a newly signed-in account and stays recoverable for its owner (7.8s)
+  ✓  32 apps/web/e2e/preferences.spec.ts:330:1 › save clicks waiting for a refresh cannot bypass a newly discovered conflict (3.1s)
+  ✓  33 apps/web/e2e/sessions.spec.ts:5:1 › a delayed refresh cannot restore a signed-out account or overwrite the next account (7.3s)
+  ✓  34 apps/web/e2e/setup.spec.ts:71:1 › signup setup survives each step, converts units without drift and resolves a lost completion acknowledgement (3.2s)
+  ✓  35 apps/web/e2e/setup.spec.ts:158:1 › cloud setup keeps optional preferences and requires review before replacing a newer draft (3.5s)
+  ✓  36 apps/web/e2e/setup.spec.ts:220:1 › legacy account repair asks for missing activity and preserves preferences without adding a new weigh-in (3.2s)
+  ✓  37 apps/web/e2e/setup.spec.ts:248:1 › lost draft acknowledgement replays its original operation before later edits and storage failure keeps open answers (4.1s)
+  ✓  38 apps/web/e2e/setup.spec.ts:307:1 › two tabs keep separate local drafts and a reviewed cloud choice survives reload (4.6s)
+  ✓  39 apps/web/e2e/setup.spec.ts:359:1 › an immutable completion survives reload before commit and resolves a lost committed response on bootstrap (3.5s)
+  ✓  40 apps/web/e2e/setup.spec.ts:395:1 › saved setup stays scoped to its API and account after sign out (7.6s)
+  ✓  41 apps/web/e2e/setup.spec.ts:421:1 › a stalled draft write times out and can replay the same committed operation (3.2s)
+  ✓  42 apps/web/e2e/water.spec.ts:4:1 › water replays a lost acknowledgement after reload and preserves another device and day (7.4s)
+  ✓  43 apps/web/e2e/weight.spec.ts:4:1 › weight edits survive a lost response, review competing readings and delete with restore (7.3s)
+
+  1 skipped
+  42 passed (3.4m)

@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "28A97E73-F20D-463A-BAAC-2550726030A5",
+        "deviceName" : "iPhone 16 Pro",
+        "modelName" : "iPhone 16 Pro",
+        "osBuildNumber" : "22G86",
+        "osVersion" : "18.6",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 63,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Exerly · Built with macOS 15.7.9",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1790100067.87,
+  "passedTests" : 63,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1790100046.444,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - Exerly",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "41% of duration",
+      "text" : "3 longest test runs with outlier durations exceeding 1.42s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 63
+}

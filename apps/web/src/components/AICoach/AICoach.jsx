@@ -1,3 +1,4 @@
+import { getToken, authenticatedFetch } from '../../lib/api';
 // frontend/src/components/AICoach/AICoach.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -60,8 +61,8 @@ const AICoach = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/profile`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -76,8 +77,8 @@ const AICoach = () => {
 
   const fetchCredits = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/credits`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/credits`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -92,8 +93,8 @@ const AICoach = () => {
 
   const fetchSavedPlans = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/plans`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -115,11 +116,11 @@ const AICoach = () => {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const body = { type, includeContext: true };
       if (customQuestion) body.question = customQuestion;
 
-      const response = await fetch(`${BASE_URL}/api/ai/coach`, {
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/coach`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,8 +187,8 @@ const AICoach = () => {
 
   const handleApplyPlan = async (plan) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/plans/${plan._id}/apply`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -208,8 +209,8 @@ const AICoach = () => {
     if (!window.confirm('Are you sure you want to delete this plan?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/ai/plans/${planId}`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/ai/plans/${planId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -1,12 +1,81 @@
 import SwiftUI
 
+@MainActor
+final class FoodSearchViewModel: ObservableObject {
+    @Published private(set) var recents: [LibraryFoodDTO] = []
+    @Published private(set) var libraryMatches: [LibraryFoodDTO] = []
+    @Published private(set) var providerMatches: [SearchFoodDTO] = []
+    @Published private(set) var activeQuery = ""
+    @Published private(set) var isLoading = false
+    @Published var error: String?
+
+    private let api = APIClient.shared
+    private var requestedQuery = ""
+
+    func loadRecents() async {
+        isLoading = true
+        error = nil
+        do {
+            let data = try await SyncEngine.shared.read("/api/library/foods?limit=50")
+            recents = try JSONDecoder().decode([LibraryFoodDTO].self, from: data)
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func search(_ rawQuery: String) async {
+        let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            clearSearch()
+            return
+        }
+
+        requestedQuery = query
+        activeQuery = query
+        isLoading = true
+        error = nil
+        do {
+            let response = try await api.searchFoods(query)
+            guard requestedQuery == query else { return }
+            libraryMatches = response.library
+            providerMatches = response.results
+        } catch {
+            guard requestedQuery == query else { return }
+            self.error = error.localizedDescription
+        }
+        if requestedQuery == query { isLoading = false }
+    }
+
+    func clearSearch() {
+        requestedQuery = ""
+        activeQuery = ""
+        libraryMatches = []
+        providerMatches = []
+        error = nil
+        isLoading = false
+    }
+}
+
 struct LogFoodView: View {
+    let initialDate: CalendarDay
+    let initialMealType: String
+    let onLogged: () -> Void
+
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel = FoodSearchViewModel()
     @State private var searchText = ""
-    @State private var results: [OpenFoodItem] = []
-    @State private var isSearching = false
     @State private var selectedFood: OpenFoodItem?
-    @State private var isSubmitting = false
+
+    init(
+        initialDate: CalendarDay,
+        initialMealType: String = "snack",
+        onLogged: @escaping () -> Void = {}
+    ) {
+        self.initialDate = initialDate
+        self.initialMealType = initialMealType
+        self.onLogged = onLogged
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,14 +92,28 @@ struct LogFoodView: View {
                         .foregroundStyle(.exTextSecondary)
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    NavigationLink(destination: BarcodeScannerView()) {
+                    NavigationLink(destination: BarcodeScannerView(initialDate: initialDate, initialMealType: initialMealType, onLogged: { onLogged(); dismiss() })) {
                         Image(systemName: "barcode.viewfinder")
                             .foregroundStyle(.exPrimary)
+                            .accessibilityLabel("Scan food barcode")
                     }
                 }
             }
-            .sheet(item: $selectedFood) { food in
-                QuickFoodLogSheet(food: food) { dismiss() }
+            .task { await viewModel.loadRecents() }
+            .onChange(of: searchText) { _, value in
+                if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    viewModel.clearSearch()
+                }
+            }
+            .fullScreenCover(item: $selectedFood) { food in
+                QuickFoodLogSheet(
+                    food: food,
+                    initialMealType: initialMealType,
+                    initialDate: initialDate
+                ) {
+                    onLogged()
+                    dismiss()
+                }
             }
         }
     }
@@ -39,10 +122,22 @@ struct LogFoodView: View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.exTextMuted)
-            TextField("Search foods...", text: $searchText)
+            TextField("Search foods…", text: $searchText)
                 .font(.exBody)
                 .foregroundStyle(.exTextPrimary)
-                .onSubmit { Task { await search() } }
+                .textInputAutocapitalization(.never)
+                .submitLabel(.search)
+                .onSubmit { Task { await viewModel.search(searchText) } }
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                    viewModel.clearSearch()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.exTextMuted)
+                }
+                .accessibilityLabel("Clear search")
+            }
         }
         .padding(12)
         .background(Color.exSurface2)
@@ -53,57 +148,113 @@ struct LogFoodView: View {
 
     @ViewBuilder
     private var contentArea: some View {
-        if isSearching {
-            LoadingStateView(message: "Searching...")
-        } else if results.isEmpty && searchText.isEmpty {
-            emptyState
-        } else if results.isEmpty {
-            EmptyStateView(icon: "magnifyingglass", title: "No results",
-                           message: "Try a different search term")
-        } else {
-            resultsList
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 20) {
-            Text("Recent Foods")
-                .font(.exLabel)
-                .foregroundStyle(.exTextSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-
-            EmptyStateView(
-                icon: "fork.knife",
-                title: "No recent foods",
-                message: "Search or scan a barcode to log food"
+        if viewModel.isLoading {
+            LoadingStateView(
+                message: viewModel.activeQuery.isEmpty ? "Loading recent foods…" : "Searching…"
             )
+        } else if let error = viewModel.error {
+            ErrorStateView(message: error) {
+                Task {
+                    if viewModel.activeQuery.isEmpty {
+                        await viewModel.loadRecents()
+                    } else {
+                        await viewModel.search(viewModel.activeQuery)
+                    }
+                }
+            }
+        } else if viewModel.activeQuery.isEmpty {
+            recentList
+        } else if viewModel.libraryMatches.isEmpty && viewModel.providerMatches.isEmpty {
+            EmptyStateView(
+                icon: "magnifyingglass",
+                title: "No results",
+                message: "Try a different food or brand."
+            )
+        } else {
+            searchResults
         }
     }
 
-    private var resultsList: some View {
+    private var recentList: some View {
+        Group {
+            if viewModel.recents.isEmpty {
+                EmptyStateView(
+                    icon: "fork.knife",
+                    title: "No recent foods",
+                    message: "Search or scan a barcode. Foods you log will appear here next time."
+                )
+            } else {
+                ScrollView {
+                    foodSection(
+                        title: "Recent foods",
+                        subtitle: "Most recently used",
+                        foods: viewModel.recents
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+    }
+
+    private var searchResults: some View {
         ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(results) { food in
-                    FoodRowView(food: food) {
-                        selectedFood = food
-                    }
+            VStack(spacing: 22) {
+                if !viewModel.libraryMatches.isEmpty {
+                    foodSection(
+                        title: "Your foods",
+                        subtitle: "Logged before",
+                        foods: viewModel.libraryMatches
+                    )
+                }
+
+                if !viewModel.providerMatches.isEmpty {
+                    providerSection
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
+            .padding(.bottom, 24)
         }
     }
 
-    private func search() async {
-        guard !searchText.isEmpty else { return }
-        isSearching = true
-        results = await OpenFoodFactsService.shared.search(query: searchText)
-        isSearching = false
+    private func foodSection(
+        title: String,
+        subtitle: String,
+        foods: [LibraryFoodDTO]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.exLabel)
+                    .foregroundStyle(.exTextPrimary)
+                Spacer()
+                Text(subtitle)
+                    .font(.exSmall)
+                    .foregroundStyle(.exTextMuted)
+            }
+            ForEach(foods) { food in
+                FoodRowView(food: food.openFoodItem) {
+                    selectedFood = food.openFoodItem
+                }
+            }
+        }
+    }
+
+    private var providerSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("More results")
+                .font(.exLabel)
+                .foregroundStyle(.exTextPrimary)
+            ForEach(viewModel.providerMatches) { food in
+                FoodRowView(food: food.openFoodItem) {
+                    selectedFood = food.openFoodItem
+                }
+            }
+        }
     }
 }
-
-// MARK: - Food Row
 
 struct FoodRowView: View {
     let food: OpenFoodItem
@@ -117,10 +268,11 @@ struct FoodRowView: View {
                         .font(.exBodyMedium)
                         .foregroundStyle(.exTextPrimary)
                         .lineLimit(1)
-                    if let brand = food.brand {
+                    if let brand = food.brand, !brand.isEmpty {
                         Text(brand)
                             .font(.exCaption)
                             .foregroundStyle(.exTextMuted)
+                            .lineLimit(1)
                     }
                 }
                 Spacer()
@@ -131,123 +283,26 @@ struct FoodRowView: View {
                     Text(food.servingSize)
                         .font(.exSmall)
                         .foregroundStyle(.exTextMuted)
+                        .lineLimit(1)
                 }
             }
             .padding(14)
             .glassCard(cornerRadius: 12)
         }
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Quick Log Sheet
-
 struct QuickFoodLogSheet: View {
     let food: OpenFoodItem
+    var initialMealType: String = "snack"
+    var initialDate: CalendarDay
     let onComplete: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var servings: Double = 1
-    @State private var selectedMealType = "Snack"
-    @State private var isSubmitting = false
-
-    private let mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"]
-    var scaledCalories: Int { Int(Double(food.calories) * servings) }
-
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Text(food.name)
-                    .font(.exH3)
-                    .foregroundStyle(.exTextPrimary)
-
-                if let brand = food.brand {
-                    Text(brand)
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextMuted)
-                }
-
-                GlassCard {
-                    HStack {
-                        Text("Servings")
-                            .font(.exLabel)
-                            .foregroundStyle(.exTextSecondary)
-                        Spacer()
-                        Stepper(value: $servings, in: 0.5...10, step: 0.5) {
-                            Text(String(format: "%.1f", servings))
-                                .font(.exStatSmall)
-                                .foregroundStyle(.exPrimary)
-                        }
-                    }
-                }
-
-                GlassCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Meal Type")
-                            .font(.exLabel)
-                            .foregroundStyle(.exTextSecondary)
-                        HStack(spacing: 8) {
-                            ForEach(mealTypes, id: \.self) { type in
-                                Button {
-                                    selectedMealType = type
-                                } label: {
-                                    Text(type)
-                                        .font(.exSmall)
-                                        .fontWeight(selectedMealType == type ? .semibold : .regular)
-                                        .foregroundStyle(selectedMealType == type ? .white : .exTextSecondary)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(selectedMealType == type ? Color.exPrimary : Color.exSurface2)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                GlassCard {
-                    HStack {
-                        Text("Total Calories")
-                            .font(.exLabel)
-                            .foregroundStyle(.exTextSecondary)
-                        Spacer()
-                        Text("\(scaledCalories) kcal")
-                            .font(.exStatSmall)
-                            .foregroundStyle(.exPrimary)
-                    }
-                }
-
-                Spacer()
-
-                ActionButton(title: "Log Food", isLoading: isSubmitting) {
-                    Task { await log() }
-                }
-            }
-            .padding(20)
-            .background(Color.exBackground)
-            .navigationTitle("Log Food")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-
-    private func log() async {
-        isSubmitting = true
-        let req = FoodRequest(
-            name: food.name, calories: scaledCalories,
-            protein: food.protein * servings,
-            carbs: food.carbs * servings,
-            fat: food.fat * servings,
-            sugar: food.sugar * servings,
-            mealType: selectedMealType,
-            barcode: food.barcode,
-            brand: food.brand,
-            fiber: food.fiber * servings,
-            servingSize: food.servingSize
-        )
-        do {
-            let _: FoodDTO = try await APIClient.shared.createFoodLog(req)
-            dismiss()
-            onComplete()
-        } catch {
-            isSubmitting = false
+            FoodDetailView(food: food, initialDate: initialDate, initialMealType: initialMealType, onLogged: onComplete)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
     }
 }

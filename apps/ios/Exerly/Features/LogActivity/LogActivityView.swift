@@ -1,181 +1,86 @@
 import SwiftUI
 
 struct LogActivityView: View {
+    let editing: ActivityDTO?
+    let onDeleted: (String) -> Void
+    let onSaved: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var activityType = ""
-    @State private var duration: Double = 30
-    @State private var intensity = "moderate"
-    @State private var isSubmitting = false
-    @State private var searchText = ""
+    @EnvironmentObject private var sync: SyncEngine
+    @State private var name: String
+    @State private var duration: String
+    @State private var calories: String
+    @State private var intensity: String
+    @State private var selectedDate: CalendarDay
+    @State private var isSaving = false
+    @State private var confirmingDelete = false
+    @State private var error: String?
+    @FocusState private var focused: Bool
 
-    private let intensities = ["light", "moderate", "intense"]
-
-    /// Calories per minute at moderate intensity for each activity.
-    private let caloriesPerMinute: [String: Double] = [
-        "Running": 10, "Walking": 4, "Cycling": 8, "Swimming": 9,
-        "Yoga": 3, "Weightlifting": 6, "HIIT": 12, "Pilates": 4,
-        "Boxing": 10, "Rowing": 8, "Basketball": 8, "Soccer": 9,
-        "American Football": 8, "Tennis": 7, "Baseball": 5,
-        "Volleyball": 6, "Martial Arts": 10, "Dance": 6,
-        "Rock Climbing": 9, "Hiking": 6, "Jump Rope": 12,
-        "Skateboarding": 5, "Elliptical": 7, "Stair Climbing": 9,
-        "Spinning": 10, "CrossFit": 10, "Stretching": 2.5,
-        "Badminton": 5, "Table Tennis": 4, "Golf": 3.5,
-    ]
-
-    private var estimatedCalories: Int {
-        let baseRate = caloriesPerMinute[activityType] ?? 6.5
-        let intensityMultiplier: Double = switch intensity {
-        case "light": 0.7
-        case "intense": 1.4
-        default: 1.0
-        }
-        return Int(duration * baseRate * intensityMultiplier)
+    init(initialDate: CalendarDay, editing: ActivityDTO? = nil, onDeleted: @escaping (String) -> Void = { _ in }, onSaved: @escaping () -> Void = {}) {
+        self.editing = editing; self.onDeleted = onDeleted; self.onSaved = onSaved
+        _name = State(initialValue: editing?.type ?? "")
+        _duration = State(initialValue: editing.map { $0.duration.formatted(.number.grouping(.never)) } ?? "")
+        _calories = State(initialValue: editing?.calories.map { $0.formatted(.number.grouping(.never)) } ?? "")
+        _intensity = State(initialValue: editing?.intensity ?? "")
+        _selectedDate = State(initialValue: editing?.date.flatMap { CalendarDay(rawValue: $0) } ?? initialDate)
     }
-
-    private let suggestions = [
-        "Running", "Walking", "Cycling", "Swimming", "Yoga",
-        "Weightlifting", "HIIT", "Pilates", "Boxing", "Rowing",
-        "Basketball", "Soccer", "American Football", "Tennis",
-        "Baseball", "Volleyball", "Martial Arts", "Dance",
-        "Rock Climbing", "Hiking", "Jump Rope", "Skateboarding",
-        "Elliptical", "Stair Climbing", "Spinning", "CrossFit",
-        "Stretching", "Badminton", "Table Tennis", "Golf",
-    ]
-
-    private var filteredSuggestions: [String] {
-        if searchText.isEmpty { return suggestions }
-        return suggestions.filter { $0.localizedCaseInsensitiveContains(searchText) }
-    }
-
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    searchSection
-                    durationSection
-                    intensitySection
-                    caloriePreview
-                    submitButton
+            Form {
+                Section("Activity") {
+                    LabeledContent("Name") {
+                        TextField("Activity name", text: $name).focused($focused).accessibilityIdentifier("activity.name")
+                    }
+                    LabeledContent("Minutes") {
+                        TextField("Duration in minutes", text: $duration).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("activity.minutes")
+                    }
+                    LabeledContent("Calories") {
+                        TextField("Not recorded", text: $calories).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("activity.calories")
+                    }
+                    Text("Leave calories blank if you did not record them.").font(.callout).foregroundStyle(.secondary)
+                    Picker("Intensity", selection: $intensity) {
+                        Text("Not recorded").tag("")
+                        ForEach(["light", "moderate", "intense"], id: \.self) { Text($0.capitalized).tag($0) }
+                        if !["", "light", "moderate", "intense"].contains(intensity) { Text(intensity.capitalized).tag(intensity) }
+                    }.accessibilityIdentifier("activity.intensity")
+                    CalendarDayPicker("Activity date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                 }
-                .padding(20)
+                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.") }
+                if editing?.syncState == "attention" { NavigationLink("Review activity changes") { SyncIssuesView() } }
+                if editing != nil {
+                    Section { Button("Delete activity", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44) }
+                }
+                if let error { Text(error).foregroundStyle(.red) }
             }
-            .background(Color.exBackground)
-            .navigationTitle("Log Activity")
+            .navigationTitle(editing == nil ? "Log activity" : "Edit activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(.exTextSecondary)
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save activity") { save() }.disabled(isSaving) }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
+            }
+            .alert("Delete this activity?", isPresented: $confirmingDelete) {
+                Button("Delete activity", role: .destructive) {
+                    guard let editing else { return }
+                    do { onDeleted(try sync.deleteActivity(editing)); onSaved(); dismiss() }
+                    catch { self.error = error.localizedDescription }
                 }
-            }
+                Button("Cancel", role: .cancel) {}
+            } message: { Text("You can undo this after closing the form.") }
         }
     }
-
-    private var searchSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            FloatingLabelTextField(label: "Search activity", text: $searchText)
-
-            if activityType.isEmpty {
-                FlowLayout(spacing: 8) {
-                    ForEach(filteredSuggestions, id: \.self) { name in
-                        Button {
-                            activityType = name
-                            searchText = name
-                        } label: {
-                            Text(name)
-                                .font(.exCaption)
-                                .foregroundStyle(.exTextSecondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .glassCard(cornerRadius: 20)
-                        }
-                    }
-                }
-            }
+    private func save() {
+        guard !isSaving else { return }
+        guard let minutes = UserEnteredNumber.parse(duration) else {
+            error = "Enter the activity duration in minutes."; return
         }
-    }
-
-    private var durationSection: some View {
-        GlassCard {
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Duration")
-                        .font(.exLabel)
-                        .foregroundStyle(.exTextSecondary)
-                    Spacer()
-                    Text("\(Int(duration)) min")
-                        .font(.exStatSmall)
-                        .foregroundStyle(.exPrimary)
-                }
-                Slider(value: $duration, in: 5...180, step: 5)
-                    .tint(.exPrimary)
-            }
-        }
-    }
-
-    private var intensitySection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Intensity")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                HStack(spacing: 10) {
-                    ForEach(intensities, id: \.self) { level in
-                        Button {
-                            withAnimation(.spring(response: 0.3)) { intensity = level }
-                        } label: {
-                            Text(level.capitalized)
-                                .font(.exCaption)
-                                .foregroundStyle(intensity == level ? .white : .exTextSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(intensity == level ? Color.exPrimary : Color.exSurface2)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var caloriePreview: some View {
-        GlassCard {
-            HStack {
-                Text("Estimated Calories")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                Spacer()
-                Text("\(estimatedCalories) kcal")
-                    .font(.exStatSmall)
-                    .foregroundStyle(.exPrimary)
-            }
-        }
-    }
-
-    private var submitButton: some View {
-        ActionButton(
-            title: "Log Activity",
-            isLoading: isSubmitting,
-            isDisabled: activityType.isEmpty
-        ) {
-            Task { await submit() }
-        }
-    }
-
-    private func submit() async {
-        isSubmitting = true
-        let req = ActivityRequest(
-            type: activityType,
-            duration: Int(duration),
-            calories: estimatedCalories,
-            intensity: intensity
-        )
-        do {
-            let _: ActivityDTO = try await APIClient.shared.createActivity(req)
-            dismiss()
-        } catch {
-            isSubmitting = false
-        }
+        let energy = calories.trimmingCharacters(in: .whitespacesAndNewlines)
+        let number = UserEnteredNumber.parse(energy)
+        guard energy.isEmpty || number != nil else { error = "Enter calories as a number, or leave the field blank."; return }
+        isSaving = true; error = nil
+        let request = ActivityRequest(type: name, duration: minutes, calories: number, intensity: intensity.isEmpty ? nil : intensity,
+            entryDate: selectedDate.rawValue, category: editing?.category)
+        do { try sync.saveActivity(request, editing: editing); onSaved(); dismiss() }
+        catch { self.error = error.localizedDescription; isSaving = false }
     }
 }

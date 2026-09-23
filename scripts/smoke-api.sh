@@ -12,8 +12,12 @@ export PORT
 API_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/api" && pwd)"
 BASE="http://127.0.0.1:${PORT}"
 
+# A throwaway database per run, so the smoke test never writes into the repo
+# and never inherits state from a previous run.
+SMOKE_DB="$(mktemp -t exerly-smoke-XXXXXX.db)"
+export SQLITE_FILE="$SMOKE_DB"
+
 echo "▶ Starting API (DB_MODE=$DB_MODE) on $BASE ..."
-# Run from the API dir so ./fitness-local.db resolves the same as `npm start`.
 ( cd "$API_DIR" && exec node index.js ) &
 SERVER_PID=$!
 
@@ -22,6 +26,7 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
+  rm -f "$SMOKE_DB"
 }
 trap cleanup EXIT
 
@@ -46,5 +51,32 @@ fi
 
 echo "▶ Checking /api/health ..."
 curl -fsS "$BASE/api/health" >/dev/null
+
+echo "▶ Exercising the daily loop (signup, weigh-in, food, summary) ..."
+EMAIL="smoke-$$@exerly.test"
+TOKEN="$(curl -fsS -X POST "$BASE/signup" \
+  -H 'Content-Type: application/json' \
+  -d "{\"name\":\"Smoke\",\"email\":\"$EMAIL\",\"password\":\"smoke-test-password\"}" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).token')"
+
+if [ -z "$TOKEN" ] || [ "$TOKEN" = "undefined" ]; then
+  echo "✖ signup did not return a token" >&2
+  exit 1
+fi
+
+curl -fsS -X POST "$BASE/api/weight" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" -d '{"weight":80}' >/dev/null
+
+curl -fsS -X POST "$BASE/api/food" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Smoke food","calories":500,"protein":30,"servings":2}' >/dev/null
+
+CONSUMED="$(curl -fsS "$BASE/api/summary" -H "Authorization: Bearer $TOKEN" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).consumed.calories')"
+
+if [ "$CONSUMED" != "1000" ]; then
+  echo "✖ summary reported $CONSUMED kcal (expected 1000 for 500 x 2 servings)" >&2
+  exit 1
+fi
 
 echo "✓ API smoke test passed"

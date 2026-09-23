@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ProductDemo } from './demo/ProductDemo';
+import { PhoneLoggingVideo } from './PhoneLoggingVideo';
 
 export function DemoSection() {
   const reduceMotion = useReducedMotion();
@@ -9,24 +9,25 @@ export function DemoSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mx-auto mb-14 max-w-2xl text-center"
-          initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5 }}
         >
-          <h2 className="text-display-sm text-slate-50">Your day, logged in seconds</h2>
+          <h2 className="text-display-sm text-slate-50">A few taps. A clearer day.</h2>
           <p className="mt-3 text-lg text-slate-400">
-            Watch Exerly log a meal, update your targets, and turn the numbers into coaching.
+            See how logging a meal works on iPhone, from choosing your portion to updating your
+            diary.
           </p>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
         >
-          <ProductDemo />
+          <PhoneLoggingVideo />
         </motion.div>
       </div>
     </section>

@@ -1,122 +1,59 @@
 import Foundation
 
 struct OpenFoodItem: Identifiable, Codable {
-    var id: String { barcode ?? UUID().uuidString }
+    var id: String { barcode ?? "\(name)|\(brand ?? "")|\(servingSize)" }
     let barcode: String?
     let name: String
     let brand: String?
-    let calories: Int
-    let protein: Double
-    let carbs: Double
-    let fat: Double
-    let fiber: Double
-    let sugar: Double
+    var calories: Int
+    var protein: Double
+    var carbs: Double
+    var fat: Double
+    var fiber: Double
+    var sugar: Double
     let servingSize: String
+    var source: String? = nil
+    var missingNutrients: [String] = []
+    var nutritionBasis: NutritionBasis? = nil
+    var sodium: Double? = nil
+    var saturatedFat: Double? = nil
+    var preciseCalories: Double? = nil
 
     func scaled(by factor: Double) -> OpenFoodItem {
         OpenFoodItem(
             barcode: barcode, name: name, brand: brand,
-            calories: Int(Double(calories) * factor),
+            calories: Int(((preciseCalories ?? Double(calories)) * factor).rounded()),
             protein: protein * factor, carbs: carbs * factor,
             fat: fat * factor, fiber: fiber * factor,
-            sugar: sugar * factor, servingSize: servingSize
+            sugar: sugar * factor, servingSize: servingSize,
+            source: source, missingNutrients: missingNutrients, nutritionBasis: nutritionBasis,
+            sodium: sodium.map { $0 * factor }, saturatedFat: saturatedFat.map { $0 * factor },
+            preciseCalories: (preciseCalories ?? Double(calories)) * factor
         )
     }
 }
 
-actor OpenFoodFactsService {
-    static let shared = OpenFoodFactsService()
-
-    private let baseURL = "https://world.openfoodfacts.org"
-    private let session: URLSession
-    private let decoder = JSONDecoder()
-
-    private init() {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 15
-        self.session = URLSession(configuration: config)
-    }
-
-    func search(query: String, page: Int = 1) async -> [OpenFoodItem] {
-        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "\(baseURL)/cgi/search.pl?search_terms=\(encoded)&page=\(page)&page_size=20&json=1") else {
-            return []
-        }
-        do {
-            let (data, _) = try await session.data(from: url)
-            let response = try decoder.decode(OFFSearchResponse.self, from: data)
-            return response.products.compactMap { normalize($0) }
-        } catch {
-            return []
-        }
-    }
-
-    func fetchByBarcode(_ barcode: String) async -> OpenFoodItem? {
-        guard let url = URL(string: "\(baseURL)/api/v0/product/\(barcode).json") else {
-            return nil
-        }
-        do {
-            let (data, _) = try await session.data(from: url)
-            let response = try decoder.decode(OFFProductResponse.self, from: data)
-            guard response.status == 1, let product = response.product else { return nil }
-            return normalize(product)
-        } catch {
-            return nil
-        }
-    }
-
-    private func normalize(_ p: OFFProduct) -> OpenFoodItem? {
-        let name = p.product_name ?? p.product_name_en ?? ""
-        guard !name.isEmpty else { return nil }
-        let n = p.nutriments
-        return OpenFoodItem(
-            barcode: p.code,
-            name: name,
-            brand: p.brands,
-            calories: Int(n?.energy_kcal_100g ?? n?.energy_kcal ?? 0),
-            protein: n?.proteins_100g ?? 0,
-            carbs: n?.carbohydrates_100g ?? 0,
-            fat: n?.fat_100g ?? 0,
-            fiber: n?.fiber_100g ?? 0,
-            sugar: n?.sugars_100g ?? 0,
-            servingSize: p.serving_size ?? "100g"
-        )
-    }
+struct NutritionBasis: Codable {
+    let amount: Double
+    let unit: String
 }
 
-// MARK: - OFF API Models
-
-private struct OFFSearchResponse: Decodable {
-    let products: [OFFProduct]
-}
-
-private struct OFFProductResponse: Decodable {
-    let status: Int
-    let product: OFFProduct?
-}
-
-private struct OFFProduct: Decodable {
-    let code: String?
-    let product_name: String?
-    let product_name_en: String?
-    let brands: String?
-    let serving_size: String?
-    let nutriments: OFFNutriments?
-}
-
-private struct OFFNutriments: Decodable {
-    let energy_kcal_100g: Double?
-    let energy_kcal: Double?
-    let proteins_100g: Double?
-    let carbohydrates_100g: Double?
-    let fat_100g: Double?
-    let fiber_100g: Double?
-    let sugars_100g: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case energy_kcal_100g = "energy-kcal_100g"
-        case energy_kcal = "energy-kcal"
-        case proteins_100g, carbohydrates_100g, fat_100g
-        case fiber_100g, sugars_100g
+extension FoodDTO {
+    var perServingItem: OpenFoodItem {
+        let quantity = max(servings, 0.01)
+        let p = nutritionSnapshot != nil ? nutritionSnapshot?.protein : protein.map { $0 / quantity }
+        let c = nutritionSnapshot != nil ? nutritionSnapshot?.carbs : carbs.map { $0 / quantity }
+        let f = nutritionSnapshot != nil ? nutritionSnapshot?.fat : fat.map { $0 / quantity }
+        let fi = nutritionSnapshot != nil ? nutritionSnapshot?.fiber : fiber.map { $0 / quantity }
+        let s = nutritionSnapshot != nil ? nutritionSnapshot?.sugar : sugar.map { $0 / quantity }
+        let missing = [("protein", p), ("carbs", c), ("fat", f), ("fiber", fi), ("sugar", s)].compactMap { $0.1 == nil ? $0.0 : nil }
+        return OpenFoodItem(barcode: barcode, name: name, brand: brand,
+            calories: Int((nutritionSnapshot?.calories ?? Double(calories) / quantity).rounded()),
+            protein: p ?? 0, carbs: c ?? 0, fat: f ?? 0, fiber: fi ?? 0, sugar: s ?? 0,
+            servingSize: servingSize ?? "1 serving", source: source, missingNutrients: missing,
+            nutritionBasis: nutritionBasis,
+            sodium: nutritionSnapshot != nil ? nutritionSnapshot?.sodium : sodium.map { $0 / quantity },
+            saturatedFat: nutritionSnapshot != nil ? nutritionSnapshot?.saturated_fat : saturatedFat.map { $0 / quantity },
+            preciseCalories: nutritionSnapshot?.calories ?? Double(calories) / quantity)
     }
 }

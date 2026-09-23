@@ -58,8 +58,11 @@ struct Step9Equipment: View {
         let selected = state.equipment.contains(eq)
         return Button {
             withAnimation(.spring(response: 0.3)) {
-                if selected { state.equipment.remove(eq) }
-                else { state.equipment.insert(eq) }
+                if selected {
+                    state.equipment.remove(eq)
+                } else {
+                    state.equipment.insert(eq)
+                }
             }
         } label: {
             VStack(spacing: 8) {

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SignupView: View {
     let onBack: () -> Void
-    var onSwitchToLogin: (() -> Void)? = nil
+    var onSwitchToLogin: (() -> Void)?
     @EnvironmentObject private var authVM: AuthViewModel
 
     @State private var name = ""
@@ -14,7 +14,7 @@ struct SignupView: View {
 
     private var passwordStrength: Double {
         var score = 0.0
-        if password.count >= 6 { score += 0.25 }
+        if password.count >= 8 { score += 0.25 }
         if password.count >= 10 { score += 0.25 }
         if password.rangeOfCharacter(from: .uppercaseLetters) != nil { score += 0.25 }
         if password.rangeOfCharacter(from: .decimalDigits) != nil { score += 0.25 }
@@ -30,7 +30,7 @@ struct SignupView: View {
     }
 
     private var isValid: Bool {
-        !name.isEmpty && !email.isEmpty && password.count >= 6 && agreedToTerms
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !email.isEmpty && password.count >= 8 && agreedToTerms
     }
 
     var body: some View {
@@ -48,7 +48,7 @@ struct SignupView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 60)
-            }
+            }.scrollDismissesKeyboard(.interactively)
         }
         .overlay(alignment: .topLeading) { backButton }
     }
@@ -63,6 +63,7 @@ struct SignupView: View {
                 .foregroundStyle(.exTextSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 44)
     }
 
     private var inputFields: some View {
@@ -71,6 +72,7 @@ struct SignupView: View {
             FloatingLabelTextField(label: "Email", text: $email, keyboardType: .emailAddress)
                 .onChange(of: email) { _, _ in emailAlreadyExists = false; authVM.error = nil }
             FloatingLabelTextField(label: "Password", text: $password, isSecure: true)
+            Text("Use at least 8 characters.").font(.caption).foregroundStyle(.exTextSecondary)
         }
         .modifier(ShakeEffect(animatableData: shakeAttempts))
     }

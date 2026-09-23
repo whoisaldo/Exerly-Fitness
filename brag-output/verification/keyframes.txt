@@ -1,0 +1,10 @@
+◇  onion-skin screenshot saved /tmp/exerly-brag-phone-motion.png
+   5 elements · open it to verify the motion matches your target, then read the keyframes below.
+
+◇  composition — 1 item
+
+index.html  (index.html)
+  #phone  fromTo/flat  @0s→0.7s (0.7s)
+    0% {x:100 scale:0.94 opacity:0}  100% {x:0 scale:1 opacity:1}
+
+Tip: edit the keyframes in source, then `hyperframes keyframes --shot out.png` to see the rendered motion.

@@ -20,18 +20,32 @@ An AI coaching assistant (powered by Google Gemini) can generate workout plans, 
 
 ## Core Features
 
+**Adaptive nutrition**
+
+- Daily weigh-ins smoothed into a trend, so you judge progress on the line and not the noise
+- Expenditure measured from what you actually ate and how the trend moved, rather than a BMR formula
+- Weekly check-ins that move your calorie and macro targets to match the measurement
+- Choose a goal rate in kg/week; the split follows from your diet type and protein strategy
+
+**Food logging**
+
+- Search across FatSecret and Open Food Facts, or scan a barcode with the camera
+- Serving quantities, so 1.5 portions is one entry and not mental arithmetic
+- A personal library that fills itself from what you log, with favourites and recents
+- Recipes that divide into per-serving macros
+- Log to any past day, in your own timezone
+
 **Tracking**
 
-- Log workouts from 30+ activity types (gym exercises, sports, cardio) with intensity and calorie estimation
-- Scan food barcodes with the camera — nutritional data pulled from FatSecret and Open Food Facts APIs
-- Track sleep with bedtime/wake time and quality ratings
-- Set daily and weekly goals with progress monitoring
+- 30+ activity types with intensity and calorie estimation
+- Sleep with bedtime/wake time and quality
+- Water in millilitres
+- Full JSON export of everything the account holds
 
 **Intelligence**
 
-- 12-step onboarding wizard that calculates BMI, TDEE, macro targets, and generates a weekly plan
-- AI coach that answers fitness questions, builds workout plans, and analyzes progress
-- Auto-detects metric/imperial units from device locale
+- 12-step onboarding wizard that calculates BMI, TDEE, and a starting plan
+- AI coach that answers fitness questions and builds workout plans, aware of your current targets
 
 **Health Integration**
 
@@ -50,15 +64,31 @@ An AI coaching assistant (powered by Google Gemini) can generate workout plans, 
 ```
 Exerly-Fitness/
 ├── apps/
-│   ├── api/        Express backend (Node.js)
+│   ├── api/
+│   │   ├── data/       Storage adapter: one interface, Mongo and SQLite drivers
+│   │   ├── lib/        Dates, auth, validation, and the nutrition algorithms
+│   │   ├── routes/     One module per resource
+│   │   ├── tests/      Unit tests plus integration tests against SQLite
+│   │   ├── app.js      Express assembly (no database, no listen)
+│   │   └── index.js    Entry point: connect, listen, shut down cleanly
 │   ├── web/        React dashboard (Vite + TypeScript + Tailwind)
 │   └── ios/        Native iOS app (SwiftUI)
+├── docs/           Master plan and API reference
 ├── .do/            DigitalOcean deployment spec
-├── Procfile        Process definition for DO App Platform
 └── package.json    Monorepo workspace root
 ```
 
-The backend runs a single Express server that connects to MongoDB Atlas in production and SQLite for local development — controlled by the `DB_MODE` environment variable. The iOS app and web frontend both communicate with the same REST API.
+The API is written once and runs against either database. `DB_MODE=local` selects
+the SQLite driver (offline development and the test suite); anything else uses
+MongoDB Atlas. Routes talk to `data/` and never to Mongoose or sqlite3 directly,
+which is what keeps a feature from having to be implemented twice.
+
+The two pieces worth reading are `lib/nutrition.js`, which holds the trend
+smoothing and expenditure estimation, and `data/schema.js`, which is the single
+definition every collection is built from in both drivers.
+
+See [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the roadmap and the reasoning
+behind the current design.
 
 ---
 
@@ -69,7 +99,7 @@ The backend runs a single Express server that connects to MongoDB Atlas in produ
 | iOS       | SwiftUI, HealthKit, AVFoundation, SwiftData             |
 | Web       | React 19, TypeScript, Vite, Tailwind CSS, Framer Motion |
 | API       | Node.js, Express 5, Mongoose, JWT, bcrypt               |
-| Database  | MongoDB Atlas (production), SQLite (local dev)          |
+| Database  | MongoDB Atlas (production), SQLite (local dev + tests)  |
 | AI        | Google Gemini 2.0 Flash                                 |
 | Food Data | FatSecret API (primary), Open Food Facts (fallback)     |
 | Hosting   | DigitalOcean App Platform (API), GitHub Pages (web)     |
@@ -80,8 +110,8 @@ The backend runs a single Express server that connects to MongoDB Atlas in produ
 
 ### Prerequisites
 
-- Node.js >= 18
-- Xcode >= 15 (for iOS)
+- Node.js 22 through 26, with Node 22 used in CI
+- Xcode 16.4 supports the local compatibility simulator checks. App Store release checks require Xcode 26 or later and a platform 26 SDK.
 
 ### Install and run
 
@@ -92,33 +122,67 @@ npm run install:all
 npm run local
 ```
 
-This starts the API on `localhost:3001` and web dashboard on `localhost:3000` using SQLite — no external services needed.
+This starts the API on `localhost:3001` and the web dashboard on `localhost:3000`
+using SQLite. No MongoDB, no API keys, nothing to sign up for.
+
+Both servers bind to `0.0.0.0`, so a phone on the same wifi or another machine on
+the tailnet can reach them; the web app resolves the API from whatever host it
+was loaded from.
 
 ### iOS
 
 Open `apps/ios/Exerly.xcodeproj` in Xcode, select your device or simulator, and run.
 
+### Testing
+
+```bash
+npm test                    # algorithms and integration against SQLite
+npm run test:mongo          # the same suite on an isolated MongoDB replica set
+npm run smoke:api           # boot the API and log a day
+npm run test:web            # browser journeys with an isolated API and web server
+npm run ios:test            # native unit and simulator UI tests
+npm run test:cross-client   # iPhone -> browser -> iPhone on one isolated account
+npm run ios:release-check   # verify the upload toolchain requirement
+```
+
+Integration tests boot the actual Express app against an in-memory database, so
+they exercise routing, auth, validation, and storage together rather than mocking
+any of it.
+
+Browser tests use installed Chrome by default. For Playwright Chromium, run
+`npx playwright install chromium` and set `PLAYWRIGHT_CHANNEL=chromium`.
+Native tests require Xcode and an installed iPhone simulator. The native and
+cross-client scripts manage their own isolated fixture on port 39001; do not run
+those two commands at the same time. Web-only tests use ports 39002 and 3301.
+The cross-client script also uses port 3303 and saves evidence under `artifacts/`.
+
+The [mobile production ledger](docs/MOBILE_PRODUCTION_STATUS.md) records completed
+checks, screenshots, unfinished implementation and external release gates.
+
 ### Production
 
-The API auto-deploys to DigitalOcean App Platform on every push to `main`. Environment variables (`MONGODB_URI`, `JWT_SECRET`, `ADMIN_EMAILS`, `GEMINI_API_KEY`) are configured in the DO dashboard.
+The API auto-deploys to DigitalOcean App Platform on every push to `main`.
+Environment variables (`MONGODB_URI`, `JWT_SECRET`, `ADMIN_EMAILS`,
+`GEMINI_API_KEY`, and optionally the FatSecret pair) are configured in the DO
+dashboard. See [apps/api/.env.example](apps/api/.env.example) for the full list.
 
 ---
 
 ## Scripts
 
-| Command             | What it does                                        |
-| ------------------- | --------------------------------------------------- |
-| `npm run local`     | API + web in local mode (SQLite, no external deps)  |
-| `npm run dev`       | API + web in production mode (MongoDB)              |
-| `npm run dev:api`   | API only                                            |
-| `npm run dev:web`   | Web only                                            |
-| `npm run build:web` | Production build of web dashboard                   |
-| `npm run ios:build` | Build iOS via CLI                                   |
-| `npm run lint`      | ESLint across api + web                             |
-| `npm run format`    | Apply Prettier formatting                           |
-| `npm run typecheck` | TypeScript type-check (web)                         |
-| `npm test`          | API unit tests (`node:test`)                        |
-| `npm run smoke:api` | Boot API (SQLite) and check `/ping` + `/api/health` |
+| Command             | What it does                                       |
+| ------------------- | -------------------------------------------------- |
+| `npm run local`     | API + web in local mode (SQLite, no external deps) |
+| `npm run dev`       | API + web in production mode (MongoDB)             |
+| `npm run dev:api`   | API only                                           |
+| `npm run dev:web`   | Web only                                           |
+| `npm run build:web` | Production build of web dashboard                  |
+| `npm run ios:build` | Build iOS via CLI                                  |
+| `npm run lint`      | ESLint across api + web                            |
+| `npm run format`    | Apply Prettier formatting                          |
+| `npm run typecheck` | TypeScript type-check (web)                        |
+| `npm test`          | API unit and integration tests (`node:test`)       |
+| `npm run smoke:api` | Boot the API and run one full log-a-day loop       |
 
 ---
 

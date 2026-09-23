@@ -1,0 +1,55 @@
+
+> exerly-fitness@1.0.0 test:web
+> playwright test apps/web/e2e/account-calendar.spec.ts -g a timezone change preserves --output /tmp/exerly-calendar-reload-red-v1
+
+[WebServer] (node:70403) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:70414) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 apps/web/e2e/account-calendar.spec.ts:78:1 › a timezone change preserves an explicitly selected day and its unsent water operation (9.1s)
+
+
+  1) apps/web/e2e/account-calendar.spec.ts:78:1 › a timezone change preserves an explicitly selected day and its unsent water operation 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('Pick a date')
+    Expected: "2026-09-23"
+    Received: "2026-09-22"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Pick a date') with timeout 5000ms
+      - waiting for getByLabel('Pick a date')
+        9 × locator resolved to <input type="date" min="2016-09-24" max="2026-09-22" value="2026-09-22" aria-label="Pick a date" class="absolute inset-0 h-full w-full cursor-pointer opacity-0"/>
+          - unexpected value "2026-09-22"
+
+
+      100 |   expect(shiftedToday < originalDay).toBeTruthy();
+      101 |   await page.reload();
+    > 102 |   await expect(page.getByLabel('Pick a date')).toHaveValue(originalDay);
+          |                                                ^
+      103 |   await expect(water.getByRole('status')).toContainText('250 ml waiting for confirmation');
+      104 |   await expect(water.getByRole('button', { name: '+250 ml', exact: true })).toBeDisabled();
+      105 |   await expect(
+        at /Users/aldo/Desktop/Exerly-Fitness/apps/web/e2e/account-calendar.spec.ts:102:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../tmp/exerly-calendar-reload-red-v1/account-calendar-a-timezon-e9e19--its-unsent-water-operation/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../tmp/exerly-calendar-reload-red-v1/account-calendar-a-timezon-e9e19--its-unsent-water-operation/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../tmp/exerly-calendar-reload-red-v1/account-calendar-a-timezon-e9e19--its-unsent-water-operation/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../tmp/exerly-calendar-reload-red-v1/account-calendar-a-timezon-e9e19--its-unsent-water-operation/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    apps/web/e2e/account-calendar.spec.ts:78:1 › a timezone change preserves an explicitly selected day and its unsent water operation 

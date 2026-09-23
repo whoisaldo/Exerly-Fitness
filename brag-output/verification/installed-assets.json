@@ -1,0 +1,12 @@
+{
+  "landscape": {
+    "source": "dd9787c0791a608e48fe28e252cbd50ceb3abbd1de4268218c482c6b883d4545",
+    "public": "dd9787c0791a608e48fe28e252cbd50ceb3abbd1de4268218c482c6b883d4545",
+    "build": "dd9787c0791a608e48fe28e252cbd50ceb3abbd1de4268218c482c6b883d4545"
+  },
+  "-portrait": {
+    "source": "2fb5616586dce8257dcdb6926d013deb8055581f6554a3b0ae1527863256ee4c",
+    "public": "2fb5616586dce8257dcdb6926d013deb8055581f6554a3b0ae1527863256ee4c",
+    "build": "2fb5616586dce8257dcdb6926d013deb8055581f6554a3b0ae1527863256ee4c"
+  }
+}

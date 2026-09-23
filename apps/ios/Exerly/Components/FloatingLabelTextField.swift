@@ -19,6 +19,7 @@ struct FloatingLabelTextField: View {
                 .foregroundStyle(isFocused ? .exPrimary : .exTextMuted)
                 .offset(y: isFloating ? -22 : 0)
                 .animation(.spring(response: 0.3), value: isFloating)
+                .accessibilityHidden(true)
 
             Group {
                 if isSecure {
@@ -29,13 +30,20 @@ struct FloatingLabelTextField: View {
                 }
             }
             .font(.exBody)
+            .accessibilityLabel(label)
+            .textInputAutocapitalization(keyboardType == .emailAddress || isSecure ? .never : .words)
+            .autocorrectionDisabled(keyboardType == .emailAddress || isSecure)
             .foregroundStyle(.exTextPrimary)
             .focused($isFocused)
             .offset(y: 4)
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { isFocused = false }
+                    if isFocused {
+                        Spacer()
+                        Button("Done") {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }
+                    }
                 }
             }
         }

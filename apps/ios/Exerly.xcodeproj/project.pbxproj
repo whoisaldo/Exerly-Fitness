@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */; };
 		011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */; };
 		016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BF2340338FFC506848ED23 /* Components/ActionButton.swift */; };
 		0398AD8177D2F7C6E7F392A9 /* Theme/AnimatedOrbBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91DFDEDB7BD5A8B31C4D7A5E /* Theme/AnimatedOrbBackground.swift */; };
@@ -80,9 +81,15 @@
 		67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */; };
 		1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */; };
 		32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */; };
+		ADC76406B794B49B23AE476B /* ExerlyTests.build */ = { isa = PBXBuildFile; fileRef = 8E63857AD67CA375D711BD8E; };
+		CB9A26B47270E9F304D7C173 /* ExerlyUITests.build */ = { isa = PBXBuildFile; fileRef = 378A3EBCD0EE468791534C6F; };
+		CD508C36C38556FABF336EB9 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 207C8C31715A2D872CAD9F4C; };
+		589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */; };
+		33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAACDF4879A569D2277D0FB; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
 		06812EA8FB4EB2F7E611D262 /* Features/LogActivity/LogActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogActivityView.swift; sourceTree = "<group>"; };
 		0DCCC3942EB1A138CC384579 /* Features/Home/HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		0F571A4CF742B91113A23E9B /* Features/Onboarding/OnboardingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingState.swift; sourceTree = "<group>"; };
@@ -158,6 +165,13 @@
 		C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
+		8E63857AD67CA375D711BD8E /* ExerlyTests.source */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/ProductionTests.swift; sourceTree = SOURCE_ROOT; };
+		2F585D34A78C73A3CD1EDF06 /* ExerlyTests.product */ = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ExerlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		378A3EBCD0EE468791534C6F /* ExerlyUITests.source */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyUITests/ProductionUITests.swift; sourceTree = SOURCE_ROOT; };
+		B1BFF9D732518F4174D0EB25 /* ExerlyUITests.product */ = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ExerlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		207C8C31715A2D872CAD9F4C /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/SyncEngine.swift; sourceTree = SOURCE_ROOT; };
+		E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/AccountCalendar.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +182,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3824914A82F455387C55860F /* ExerlyTests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		ED37F0A05CB99B035ED7C53C /* ExerlyUITests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -198,6 +214,8 @@
 				20C39A522651BB0A1DE6D596 /* Core/Services/FoodLibraryService.swift */,
 				F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */,
 				9AA7482444A4F61A162F4752 /* Core/Services/LocalModels.swift */,
+				207C8C31715A2D872CAD9F4C /* SyncEngine.swift */,
+				3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */,
 				502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */,
 				84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */,
 				38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */,
@@ -271,6 +289,7 @@
 			isa = PBXGroup;
 			children = (
 				2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */,
+				E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */,
 				C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */,
 				929DFD06CA28AC79F7198A4E /* Features/Profile/ProfileView.swift */,
 			);
@@ -329,12 +348,21 @@
 				2713A2379111C66E34BDE42C /* Login */,
 				4BA47F1A43AC469531D0BC78 /* Onboarding */,
 				544E99E4DCC16D9872B7AEEF /* Profile */,
+				F2B6D9A047C8431E9A5F7B20 /* Program */,
 				E3837CE9DF1CC48963AE6BAB /* Progress */,
 				55F3D78BAB3142C9953F231E /* Signup */,
 				F5DAC97A51BEC2537635B1D9 /* Social */,
 				2BF1969E3AC365DA01C2AC9E /* Welcome */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		F2B6D9A047C8431E9A5F7B20 /* Program */ = {
+			isa = PBXGroup;
+			children = (
+				7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */,
+			);
+			path = Program;
 			sourceTree = "<group>";
 		};
 		9F3588DAD5C02C033AE75E8B /* Network */ = {
@@ -421,6 +449,8 @@
 			children = (
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
 				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
+				378A3EBCD0EE468791534C6F,
+				8E63857AD67CA375D711BD8E,
 			);
 			sourceTree = "<group>";
 		};
@@ -452,6 +482,8 @@
 			isa = PBXGroup;
 			children = (
 				EEEEEEEEEEEEEEEEEEEEEEEE /* Exerly.app */,
+				B1BFF9D732518F4174D0EB25,
+				2F585D34A78C73A3CD1EDF06,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -503,7 +535,19 @@
 			productReference = EEEEEEEEEEEEEEEEEEEEEEEE /* Exerly.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A0E6FA1923445D8867717BE7 /* ExerlyTests */ = { isa = PBXNativeTarget; buildConfigurationList = 987ACB7A1F516B9955C89452; buildPhases = (236AF237E7B5966EB1668889,3824914A82F455387C55860F,); buildRules = (); dependencies = (444ACBCDF6D269B7B01A11AC,); name = ExerlyTests; productName = ExerlyTests; productReference = 2F585D34A78C73A3CD1EDF06; productType = "com.apple.product-type.bundle.unit-test"; };
+		30D174250A13000CCCB5A9A1 /* ExerlyUITests */ = { isa = PBXNativeTarget; buildConfigurationList = 938052C86D8238B2307BB2E1; buildPhases = (B3EBD2453DCEFACEA20751A5,ED37F0A05CB99B035ED7C53C,); buildRules = (); dependencies = (4F9BBD54638BBBA531CD0335,); name = ExerlyUITests; productName = ExerlyUITests; productReference = B1BFF9D732518F4174D0EB25; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		F258C621C3231C4731E410A5 /* ExerlyTests.proxy */ = { isa = PBXContainerItemProxy; containerPortal = AAAAAAAAAAAAAAAAAAAAAAAA; proxyType = 1; remoteGlobalIDString = DDDDDDDDDDDDDDDDDDDDDDDD; remoteInfo = Exerly; };
+		96091D8BC292F73604CA7D4C /* ExerlyUITests.proxy */ = { isa = PBXContainerItemProxy; containerPortal = AAAAAAAAAAAAAAAAAAAAAAAA; proxyType = 1; remoteGlobalIDString = DDDDDDDDDDDDDDDDDDDDDDDD; remoteInfo = Exerly; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		444ACBCDF6D269B7B01A11AC /* ExerlyTests.dependency */ = { isa = PBXTargetDependency; target = DDDDDDDDDDDDDDDDDDDDDDDD; targetProxy = F258C621C3231C4731E410A5; };
+		4F9BBD54638BBBA531CD0335 /* ExerlyUITests.dependency */ = { isa = PBXTargetDependency; target = DDDDDDDDDDDDDDDDDDDDDDDD; targetProxy = 96091D8BC292F73604CA7D4C; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */ = {
@@ -524,6 +568,8 @@
 			projectRoot = "";
 			targets = (
 				DDDDDDDDDDDDDDDDDDDDDDDD /* Exerly */,
+				30D174250A13000CCCB5A9A1,
+				A0E6FA1923445D8867717BE7,
 			);
 		};
 /* End PBXProject section */
@@ -562,6 +608,8 @@
 				E602C79CC780F2CE0B279E5F /* Core/Services/FoodLibraryService.swift in Sources */,
 				2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */,
 				C741399C860031DBFCF732CF /* Core/Services/LocalModels.swift in Sources */,
+				CD508C36C38556FABF336EB9 /* SyncEngine.swift in Sources */,
+				33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */,
 				011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */,
 				2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */,
 				4FA783D2E13188AA8ED43117 /* Core/Services/SocialService.swift in Sources */,
@@ -596,8 +644,10 @@
 				D6B12B9395CF289E20683239 /* Features/Onboarding/Steps/Step8Sleep.swift in Sources */,
 				A4BD5DB5E0C8317E2067D23B /* Features/Onboarding/Steps/Step9Equipment.swift in Sources */,
 				1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */,
+				589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */,
 				67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */,
 				F2D8C631944BF9DA4843CA3F /* Features/Profile/ProfileView.swift in Sources */,
+				C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */,
 				32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */,
 				828822D350834FD5235AE326 /* Features/Progress/AchievementsTab.swift in Sources */,
 				C5B2877639F29869465379EB /* Features/Progress/MeasurementsTab.swift in Sources */,
@@ -618,6 +668,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,); runOnlyForDeploymentPostprocessing = 0; };
+		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -673,6 +725,7 @@
 		444444444444444444444444 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				EXERLY_API_BASE_URL = "http://100.80.149.7:3001";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -702,6 +755,7 @@
 		555555555555555555555555 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				EXERLY_API_BASE_URL = "https://exerly-fitness-93dyl.ondigitalocean.app";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -728,6 +782,10 @@
 			};
 			name = Release;
 		};
+		8F0B024763712287DE0BB060 /* ExerlyTests.Debug */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; BUNDLE_LOADER = "$(TEST_HOST)"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Exerly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Exerly"; }; name = Debug; };
+		3B924068246E279D4FBBE096 /* ExerlyTests.Release */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; BUNDLE_LOADER = "$(TEST_HOST)"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Exerly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Exerly"; }; name = Release; };
+		B09D1A0F6C64DCFB5DDCCC1D /* ExerlyUITests.Debug */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; TEST_TARGET_NAME = Exerly; }; name = Debug; };
+		6779C71847E907B0B39D12CE /* ExerlyUITests.Release */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; TEST_TARGET_NAME = Exerly; }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -749,6 +807,8 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		987ACB7A1F516B9955C89452 /* ExerlyTests.configs */ = { isa = XCConfigurationList; buildConfigurations = (8F0B024763712287DE0BB060,3B924068246E279D4FBBE096,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		938052C86D8238B2307BB2E1 /* ExerlyUITests.configs */ = { isa = XCConfigurationList; buildConfigurations = (B09D1A0F6C64DCFB5DDCCC1D,6779C71847E907B0B39D12CE,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */;

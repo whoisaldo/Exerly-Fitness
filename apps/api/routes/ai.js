@@ -1,140 +1,123 @@
+// AI coach: Gemini-backed when a key is configured, canned responses otherwise.
+//
+// Rewritten onto the storage adapter. The credit system is unchanged: 5 per
+// rolling hour, 20 per UTC day.
+
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const store = require('../data');
+const { asyncHandler, notFound, badRequest, tooMany } = require('../lib/errors');
+const { authenticate } = require('../lib/auth');
+const v = require('../lib/validate');
+const { requireUser } = require('../lib/users');
 const AIErrorLogger = require('../utils/errorLogger');
 
 const router = express.Router();
+router.use(authenticate);
 
-// JWT_SECRET presence is enforced for production in index.js (the entry point,
-// which require()s this module after the check). The dev fallback below matches
-// index.js so locally-issued tokens verify here too.
-const SECRET = process.env.JWT_SECRET || 'development-jwt-secret-change-in-production';
-const genAI =
-  process.env.GEMINI_API_KEY || process.env.AI_API_KEY
-    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.AI_API_KEY)
-    : null;
-const model = genAI
-  ? genAI.getGenerativeModel({
+const HOURLY_LIMIT = 5;
+const DAILY_LIMIT = 20;
+const PLAN_TYPES = ['workout_plan', 'nutrition_advice', 'progress_analysis', 'custom_question'];
+
+const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+const model = apiKey
+  ? new GoogleGenerativeAI(apiKey).getGenerativeModel({
       model: 'gemini-2.0-flash-lite',
-      generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.7,
-      },
+      generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
     })
   : null;
 
-let User;
-let AIPlan;
+const MOCK_RESPONSES = {
+  workout_plan:
+    '**Sample 3-Day Split**\n\n- Day 1 Push: bench 4x6, overhead press 3x8, dips 3x10\n- Day 2 Pull: rows 4x6, chin-ups 3xAMRAP, curls 3x12\n- Day 3 Legs: squat 4x5, RDL 3x8, calf raises 3x15\n\n(Local development mode: set GEMINI_API_KEY for real responses.)',
+  nutrition_advice:
+    '**Nutrition basics**\n\n- Hit your protein target first; the rest follows\n- Eat mostly whole foods, leave room for what you enjoy\n- Weigh yourself daily and judge on the weekly trend\n\n(Local development mode: set GEMINI_API_KEY for real responses.)',
+  progress_analysis:
+    '**Progress**\n\nNot enough logged data to analyse yet. Log food and weight for two weeks and check back.\n\n(Local development mode: set GEMINI_API_KEY for real responses.)',
+  custom_question:
+    'Local development mode is on, so this is a canned reply. Set GEMINI_API_KEY to get real answers.',
+};
 
-const rateLimit = new Map();
+// ---------- credits ----------
 
-function initModels(userModel, aiPlanModel) {
-  User = userModel;
-  AIPlan = aiPlanModel;
-}
-
-router.use((req, res, next) => {
-  if (req.user) return next();
-
-  const auth = req.headers.authorization;
-  if (!auth) {
-    return res.status(401).json({ error: 'Authorization header missing' });
-  }
-
-  const parts = auth.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return res.status(401).json({ error: 'Invalid authorization format. Use: Bearer <token>' });
-  }
-
-  try {
-    req.user = jwt.verify(parts[1], SECRET);
-    return next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-});
-
-function checkHourlyReset(user) {
+function applyResets(user) {
   const now = new Date();
-  const lastReset = new Date(user.aiLastCreditReset);
-  const hoursSince = (now - lastReset) / (1000 * 60 * 60);
+  const patch = {};
 
-  if (hoursSince >= 1) {
-    user.aiCreditsRemaining = 5;
-    user.aiLastCreditReset = now;
-    return true;
+  const lastHourly = new Date(user.aiLastCreditReset || 0);
+  if ((now - lastHourly) / 3600000 >= 1) {
+    patch.aiCreditsRemaining = HOURLY_LIMIT;
+    patch.aiLastCreditReset = now;
   }
 
-  return false;
-}
-
-function checkDailyReset(user) {
-  const now = new Date();
-  const lastReset = new Date(user.aiDailyResetDate);
-  // Compare UTC calendar days so the boundary is timezone-independent.
-  const lastDay = Number.isNaN(lastReset.getTime()) ? null : lastReset.toISOString().slice(0, 10);
-
+  // UTC calendar day, matching how getTodayUTC used to define the boundary.
+  const lastDaily = new Date(user.aiDailyResetDate || 0);
+  const lastDay = Number.isNaN(lastDaily.getTime()) ? null : lastDaily.toISOString().slice(0, 10);
   if (lastDay !== now.toISOString().slice(0, 10)) {
-    user.aiDailyCreditsUsed = 0;
-    user.aiDailyResetDate = now;
-    return true;
+    patch.aiDailyCreditsUsed = 0;
+    patch.aiDailyResetDate = now;
   }
 
-  return false;
+  return patch;
 }
 
-function getTimeUntilHourlyReset(user) {
-  const now = new Date();
-  const lastReset = new Date(user.aiLastCreditReset);
-  const nextReset = new Date(lastReset.getTime() + 60 * 60 * 1000);
-  const diff = Math.max(0, nextReset - now);
+async function loadUserWithCredits(email) {
+  const user = await requireUser(email);
+  const patch = applyResets(user);
+  if (Object.keys(patch).length === 0) return user;
+  return store.update('users', { id: user.id }, patch);
+}
+
+function timeUntilHourlyReset(user) {
+  const next = new Date(new Date(user.aiLastCreditReset || 0).getTime() + 3600000);
+  const diff = Math.max(0, next - Date.now());
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);
-
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-function getHoursUntilMidnight() {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setUTCHours(24, 0, 0, 0); // next UTC midnight, matching the daily reset
-
-  const diff = midnight - now;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  return `${hours}h ${minutes}m`;
+function timeUntilMidnight() {
+  const midnight = new Date();
+  midnight.setUTCHours(24, 0, 0, 0);
+  const diff = midnight - Date.now();
+  return `${Math.floor(diff / 3600000)}h ${Math.floor((diff % 3600000) / 60000)}m`;
 }
 
-// Anti-burst guard: at most one AI request per 10s window per user. (The real
-// quota is the hourly/daily credit system; this just blocks rapid spamming.)
-function checkRateLimit(userId) {
-  const now = Date.now();
-  const windowMs = 10 * 1000;
-  const userLimit = rateLimit.get(userId);
+router.get(
+  '/credits',
+  asyncHandler(async (req, res) => {
+    const user = await loadUserWithCredits(req.user.email);
+    res.json({
+      hourly: {
+        remaining: user.aiCreditsRemaining ?? HOURLY_LIMIT,
+        limit: HOURLY_LIMIT,
+        resetTime: timeUntilHourlyReset(user),
+      },
+      daily: {
+        used: user.aiDailyCreditsUsed ?? 0,
+        limit: DAILY_LIMIT,
+        resetTime: timeUntilMidnight(),
+      },
+    });
+  })
+);
 
-  if (!userLimit || now > userLimit.resetTime) {
-    rateLimit.set(userId, { resetTime: now + windowMs });
-    return true;
-  }
-  return false;
+// ---------- prompt building ----------
+
+// Strips control characters and caps length before free text reaches the model.
+// Limits both the prompt-injection opening and the token bill.
+function sanitize(text, maxLen = 1000) {
+  return (
+    String(text || '')
+      // eslint-disable-next-line no-control-regex -- deliberate control-char strip
+      .replace(/[\x00-\x1F\x7F]/g, ' ')
+      .trim()
+      .slice(0, maxLen)
+  );
 }
 
-function serializePlan(plan) {
-  const source = typeof plan.toObject === 'function' ? plan.toObject() : plan;
-  return {
-    _id: source._id ? String(source._id) : undefined,
-    type: source.type || 'custom_question',
-    prompt: source.prompt || '',
-    response: source.response || '',
-    createdAt: source.createdAt || source.created_at || null,
-    applied: !!source.applied,
-  };
-}
-
-function buildContext(user, includeContext) {
-  if (!includeContext) return '';
-
+function buildContext(user, program) {
   return `User Profile:
 - Name: ${user.name || 'Not specified'}
 - Age: ${user.age || 'Not specified'}
@@ -144,25 +127,16 @@ function buildContext(user, includeContext) {
 - Goal: ${user.goal || 'Not specified'}
 - Experience Level: ${user.experienceLevel || 'Not specified'}
 - Workout Days/Week: ${user.workoutDaysPerWeek || 'Not specified'}
-- Equipment Access: ${user.equipmentAccess || 'Not specified'}`;
+- Equipment Access: ${user.equipmentAccess || 'Not specified'}
+- Daily calorie target: ${program?.calories || 'Not set'}
+- Protein target: ${program?.protein_g ? `${program.protein_g}g` : 'Not set'}
+- Measured expenditure: ${program?.expenditure || 'Not enough data yet'}`;
 }
 
-// Strip control characters and cap length on free-text user input before it goes
-// into the prompt — limits prompt-injection surface and caps token cost.
-function sanitizeUserText(text, maxLen = 1000) {
-  return (
-    String(text || '')
-      // eslint-disable-next-line no-control-regex -- intentional control-char strip
-      .replace(/[\x00-\x1F\x7F]/g, ' ')
-      .trim()
-      .slice(0, maxLen)
-  );
-}
-
-function buildPrompt(type, question, context) {
-  switch (type) {
-    case 'workout_plan':
-      return `You are an expert AI fitness coach. Create a personalized workout plan.
+const PROMPTS = {
+  workout_plan: (
+    context
+  ) => `You are an expert AI fitness coach. Create a personalized workout plan.
 
 ${context}
 
@@ -171,318 +145,188 @@ Instructions:
 - Include warm-up, main workout, and cool-down
 - Specify exercises, sets, reps, and rest periods
 - Consider their experience level and equipment access
-- Keep it practical and achievable
-- Use clear formatting with bullet points
+- Use clear formatting with bullet points`,
 
-Generate a comprehensive workout plan that they can start immediately.`;
-    case 'nutrition_advice':
-      return `You are an expert AI nutritionist. Provide personalized nutrition advice.
+  nutrition_advice: (
+    context
+  ) => `You are an expert AI nutritionist. Provide personalized nutrition advice.
 
 ${context}
 
 Instructions:
 - Give specific, actionable nutrition advice
-- Consider their fitness goals and current stats
+- Work with the calorie and protein targets above rather than inventing new ones
 - Provide practical meal suggestions
-- Include macro targets if relevant
-- Keep advice simple and sustainable
-- Use clear formatting with bullet points
+- Use clear formatting with bullet points`,
 
-Provide personalized nutrition guidance.`;
-    case 'progress_analysis':
-      return `You are an expert AI fitness coach. Analyze their progress and provide insights.
+  progress_analysis: (context) => `You are an expert AI fitness coach. Analyze their progress.
 
 ${context}
 
 Instructions:
-- Analyze their current situation and goals
-- Provide encouraging but honest feedback
+- Analyze their current situation against their goals
+- Be encouraging but honest
 - Suggest specific improvements
-- Celebrate any progress made
-- Give actionable next steps
-- Keep it motivational and practical
+- Use clear formatting with bullet points`,
 
-Provide a progress analysis and recommendations.`;
-    case 'custom_question':
-      return `You are an expert AI fitness coach. Answer their question with personalized advice.
+  custom_question: (context, question) => `You are an expert AI fitness and nutrition coach.
 
 ${context}
 
-User Question: ${sanitizeUserText(question) || 'No specific question provided'}
+The user asks: "${question}"
 
-Instructions:
-- Answer their question directly and helpfully
-- Use their profile data to personalize the response
-- Provide specific, actionable advice
-- Keep responses concise but comprehensive
-- Be encouraging and professional
+Answer directly and practically. If the question is outside fitness, nutrition, sleep, or
+training, say so briefly instead of guessing.`,
+};
 
-Answer their question with personalized fitness advice.`;
-    default:
-      return null;
-  }
+// ---------- coach ----------
+
+const burstWindow = new Map();
+
+// The hourly credit budget is the real quota. This only stops a stuck client
+// from firing the same request in a tight loop.
+function burstOk(email) {
+  const now = Date.now();
+  const last = burstWindow.get(email) || 0;
+  if (now - last < 10000) return false;
+  burstWindow.set(email, now);
+  return true;
 }
 
-router.post('/coach', async (req, res) => {
-  const startedAt = Date.now();
-  let errorLogged = false;
-
-  try {
-    if (!User || !AIPlan) {
-      return res.status(500).json({ error: 'AI routes are not initialized' });
+router.post(
+  '/coach',
+  asyncHandler(async (req, res) => {
+    const type = v.oneOf(req.body.type ?? 'custom_question', 'type', PLAN_TYPES);
+    const question = sanitize(req.body.question);
+    if (type === 'custom_question' && !question) {
+      throw badRequest('A question is required');
     }
 
-    if (!model) {
-      return res.status(503).json({ error: 'AI service is not configured' });
+    const user = await loadUserWithCredits(req.user.email);
+    if (!burstOk(user.email)) throw tooMany('Slow down a moment before asking again.');
+
+    const remaining = user.aiCreditsRemaining ?? HOURLY_LIMIT;
+    const dailyUsed = user.aiDailyCreditsUsed ?? 0;
+
+    if (remaining <= 0) {
+      throw tooMany(`Out of hourly credits. Resets in ${timeUntilHourlyReset(user)}.`);
+    }
+    if (dailyUsed >= DAILY_LIMIT) {
+      throw tooMany(`Daily limit reached. Resets in ${timeUntilMidnight()}.`);
     }
 
-    const { type, question, includeContext = true } = req.body || {};
-    const userEmail = req.user?.email || 'unknown';
-    const userAgent = req.get('User-Agent') || 'unknown';
-    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const program = await store.findOne('programs', { email: user.email });
+    const context = req.body.includeContext === false ? '' : buildContext(user, program);
+    const prompt = PROMPTS[type](context, question);
 
-    if (!type) {
-      await AIErrorLogger.logError({
-        email: userEmail,
-        userId: userEmail,
-        sessionId: 'none',
-        errorType: 'VALIDATION_ERROR',
-        errorCode: 'MISSING_TYPE',
-        errorMessage: 'Type is required',
-        errorDetails: { requestBody: req.body },
-        userAgent,
-        ipAddress,
-        requestData: { type, question, includeContext },
-        severity: 'LOW',
-      });
-      errorLogged = true;
-      return res.status(400).json({ error: 'Type is required' });
+    let response;
+    if (model) {
+      try {
+        const result = await model.generateContent(prompt);
+        response = result.response.text();
+      } catch (err) {
+        await AIErrorLogger.logError({
+          email: user.email,
+          userId: user.id,
+          sessionId: req.get('X-Session-Id') || 'unknown',
+          errorType: 'AI_MODEL_ERROR',
+          errorCode: err.status ? String(err.status) : 'GENERATE_FAILED',
+          errorMessage: err.message,
+          userAgent: req.get('User-Agent'),
+          ipAddress: req.ip,
+          requestData: { type },
+          stackTrace: err.stack,
+          severity: 'HIGH',
+        });
+        throw Object.assign(
+          new Error('The AI coach is unavailable right now. Try again shortly.'),
+          {
+            expected: true,
+            status: 503,
+          }
+        );
+      }
+    } else {
+      response = MOCK_RESPONSES[type];
     }
 
-    const prompt = buildPrompt(type, question, '');
-    if (!prompt && type !== 'custom_question') {
-      return res.status(400).json({
-        error:
-          'Invalid type. Must be workout_plan, nutrition_advice, progress_analysis, or custom_question',
-      });
-    }
-
-    const user = await User.findOne({ email: userEmail });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    if (!checkRateLimit(user.email)) {
-      await AIErrorLogger.logError({
-        email: user.email,
-        userId: user.email,
-        sessionId: 'none',
-        errorType: 'RATE_LIMIT',
-        errorCode: 'RATE_LIMIT_EXCEEDED',
-        errorMessage: 'Rate limit exceeded. Please wait 10 seconds before trying again.',
-        errorDetails: { rateLimitWindow: '10 seconds' },
-        userAgent,
-        ipAddress,
-        requestData: { type, question, includeContext },
-        severity: 'LOW',
-      });
-      errorLogged = true;
-      return res
-        .status(429)
-        .json({ error: 'Rate limit exceeded. Please wait 10 seconds before trying again.' });
-    }
-
-    checkHourlyReset(user);
-    checkDailyReset(user);
-
-    if (user.aiCreditsRemaining <= 0) {
-      await user.save();
-      return res.status(429).json({
-        error: 'Hourly limit reached',
-        waitTime: getTimeUntilHourlyReset(user),
-        creditsRemaining: user.aiCreditsRemaining,
-        dailyUsed: user.aiDailyCreditsUsed,
-        dailyLimit: 20,
-      });
-    }
-
-    if (user.aiDailyCreditsUsed >= 20) {
-      await user.save();
-      return res.status(429).json({
-        error: 'Daily limit reached',
-        resetTime: 'midnight',
-        hoursUntilReset: getHoursUntilMidnight(),
-        creditsRemaining: user.aiCreditsRemaining,
-        dailyUsed: user.aiDailyCreditsUsed,
-      });
-    }
-
-    const finalPrompt = buildPrompt(type, question, buildContext(user, includeContext));
-    // Cap the upstream call so a hung Gemini request can't pin the connection.
-    const result = await Promise.race([
-      model.generateContent(finalPrompt),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('AI request timed out')), 25000)
-      ),
-    ]);
-    const response = result?.response?.text?.();
-    if (!response || typeof response !== 'string') {
-      throw new Error('Empty response from AI model');
-    }
-
-    const aiPlan = await AIPlan.create({
-      userId: user._id,
+    const plan = await store.insert('ai_plans', {
+      email: user.email,
+      userId: String(user.id),
       type,
-      prompt: finalPrompt,
+      prompt: question || type,
       response,
       applied: false,
-      creditsUsedAtTime: {
-        hourly: user.aiCreditsRemaining,
-        daily: user.aiDailyCreditsUsed,
-      },
+      createdAt: new Date(),
     });
 
-    user.aiCreditsRemaining -= 1;
-    user.aiDailyCreditsUsed += 1;
-    await user.save();
+    // Mock responses cost nothing to produce, so they shouldn't cost a credit.
+    if (model) {
+      await store.update(
+        'users',
+        { id: user.id },
+        { aiCreditsRemaining: remaining - 1, aiDailyCreditsUsed: dailyUsed + 1 }
+      );
+    }
 
-    console.log(`✅ AI Coach Success: ${userEmail} - Type: ${type} - ${Date.now() - startedAt}ms`);
-
-    return res.json({
+    res.json({
       response,
-      creditsRemaining: user.aiCreditsRemaining,
-      dailyUsed: user.aiDailyCreditsUsed,
-      planId: String(aiPlan._id),
+      creditsRemaining: model ? remaining - 1 : remaining,
+      dailyUsed: model ? dailyUsed + 1 : dailyUsed,
+      planId: String(plan.id),
     });
-  } catch (error) {
-    console.error('AI Coach Error:', error);
-
-    if (!errorLogged) {
-      const errorType =
-        error.name === 'GoogleGenerativeAIFetchError'
-          ? 'AI_MODEL_ERROR'
-          : error.code === 'ENOTFOUND'
-            ? 'NETWORK_ERROR'
-            : 'UNKNOWN_ERROR';
-      const errorCode = error.status ? `HTTP_${error.status}` : error.code || 'UNKNOWN_ERROR';
-      const severity =
-        errorType === 'AI_MODEL_ERROR' ? 'HIGH' : errorType === 'NETWORK_ERROR' ? 'MEDIUM' : 'LOW';
-
-      await AIErrorLogger.logError({
-        email: req.user?.email || 'unknown',
-        userId: req.user?.email || 'unknown',
-        sessionId: 'none',
-        errorType,
-        errorCode,
-        errorMessage: error.message || 'Unknown error occurred',
-        errorDetails: {
-          errorName: error.name,
-          errorStatus: error.status,
-          errorCode: error.code,
-          stack: error.stack,
-        },
-        userAgent: req.get('User-Agent') || 'unknown',
-        ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-        requestData: {
-          type: req.body?.type,
-          question: req.body?.question,
-          includeContext: req.body?.includeContext,
-        },
-        responseData: { status: 500 },
-        stackTrace: error.stack,
-        severity,
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Sorry, I encountered an error. Please try again later.',
-    });
-  }
-});
-
-router.get('/plans', async (req, res) => {
-  try {
-    if (!User || !AIPlan) {
-      return res.status(500).json({ error: 'AI routes are not initialized' });
-    }
-
-    const user = await User.findOne({ email: req.user?.email });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const plans = await AIPlan.find({ userId: user._id }).sort({ createdAt: -1 }).limit(20);
-    return res.json(plans.map(serializePlan));
-  } catch (error) {
-    console.error('Error fetching AI plans:', error);
-    return res.status(500).json({ error: 'Error fetching plans' });
-  }
-});
-
-router.delete('/plans/:id', async (req, res) => {
-  try {
-    if (!User || !AIPlan) {
-      return res.status(500).json({ error: 'AI routes are not initialized' });
-    }
-
-    const user = await User.findOne({ email: req.user?.email });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const deleted = await AIPlan.findOneAndDelete({ _id: req.params.id, userId: user._id });
-    if (!deleted) {
-      return res.status(404).json({ error: 'Plan not found' });
-    }
-
-    return res.json({ message: 'Plan deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting AI plan:', error);
-    return res.status(500).json({ error: 'Error deleting plan' });
-  }
-});
-
-router.patch('/plans/:id/apply', async (req, res) => {
-  try {
-    if (!User || !AIPlan) {
-      return res.status(500).json({ error: 'AI routes are not initialized' });
-    }
-
-    const user = await User.findOne({ email: req.user?.email });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const updated = await AIPlan.findOneAndUpdate(
-      { _id: req.params.id, userId: user._id },
-      { applied: true },
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ error: 'Plan not found' });
-    }
-
-    return res.json({
-      message: 'Plan marked as applied',
-      plan: serializePlan(updated),
-    });
-  } catch (error) {
-    console.error('Error applying AI plan:', error);
-    return res.status(500).json({ error: 'Error applying plan' });
-  }
-});
-
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [userId, userLimit] of rateLimit.entries()) {
-      if (now > userLimit.resetTime) {
-        rateLimit.delete(userId);
-      }
-    }
-  },
-  60 * 60 * 1000
+  })
 );
 
-module.exports = { router, initModels };
+// ---------- saved plans ----------
+
+function serializePlan(plan) {
+  return {
+    _id: String(plan.id),
+    type: plan.type || 'custom_question',
+    prompt: plan.prompt || '',
+    response: plan.response || '',
+    createdAt: plan.createdAt || null,
+    applied: !!plan.applied,
+  };
+}
+
+router.get(
+  '/plans',
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const plans = await store.find(
+      'ai_plans',
+      { email: req.user.email },
+      { sort: { createdAt: -1, id: -1 }, limit }
+    );
+    res.json(plans.map(serializePlan));
+  })
+);
+
+router.delete(
+  '/plans/:id',
+  asyncHandler(async (req, res) => {
+    const deleted = await store.removeOne('ai_plans', {
+      id: String(req.params.id),
+      email: req.user.email,
+    });
+    if (!deleted) throw notFound('Plan not found');
+    res.json({ message: 'Plan deleted' });
+  })
+);
+
+router.patch(
+  '/plans/:id/apply',
+  asyncHandler(async (req, res) => {
+    const updated = await store.update(
+      'ai_plans',
+      { id: String(req.params.id), email: req.user.email },
+      { applied: req.body?.applied != null ? !!req.body.applied : true }
+    );
+    if (!updated) throw notFound('Plan not found');
+    res.json(serializePlan(updated));
+  })
+);
+
+module.exports = router;

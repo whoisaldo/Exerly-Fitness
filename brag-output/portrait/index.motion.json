@@ -1,0 +1,19 @@
+{
+  "duration": 21,
+  "assertions": [
+    {
+      "kind": "appearsBy",
+      "selector": "#phone",
+      "bySec": 0.8
+    },
+    {
+      "kind": "staysInFrame",
+      "selector": "#phone"
+    },
+    {
+      "kind": "appearsBy",
+      "selector": "#outro .cta",
+      "bySec": 18.5
+    }
+  ]
+}

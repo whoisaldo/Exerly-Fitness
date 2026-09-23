@@ -1,3 +1,4 @@
+import { getToken, authenticatedFetch } from '../../lib/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,10 +31,10 @@ export default function Goals() {
   useEffect(() => {
     const fetchGoals = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) return logout(navigate);
 
-        const res = await fetch(`${BASE_URL}/api/goals`, {
+        const res = await authenticatedFetch(`${BASE_URL}/api/goals`, {
           headers: { Authorization: 'Bearer ' + token },
         });
 
@@ -68,10 +69,10 @@ export default function Goals() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       if (!token) return logout(navigate);
 
-      const res = await fetch(`${BASE_URL}/api/goals`, {
+      const res = await authenticatedFetch(`${BASE_URL}/api/goals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -19,7 +19,7 @@
     "build:web": "npm run build --prefix apps/web",
     "start:api": "npm start --prefix apps/api",
     "ios": "npm run ios:build",
-    "ios:build": "xcodebuild -project apps/ios/Exerly.xcodeproj -scheme Exerly -destination 'generic/platform=iOS' -derivedDataPath .deriveddata CODE_SIGNING_ALLOWED=NO build",
+    "ios:build": "bash scripts/ios.sh build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -27,10 +27,17 @@
     "typecheck": "tsc -p apps/web",
     "test": "npm test -w apps/api",
     "smoke:api": "bash scripts/smoke-api.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:mongo": "node scripts/test-mongo.cjs",
+    "test:web": "playwright test",
+    "test:web:offline": "playwright test --config playwright.offline.config.cjs",
+    "test:cross-client": "bash scripts/test-cross-client.sh",
+    "ios:test": "bash scripts/ios.sh test",
+    "ios:release-check": "bash scripts/ios.sh release-check"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.63.0",
     "concurrently": "^9.0.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
@@ -43,6 +50,6 @@
     "typescript-eslint": "^8.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0 <27"
   }
 }

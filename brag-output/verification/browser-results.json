@@ -1,0 +1,34 @@
+[
+  {
+    "profile": "desktop",
+    "duration": 21,
+    "controls": true,
+    "inline": true,
+    "width": 1920,
+    "height": 1080,
+    "initialVideoRequests": 0,
+    "playback": "passed",
+    "seek": "passed",
+    "captions": "passed",
+    "ended": "passed",
+    "pageErrors": []
+  },
+  {
+    "profile": "mobile",
+    "duration": 21,
+    "controls": true,
+    "inline": true,
+    "width": 1080,
+    "height": 1920,
+    "initialVideoRequests": 0,
+    "playback": "passed",
+    "seek": "passed",
+    "captions": "passed",
+    "ended": "passed",
+    "pageErrors": []
+  },
+  {
+    "profile": "network failure",
+    "fallback": "passed"
+  }
+]

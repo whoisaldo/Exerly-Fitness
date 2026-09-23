@@ -1,405 +1,283 @@
 import SwiftUI
 import AVFoundation
 
-// MARK: - Permission state
-
-private enum CameraPermission {
-    case unknown, granted, denied
+struct DetectedBarcode: Equatable {
+    let value: String
+    let symbology: String
 }
 
 struct BarcodeScannerView: View {
-    @State private var scannedCode: String?
+    var initialDate: CalendarDay
+    var initialMealType = "snack"
+    var onLogged: () -> Void = {}
+    @StateObject private var camera = CameraCaptureController()
     @State private var foundFood: OpenFoodItem?
+    @State private var code = ""
+    @State private var format = "ean13"
+    @State private var message: String?
     @State private var isLoading = false
-    @State private var notFound = false
-    @State private var cameraPermission: CameraPermission = .unknown
-    @State private var isTorchOn = false
-    @State private var hasScanned = false
+    @State private var cameraAllowed = false
+    @State private var lookupTask: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        ZStack {
-            switch cameraPermission {
-            case .unknown:
-                Color.exBackground.ignoresSafeArea()
-                ProgressView()
-                    .tint(.exPrimary)
-            case .denied:
-                permissionDeniedView
-            case .granted:
-                cameraBody
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if cameraAllowed {
+                    CameraPreview(controller: camera)
+                        .frame(height: 280)
+                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(.white, lineWidth: 2).padding(.horizontal, 24).padding(.vertical, 52).allowsHitTesting(false) }
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .accessibilityLabel("Camera barcode viewfinder")
+                    HStack {
+                        Text("Center the barcode in the frame. Tap to focus.").font(.callout)
+                        Spacer()
+                        Button { camera.toggleTorch() } label: {
+                            Image(systemName: camera.torchOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                                .frame(width: 44, height: 44)
+                        }.accessibilityLabel(camera.torchOn ? "Turn flashlight off" : "Turn flashlight on")
+                    }
+                } else {
+                    Text("Camera unavailable. You can enter the barcode below or search for the food.")
+                    if AVCaptureDevice.authorizationStatus(for: .video) == .denied {
+                        Button("Open camera settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                        }.frame(minHeight: 44)
+                    }
+                }
+                if let error = camera.error { Text(error).font(.callout) }
+                TextField("Barcode digits", text: $code)
+                    .keyboardType(.numberPad).textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                    .accessibilityIdentifier("barcode.digits")
+                Picker("Barcode format", selection: $format) {
+                    Text("EAN-13").tag("ean13")
+                    Text("UPC-A").tag("upca")
+                    Text("EAN-8").tag("ean8")
+                    Text("UPC-E").tag("upce")
+                    Text("GTIN-14").tag("gtin14")
+                }.pickerStyle(.menu)
+                ActionButton(title: "Look up barcode", isLoading: isLoading, isDisabled: code.isEmpty) { beginLookup() }
+                if let message { Text(message).font(.callout).accessibilityIdentifier("barcode.result") }
+                if let food = foundFood {
+                    NavigationLink {
+                        FoodDetailView(food: food, initialDate: initialDate, initialMealType: initialMealType) {
+                            onLogged()
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(food.name).font(.headline)
+                            Text("Review quantity and log to \(initialMealType)").font(.callout)
+                        }.padding().frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.bordered)
+                }
+                Button("Scan again") {
+                    lookupTask?.cancel()
+                    foundFood = nil
+                    message = nil
+                    isLoading = false
+                    camera.resumeScanning()
+                }.frame(minHeight: 44)
+                NavigationLink("Create food with this barcode") {
+                    CreateFoodView(initialBarcode: code) { food in foundFood = food }
+                }.frame(minHeight: 44)
+                Button("Search by name") { dismiss() }.frame(minHeight: 44)
+            }.padding(20)
         }
-        .navigationTitle("Scan Barcode")
+        .background(Color.exBackground)
+        .navigationTitle("Scan barcode")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await checkCameraPermission() }
-        .onChange(of: scannedCode) { _, code in
-            if let code {
-                hasScanned = true
-                Task { await lookup(code) }
-            }
-        }
-    }
-
-    // MARK: - Permission denied UI
-
-    private var permissionDeniedView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "camera.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.exTextSecondary)
-            Text("Camera Access Required")
-                .font(.exH2)
-                .foregroundStyle(.exTextPrimary)
-            Text("Allow camera access in Settings to scan barcodes.")
-                .font(.exBody)
-                .foregroundStyle(.exTextSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            } label: {
-                Text("Open Settings")
-                    .font(.exBodyMedium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.exPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .background(Color.exBackground.ignoresSafeArea())
-    }
-
-    // MARK: - Main camera body (only shown when permission granted)
-
-    private var cameraBody: some View {
-        ZStack {
-            CameraPreview(scannedCode: $scannedCode, hasScanned: $hasScanned)
-                .ignoresSafeArea()
-
-            scanOverlay
-
-            // Toolbar buttons at top-right
-            VStack {
-                HStack {
-                    Spacer()
-                    torchButton
-                }
-                .padding(.top, 8)
-                .padding(.trailing, 16)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                bottomPanel
+                Button("Done") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
             }
         }
-    }
-
-    // MARK: - Flashlight toggle
-
-    private var torchButton: some View {
-        Button {
-            toggleTorch()
-        } label: {
-            Image(systemName: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(isTorchOn ? .exPrimary : .white)
-                .padding(10)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
+        .task { await checkPermission() }
+        .onChange(of: camera.detected) { _, detected in
+            guard let detected else { return }
+            code = detected.value
+            format = detected.symbology
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            beginLookup()
         }
-    }
-
-    // MARK: - Scan overlay
-
-    private var scanOverlay: some View {
-        GeometryReader { geo in
-            let size: CGFloat = 250
-            let origin = CGPoint(
-                x: (geo.size.width - size) / 2,
-                y: (geo.size.height - size) / 2 - 40
-            )
-            ZStack {
-                Color.black.opacity(0.5)
-                    .ignoresSafeArea()
-                    .mask {
-                        Rectangle()
-                            .ignoresSafeArea()
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .frame(width: size, height: size)
-                                    .position(x: geo.size.width / 2, y: geo.size.height / 2 - 40)
-                                    .blendMode(.destinationOut)
-                            }
-                    }
-                    .compositingGroup()
-
-                // Corner brackets
-                cornerBrackets(origin: origin, size: size)
-
-                // Scan line
-                ScanLineView()
-                    .frame(width: size - 20, height: 2)
-                    .position(x: geo.size.width / 2, y: geo.size.height / 2 - 40)
-            }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await checkPermission() } }
+            else { camera.stop() }
         }
+        .onDisappear { lookupTask?.cancel(); camera.stop() }
     }
 
-    private func cornerBrackets(origin: CGPoint, size: CGFloat) -> some View {
-        let len: CGFloat = 30
-        let lw: CGFloat = 3
-        let r: CGFloat = 16
-        return ZStack {
-            // Top-left
-            Path { p in
-                p.move(to: CGPoint(x: origin.x, y: origin.y + len))
-                p.addLine(to: CGPoint(x: origin.x, y: origin.y + r))
-                p.addQuadCurve(to: CGPoint(x: origin.x + r, y: origin.y),
-                               control: CGPoint(x: origin.x, y: origin.y))
-                p.addLine(to: CGPoint(x: origin.x + len, y: origin.y))
-            }
-            .stroke(Color.exPrimary, lineWidth: lw)
-
-            // Top-right
-            Path { p in
-                p.move(to: CGPoint(x: origin.x + size - len, y: origin.y))
-                p.addLine(to: CGPoint(x: origin.x + size - r, y: origin.y))
-                p.addQuadCurve(to: CGPoint(x: origin.x + size, y: origin.y + r),
-                               control: CGPoint(x: origin.x + size, y: origin.y))
-                p.addLine(to: CGPoint(x: origin.x + size, y: origin.y + len))
-            }
-            .stroke(Color.exPrimary, lineWidth: lw)
-
-            // Bottom-left
-            Path { p in
-                p.move(to: CGPoint(x: origin.x, y: origin.y + size - len))
-                p.addLine(to: CGPoint(x: origin.x, y: origin.y + size - r))
-                p.addQuadCurve(to: CGPoint(x: origin.x + r, y: origin.y + size),
-                               control: CGPoint(x: origin.x, y: origin.y + size))
-                p.addLine(to: CGPoint(x: origin.x + len, y: origin.y + size))
-            }
-            .stroke(Color.exPrimary, lineWidth: lw)
-
-            // Bottom-right
-            Path { p in
-                p.move(to: CGPoint(x: origin.x + size - len, y: origin.y + size))
-                p.addLine(to: CGPoint(x: origin.x + size - r, y: origin.y + size))
-                p.addQuadCurve(to: CGPoint(x: origin.x + size, y: origin.y + size - r),
-                               control: CGPoint(x: origin.x + size, y: origin.y + size))
-                p.addLine(to: CGPoint(x: origin.x + size, y: origin.y + size - len))
-            }
-            .stroke(Color.exPrimary, lineWidth: lw)
-        }
+    private func checkPermission() async {
+        guard AVCaptureDevice.default(for: .video) != nil else { cameraAllowed = false; return }
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        let allowed = status == .authorized ? true : status == .notDetermined ? await AVCaptureDevice.requestAccess(for: .video) : false
+        guard !Task.isCancelled else { return }
+        cameraAllowed = allowed
+        if allowed && scenePhase == .active && !isLoading && foundFood == nil { camera.start() }
     }
 
-    // MARK: - Bottom panel
-
-    @ViewBuilder
-    private var bottomPanel: some View {
-        VStack(spacing: 12) {
-            if isLoading {
-                ProgressView()
-                    .tint(.exPrimary)
-                Text("Looking up barcode...")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-            } else if let food = foundFood {
-                FoodCardView(food: food)
-                    .padding(.horizontal, 20)
-                scanAgainButton
-            } else if notFound {
-                GlassCard {
-                    VStack(spacing: 8) {
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.exWarning)
-                        Text("Product not found")
-                            .font(.exBodyMedium)
-                            .foregroundStyle(.exTextPrimary)
-                        Text("Try scanning again or search manually")
-                            .font(.exCaption)
-                            .foregroundStyle(.exTextSecondary)
-                    }
+    private func beginLookup() {
+        guard !isLoading else { return }
+        camera.stop()
+        lookupTask?.cancel()
+        foundFood = nil
+        message = nil
+        isLoading = true
+        let barcode = code
+        let symbology = format
+        lookupTask = Task {
+            defer { isLoading = false }
+            do {
+                let response = try await APIClient.shared.barcodeLookup(barcode: barcode, symbology: symbology)
+                try Task.checkCancellation()
+                if response.found, let food = response.food { foundFood = food.toOpenFoodItem(); return }
+                switch response.status {
+                case "not_found": message = "This product is not in the available catalog. Create a personal food below."
+                case "rate_limited": message = "The food provider is busy. Try again in a minute, or enter the food manually."
+                case "invalid_code", "unsupported_format": message = response.message ?? "Check the digits and barcode format."
+                default: message = "The food provider is unavailable. Try again, search by name, or create the food manually."
                 }
-                .padding(.horizontal, 20)
-                scanAgainButton
-            } else {
-                Text("Point camera at a barcode")
-                    .font(.exBody)
-                    .foregroundStyle(.exTextSecondary)
+            } catch is CancellationError { return }
+            catch { message = error.localizedDescription }
+        }
+    }
+}
+
+final class CameraCaptureController: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDelegate {
+    @Published var detected: DetectedBarcode?
+    @Published var torchOn = false
+    @Published var error: String?
+    let session = AVCaptureSession()
+    private let queue = DispatchQueue(label: "com.exerly.camera")
+    private let output = AVCaptureMetadataOutput()
+    private var device: AVCaptureDevice?
+    private var configured = false
+    private var wantsRunning = false
+    private var accepted = false
+    private var observers: [NSObjectProtocol] = []
+
+    override init() {
+        super.init()
+        for name in [AVCaptureSession.interruptionEndedNotification, AVCaptureSession.runtimeErrorNotification] {
+            observers.append(NotificationCenter.default.addObserver(forName: name, object: session, queue: nil) { [weak self] _ in
+                self?.queue.async { [weak self] in
+                    guard let self, self.wantsRunning, !self.accepted else { return }
+                    self.session.startRunning()
+                }
+            })
+        }
+    }
+    deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+
+    func start() {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.wantsRunning = true
+            if !self.configured {
+                self.session.beginConfiguration()
+                defer { self.session.commitConfiguration() }
+                guard let device = AVCaptureDevice.default(for: .video),
+                      let input = try? AVCaptureDeviceInput(device: device),
+                      self.session.canAddInput(input), self.session.canAddOutput(self.output) else {
+                    DispatchQueue.main.async { self.error = "Camera setup failed. Use manual barcode entry." }
+                    return
+                }
+                self.device = device
+                self.session.addInput(input)
+                self.session.addOutput(self.output)
+                self.output.setMetadataObjectsDelegate(self, queue: self.queue)
+                self.output.metadataObjectTypes = [.ean8, .ean13, .upce].filter { self.output.availableMetadataObjectTypes.contains($0) }
+                self.configured = true
             }
-        }
-        .padding(.bottom, 40)
-    }
-
-    private var scanAgainButton: some View {
-        Button {
-            resetScan()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "barcode.viewfinder")
-                Text("Scan Again")
-            }
-            .font(.exBodyMedium)
-            .foregroundStyle(.exPrimary)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(Color.exPrimary.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(.top, 4)
-    }
-
-    // MARK: - Helpers
-
-    private func checkCameraPermission() async {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            cameraPermission = .granted
-        case .notDetermined:
-            let granted = await AVCaptureDevice.requestAccess(for: .video)
-            cameraPermission = granted ? .granted : .denied
-        default:
-            cameraPermission = .denied
+            if !self.accepted && !self.session.isRunning { self.session.startRunning() }
         }
     }
-
-    private func toggleTorch() {
-        guard let device = AVCaptureDevice.default(for: .video),
-              device.hasTorch else { return }
+    func stop() {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.wantsRunning = false
+            self.setTorch(false)
+            if self.session.isRunning { self.session.stopRunning() }
+        }
+    }
+    func resumeScanning() {
+        queue.async { [weak self] in self?.accepted = false }
+        detected = nil
+        start()
+    }
+    func toggleTorch() {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.setTorch(self.device?.torchMode != .on)
+        }
+    }
+    private func setTorch(_ on: Bool) {
+        guard let device, device.hasTorch, device.isTorchAvailable else { return }
         do {
             try device.lockForConfiguration()
-            device.torchMode = isTorchOn ? .off : .on
+            device.torchMode = on ? .on : .off
             device.unlockForConfiguration()
-            isTorchOn.toggle()
-        } catch {}
+            DispatchQueue.main.async { self.torchOn = on }
+        } catch { DispatchQueue.main.async { self.error = "Flashlight unavailable." } }
     }
-
-    private func resetScan() {
-        scannedCode = nil
-        foundFood = nil
-        notFound = false
-        hasScanned = false
-    }
-
-    private func lookup(_ barcode: String) async {
-        isLoading = true
-        notFound = false
-        do {
-            let response = try await APIClient.shared.barcodeLookup(barcode: barcode)
-            if response.found, let food = response.food {
-                foundFood = food.toOpenFoodItem()
-            } else {
-                notFound = true
-            }
-        } catch {
-            notFound = true
+    func region(_ rect: CGRect) { queue.async { [weak self] in self?.output.rectOfInterest = rect } }
+    func focus(_ point: CGPoint) {
+        queue.async { [weak self] in
+            guard let device = self?.device, device.isFocusPointOfInterestSupported,
+                  device.isFocusModeSupported(.autoFocus) else { return }
+            do {
+                try device.lockForConfiguration()
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+                device.unlockForConfiguration()
+            } catch { }
         }
-        isLoading = false
+    }
+    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+        guard wantsRunning, !accepted,
+              let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+              let code = object.stringValue else { return }
+        let type: String
+        switch object.type {
+        case .upce: type = "upce"
+        case .ean8: type = "ean8"
+        case .ean13: type = "ean13"
+        default: return
+        }
+        accepted = true
+        setTorch(false)
+        session.stopRunning()
+        DispatchQueue.main.async { self.detected = DetectedBarcode(value: code, symbology: type) }
     }
 }
 
-// MARK: - Scan Line Animation
-
-struct ScanLineView: View {
-    @State private var offset: CGFloat = -100
-
-    var body: some View {
-        Rectangle()
-            .fill(Color.exPrimary.opacity(0.6))
-            .offset(y: offset)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                    offset = 100
-                }
-            }
-    }
-}
-
-// MARK: - Preview-layer UIView subclass (fixes frame sizing on device)
-
-class CameraHostView: UIView {
-    var previewLayer: AVCaptureVideoPreviewLayer? {
-        didSet {
-            guard let previewLayer else { return }
-            previewLayer.videoGravity = .resizeAspectFill
-            layer.addSublayer(previewLayer)
-        }
-    }
-
+final class CameraHostView: UIView {
+    var controller: CameraCaptureController?
+    override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+    var preview: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
     override func layoutSubviews() {
         super.layoutSubviews()
-        previewLayer?.frame = bounds
+        controller?.region(preview.metadataOutputRectConverted(fromLayerRect: bounds.insetBy(dx: 24, dy: 52)))
+    }
+    @objc func focusAtTap(_ tap: UITapGestureRecognizer) {
+        controller?.focus(preview.captureDevicePointConverted(fromLayerPoint: tap.location(in: self)))
     }
 }
 
-// MARK: - Camera Preview (UIViewRepresentable)
-
 struct CameraPreview: UIViewRepresentable {
-    @Binding var scannedCode: String?
-    @Binding var hasScanned: Bool
-
+    let controller: CameraCaptureController
     func makeUIView(context: Context) -> CameraHostView {
         let view = CameraHostView()
-        let session = AVCaptureSession()
-        context.coordinator.session = session
-
-        guard let device = AVCaptureDevice.default(for: .video),
-              let input = try? AVCaptureDeviceInput(device: device) else {
-            return view
-        }
-
-        session.addInput(input)
-        let output = AVCaptureMetadataOutput()
-        session.addOutput(output)
-        output.setMetadataObjectsDelegate(context.coordinator, queue: .main)
-        output.metadataObjectTypes = [.ean8, .ean13, .upce, .code128]
-
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        view.previewLayer = previewLayer
-        context.coordinator.previewLayer = previewLayer
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            session.startRunning()
-        }
-
+        view.controller = controller
+        view.preview.session = controller.session
+        view.preview.videoGravity = .resizeAspectFill
+        view.addGestureRecognizer(UITapGestureRecognizer(target: view, action: #selector(CameraHostView.focusAtTap(_:))))
         return view
     }
-
-    func updateUIView(_ uiView: CameraHostView, context: Context) {
-        // When hasScanned is reset to false, allow scanning again
-        if !hasScanned {
-            context.coordinator.hasScanned = false
-        }
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator(scannedCode: $scannedCode) }
-
-    class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
-        var session: AVCaptureSession?
-        var previewLayer: AVCaptureVideoPreviewLayer?
-        @Binding var scannedCode: String?
-        var hasScanned = false
-
-        init(scannedCode: Binding<String?>) {
-            _scannedCode = scannedCode
-        }
-
-        func metadataOutput(
-            _ output: AVCaptureMetadataOutput,
-            didOutput metadataObjects: [AVMetadataObject],
-            from connection: AVCaptureConnection
-        ) {
-            guard !hasScanned,
-                  let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-                  let code = object.stringValue else { return }
-            hasScanned = true
-            scannedCode = code
-            AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
-        }
+    func updateUIView(_ uiView: CameraHostView, context: Context) { uiView.setNeedsLayout() }
+    static func dismantleUIView(_ uiView: CameraHostView, coordinator: ()) {
+        uiView.controller?.stop()
+        uiView.preview.session = nil
     }
 }

@@ -1,3 +1,4 @@
+import { getToken, authenticatedFetch } from '../../lib/api';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -29,10 +30,10 @@ export default function Calories() {
 
   // Load existing entries
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return logout(navigate);
 
-    fetch(`${BASE_URL}/api/calories`, {
+    authenticatedFetch(`${BASE_URL}/api/calories`, {
       headers: { Authorization: 'Bearer ' + token },
     })
       .then((res) => {
@@ -56,10 +57,10 @@ export default function Calories() {
   // Submit new macro entry
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return logout(navigate);
 
-    const res = await fetch(`${BASE_URL}/api/calories`, {
+    const res = await authenticatedFetch(`${BASE_URL}/api/calories`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

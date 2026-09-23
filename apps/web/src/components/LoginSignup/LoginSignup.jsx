@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import user_icon from '../Assets/person.png';
-import email_icon from '../Assets/email.png';
-import password_icon from '../Assets/password.png';
 import { useNavigate, Link } from 'react-router-dom';
 import API_CONFIG from '../../config';
+import { saveSession, getSessionScope, getAuthGeneration } from '../../lib/sessionStorage';
+import { browserTimezone } from '../../lib/api';
 import { GlassCard, ActionButton, ExerlyMark, PulseLine } from '../ui';
 
 const BASE_URL = API_CONFIG.BASE_URL;
@@ -19,6 +18,8 @@ const LoginSignup = () => {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const requestRef = useRef(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
 
   // Clear messages when switching modes
   useEffect(() => {
@@ -35,84 +36,66 @@ const LoginSignup = () => {
       setError('Please enter your full name');
       return false;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (action === 'Sign Up' && password.length < 8) {
+      setError('Password must be at least 8 characters');
       return false;
     }
     return true;
   };
 
-  const handleSignup = async () => {
-    if (!validateForm()) return;
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (requestRef.current || !validateForm()) return;
+    const scope = getSessionScope();
+    const generation = getAuthGeneration();
+    const location = window.location.href;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${BASE_URL}/signup`, {
+      const res = await fetch(`${BASE_URL}${action === 'Sign Up' ? '/signup' : '/login'}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: username, email, password }),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccess('Account created successfully! Please log in.');
-        setAction('Login');
-        setUsername('');
-        setPassword('');
-      } else {
-        setError(data.message || 'Signup failed');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`${BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Protocol': '2',
+          'X-Device-Name': 'Exerly web',
+        },
+        body: JSON.stringify({ name: username, email, password, timezone: browserTimezone() }),
       });
       const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.token) {
-        setError(data.message || 'Login failed');
+      if (controller.signal.aborted || window.location.href !== location) return;
+      if (getSessionScope() !== scope || getAuthGeneration() !== generation) {
+        setError('Your session changed in another tab. Submit again to sign in to this account.');
         return;
       }
-
-      localStorage.setItem('token', data.token);
-      setSuccess('Login successful! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 1000);
+      if (!res.ok) {
+        setError(data.message || 'Could not sign in. Try again.');
+        return;
+      }
+      saveSession(data);
+      navigate(data.user?.onboardingCompleted ? '/dashboard' : '/onboarding');
     } catch (err) {
-      setError('Network error. Please try again.');
-      console.error(err);
+      setError(
+        controller.signal.aborted
+          ? 'Sign-in took too long. Please try again.'
+          : err instanceof TypeError
+            ? 'Could not connect. Check your connection and try again.'
+            : err.message || 'Could not sign in. Try again.'
+      );
     } finally {
+      window.clearTimeout(timeout);
+      requestRef.current = null;
       setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (action === 'Sign Up') {
-      handleSignup();
-    } else {
-      handleLogin();
     }
   };
 
   const tabs = ['Login', 'Sign Up'];
 
   return (
-    <div className="min-h-screen bg-deep flex items-center justify-center relative overflow-hidden px-4 py-8">
+    <div className="min-h-dvh bg-deep flex items-center justify-center relative overflow-hidden px-4 py-8">
       {/* Quiet backdrop: soft top wash + signature pulse line */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-surface-1/70 to-transparent" />
@@ -125,6 +108,7 @@ const LoginSignup = () => {
       {/* Back link */}
       <Link
         to="/"
+        onClick={() => requestRef.current?.abort()}
         className="absolute top-5 left-5 z-20 text-sm text-slate-500 hover:text-white transition-colors"
       >
         &larr; Back to Landing Page
@@ -156,6 +140,8 @@ const LoginSignup = () => {
                   key={tab}
                   type="button"
                   onClick={() => setAction(tab)}
+                  disabled={loading}
+                  aria-pressed={action === tab}
                   className={`relative z-10 flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors min-h-11 ${
                     action === tab ? 'text-white' : 'text-slate-500 hover:text-slate-300'
                   }`}
@@ -182,16 +168,14 @@ const LoginSignup = () => {
             {/* Messages */}
             <AnimatePresence mode="wait">
               {error && (
-                <motion.div
+                <div
                   key="error"
-                  initial={{ opacity: 0, y: -8, x: 0 }}
-                  animate={{ opacity: 1, y: 0, x: [0, -6, 6, -4, 4, 0] }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.4 }}
-                  className="mb-4 rounded-xl bg-error/10 border border-error/20 px-4 py-3 text-sm text-error"
+                  id="auth-error"
+                  role="alert"
+                  className="mb-4 rounded-xl bg-red-950/30 border border-red-400/30 px-4 py-3 text-sm text-red-300"
                 >
                   {error}
-                </motion.div>
+                </div>
               )}
               {success && (
                 <motion.div
@@ -208,63 +192,73 @@ const LoginSignup = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <AnimatePresence mode="wait">
-                {action === 'Sign Up' && (
-                  <motion.div
-                    key="username-field"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50">
-                        <img src={user_icon} alt="User" className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Full Name"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
-                        required
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {action === 'Sign Up' && (
+                <motion.div
+                  key="username-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative">
+                    <label htmlFor="auth-name" className="mb-1.5 block text-sm text-slate-300">
+                      Full name
+                    </label>
+                    <input
+                      type="text"
+                      id="auth-name"
+                      autoComplete="name"
+                      aria-describedby={error ? 'auth-error' : undefined}
+                      maxLength={80}
+                      placeholder="Full Name"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                      required
+                    />
+                  </div>
+                </motion.div>
+              )}
 
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50">
-                  <img src={email_icon} alt="Email" className="w-4 h-4" />
-                </div>
+                <label htmlFor="auth-email" className="mb-1.5 block text-sm text-slate-300">
+                  Email address
+                </label>
                 <input
                   type="email"
+                  id="auth-email"
+                  autoComplete="email"
+                  aria-describedby={error ? 'auth-error' : undefined}
+                  maxLength={254}
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
               </div>
 
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center opacity-50">
-                  <img src={password_icon} alt="Password" className="w-4 h-4" />
-                </div>
+                <label htmlFor="auth-password" className="mb-1.5 block text-sm text-slate-300">
+                  Password
+                </label>
                 <input
+                  id="auth-password"
+                  autoComplete={action === 'Sign Up' ? 'new-password' : 'current-password'}
+                  aria-describedby={error ? 'auth-error' : undefined}
+                  minLength={action === 'Sign Up' ? 8 : undefined}
+                  maxLength={200}
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-0 bg-transparent border-none cursor-pointer"
+                  className="absolute bottom-0 right-0 flex size-11 items-center justify-center text-slate-300 hover:text-slate-300 transition-colors p-0 bg-transparent border-none cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -308,15 +302,6 @@ const LoginSignup = () => {
                 </button>
               </div>
 
-              {/* Forgot password */}
-              {action === 'Login' && (
-                <div className="text-right">
-                  <span className="text-xs text-primary-bright hover:text-primary cursor-pointer transition-colors">
-                    Forgot Password?
-                  </span>
-                </div>
-              )}
-
               {/* Submit */}
               <ActionButton
                 type="submit"
@@ -336,6 +321,7 @@ const LoginSignup = () => {
               <button
                 type="button"
                 onClick={() => setAction(action === 'Login' ? 'Sign Up' : 'Login')}
+                disabled={loading}
                 className="text-primary-bright hover:text-primary font-medium transition-colors bg-transparent border-none cursor-pointer p-0"
               >
                 {action === 'Login' ? 'Sign Up' : 'Login'}

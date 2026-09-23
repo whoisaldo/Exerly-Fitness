@@ -57,8 +57,8 @@ extension APIClient {
                 self.activity = ActivityDTO(
                     id: raw["_id"]?.stringValue ?? raw["id"]?.stringValue,
                     type: raw["activity"]?.stringValue ?? "Activity",
-                    duration: raw["duration_min"]?.intValue ?? 0,
-                    calories: raw["calories"]?.intValue ?? 0,
+                    duration: raw["duration_min"]?.doubleValue ?? 0,
+                    calories: raw["calories"]?.doubleValue,
                     intensity: raw["intensity"]?.stringValue,
                     date: raw["entry_date"]?.stringValue
                 )
@@ -148,8 +148,8 @@ extension APIClient {
 
     // MARK: Onboarding
 
-    func completeOnboarding(_ data: OnboardingRequest) async throws -> OnboardingResponse {
-        try await post("/api/user/onboarding", body: data)
+    func completeOnboarding(_ data: OnboardingRequest, operationID: String) async throws -> OnboardingResponse {
+        try await post("/api/onboarding/complete", body: data, operationID: operationID)
     }
 
     // MARK: Profile
@@ -161,6 +161,10 @@ extension APIClient {
     func updateProfile(_ data: ProfileUpdateRequest) async throws -> UserDTO {
         let _: APIMessageResponse = try await put("/api/profile", body: data)
         return try await getProfile()
+    }
+
+    func updateSettings(_ data: SettingsRequest) async throws -> SettingsResponseDTO {
+        try await put("/api/settings", body: data)
     }
 
     // MARK: Activities
@@ -191,8 +195,8 @@ extension APIClient {
         try await deleteVoid("/api/food/\(id)")
     }
 
-    func barcodeLookup(barcode: String) async throws -> BarcodeLookupResponse {
-        try await post("/api/food/barcode-lookup", body: BarcodeLookupRequest(barcode: barcode))
+    func barcodeLookup(barcode: String, symbology: String? = nil) async throws -> BarcodeLookupResponse {
+        try await post("/api/food/barcode-lookup", body: BarcodeLookupRequest(barcode: barcode, symbology: symbology))
     }
 
     // MARK: Sleep
@@ -285,5 +289,98 @@ extension APIClient {
     @discardableResult
     func addWater(delta: Int) async throws -> WaterDTO {
         try await post("/api/water", body: WaterUpdateRequest(glasses: nil, delta: delta))
+    }
+}
+
+// MARK: - Weight
+
+extension APIClient {
+    func getWeights(from: String? = nil, to: String? = nil) async throws -> [WeightDTO] {
+        var query: [String] = []
+        if let from { query.append("from=\(from)") }
+        if let to { query.append("to=\(to)") }
+        let suffix = query.isEmpty ? "" : "?" + query.joined(separator: "&")
+        return try await get("/api/weight" + suffix)
+    }
+
+    /// The smoothed series the weight screen plots. `days` is capped at 730 by
+    /// the server.
+    func getWeightTrend(days: Int = 90) async throws -> TrendResponseDTO {
+        try await get("/api/weight/trend?days=\(days)")
+    }
+
+    /// One weigh-in per calendar day; logging twice replaces the earlier value
+    /// rather than double-counting it in the trend.
+    @discardableResult
+    func logWeight(kg: Double, on date: CalendarDay? = nil, bodyFatPct: Double? = nil) async throws -> WeightDTO {
+        try await post(
+            "/api/weight",
+            body: WeightRequest(
+                weightKg: kg,
+                bodyFatPct: bodyFatPct,
+                entryDate: date?.rawValue
+            )
+        )
+    }
+
+    func deleteWeight(id: String) async throws {
+        try await deleteVoid("/api/weight/\(id)")
+    }
+}
+
+// MARK: - Program
+
+extension APIClient {
+    func getProgram() async throws -> ProgramDTO {
+        try await get("/api/program")
+    }
+
+    func updateProgram(_ update: ProgramUpdateRequest) async throws -> ProgramDTO {
+        try await put("/api/program", body: update)
+    }
+
+    /// Re-measures expenditure and moves the targets. Weekly is the intended
+    /// cadence; the server reports `needsCheckin` when one is due.
+    func runCheckin() async throws -> CheckinResponseDTO {
+        try await post("/api/program/checkin")
+    }
+
+    func getCheckins(limit: Int = 12) async throws -> [CheckinDTO] {
+        let safeLimit = min(104, max(1, limit))
+        return try await get("/api/program/checkins?limit=\(safeLimit)")
+    }
+}
+
+// MARK: - Daily summary
+
+extension APIClient {
+    /// Everything the diary needs for one day in a single round trip.
+    func getDaySummary(for date: CalendarDay? = nil) async throws -> DaySummaryDTO {
+        try await get("/api/summary" + (date.map { "?entry_date=\($0.rawValue)" } ?? ""))
+    }
+}
+
+// MARK: - Food library
+
+extension APIClient {
+    /// The user's own foods, most recently used first. This is what a food
+    /// picker should open to.
+    func getLibraryFoods(limit: Int = 50, favoritesOnly: Bool = false) async throws -> [LibraryFoodDTO] {
+        let favorites = favoritesOnly ? "&favorites=true" : ""
+        return try await get("/api/library/foods?limit=\(limit)\(favorites)")
+    }
+
+    func searchFoods(_ query: String) async throws -> FoodSearchResponseDTO {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        return try await get("/api/food/search?q=\(encoded)")
+    }
+
+    @discardableResult
+    func toggleFavorite(foodId: String) async throws -> LibraryFoodDTO {
+        try await post("/api/library/foods/\(foodId)/favorite")
+    }
+
+    func createLibraryFood(_ food: LibraryFoodRequest) async throws -> LibraryFoodDTO {
+        try await post("/api/library/foods", body: food)
     }
 }

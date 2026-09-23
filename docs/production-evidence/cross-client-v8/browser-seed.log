@@ -1,0 +1,12 @@
+
+> exerly-fitness@1.0.0 test:web
+> playwright test apps/web/e2e/setup-cross-client.spec.ts --output /tmp/exerly-production-cross-client-v8/browser-seed
+
+
+Running 1 test using 1 worker
+
+(node:73085) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 apps/web/e2e/setup-cross-client.spec.ts:8:3 › browser draft starts the simulator setup round trip (3.3s)
+
+  1 passed (4.1s)
