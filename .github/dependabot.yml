@@ -11,6 +11,14 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # eslint-plugin-react has no release that supports ESLint 10 (7.37.5
+      # peers up to ^9.7), so npm ci fails. Drop these once it does and take
+      # eslint and @eslint/js together.
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
 
   # GitHub Actions versions
   - package-ecosystem: github-actions
