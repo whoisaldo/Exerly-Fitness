@@ -456,7 +456,7 @@ router.patch('/plans/:id/apply', async (req, res) => {
     const updated = await AIPlan.findOneAndUpdate(
       { _id: req.params.id, userId: user._id },
       { applied: true },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
