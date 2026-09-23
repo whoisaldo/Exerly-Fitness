@@ -233,12 +233,12 @@ export default function Goals() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               {Object.entries(goalConfig).map(([key, config]) => (
-                <div key={key} className="space-y-1.5">
+                <div key={key}>
                   <label className="text-label text-slate-300">
                     <span className="mr-1.5">{config.icon}</span>
                     {config.label}
                   </label>
-                  <div className="relative">
+                  <div className="relative mt-1.5">
                     <input
                       type="number"
                       name={key}

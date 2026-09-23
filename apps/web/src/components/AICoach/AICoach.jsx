@@ -527,7 +527,7 @@ const AICoach = () => {
                               {getTypeTitle(plan.type)}
                             </h4>
                             {plan.applied && (
-                              <Badge variant="status" className="text-[10px] shrink-0">
+                              <Badge variant="status" className="shrink-0">
                                 Applied
                               </Badge>
                             )}
@@ -548,7 +548,7 @@ const AICoach = () => {
           </div>
 
           {/* Right Main Area */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
             {/* Custom Question */}
             <GlassCard className="p-6">
               <div className="mb-5">

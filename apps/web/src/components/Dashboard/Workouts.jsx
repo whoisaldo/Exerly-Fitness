@@ -288,7 +288,7 @@ export default function Workouts() {
 
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-1.5">
+                      <div>
                         <label className="text-label text-slate-300">Workout Name *</label>
                         <input
                           type="text"
@@ -296,17 +296,17 @@ export default function Workouts() {
                           value={formData.name}
                           onChange={handleInputChange}
                           placeholder="e.g., Full Body Strength"
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                           required
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div>
                         <label className="text-label text-slate-300">Type</label>
                         <select
                           name="type"
                           value={formData.type}
                           onChange={handleInputChange}
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
                           {workoutTypes.map((type) => (
                             <option key={type.value} value={type.value}>
@@ -318,7 +318,7 @@ export default function Workouts() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-1.5">
+                      <div>
                         <label className="text-label text-slate-300">Duration (minutes) *</label>
                         <input
                           type="number"
@@ -326,19 +326,19 @@ export default function Workouts() {
                           value={formData.duration}
                           onChange={handleInputChange}
                           placeholder="45"
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                           min="5"
                           max="180"
                           required
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div>
                         <label className="text-label text-slate-300">Difficulty</label>
                         <select
                           name="difficulty"
                           value={formData.difficulty}
                           onChange={handleInputChange}
-                          className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                         >
                           {difficultyLevels.map((level) => (
                             <option key={level.value} value={level.value}>
@@ -349,7 +349,7 @@ export default function Workouts() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div>
                       <label className="text-label text-slate-300">Description</label>
                       <textarea
                         name="description"
@@ -357,14 +357,14 @@ export default function Workouts() {
                         onChange={handleInputChange}
                         placeholder="Describe your workout..."
                         rows="3"
-                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                        className="mt-1.5 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                       />
                     </div>
 
                     {/* Exercises */}
-                    <div className="space-y-2">
+                    <div>
                       <label className="text-label text-slate-300">Exercises</label>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {formData.exercises.map((exercise, index) => (
                           <Badge
                             key={index}

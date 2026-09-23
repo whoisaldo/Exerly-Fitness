@@ -263,7 +263,7 @@ export default function Sleep() {
           <h2 className="mb-5 text-lg font-semibold text-slate-100">Log Sleep</h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
+              <div>
                 <label className="text-label text-slate-300">
                   <span className="mr-1.5">⏰</span>Hours Slept
                 </label>
@@ -276,12 +276,12 @@ export default function Sleep() {
                   placeholder="7.5"
                   value={form.hours}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                   required
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div>
                 <label className="text-label text-slate-300">
                   <span className="mr-1.5">⭐</span>Sleep Quality
                 </label>
@@ -289,7 +289,7 @@ export default function Sleep() {
                   name="quality"
                   value={form.quality}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                   required
                 >
                   <option value="Excellent">Excellent</option>
@@ -301,7 +301,7 @@ export default function Sleep() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
+              <div>
                 <label className="text-label text-slate-300">
                   <span className="mr-1.5">🌙</span>Bedtime (Optional)
                 </label>
@@ -310,11 +310,11 @@ export default function Sleep() {
                   type="time"
                   value={form.bedtime}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div>
                 <label className="text-label text-slate-300">
                   <span className="mr-1.5">☀️</span>Wake Time (Optional)
                 </label>
@@ -323,7 +323,7 @@ export default function Sleep() {
                   type="time"
                   value={form.wakeTime}
                   onChange={handleChange}
-                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                 />
               </div>
             </div>

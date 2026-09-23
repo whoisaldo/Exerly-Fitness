@@ -37,6 +37,24 @@
   --color-slate-900: #1d2028;
   --color-slate-950: #131519;
 
+  /* Tailwind v3 values for the default palette colors in use. v4 redefined the
+     palette in oklch, which moves some of these by up to 56/255 per channel. */
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-pink-500: #ec4899;
+  --color-red-500: #ef4444;
+  --color-rose-400: #fb7185;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+
   --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   --text-display-xl: 4.5rem;
@@ -121,6 +139,16 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/*
+  Tailwind CSS v4 gives buttons `cursor: default`. Keep the v3 pointer cursor.
+*/
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
   }
 }
 
