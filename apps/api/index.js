@@ -665,7 +665,7 @@ app.put('/api/activities/:id', authenticate, async (req, res) => {
         intensity,
         type,
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) return res.status(404).json({ message: 'Activity not found' });
@@ -780,7 +780,7 @@ app.put('/api/food/:id', authenticate, async (req, res) => {
         brand: brand || null,
         serving_size: servingSize || null,
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) return res.status(404).json({ message: 'Food entry not found' });
@@ -857,7 +857,7 @@ app.put('/api/sleep/:id', authenticate, async (req, res) => {
         bedtime: bedtime || null,
         wake_time: wakeTime || null,
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) return res.status(404).json({ message: 'Sleep entry not found' });
@@ -913,7 +913,7 @@ app.post('/api/goals', authenticate, async (req, res) => {
         water_intake: waterIntake || null,
         updated_at: new Date(),
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     res.json({ message: 'Goals saved successfully', goals });
@@ -961,7 +961,7 @@ app.put('/api/workouts/:id', authenticate, async (req, res) => {
     const updated = await Workout.findOneAndUpdate(
       { _id: id, email: req.user.email },
       { name: name.trim(), exercises: exercises || [], updated_at: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) return res.status(404).json({ message: 'Workout not found' });
@@ -1216,7 +1216,7 @@ app.post('/api/water', authenticate, async (req, res) => {
       doc = await Water.findOneAndUpdate(
         { email: req.user.email, entry_date: today },
         { $inc: { glasses: Number(delta) || 0 }, $set: { updated_at: new Date() } },
-        { new: true, upsert: true }
+        { returnDocument: 'after', upsert: true }
       );
       if (doc.glasses < 0) {
         doc.glasses = 0;
@@ -1227,7 +1227,7 @@ app.post('/api/water', authenticate, async (req, res) => {
       doc = await Water.findOneAndUpdate(
         { email: req.user.email, entry_date: today },
         { $set: { glasses: g, updated_at: new Date() } },
-        { new: true, upsert: true }
+        { returnDocument: 'after', upsert: true }
       );
     }
     res.json({ glasses: doc.glasses, entry_date: today });
@@ -1346,11 +1346,16 @@ app.get('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res)
 app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
+    // Only accept plain strings so a body field can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }).
+    if (typeof status !== 'string') {
+      return res.status(400).json({ message: 'status must be a string' });
+    }
     const AIErrorLogger = require('./utils/errorLogger');
     const error = await AIErrorLogger.updateErrorStatus(
       String(req.params.id),
       status,
-      adminNotes,
+      typeof adminNotes === 'string' ? adminNotes : undefined,
       req.user.email
     );
     if (!error) return res.status(404).json({ message: 'Error not found' });

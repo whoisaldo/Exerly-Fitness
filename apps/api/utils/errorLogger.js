@@ -177,7 +177,7 @@ class AIErrorLogger {
         updateData.adminNotes = adminNotes;
       }
 
-      return await AIError.findByIdAndUpdate(errorId, updateData, { new: true });
+      return await AIError.findByIdAndUpdate(errorId, updateData, { returnDocument: 'after' });
     } catch (error) {
       console.error('Failed to update error status:', error);
       return null;
