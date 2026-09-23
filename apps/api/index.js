@@ -1346,11 +1346,16 @@ app.get('/api/admin/ai-errors/:id', authenticate, requireAdmin, async (req, res)
 app.put('/api/admin/ai-errors/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
+    // Only accept plain strings so a body field can't arrive as a query object
+    // (NoSQL-injection guard, e.g. { $ne: null }).
+    if (typeof status !== 'string') {
+      return res.status(400).json({ message: 'status must be a string' });
+    }
     const AIErrorLogger = require('./utils/errorLogger');
     const error = await AIErrorLogger.updateErrorStatus(
       String(req.params.id),
       status,
-      adminNotes,
+      typeof adminNotes === 'string' ? adminNotes : undefined,
       req.user.email
     );
     if (!error) return res.status(404).json({ message: 'Error not found' });
