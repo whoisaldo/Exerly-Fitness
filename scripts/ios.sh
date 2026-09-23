@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
-  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+if [[ -z "${DEVELOPER_DIR:-}" ]]; then
+  selected_developer_dir="$(xcode-select -p 2>/dev/null || true)"
+  # Respect the full Xcode selected by CI or the developer. Use the local app
+  # only when xcode-select still points at standalone Command Line Tools.
+  if [[ ! -d "$selected_developer_dir/Platforms/iPhoneOS.platform" && -d /Applications/Xcode.app/Contents/Developer ]]; then
+    export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  fi
 fi
 mode="${1:-build}"
 shift || true
@@ -26,7 +31,7 @@ if [[ "$mode" == test ]]; then
     node scripts/ios-fixture-api.cjs > artifacts/ios-fixture-api.log 2>&1 &
     fixture_pid=$!
     trap 'kill "$fixture_pid" 2>/dev/null || true; wait "$fixture_pid" 2>/dev/null || true' EXIT
-    for attempt in {1..50}; do
+    for _attempt in {1..50}; do
       if curl -fsS --max-time 1 http://127.0.0.1:39001/__test/ready >/dev/null 2>&1; then break; fi
       kill -0 "$fixture_pid" 2>/dev/null || { cat artifacts/ios-fixture-api.log >&2; exit 1; }
       sleep 0.2
