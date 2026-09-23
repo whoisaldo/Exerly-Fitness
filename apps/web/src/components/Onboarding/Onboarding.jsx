@@ -134,7 +134,7 @@ const Onboarding = () => {
   };
 
   const inputClass = (field) =>
-    `w-full min-h-11 bg-surface-2 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 transition-colors ${
+    `w-full min-h-11 bg-surface-2 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:ring-1 transition-colors ${
       errors[field]
         ? 'border-error focus:border-error focus:ring-error/30'
         : 'border-border-subtle focus:border-primary focus:ring-primary/30'
@@ -305,7 +305,7 @@ const Onboarding = () => {
                     hover
                     className={`cursor-pointer text-center py-5 transition-all border h-full ${
                       formData.goal === goal.id
-                        ? '!border-primary shadow-glow-primary'
+                        ? 'border-primary! shadow-glow-primary'
                         : 'border-transparent'
                     }`}
                   >
@@ -368,7 +368,7 @@ const Onboarding = () => {
                     hover
                     className={`cursor-pointer text-center py-5 transition-all border h-full ${
                       formData.experienceLevel === level.id
-                        ? '!border-primary shadow-glow-primary'
+                        ? 'border-primary! shadow-glow-primary'
                         : 'border-transparent'
                     }`}
                   >
@@ -465,7 +465,7 @@ const Onboarding = () => {
                         hover
                         className={`cursor-pointer text-center py-4 transition-all border h-full ${
                           formData.equipmentAccess === equipment.id
-                            ? '!border-primary shadow-glow-primary'
+                            ? 'border-primary! shadow-glow-primary'
                             : 'border-transparent'
                         }`}
                       >
@@ -565,8 +565,8 @@ const Onboarding = () => {
   return (
     <PageTransition className="min-h-screen bg-deep text-white flex flex-col">
       {/* Quiet backdrop wash */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-0" aria-hidden="true">
-        <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-surface-1/70 to-transparent" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
+        <div className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-surface-1/70 to-transparent" />
       </div>
 
       {/* Header with progress */}

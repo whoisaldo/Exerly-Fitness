@@ -16,26 +16,26 @@ export function BrowserFrame({ className = '' }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={`overflow-hidden rounded-2xl border border-white/[0.1] bg-surface-1 shadow-glow-lg ${className}`}
+      className={`overflow-hidden rounded-2xl border border-white/10 bg-surface-1 shadow-glow-lg ${className}`}
     >
       {/* Window chrome */}
-      <div className="flex items-center gap-2 border-b border-white/[0.08] px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="ml-3 rounded-md bg-white/[0.06] px-3 py-1 text-[11px] font-medium text-slate-500">
+      <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="ml-3 rounded-md bg-white/6 px-3 py-1 text-[11px] font-medium text-slate-500">
           exerly.fit/dashboard
         </span>
       </div>
 
       <div className="flex">
         {/* Sidebar rail */}
-        <div className="hidden w-12 flex-col items-center gap-3 border-r border-white/[0.08] py-4 sm:flex">
+        <div className="hidden w-12 flex-col items-center gap-3 border-r border-white/8 py-4 sm:flex">
           <span className="h-6 w-6 rounded-lg bg-primary" />
-          <span className="mt-2 h-5 w-5 rounded-md bg-white/[0.1]" />
-          <span className="h-5 w-5 rounded-md bg-white/[0.06]" />
-          <span className="h-5 w-5 rounded-md bg-white/[0.06]" />
-          <span className="h-5 w-5 rounded-md bg-white/[0.06]" />
+          <span className="mt-2 h-5 w-5 rounded-md bg-white/10" />
+          <span className="h-5 w-5 rounded-md bg-white/6" />
+          <span className="h-5 w-5 rounded-md bg-white/6" />
+          <span className="h-5 w-5 rounded-md bg-white/6" />
         </div>
 
         {/* Main panel */}
@@ -49,7 +49,7 @@ export function BrowserFrame({ className = '' }: { className?: string }) {
             {STAT_TILES.map((s) => (
               <div
                 key={s.label}
-                className="rounded-xl border border-white/[0.08] bg-surface-2 p-3 text-center"
+                className="rounded-xl border border-white/8 bg-surface-2 p-3 text-center"
               >
                 <div className="text-base font-bold tabular-nums text-slate-50 sm:text-lg">
                   {s.value}
@@ -62,7 +62,7 @@ export function BrowserFrame({ className = '' }: { className?: string }) {
           </div>
 
           {/* Weekly activity chart */}
-          <div className="rounded-xl border border-white/[0.08] bg-surface-2 p-3.5">
+          <div className="rounded-xl border border-white/8 bg-surface-2 p-3.5">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[11px] font-medium text-slate-400">Weekly activity</span>
               <span className="text-[11px] font-semibold text-primary-bright">+12%</span>

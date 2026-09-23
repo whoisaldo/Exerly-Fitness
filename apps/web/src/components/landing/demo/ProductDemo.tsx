@@ -72,14 +72,14 @@ export function ProductDemo() {
       aria-hidden="true"
       onMouseEnter={canHover ? () => setHovered(true) : undefined}
       onMouseLeave={canHover ? () => setHovered(false) : undefined}
-      className="mx-auto w-full max-w-[720px] select-none overflow-hidden rounded-2xl border border-white/[0.1] bg-surface-1 shadow-glow-lg"
+      className="mx-auto w-full max-w-[720px] select-none overflow-hidden rounded-2xl border border-white/10 bg-surface-1 shadow-glow-lg"
     >
       {/* Window chrome — mirrors landing/BrowserFrame.tsx */}
-      <div className="flex items-center gap-2 border-b border-white/[0.08] px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-        <span className="ml-3 rounded-md bg-white/[0.06] px-3 py-1 text-[11px] font-medium text-slate-500">
+      <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/12" />
+        <span className="ml-3 rounded-md bg-white/6 px-3 py-1 text-[11px] font-medium text-slate-500">
           exerly.fit/dashboard
         </span>
       </div>

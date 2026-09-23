@@ -460,7 +460,7 @@ const AICoach = () => {
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shrink-0`}
+                        className={`w-10 h-10 rounded-xl bg-linear-to-br ${action.gradient} flex items-center justify-center shrink-0`}
                       >
                         <span className="text-lg">{action.icon}</span>
                       </div>
@@ -527,7 +527,7 @@ const AICoach = () => {
                               {getTypeTitle(plan.type)}
                             </h4>
                             {plan.applied && (
-                              <Badge variant="status" className="text-[10px] shrink-0">
+                              <Badge variant="status" className="shrink-0">
                                 Applied
                               </Badge>
                             )}
@@ -548,7 +548,7 @@ const AICoach = () => {
           </div>
 
           {/* Right Main Area */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
             {/* Custom Question */}
             <GlassCard className="p-6">
               <div className="mb-5">
@@ -571,7 +571,7 @@ const AICoach = () => {
                     onBlur={() => {
                       if (!question.trim()) setIsQuestionExpanded(false);
                     }}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors resize-none disabled:opacity-40"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-white placeholder-white/30 outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-colors resize-none disabled:opacity-40"
                   />
                 </div>
 

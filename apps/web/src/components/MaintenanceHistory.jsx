@@ -64,13 +64,13 @@ export default function MaintenanceHistory() {
           {MAINTENANCE_HISTORY.map((entry, index) => (
             <div key={entry.id} className="grid grid-cols-[auto_1fr] gap-4">
               <div className="flex flex-col items-center">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-surface-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/8 bg-surface-2">
                   <span
                     className={`h-2 w-2 rounded-full ${STATUS_DOT[entry.status] ?? 'bg-slate-500'}`}
                   />
                 </span>
                 {index < MAINTENANCE_HISTORY.length - 1 && (
-                  <span className="w-px flex-1 bg-white/[0.08]" />
+                  <span className="w-px flex-1 bg-white/8" />
                 )}
               </div>
 

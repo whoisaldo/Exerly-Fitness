@@ -115,7 +115,7 @@ const LoginSignup = () => {
     <div className="min-h-screen bg-deep flex items-center justify-center relative overflow-hidden px-4 py-8">
       {/* Quiet backdrop: soft top wash + signature pulse line */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-surface-1/70 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-surface-1/70 to-transparent" />
         <PulseLine
           className="absolute left-1/2 top-14 h-8 w-80 -translate-x-1/2 text-primary/25"
           strokeWidth={1.5}
@@ -227,7 +227,7 @@ const LoginSignup = () => {
                         placeholder="Full Name"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                        className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                         required
                       />
                     </div>
@@ -244,7 +244,7 @@ const LoginSignup = () => {
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
               </div>
@@ -258,7 +258,7 @@ const LoginSignup = () => {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  className="w-full min-h-11 bg-surface-2 border border-border-subtle rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
                   required
                 />
                 <button

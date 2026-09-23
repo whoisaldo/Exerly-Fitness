@@ -301,26 +301,21 @@ export default function Food() {
                 `Protein (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalProtein) * 4) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalProtein,
                 parseFloat(stats.totalCalories) / 4,
-                'bg-gradient-to-r from-blue-500 to-blue-400'
+                'bg-linear-to-r from-blue-500 to-blue-400'
               )}
               {macroBar(
                 `Carbs (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalCarbs) * 4) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalCarbs,
                 parseFloat(stats.totalCalories) / 4,
-                'bg-gradient-to-r from-amber-500 to-amber-400'
+                'bg-linear-to-r from-amber-500 to-amber-400'
               )}
               {macroBar(
                 `Fat (${parseFloat(stats.totalCalories) > 0 ? (((parseFloat(stats.totalFat) * 9) / parseFloat(stats.totalCalories)) * 100).toFixed(0) : 0}%)`,
                 stats.totalFat,
                 parseFloat(stats.totalCalories) / 9,
-                'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                'bg-linear-to-r from-emerald-500 to-emerald-400'
               )}
-              {macroBar(
-                'Sugar',
-                stats.totalSugar,
-                50,
-                'bg-gradient-to-r from-pink-500 to-rose-400'
-              )}
+              {macroBar('Sugar', stats.totalSugar, 50, 'bg-linear-to-r from-pink-500 to-rose-400')}
             </div>
           </GlassCard>
         </motion.div>
@@ -451,7 +446,7 @@ export default function Food() {
                       value={form.name}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Calories */}
@@ -467,7 +462,7 @@ export default function Food() {
                       value={form.calories}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Protein */}
@@ -484,7 +479,7 @@ export default function Food() {
                       value={form.protein}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Carbs */}
@@ -501,7 +496,7 @@ export default function Food() {
                       value={form.carbs}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Fat */}
@@ -518,7 +513,7 @@ export default function Food() {
                       value={form.fat}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Sugar */}
@@ -535,7 +530,7 @@ export default function Food() {
                       value={form.sugar}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                   {/* Meal Type */}
@@ -548,7 +543,7 @@ export default function Food() {
                       value={form.mealType}
                       onChange={handleChange}
                       required
-                      className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                      className="h-11 w-full appearance-none rounded-xl border border-border-subtle bg-surface-2 px-4 text-sm text-slate-100 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                     >
                       <option value="Breakfast">Breakfast</option>
                       <option value="Lunch">Lunch</option>
@@ -614,11 +609,11 @@ export default function Food() {
               const isCollapsed = collapsedSections[meal];
 
               return (
-                <GlassCard key={meal} hover={false} className="overflow-hidden !p-0">
+                <GlassCard key={meal} hover={false} className="overflow-hidden p-0!">
                   {/* Section header (collapsible) */}
                   <button
                     onClick={() => toggleSection(meal)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/[0.02]"
+                    className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/2"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{getMealTypeIcon(meal)}</span>
@@ -716,10 +711,10 @@ export default function Food() {
                 const isCollapsed = collapsedSections[meal];
 
                 return (
-                  <GlassCard key={meal} hover={false} className="overflow-hidden !p-0">
+                  <GlassCard key={meal} hover={false} className="overflow-hidden p-0!">
                     <button
                       onClick={() => toggleSection(meal)}
-                      className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/[0.02]"
+                      className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/2"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{getMealTypeIcon(meal)}</span>

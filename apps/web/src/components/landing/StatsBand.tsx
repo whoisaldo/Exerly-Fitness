@@ -48,7 +48,7 @@ export function StatsBand() {
   const inView = useInView(ref, { once: true, amount: 0.4 });
 
   return (
-    <section ref={ref} className="border-y border-white/[0.08] bg-surface-1">
+    <section ref={ref} className="border-y border-white/8 bg-surface-1">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
         {STATS.map((s) => (
           <Stat key={s.label} label={s.label} target={s.target} start={inView} />

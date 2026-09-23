@@ -204,7 +204,7 @@ export default function Goals() {
                 onClick={() =>
                   document.getElementById('goals-form')?.scrollIntoView({ behavior: 'smooth' })
                 }
-                className="flex min-h-[6rem] items-center justify-center rounded-2xl border-2 border-dashed border-border-subtle text-slate-400 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary-bright"
+                className="flex min-h-24 items-center justify-center rounded-2xl border-2 border-dashed border-border-subtle text-slate-400 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary-bright"
               >
                 <span className="text-2xl mr-2">+</span>
                 <span className="text-sm font-medium">Add Goal</span>
@@ -233,19 +233,19 @@ export default function Goals() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               {Object.entries(goalConfig).map(([key, config]) => (
-                <div key={key} className="space-y-1.5">
+                <div key={key}>
                   <label className="text-label text-slate-300">
                     <span className="mr-1.5">{config.icon}</span>
                     {config.label}
                   </label>
-                  <div className="relative">
+                  <div className="relative mt-1.5">
                     <input
                       type="number"
                       name={key}
                       value={goals[key]}
                       onChange={handleChange}
                       placeholder={`e.g., ${config.max > 100 ? Math.round(config.max * 0.7) : config.max}`}
-                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 pr-14 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
+                      className="h-11 w-full rounded-xl border border-border-subtle bg-surface-2 px-4 pr-14 text-sm text-slate-100 placeholder-slate-500 outline-hidden transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40"
                       min={key === 'weeklyWeight' ? undefined : '0'}
                       step={
                         key === 'waterIntake' || key === 'sleepHours' || key === 'weeklyWeight'

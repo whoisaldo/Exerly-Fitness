@@ -71,7 +71,7 @@ function FakeInput({ targetId, value, placeholder, focused, multiline = false }:
       } ${focused ? 'border-primary ring-1 ring-primary/50' : 'border-border-subtle'}`}
     >
       <span
-        className={`${multiline ? 'break-words leading-[17px]' : 'whitespace-nowrap'} ${
+        className={`${multiline ? 'wrap-break-word leading-[17px]' : 'whitespace-nowrap'} ${
           value ? 'text-slate-100' : 'text-slate-500'
         }`}
       >

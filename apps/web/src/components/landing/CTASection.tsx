@@ -7,7 +7,7 @@ export function CTASection() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="border-t border-white/[0.08] py-20 lg:py-28">
+    <section className="border-t border-white/8 py-20 lg:py-28">
       <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}

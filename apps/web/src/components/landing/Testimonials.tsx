@@ -45,7 +45,7 @@ export function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              className="flex h-full flex-col rounded-2xl border border-white/[0.08] bg-surface-2 p-7"
+              className="flex h-full flex-col rounded-2xl border border-white/8 bg-surface-2 p-7"
             >
               <svg
                 width="24"
@@ -58,7 +58,7 @@ export function Testimonials() {
                 <path d="M10 8c-3 0-5 2.2-5 5.1C5 15.9 6.9 18 9.4 18c2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.4-3.3-3.2-3.3-.3 0-.7 0-.9.1C9.4 9.9 10.5 9 12 8.7L10 8Zm9 0c-3 0-5 2.2-5 5.1 0 2.8 1.9 4.9 4.4 4.9 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.4-3.3-3.2-3.3-.3 0-.7 0-.9.1.5-1.4 1.6-2.3 3.1-2.6L19 8Z" />
               </svg>
               <blockquote className="flex-1 leading-relaxed text-slate-300">{t.text}</blockquote>
-              <figcaption className="mt-6 border-t border-white/[0.08] pt-4">
+              <figcaption className="mt-6 border-t border-white/8 pt-4">
                 <div className="text-sm font-semibold text-slate-100">{t.author}</div>
                 <div className="mt-0.5 text-xs text-slate-500">{t.role}</div>
               </figcaption>
