@@ -27,3 +27,9 @@ services:
       - key: GEMINI_API_KEY
         scope: RUN_TIME
         type: SECRET
+      - key: FATSECRET_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: FATSECRET_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET

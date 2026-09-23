@@ -54,7 +54,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Exerly needs photo access to save and view your progress photos.</string>
 	<key>EXERLY_API_BASE_URL</key>
-	<string>https://exerly-fitness-93dyl.ondigitalocean.app</string>
+	<string>$(EXERLY_API_BASE_URL)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

@@ -11,6 +11,8 @@ paths = [
   '''README\.md''',
 ]
 regexes = [
+  # Unsigned account-a/account-b tokens used by native StubURLProtocol tests.
+  '''^e30\.eyJzdWIiOiJ[hi]In0\.fixture$''',
   '''your-jwt-secret-here''',
   '''your-gemini-api-key''',
   '''your-fatsecret-client-id''',

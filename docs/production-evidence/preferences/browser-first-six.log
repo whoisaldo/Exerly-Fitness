@@ -1,0 +1,15 @@
+[WebServer] (node:49055) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:49060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 apps/web/e2e/preferences.spec.ts:30:1 › all profile preferences survive browser reload and update only accepted preference fields (8.0s)
+  ✓  2 apps/web/e2e/preferences.spec.ts:79:1 › lost preference acknowledgement replays the same operation after reload without undoing a later device edit (3.2s)
+  ✓  3 apps/web/e2e/preferences.spec.ts:108:1 › two browser tabs require review and merge only the edited fields (5.9s)
+  ✓  4 apps/web/e2e/preferences.spec.ts:133:1 › offline preference drafts retain invalid text and can be corrected and sent after reconnecting (4.8s)
+  ✓  5 apps/web/e2e/preferences.spec.ts:155:1 › local storage failure prevents sending and keeps the open preference answers (3.1s)
+  ✓  6 apps/web/e2e/preferences.spec.ts:180:1 › an unreadable saved preference draft is kept and blocks replacement writes (3.0s)
+
+  6 passed (30.5s)

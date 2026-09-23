@@ -7,7 +7,7 @@ struct ConfettiView: View {
     var body: some View {
         TimelineView(.animation) { timeline in
             let now = timeline.date.timeIntervalSinceReferenceDate
-            Canvas { context, size in
+            Canvas { context, _ in
                 for particle in particles {
                     let age = now - particle.startTime
                     guard age < 3.0 else { continue }

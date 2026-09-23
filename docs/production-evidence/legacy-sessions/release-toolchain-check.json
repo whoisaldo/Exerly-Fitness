@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-09-22T18:17:43Z",
+  "macos": "15.7.9",
+  "available_xcode": "16.4",
+  "required_download": "Xcode 26.2 Apple silicon",
+  "download_status": 302,
+  "download_location": "https://developer.apple.com/unauthorized/",
+  "system_requirements": "https://developer.apple.com/xcode/system-requirements",
+  "installed": false,
+  "note": "Apple download redirects to its unauthorized page. No authenticated download was attempted."
+}

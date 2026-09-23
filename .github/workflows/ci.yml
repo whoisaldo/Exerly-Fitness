@@ -6,6 +6,7 @@ name: CI
 on:
   push:
     branches: ['**']
+  pull_request:
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref.
@@ -47,6 +48,8 @@ jobs:
               - '.nvmrc'
               - '.github/workflows/**'
               - 'scripts/**'
+              - 'playwright.config.cjs'
+              - 'playwright.offline.config.cjs'
 
   api:
     name: API · lint · test · smoke
@@ -67,6 +70,8 @@ jobs:
         run: npx prettier --check "apps/api/**/*.{js,json}"
       - name: Unit tests (node:test)
         run: npm test -w apps/api
+      - name: MongoDB replica-set integration tests
+        run: npm run test:mongo
       - name: API boot smoke test (SQLite, no external services)
         run: bash scripts/smoke-api.sh
         env:
@@ -77,7 +82,7 @@ jobs:
   web:
     name: Web · lint · typecheck · build
     needs: changes
-    if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.root == 'true' }}
+    if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -104,6 +109,34 @@ jobs:
           name: web-dist
           path: apps/web/dist
           retention-days: 7
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser and API end-to-end tests
+        run: npm run test:web
+        env:
+          PLAYWRIGHT_CHANNEL: chromium
+      - name: Upload browser test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-tests
+          path: artifacts/web-tests/
+          retention-days: 14
+
+      - name: Production browser offline and update tests
+        run: |
+          npm run test:web:offline
+          PLAYWRIGHT_BROWSER=webkit npm run test:web -- apps/web/e2e/offline-startup.spec.ts --output=artifacts/web-offline-webkit-read-tests
+          PLAYWRIGHT_BROWSER=webkit npm run test:web:offline
+        env:
+          PLAYWRIGHT_CHANNEL: chromium
+      - name: Upload offline browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-offline-tests
+          path: artifacts/web-offline-*-tests/
+          retention-days: 14
 
   swiftlint:
     name: iOS · swiftlint (lint-only)
@@ -117,6 +150,40 @@ jobs:
           docker run --rm -v "$PWD:/work" -w /work \
             ghcr.io/realm/swiftlint:latest \
             swiftlint lint --config .swiftlint.yml --reporter github-actions-logging
+
+  ios-tests:
+    name: iOS build and tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install fixture API dependencies
+        run: npm ci
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+      - name: Verify release SDK
+        run: bash scripts/ios.sh release-check
+      - name: Build iOS
+        run: bash scripts/ios.sh build
+      - name: Unit and UI tests
+        run: bash scripts/ios.sh test -resultBundlePath artifacts/ios-tests.xcresult
+      - name: Install browser for cross-client tests
+        run: npx playwright install chromium
+      - name: Native and browser round trip
+        run: npm run test:cross-client
+        env:
+          PLAYWRIGHT_CHANNEL: chromium
+      - name: Upload native test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-tests
+          path: artifacts/
+          retention-days: 14
 
   lint-workflows:
     name: Lint workflow YAML (actionlint)

@@ -8,9 +8,19 @@ apps/web/build
 **/*.tsbuildinfo
 .deriveddata
 coverage
+artifacts
 
 # Native iOS sources are handled by SwiftLint, not Prettier
 apps/ios
 
 # Generated / data
 *.db
+
+# Hyperframes generates these compositions and validates them with its own checker.
+brag-output/composition
+brag-output/portrait
+brag-output/*.json
+brag-output/verification/*.json
+
+# Preserve exported native/browser verification reports.
+docs/production-evidence/**/*.json

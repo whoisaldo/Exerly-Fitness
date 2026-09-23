@@ -42,6 +42,7 @@ DocumentLayout.json
 
 # Local native build outputs
 .deriveddata/
+artifacts/
 apps/ios/build/
 
 # Xcode user data

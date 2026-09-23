@@ -1,52 +1,93 @@
 import Foundation
 import Security
 
-final class KeychainService {
-    static let shared = KeychainService()
-    private let tokenKey = "com.exerly.jwt"
+struct SessionCredentialSnapshot {
+    let token: String
+    let refreshToken: String?
+}
 
-    private init() {}
+protocol SessionCredentials: AnyObject {
+    @discardableResult func saveToken(_ token: String) -> Bool
+    @discardableResult func saveSession(token: String, refreshToken: String?) -> Bool
+    @discardableResult func replaceSession(expectedToken: String, expectedRefreshToken: String?, token: String, refreshToken: String) -> Bool
+    func getToken() -> String?
+    func getRefreshToken() -> String?
+    func sessionSnapshot() -> SessionCredentialSnapshot?
+    func deleteToken()
+}
+
+final class KeychainService: SessionCredentials {
+    static let shared: KeychainService = {
+        #if DEBUG
+        if let id = ProcessInfo.processInfo.environment["EXERLY_TEST_STORE_ID"], UUID(uuidString: id) != nil {
+            return KeychainService(tokenKey: "com.exerly.simulator.\(id)")
+        }
+        #endif
+        return KeychainService()
+    }()
+    private let tokenKey: String
+    private let lock = NSRecursiveLock()
+    private struct Credentials: Codable {
+        let token: String
+        let refreshToken: String?
+    }
+    init(tokenKey: String = "com.exerly.jwt") { self.tokenKey = tokenKey }
 
     @discardableResult
-    func saveToken(_ token: String) -> Bool {
-        delete(key: tokenKey)
-        let data = Data(token.utf8)
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: tokenKey,
+    func saveToken(_ token: String) -> Bool { saveSession(token: token, refreshToken: nil) }
+
+    @discardableResult
+    func saveSession(token: String, refreshToken: String?) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard let data = try? JSONEncoder().encode(Credentials(token: token, refreshToken: refreshToken)) else { return false }
+        let identity: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: tokenKey]
+        let attributes: [String: Any] = [
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
-        let status = SecItemAdd(query as CFDictionary, nil)
-        if status != errSecSuccess {
-            print("⚠️ KeychainService: failed to persist token (OSStatus \(status))")
-            return false
+        // Both credentials change atomically. A storage failure preserves the
+        // previous pair and its durable refresh operation can be retried.
+        let updated = SecItemUpdate(identity as CFDictionary, attributes as CFDictionary)
+        if updated == errSecItemNotFound {
+            return SecItemAdd(identity.merging(attributes) { _, value in value } as CFDictionary, nil) == errSecSuccess
         }
-        return true
+        return updated == errSecSuccess
     }
 
-    func getToken() -> String? {
+    @discardableResult
+    func replaceSession(expectedToken: String, expectedRefreshToken: String?, token: String, refreshToken: String) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard getToken() == expectedToken, getRefreshToken() == expectedRefreshToken else { return false }
+        return saveSession(token: token, refreshToken: refreshToken)
+    }
+
+    private func read() -> Data? {
         let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: tokenKey,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: tokenKey,
+            kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess else { return nil }
+        return result as? Data
     }
-
+    func getToken() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        guard let data = read() else { return nil }
+        if let credentials = try? JSONDecoder().decode(Credentials.self, from: data) { return credentials.token }
+        return String(data: data, encoding: .utf8) // Existing raw-token Keychain entry.
+    }
+    func getRefreshToken() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        guard let data = read() else { return nil }
+        return (try? JSONDecoder().decode(Credentials.self, from: data))?.refreshToken
+    }
+    func sessionSnapshot() -> SessionCredentialSnapshot? {
+        lock.lock(); defer { lock.unlock() }
+        guard let token = getToken() else { return nil }
+        return SessionCredentialSnapshot(token: token, refreshToken: getRefreshToken())
+    }
     func deleteToken() {
-        delete(key: tokenKey)
-    }
-
-    private func delete(key: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-        ]
-        SecItemDelete(query as CFDictionary)
+        lock.lock(); defer { lock.unlock() }
+        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: tokenKey] as CFDictionary)
     }
 }

@@ -1,53 +1,21 @@
-const mongoose = require('mongoose');
+// AI error logging.
+//
+// Rewritten onto the storage adapter so local (SQLite) mode records errors too.
+// It previously talked to Mongoose directly, which meant every AI failure in
+// local development threw a second, unrelated error inside the error handler.
 
-const aiErrorSchema = new mongoose.Schema({
-  email: { type: String, required: true, index: true },
-  userId: { type: String, required: true, index: true },
-  sessionId: { type: String, required: true, index: true },
-  errorType: {
-    type: String,
-    required: true,
-    enum: [
-      'API_ERROR',
-      'RATE_LIMIT',
-      'VALIDATION_ERROR',
-      'NETWORK_ERROR',
-      'AI_MODEL_ERROR',
-      'UNKNOWN_ERROR',
-    ],
-  },
-  errorCode: { type: String, required: true },
-  errorMessage: { type: String, required: true },
-  errorDetails: { type: mongoose.Schema.Types.Mixed, default: {} },
-  userAgent: { type: String },
-  ipAddress: { type: String },
-  requestData: { type: mongoose.Schema.Types.Mixed, default: {} },
-  responseData: { type: mongoose.Schema.Types.Mixed, default: {} },
-  stackTrace: { type: String },
-  severity: {
-    type: String,
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-    default: 'MEDIUM',
-  },
-  status: {
-    type: String,
-    enum: ['OPEN', 'INVESTIGATING', 'RESOLVED', 'IGNORED'],
-    default: 'OPEN',
-  },
-  adminNotes: { type: String, default: '' },
-  resolvedBy: { type: String, default: '' },
-  resolvedAt: { type: Date },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
-});
+const store = require('../data');
 
-let AIError;
-// Check if model already exists to prevent OverwriteModelError
-if (mongoose.models.AIError) {
-  AIError = mongoose.models.AIError;
-} else {
-  AIError = mongoose.model('AIError', aiErrorSchema);
-}
+const ERROR_TYPES = [
+  'API_ERROR',
+  'RATE_LIMIT',
+  'VALIDATION_ERROR',
+  'NETWORK_ERROR',
+  'AI_MODEL_ERROR',
+  'UNKNOWN_ERROR',
+];
+const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const STATUSES = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'IGNORED'];
 
 class AIErrorLogger {
   static async logError({
@@ -66,160 +34,72 @@ class AIErrorLogger {
     severity = 'MEDIUM',
   }) {
     try {
-      const error = new AIError({
-        email,
-        userId,
-        sessionId,
-        errorType,
-        errorCode,
-        errorMessage,
+      return await store.insert('ai_errors', {
+        email: email || 'unknown',
+        userId: String(userId || 'unknown'),
+        sessionId: String(sessionId || 'unknown'),
+        errorType: ERROR_TYPES.includes(errorType) ? errorType : 'UNKNOWN_ERROR',
+        errorCode: String(errorCode || 'UNKNOWN'),
+        errorMessage: String(errorMessage || '').slice(0, 2000),
         errorDetails,
-        userAgent,
-        ipAddress,
+        userAgent: userAgent ? String(userAgent).slice(0, 500) : null,
+        ipAddress: ipAddress || null,
         requestData,
         responseData,
-        stackTrace,
-        severity,
+        stackTrace: stackTrace ? String(stackTrace).slice(0, 5000) : null,
+        severity: SEVERITIES.includes(severity) ? severity : 'MEDIUM',
         status: 'OPEN',
+        adminNotes: '',
+        resolvedBy: '',
+        created_at: new Date(),
+        updated_at: new Date(),
       });
-
-      await error.save();
-
-      // Log to console for immediate debugging
-      console.error(`🚨 AI Error Logged:`, {
-        email,
-        errorType,
-        errorCode,
-        errorMessage,
-        severity,
-        timestamp: new Date().toISOString(),
-      });
-
-      return error;
-    } catch (logError) {
-      console.error('Failed to log AI error:', logError);
+    } catch (err) {
+      // Logging a failure must never become the failure. Swallow and move on.
+      console.error('Failed to record AI error:', err.message);
       return null;
     }
+  }
+
+  static async getErrorById(id) {
+    return store.findOne('ai_errors', { id: String(id) });
+  }
+
+  static async updateErrorStatus(id, status, adminNotes, resolvedBy) {
+    const patch = { updated_at: new Date() };
+    if (STATUSES.includes(status)) patch.status = status;
+    if (adminNotes != null) patch.adminNotes = String(adminNotes).slice(0, 2000);
+    if (patch.status === 'RESOLVED') {
+      patch.resolvedBy = resolvedBy || '';
+      patch.resolvedAt = new Date();
+    }
+    return store.update('ai_errors', { id: String(id) }, patch);
   }
 
   static async getErrorStats() {
-    try {
-      const stats = await AIError.aggregate([
-        {
-          $group: {
-            _id: {
-              errorType: '$errorType',
-              severity: '$severity',
-              status: '$status',
-            },
-            count: { $sum: 1 },
-            latestError: { $max: '$created_at' },
-          },
-        },
-        {
-          $group: {
-            _id: '$_id.errorType',
-            totalCount: { $sum: '$count' },
-            bySeverity: {
-              $push: {
-                severity: '$_id.severity',
-                status: '$_id.status',
-                count: '$count',
-                latestError: '$latestError',
-              },
-            },
-          },
-        },
-      ]);
-
-      const totalErrors = await AIError.countDocuments();
-      const openErrors = await AIError.countDocuments({ status: 'OPEN' });
-      const criticalErrors = await AIError.countDocuments({ severity: 'CRITICAL' });
-
-      return {
-        totalErrors,
-        openErrors,
-        criticalErrors,
-        byType: stats,
-      };
-    } catch (error) {
-      console.error('Failed to get error stats:', error);
-      return null;
-    }
-  }
-
-  static async getRecentErrors(limit = 50) {
-    try {
-      return await AIError.find()
-        .sort({ created_at: -1 })
-        .limit(limit)
-        .populate('email', 'name email')
-        .lean();
-    } catch (error) {
-      console.error('Failed to get recent errors:', error);
-      return [];
-    }
-  }
-
-  static async updateErrorStatus(errorId, status, adminNotes = '', resolvedBy = '') {
-    try {
-      const updateData = {
-        status,
-        updated_at: new Date(),
-      };
-
-      if (status === 'RESOLVED') {
-        updateData.resolvedBy = resolvedBy;
-        updateData.resolvedAt = new Date();
-      }
-
-      if (adminNotes) {
-        updateData.adminNotes = adminNotes;
-      }
-
-      return await AIError.findByIdAndUpdate(errorId, updateData, { new: true });
-    } catch (error) {
-      console.error('Failed to update error status:', error);
-      return null;
-    }
-  }
-
-  static async getErrorsByUser(email, limit = 20) {
-    try {
-      return await AIError.find({ email }).sort({ created_at: -1 }).limit(limit).lean();
-    } catch (error) {
-      console.error('Failed to get errors by user:', error);
-      return [];
-    }
-  }
-
-  static async getErrorById(errorId) {
-    try {
-      return await AIError.findById(errorId).lean();
-    } catch (error) {
-      console.error('Failed to get error by ID:', error);
-      return null;
-    }
+    const [total, byStatus, bySeverity, byType] = await Promise.all([
+      store.count('ai_errors', {}),
+      countGrouped('status', STATUSES),
+      countGrouped('severity', SEVERITIES),
+      countGrouped('errorType', ERROR_TYPES),
+    ]);
+    return { total, byStatus, bySeverity, byType };
   }
 
   static async deleteOldErrors(daysOld = 30) {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-
-      const result = await AIError.deleteMany({
-        created_at: { $lt: cutoffDate },
-        status: { $in: ['RESOLVED', 'IGNORED'] },
-      });
-
-      console.log(`Deleted ${result.deletedCount} old AI errors`);
-      return result.deletedCount;
-    } catch (error) {
-      console.error('Failed to delete old errors:', error);
-      return 0;
-    }
+    const cutoff = new Date(Date.now() - Number(daysOld) * 24 * 60 * 60 * 1000);
+    return store.remove('ai_errors', { created_at: { lt: cutoff } });
   }
 }
 
+async function countGrouped(field, values) {
+  const entries = await Promise.all(
+    values.map(async (value) => [value, await store.count('ai_errors', { [field]: value })])
+  );
+  return Object.fromEntries(entries.filter(([, n]) => n > 0));
+}
+
 module.exports = AIErrorLogger;
-module.exports.AIError = AIError;
+module.exports.ERROR_TYPES = ERROR_TYPES;
+module.exports.SEVERITIES = SEVERITIES;
+module.exports.STATUSES = STATUSES;

@@ -25,43 +25,48 @@ enum MainTab: Int, CaseIterable {
 }
 
 struct MainTabView: View {
+    @EnvironmentObject private var sync: SyncEngine
     @State private var selectedTab: MainTab = .home
     @State private var showFABMenu = false
     @State private var showLogActivity = false
     @State private var showLogFood = false
     @State private var showLogSleep = false
+    @State private var homeRefreshToken = 0
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            CustomTabBar(
-                selectedTab: $selectedTab,
-                showFABMenu: $showFABMenu
-            )
-        }
-        .background(Color.exBackground)
-        .overlay { fabOverlay }
-        .sheet(isPresented: $showLogActivity) { LogActivityView() }
-        .sheet(isPresented: $showLogFood) { LogFoodView() }
-        .sheet(isPresented: $showLogSleep) { LogSleepView() }
+        tabContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                CustomTabBar(
+                    selectedTab: $selectedTab,
+                    showFABMenu: $showFABMenu
+                )
+            }
+            .background(Color.exBackground)
+            .overlay { fabOverlay }
+            .sheet(isPresented: $showLogActivity, onDismiss: refreshHome) { LogActivityView(initialDate: sync.today) }
+            .sheet(isPresented: $showLogFood, onDismiss: refreshHome) { LogFoodView(initialDate: sync.today) }
+            .sheet(isPresented: $showLogSleep, onDismiss: refreshHome) { LogSleepView(initialDate: sync.today) }
     }
 
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
         case .home:
-            NavigationStack { HomeView() }
+            NavigationStack { HomeView(refreshToken: homeRefreshToken, initialDate: sync.today) }
         case .library:
             NavigationStack { FoodLibraryView() }
         case .fab:
             EmptyView()
         case .progress:
-            NavigationStack { ProgressView_() }
+            NavigationStack { ProgressView_(initialDate: sync.today) }
         case .profile:
             NavigationStack { ProfileView() }
         }
+    }
+
+    private func refreshHome() {
+        homeRefreshToken += 1
     }
 
     @ViewBuilder

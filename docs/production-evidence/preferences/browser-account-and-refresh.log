@@ -1,0 +1,11 @@
+[WebServer] (node:56727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:56739) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 apps/web/e2e/preferences.spec.ts:194:1 › a late preference save cannot change a newly signed-in account and stays recoverable for its owner (8.3s)
+  ✓  2 apps/web/e2e/preferences.spec.ts:223:1 › save clicks waiting for a refresh cannot bypass a newly discovered conflict (3.7s)
+
+  2 passed (15.2s)

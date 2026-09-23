@@ -1,0 +1,23 @@
+[WebServer] (node:46736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 14 tests using 1 worker
+
+(node:46742) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 apps/web/e2e/food-recovery.spec.ts:56:1 › fractional servings and grams retain exact nutrition through editing and export (3.8s)
+  ✓   2 apps/web/e2e/food-recovery.spec.ts:105:1 › a lost create acknowledgement is replayed unchanged before a dependent offline edit (4.4s)
+  ✓   3 apps/web/e2e/food-recovery.spec.ts:148:1 › removed foods can be restored offline after their removal has synchronized (5.8s)
+  ✓   4 apps/web/e2e/food-recovery.spec.ts:174:1 › a conflicting edit requires a current comparison and can explicitly restore a server deletion (4.1s)
+  ✓   5 apps/web/e2e/food-recovery.spec.ts:213:1 › copy yesterday sends one recoverable batch and keeps nutrition snapshots (3.5s)
+  ✓   6 apps/web/e2e/food-recovery.spec.ts:259:1 › an unfinished invalid food draft survives reload and stays isolated from another account (7.0s)
+  ✓   7 apps/web/e2e/food-recovery.spec.ts:286:1 › a late food acknowledgement stays with its original account after sign-out (6.1s)
+  ✓   8 apps/web/e2e/food-recovery.spec.ts:327:1 › two tabs keep independent drafts and review a stale food edit before discarding it (4.0s)
+  ✓   9 apps/web/e2e/food-recovery.spec.ts:358:1 › an unreadable food store is preserved and cannot be overwritten by background refresh (3.8s)
+  ✓  10 apps/web/e2e/food-recovery.spec.ts:411:1 › a rejected queued food can be corrected without altering or replaying its failed payload (3.2s)
+  ✓  11 apps/web/e2e/food-recovery.spec.ts:445:1 › a food moves between dates and meals without losing its identity or exact portion (4.1s)
+  ✓  12 apps/web/e2e/food-recovery.spec.ts:475:1 › a storage failure while saving the acknowledgement leaves the original food operation recoverable (3.9s)
+  ✓  13 apps/web/e2e/food-recovery.spec.ts:516:1 › portion calculations reject unbounded fractions and match native rounding at decimal boundaries (124ms)
+  ✓  14 apps/web/e2e/food-recovery.spec.ts:547:1 › adopting a legacy food identity does not duplicate its row or totals after acknowledgement (5.3s)
+
+  14 passed (1.0m)

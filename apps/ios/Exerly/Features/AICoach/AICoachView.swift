@@ -23,13 +23,19 @@ final class AICoachViewModel: ObservableObject {
     private let api = APIClient.shared
 
     func loadCredits() async {
-        do { credits = try await api.getAICredits() }
-        catch { print("AI credits load failed: \(error)") }
+        do {
+            credits = try await api.getAICredits()
+        } catch {
+            print("AI credits load failed: \(error)")
+        }
     }
 
     func loadPlans() async {
-        do { savedPlans = try await api.getAIPlans() }
-        catch { print("AI plans load failed: \(error)") }
+        do {
+            savedPlans = try await api.getAIPlans()
+        } catch {
+            print("AI plans load failed: \(error)")
+        }
     }
 
     func send() async {
@@ -163,7 +169,7 @@ struct AICoachView: View {
     private var typingIndicator: some View {
         HStack {
             HStack(spacing: 4) {
-                ForEach(0..<3) { i in
+                ForEach(0..<3) { _ in
                     Circle()
                         .fill(Color.exTextMuted)
                         .frame(width: 6, height: 6)

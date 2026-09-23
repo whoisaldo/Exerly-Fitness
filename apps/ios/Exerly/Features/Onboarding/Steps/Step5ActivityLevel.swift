@@ -20,7 +20,7 @@ struct Step5ActivityLevel: View {
                         SelectionCard(
                             title: level.label,
                             subtitle: level.subtitle,
-                            isSelected: state.activityLevel == level
+                            isSelected: !state.unansweredFields.contains("activityLevel") && state.activityLevel == level
                         ) {
                             withAnimation(.spring(response: 0.3)) {
                                 state.activityLevel = level

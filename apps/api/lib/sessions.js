@@ -1,0 +1,191 @@
+const { randomUUID, createHash, createHmac, timingSafeEqual } = require('node:crypto');
+const store = require('../data');
+const { unauthorized, badRequest, conflict } = require('./errors');
+const { serializeUser } = require('./users');
+
+const hash = (value) => createHash('sha256').update(value).digest('hex');
+function equal(a, b) {
+  return (
+    typeof a === 'string' &&
+    typeof b === 'string' &&
+    a.length === b.length &&
+    timingSafeEqual(Buffer.from(a), Buffer.from(b))
+  );
+}
+function credential(sessionID, generation) {
+  const { resolveSecret } = require('./auth');
+  return `${sessionID}.${createHmac('sha256', resolveSecret()).update(`refresh:${sessionID}:${generation}`).digest('base64url')}`;
+}
+
+function isActive(session, user) {
+  return (
+    !!session &&
+    !session.revoked_at &&
+    session.expires_at > new Date() &&
+    (session.credentials_version ?? 0) === (user.credentials_version ?? 0)
+  );
+}
+
+function response(user, session, { modern = true } = {}) {
+  const { signToken } = require('./auth');
+  return {
+    token: signToken(user, modern ? '15m' : '30d', {
+      sid: session.session_id,
+      version: session.credentials_version ?? 0,
+    }),
+    refreshToken: modern ? credential(session.session_id, session.generation) : undefined,
+    expiresIn: modern ? 900 : 2592000,
+    sessionId: session.session_id,
+    user: serializeUser(user),
+  };
+}
+
+async function createSession(user, req) {
+  return insertSession(user, req, randomUUID());
+}
+
+async function insertSession(user, req, id) {
+  const now = new Date();
+  const session = await store.insert('sessions', {
+    account_id: user.id,
+    session_id: id,
+    refresh_hash: hash(credential(id, 0)),
+    generation: 0,
+    credentials_version: user.credentials_version ?? 0,
+    device_name: String(req.get('X-Device-Name') || 'Exerly device').slice(0, 100),
+    created_at: now,
+    updated_at: now,
+    expires_at: new Date(now.getTime() + 90 * 86400000),
+  });
+  return response(user, session, { modern: req.get('X-Session-Protocol') === '2' });
+}
+
+async function upgradeSession(user, req) {
+  const operation = req.get('Idempotency-Key');
+  // Installed clients without replay support keep their compatibility path.
+  if (!operation)
+    return store.transaction(async () => createSession(await upgradeAccount(user, req), req));
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(operation))
+    throw badRequest('Invalid session operation key');
+  const { resolveSecret } = require('./auth');
+  // The account, original credential and operation identify one upgrade. Only
+  // this one-way identity and the refresh hash are stored, never a reusable
+  // bearer/refresh credential inside a generic mutation acknowledgement.
+  const identity = createHmac('sha256', resolveSecret())
+    .update(
+      JSON.stringify([
+        'session-upgrade',
+        String(user.id),
+        req.token,
+        operation,
+        req.get('X-Session-Protocol') || '1',
+      ])
+    )
+    .digest('hex');
+  const id = `${identity.slice(0, 8)}-${identity.slice(8, 12)}-${identity.slice(12, 16)}-${identity.slice(16, 20)}-${identity.slice(20, 32)}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await store.transaction(async () => {
+        const current = await upgradeAccount(user, req);
+        const previous = await store.findOne('operations', { account_id: user.id, key: operation });
+        let sessionID = id;
+        if (previous) {
+          const { canonicalJSON } = require('./mutations');
+          const fingerprint = hash(
+            canonicalJSON({
+              method: req.method,
+              path: req.originalUrl,
+              body: req.body ?? null,
+              revision: req.get('If-Match') ?? null,
+            })
+          );
+          if (
+            previous.fingerprint !== fingerprint ||
+            typeof previous.response?.sessionId !== 'string'
+          )
+            throw conflict('This operation key was already used with different content');
+          // A response lost before this server upgrade must recover its original
+          // session. Replace the old credential-bearing acknowledgement with
+          // its session reference once that reference has been validated.
+          sessionID = previous.response.sessionId;
+        }
+        const existing = await store.findOne('sessions', {
+          session_id: sessionID,
+          account_id: user.id,
+        });
+        if (previous && !existing) throw unauthorized('Session no longer exists. Sign in again.');
+        if (!existing) return insertSession(current, req, id);
+        if (!isActive(existing, current)) throw unauthorized('Session expired. Sign in again.');
+        if (previous)
+          await store.update(
+            'operations',
+            { id: previous.id },
+            { response: { sessionId: existing.session_id, session_upgrade: true } }
+          );
+        return response(current, existing, { modern: req.get('X-Session-Protocol') === '2' });
+      });
+    } catch (error) {
+      if (error.code !== 11000 || attempt === 2) throw error;
+    }
+  }
+}
+
+async function upgradeAccount(user, req) {
+  const current = await store.findById('users', user.id);
+  if (!current || (req.user.version ?? 0) !== (current.credentials_version ?? 0))
+    throw unauthorized('Session has been revoked');
+  if (req.user.sid) {
+    const source = await store.findOne('sessions', {
+      account_id: current.id,
+      session_id: req.user.sid,
+    });
+    if (!isActive(source, current)) throw unauthorized('Session has been revoked');
+    // Serialize an upgrade with revocation of its original session. MongoDB
+    // retries a conflicting transaction and rechecks the revoked source row.
+    await store.update('sessions', { id: source.id }, { updated_at: new Date() });
+  }
+  return current;
+}
+
+async function rotate(refreshToken, operation) {
+  if (typeof refreshToken !== 'string' || refreshToken.length > 256 || !refreshToken.includes('.'))
+    throw unauthorized('Invalid refresh credential');
+  if (typeof operation !== 'string' || !/^[a-zA-Z0-9._:-]{8,128}$/.test(operation))
+    throw badRequest('An operation key is required to refresh the session');
+  return store.transaction(async () => {
+    const id = refreshToken.split('.')[0];
+    const session = await store.findOne('sessions', { session_id: id });
+    if (!session || session.revoked_at || session.expires_at <= new Date())
+      throw unauthorized('Session expired. Sign in again.');
+    const user = await store.findById('users', session.account_id);
+    if (!user) throw unauthorized('Session no longer exists');
+    if (!isActive(session, user)) throw unauthorized('Session has been revoked');
+    const presented = hash(refreshToken);
+    // The client keeps the operation key until the rotated credential is in
+    // Keychain. Retrying a lost acknowledgement returns the same credential.
+    if (equal(session.previous_refresh_hash, presented) && session.previous_operation === operation)
+      return response(user, session);
+    if (!equal(session.refresh_hash, presented))
+      throw unauthorized('Refresh credential has already been rotated');
+    const generation = session.generation + 1;
+    const updated = await store.update(
+      'sessions',
+      { id: session.id, refresh_hash: presented },
+      {
+        generation,
+        previous_refresh_hash: presented,
+        previous_operation: operation,
+        refresh_hash: hash(credential(id, generation)),
+        updated_at: new Date(),
+      }
+    );
+    if (!updated) throw unauthorized('Session changed. Retry with the saved credential.');
+    return response(user, updated);
+  });
+}
+
+async function revokeAll(accountID) {
+  await store.updateMany('sessions', { account_id: accountID }, { revoked_at: new Date() });
+}
+
+module.exports = { createSession, upgradeSession, rotate, revokeAll, response, isActive };

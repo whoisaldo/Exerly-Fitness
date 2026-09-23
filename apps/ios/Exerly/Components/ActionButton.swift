@@ -9,7 +9,7 @@ struct ActionButton: View {
     var variant: ActionButtonVariant = .primary
     var isLoading: Bool = false
     var isDisabled: Bool = false
-    var icon: String? = nil
+    var icon: String?
     let action: () -> Void
 
     var body: some View {

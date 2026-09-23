@@ -16,9 +16,23 @@ struct Step4Goals: View {
                 }
 
                 goalCards
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Nutrition goal").font(.headline)
+                        Picker("Nutrition goal", selection: Binding(
+                            get: { state.nutritionGoal },
+                            set: { state.nutritionGoalChoice = $0 }
+                        )) {
+                            Text("Lose weight").tag("lose")
+                            Text("Maintain weight").tag("maintain")
+                            Text("Gain weight").tag("gain")
+                        }.pickerStyle(.menu).tint(.exTextPrimary).frame(minHeight: 44)
+                            .accessibilityIdentifier("setup.nutritionGoal")
+                        Text("Your nutrition goal can differ from your training goal.")
+                            .font(.callout).foregroundStyle(.exTextSecondary)
+                    }
+                }
                 targetWeightSection
-                timelineSection
-                safetyBadge
 
                 Spacer(minLength: 24)
 
@@ -35,7 +49,7 @@ struct Step4Goals: View {
                 SelectionCard(
                     title: goal.label,
                     icon: goal.icon,
-                    isSelected: state.goal == goal
+                    isSelected: !state.unansweredFields.contains("goal") && state.goal == goal
                 ) {
                     withAnimation(.spring(response: 0.3)) { state.goal = goal }
                 }
@@ -45,93 +59,20 @@ struct Step4Goals: View {
 
     @ViewBuilder
     private var targetWeightSection: some View {
-        if state.goal == .loseWeight || state.goal == .gainMuscle {
-            let unit = state.useMetric ? "kg" : "lbs"
-            let displayValue = state.useMetric
-                ? state.targetWeightKg
-                : WizardService.kgToLbs(state.targetWeightKg)
-            let range: ClosedRange<Double> = state.useMetric ? 40...150 : 88...330
-            let step: Double = state.useMetric ? 0.5 : 1.0
-
+        if state.nutritionGoal != "maintain" {
             GlassCard {
-                VStack(spacing: 8) {
-                    Text("Target Weight")
-                        .font(.exLabel)
-                        .foregroundStyle(.exTextSecondary)
-                    HStack {
-                        Slider(
-                            value: Binding(
-                                get: { displayValue },
-                                set: { newValue in
-                                    state.targetWeightKg = state.useMetric
-                                        ? newValue
-                                        : WizardService.lbsToKg(newValue)
-                                }
-                            ),
-                            in: range,
-                            step: step
-                        )
-                        .tint(.exPrimary)
-                        Text(String(format: "%.1f %@", displayValue, unit))
-                            .font(.exStatSmall)
-                            .foregroundStyle(.exTextPrimary)
-                            .frame(width: 90)
-                    }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Target weight, \(state.useMetric ? "kg" : "lb")").font(.headline)
+                    TextField("Target weight", value: Binding(
+                        get: { state.useMetric ? state.targetWeightKg : state.targetWeightKg / 0.45359237 },
+                        set: { state.targetWeightKg = state.useMetric ? $0 : $0 * 0.45359237 }
+                    ), format: .number.precision(.fractionLength(0...2)))
+                        .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .frame(minHeight: 44).accessibilityLabel("Target weight")
+                    Text("Your initial targets will be shown for review. You can adjust your goal in Program.")
+                        .font(.callout).foregroundStyle(.exTextSecondary)
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private var timelineSection: some View {
-        if state.goal == .loseWeight || state.goal == .gainMuscle {
-            GlassCard {
-                VStack(spacing: 8) {
-                    Text("Timeline")
-                        .font(.exLabel)
-                        .foregroundStyle(.exTextSecondary)
-                    HStack {
-                        Slider(
-                            value: Binding(
-                                get: { Double(state.timelineWeeks) },
-                                set: { state.timelineWeeks = Int($0) }
-                            ),
-                            in: 4...52, step: 1
-                        )
-                        .tint(.exPrimary)
-                        Text("\(state.timelineWeeks) weeks")
-                            .font(.exStatSmall)
-                            .foregroundStyle(.exTextPrimary)
-                            .frame(width: 90)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var safetyBadge: some View {
-        if state.goal == .loseWeight || state.goal == .gainMuscle {
-            let safety = state.weightRateSafety
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(safetyColor(safety))
-                    .frame(width: 10, height: 10)
-                Text(safety.label)
-                    .font(.exLabel)
-                    .foregroundStyle(safetyColor(safety))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .glassCard(cornerRadius: 20)
-        }
-    }
-
-    private func safetyColor(_ safety: WeightRateSafety) -> Color {
-        switch safety {
-        case .safe: return .exSuccess
-        case .aggressive: return .exWarning
-        case .dangerous: return .exError
         }
     }
 }
