@@ -3,7 +3,7 @@
 **A cross-platform fitness companion that helps you track workouts, nutrition, and sleep — with AI-powered coaching built in.**
 
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Web-blue)](#)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/node-%3E%3D22%20%3C27-brightgreen)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-proprietary-red)](LICENSE)
 
 ---
@@ -40,11 +40,11 @@ An AI coaching assistant (powered by Google Gemini) can generate workout plans, 
 - 30+ activity types with intensity and calorie estimation
 - Sleep with bedtime/wake time and quality
 - Water in millilitres
-- Full JSON export of everything the account holds
+- JSON export of account details, daily logs, programs and personal foods
 
 **Intelligence**
 
-- 12-step onboarding wizard that calculates BMI, TDEE, and a starting plan
+- Six-screen signup and setup with saved drafts, editable targets and a starting plan
 - AI coach that answers fitness questions and builds workout plans, aware of your current targets
 
 **Health Integration**

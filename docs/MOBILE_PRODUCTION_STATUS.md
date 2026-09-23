@@ -1,6 +1,6 @@
 # Mobile production implementation
 
-Work started September 21, 2026. Scope is the complete [production plan](MOBILE_PRODUCTION_PLAN.md), including its release gates. Existing uncommitted API, web, and iOS changes are the implementation baseline and must be preserved.
+Work started September 21, 2026. Scope is the complete [production plan](MOBILE_PRODUCTION_PLAN.md), including its release gates. Pre-existing API, web, and iOS changes were preserved as the implementation baseline.
 
 ## Delivery ledger
 
@@ -202,3 +202,9 @@ Local test logs are under `/tmp/exerly-production-*`. Permanent test summaries a
 - All 153 API tests pass on SQLite and MongoDB. The final Chromium food suite passes 14 checks; WebKit passes the 13 recovery checks and the additional legacy-identity check. The wider browser regression passes 64 checks with one native-dependent activity/sleep journey skipped. Production offline suites pass 13 Chromium and three WebKit checks, including food recovery after closing tabs with both servers disconnected. The skipped shared activity/sleep journey passed in the preceding cross-client v12 run.
 - The production web build, TypeScript, formatting and unsigned device Release build pass. ESLint reports 23 warnings and no errors; SwiftLint reports 72 warnings and no errors. The web bundle-size warning remains. The detached MacBook preview is available at `http://100.80.149.7:3305`, and its desktop/mobile video playback checks pass.
 - [Food recovery evidence](production-evidence/food-recovery.md) retains logs and reviewed captures. Native quantity-control expansion, library workflows, recipes, saved meals, portability and the broader production and release work remain. This batch does not close phase 3 or the whole plan.
+
+### September 22, pull request integration
+
+- Integrated current main's dependency upgrades and unused-code removal in a separate worktree. The combined lockfile installs cleanly. Both API database suites pass 153 tests; the complete standalone browser run passes 67 checks with one native-dependent skip. Production offline suites pass 13 Chromium and three WebKit checks. Lint, TypeScript, the web build, scoped formatting, workflow lint and the secret scan pass.
+- The app-update test now observes Chromium's worker lifecycle independently of its closing app tabs. Its original preservation and exactly-once recovery assertions pass three consecutive checks, followed by the complete offline suites. The MacBook preview stays available on port 3305.
+- [PR integration evidence](production-evidence/pr-integration.md) records results and the unchanged advisory findings. The PR packages completed work as a draft; the broader plan and external release gates remain in progress.

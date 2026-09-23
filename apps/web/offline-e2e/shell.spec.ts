@@ -137,6 +137,15 @@ test('an app update waits for every old tab to close and keeps the pending opera
   const indexPath = path.join(directory, 'index.html');
   const originalWorker = await fs.readFile(workerPath, 'utf8');
   const originalIndex = await fs.readFile(indexPath, 'utf8');
+  // A worker's JS debugging connection can disappear when its last app tab
+  // closes. Observe Chromium's lifecycle events from an uncontrolled blank tab.
+  const observer = browserName === 'chromium' ? await context.newPage() : null;
+  const inspector = observer ? await context.newCDPSession(observer) : null;
+  const versions = new Map<string, { versionId: string; status: string; scriptURL: string }>();
+  inspector?.on('ServiceWorker.workerVersionUpdated', ({ versions: updates }) => {
+    for (const version of updates) versions.set(version.versionId, version);
+  });
+  await inspector?.send('ServiceWorker.enable');
   try {
     await fs.writeFile(
       indexPath,
@@ -146,22 +155,9 @@ test('an app update waits for every old tab to close and keeps the pending opera
       workerPath,
       originalWorker.replace(/const version = [^;]+;/, `const version = "update-${randomUUID()}";`)
     );
-    const installing = browserName === 'chromium' ? context.waitForEvent('serviceworker') : null;
     await page.evaluate(async () => {
       await (await navigator.serviceWorker.ready).update();
     });
-    const nextWorker = installing ? await installing : null;
-    if (nextWorker) {
-      await nextWorker.evaluate(() => {
-        self.addEventListener(
-          'activate',
-          () => {
-            (self as unknown as { testActivated: boolean }).testActivated = true;
-          },
-          { once: true }
-        );
-      });
-    }
     await expect(page.getByRole('region', { name: 'Connection status' })).toContainText(
       'An app update is ready'
     );
@@ -170,19 +166,18 @@ test('an app update waits for every old tab to close and keeps the pending opera
     await expect(page.locator('meta[name="test-offline-release"]')).toHaveCount(0);
     await expect(form.getByRole('status')).toContainText('250 ml waiting for confirmation');
     const url = page.url();
+    const waitingVersion = () =>
+      [...versions.values()].find(
+        (version) =>
+          version.status === 'installed' &&
+          version.scriptURL === new URL('/offline-worker.js', url).href
+      )?.versionId;
+    if (inspector) await expect.poll(waitingVersion).toBeTruthy();
+    const versionID = waitingVersion();
     await other.close();
     await page.close();
-    if (nextWorker) {
-      await expect
-        .poll(() =>
-          nextWorker.evaluate(
-            () =>
-              (self as unknown as { testActivated?: boolean }).testActivated &&
-              (self as unknown as { registration: { active?: { state: string } } }).registration
-                .active?.state
-          )
-        )
-        .toBe('activated');
+    if (versionID) {
+      await expect.poll(() => versions.get(versionID)?.status).toBe('activated');
     }
     const updated = await context.newPage();
     await updated.goto(url);
@@ -199,6 +194,8 @@ test('an app update waits for every old tab to close and keeps the pending opera
   } finally {
     await fs.writeFile(indexPath, originalIndex);
     await fs.writeFile(workerPath, originalWorker);
+    await inspector?.detach();
+    await observer?.close();
   }
 });
 
