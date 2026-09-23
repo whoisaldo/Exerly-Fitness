@@ -15,9 +15,11 @@ September 22, 2026. The implementation was combined with `origin/main` at `7b58e
 | Update lifecycle regression         | 3 consecutive passes                                           | [Repeated update check](pr-integration/update-check.log)                     |
 | TypeScript and production web build | Passed; existing large-chunk warning                           | [Typecheck](pr-integration/typecheck.log), [build](pr-integration/build.log) |
 | ESLint                              | No errors; 18 warnings                                         | [Lint](pr-integration/lint.log)                                              |
-| API/web/config formatting           | Passed                                                         | [Formatting](pr-integration/format.log)                                      |
+| Repository formatting               | Passed                                                         | [Formatting](pr-integration/full-format.log)                                 |
 | Workflow lint                       | Passed                                                         | [Actionlint](pr-integration/actionlint.log)                                  |
 | Secret scan of new commits          | Passed                                                         | [Gitleaks](pr-integration/gitleaks.log)                                      |
+
+Repository formatting preserves generated Hyperframes compositions and exported verification JSON. Handwritten source, scripts and documentation remain included.
 
 The first Chromium production run passed 12 checks but stalled when evaluating the waiting service worker after closing its final app tab. The test now observes Chromium's worker lifecycle events through a separate debugging session on an uncontrolled `about:blank` tab. It waits for the exact waiting version to activate, then checks the reopened app's actual HTML and pending operation. It keeps the original assertions that an open older tab prevents activation and that the pending addition synchronizes exactly once. Production worker behavior did not change. The [initial failure](pr-integration/update-initial-failure.log) and final repeated checks are retained.
 
