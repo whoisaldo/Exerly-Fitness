@@ -95,17 +95,17 @@ const Credits = () => {
         >
           <GlassCard elevated className="text-center py-8 rounded-2xl">
             <p className="label mb-3">Built and maintained by</p>
-            <h2 className="text-2xl font-bold text-slate-50 mb-2">Eternal Reverse</h2>
+            <h2 className="text-2xl font-bold text-slate-50 mb-2">Sideband</h2>
             <p className="text-slate-400 mb-5">
               The studio behind Exerly, focused on precise, humane software.
             </p>
             <a
-              href="https://eternalreverse.dev"
+              href="https://sideband.studio"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-primary-bright transition-colors hover:text-slate-50"
             >
-              eternalreverse.dev
+              sideband.studio
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M7 17L17 7M9 7h8v8"
@@ -151,7 +151,7 @@ const Credits = () => {
           <h3 className="text-display-sm text-center mb-8 text-slate-50">Connect &amp; Explore</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <a
-              href="https://eternalreverse.dev"
+              href="https://sideband.studio"
               target="_blank"
               rel="noopener noreferrer"
               className="block"
@@ -167,7 +167,7 @@ const Credits = () => {
                     />
                   </svg>
                 </span>
-                <span className="font-medium text-slate-100 text-sm">Eternal Reverse</span>
+                <span className="font-medium text-slate-100 text-sm">Sideband</span>
               </GlassCard>
             </a>
             <Link to="/status-check" className="block">
@@ -203,7 +203,7 @@ const Credits = () => {
           <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
             <span>Version 1.0.0</span>
             <span>&bull;</span>
-            <span>&copy; 2026 Eternal Reverse</span>
+            <span>&copy; 2026 Sideband</span>
           </div>
         </motion.div>
       </div>
