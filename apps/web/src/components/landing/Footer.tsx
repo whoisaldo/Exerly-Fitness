@@ -48,12 +48,12 @@ export function Footer() {
                 About
               </button>
               <a
-                href="https://eternalreverse.dev"
+                href="https://sideband.studio"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={linkClass}
               >
-                Eternal Reverse
+                Sideband
               </a>
               <button onClick={() => navigate('/maintenance-history')} className={linkClass}>
                 Maintenance history
@@ -64,14 +64,14 @@ export function Footer() {
 
         <div className="mt-12 border-t border-white/8 pt-6 text-center">
           <p className="text-xs text-slate-500">
-            &copy; 2026 Exerly &mdash; An{' '}
+            &copy; 2026 Exerly &mdash; A{' '}
             <a
-              href="https://eternalreverse.dev"
+              href="https://sideband.studio"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-400 transition-colors hover:text-slate-100"
             >
-              Eternal Reverse
+              Sideband
             </a>{' '}
             product.
           </p>
