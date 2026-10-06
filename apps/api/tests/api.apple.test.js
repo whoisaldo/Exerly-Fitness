@@ -177,3 +177,19 @@ test('concurrent first sign-ins with one Apple ID create one account', async () 
   assert.equal(results.filter((r) => r.body.created).length, 1);
   assert.equal(await api.store.count('account_identities', { subject: sub }), 1);
 });
+
+test('bootstrap reports which sign-in methods the account has', async () => {
+  const methods = async (token) =>
+    (await api.get('/api/bootstrap', { token })).body.sign_in_methods;
+
+  const person = await signUp(api);
+  assert.deepEqual(await methods(person.token), { password: true, apple: false });
+  const sub = '001234.methods.0001';
+  await api.post('/api/account/identities/apple', credential({ sub }), { token: person.token });
+  assert.deepEqual(await methods(person.token), { password: true, apple: true });
+  await api.del('/api/account/identities/apple', { token: person.token });
+  assert.deepEqual(await methods(person.token), { password: true, apple: false });
+
+  const appleOnly = await signIn(credential());
+  assert.deepEqual(await methods(appleOnly.body.token), { password: false, apple: true });
+});

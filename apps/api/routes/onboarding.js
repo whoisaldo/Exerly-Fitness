@@ -14,9 +14,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await requireUser(req.user.email);
     const onboarding = await setup.repairIfPossible(user);
+    const apple = await store.findOne('account_identities', {
+      account_id: user.id,
+      provider: 'apple',
+    });
     res.json({
       account: onboarding.user,
       account_id: user.id,
+      // Which account actions Settings can offer: unlinking Apple needs a password.
+      sign_in_methods: { password: !!user.hash, apple: !!apple },
       onboarding,
       targets: onboarding.targets,
       contract_version: 1,
