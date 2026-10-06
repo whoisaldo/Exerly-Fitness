@@ -1,10 +1,13 @@
-// Boots the real app against an in-memory SQLite database.
+// Boots the real app against PostgreSQL.
 //
-// node --test forks a process per file, so every test file gets its own
-// database. Tests can't leak state into each other and none of them need
-// teardown beyond closing the server.
+// node --test forks a process per file, and each process gets its own schema
+// in the test cluster (see scripts/run-tests.js), dropped on close. Tests
+// can't leak state into each other.
 
-process.env.DB_MODE = process.env.EXERLY_TEST_DB === 'mongo' ? 'mongo' : 'local';
+if (!process.env.EXERLY_TEST_DATABASE_URL) {
+  throw new Error('Run the API tests with npm test, which provides EXERLY_TEST_DATABASE_URL');
+}
+delete process.env.DB_MODE;
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-not-used-anywhere-real';
 process.env.ADMIN_EMAILS = 'admin@exerly.test';
@@ -16,14 +19,10 @@ const { reset: resetRateLimits } = require('../../lib/ratelimit');
 // Errors are expected here; printing every stack would bury the real failures.
 const quietLogger = { error: () => {}, warn: () => {}, log: () => {} };
 
+const schema = `test_${process.pid}_${Math.random().toString(36).slice(2, 8)}`;
+
 async function startServer() {
-  if (process.env.EXERLY_TEST_DB === 'mongo') {
-    const uri = new URL(process.env.EXERLY_TEST_MONGODB_URI);
-    uri.pathname = `/exerly_test_${process.pid}`;
-    await store.connect({ uri: uri.toString() });
-  } else {
-    await store.connect({ file: ':memory:' });
-  }
+  await store.connect({ connectionString: process.env.EXERLY_TEST_DATABASE_URL, schema });
   resetRateLimits();
 
   const app = createApp({ logger: quietLogger });
@@ -64,6 +63,7 @@ async function startServer() {
     del: (p, o) => request('DELETE', p, o),
     async close() {
       await new Promise((resolve) => server.close(resolve));
+      await store.query(`DROP SCHEMA ${schema} CASCADE`);
       await store.disconnect();
     },
   };
@@ -92,4 +92,4 @@ async function signUp(client, overrides = {}) {
   return { ...payload, token: res.body.token, user: res.body.user };
 }
 
-module.exports = { startServer, signUp, store };
+module.exports = { startServer, signUp, store, schema };

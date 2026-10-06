@@ -1,11 +1,9 @@
 // Entry point.
 //
-// DB_MODE=local  -> SQLite, mock AI, no external services
-// otherwise      -> MongoDB Atlas + Gemini
+// DATABASE_URL -> PostgreSQL. Pending migrations run before the server listens.
+// DB_MODE=local -> SQLite, kept only for the isolated simulator fixture.
 //
-// Both modes run the same routes; only the storage driver changes. There used
-// to be a separate 1263-line server-local.js that reimplemented every endpoint,
-// and the two had already drifted apart in a dozen places.
+// Both modes run the same routes; only the storage driver changes.
 
 require('dotenv').config();
 
@@ -29,8 +27,10 @@ async function main() {
       'Without it the server would sign tokens with a value that is in the public repo.',
     ]);
   }
-  if (!store.isLocal && !process.env.MONGODB_URI) {
-    fail('MONGODB_URI is required', ['Set MONGODB_URI, or run with DB_MODE=local to use SQLite.']);
+  if (!store.isLocal && !process.env.DATABASE_URL) {
+    fail('DATABASE_URL is required', [
+      'Point it at PostgreSQL 16 or later, for example the docker-compose database.',
+    ]);
   }
 
   let info;

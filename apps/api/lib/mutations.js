@@ -37,7 +37,7 @@ async function executeMutation(req, res, fn) {
   const originalJSON = res.json;
   let replayed = false;
   let output;
-  // Concurrent first-use upserts can race a unique index in MongoDB. A new
+  // Concurrent first uses of a key can race the unique index. A new
   // transaction then observes the winning committed operation.
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -88,7 +88,7 @@ async function executeMutation(req, res, fn) {
         output = error.mutationResponse;
         break;
       }
-      if (error.code !== 11000 || attempt === 2) throw error;
+      if (!store.isRetryable(error) || attempt === 2) throw error;
       res.statusCode = 200;
     }
   }

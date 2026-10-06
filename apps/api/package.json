@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "start:local": "cross-env DB_MODE=local node index.js",
-    "dev": "cross-env DB_MODE=local node index.js",
-    "test": "cross-env DB_MODE=local node --test tests/*.test.js"
+    "dev": "node index.js",
+    "test": "node scripts/run-tests.js",
+    "migrate": "node db/migrate.js"
   },
   "keywords": [],
   "author": "",
@@ -21,11 +22,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.1",
-    "pg": "^8.23.1",
-    "sqlite3": "^6.0.1"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "mongodb-memory-server": "^10.2.3"
+    "sqlite3": "^6.0.1"
   }
 }

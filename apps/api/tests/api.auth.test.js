@@ -171,8 +171,5 @@ test('health reports the driver and a connected database', async () => {
   const res = await api.get('/api/health');
   assert.equal(res.status, 200);
   assert.equal(res.body.status, 'healthy');
-  assert.equal(
-    res.body.database.driver,
-    process.env.EXERLY_TEST_DB === 'mongo' ? 'mongo' : 'sqlite'
-  );
+  assert.equal(res.body.database.driver, 'postgres');
 });

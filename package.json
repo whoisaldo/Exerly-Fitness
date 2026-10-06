@@ -28,7 +28,6 @@
     "test": "npm test -w apps/api",
     "smoke:api": "bash scripts/smoke-api.sh",
     "prepare": "husky",
-    "test:mongo": "node scripts/test-mongo.cjs",
     "test:web": "playwright test",
     "test:web:offline": "playwright test --config playwright.offline.config.cjs",
     "test:cross-client": "bash scripts/test-cross-client.sh",

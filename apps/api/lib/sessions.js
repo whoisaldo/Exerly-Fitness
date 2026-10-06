@@ -125,7 +125,7 @@ async function upgradeSession(user, req) {
         return response(current, existing, { modern: req.get('X-Session-Protocol') === '2' });
       });
     } catch (error) {
-      if (error.code !== 11000 || attempt === 2) throw error;
+      if (!store.isRetryable(error) || attempt === 2) throw error;
     }
   }
 }
