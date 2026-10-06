@@ -18,7 +18,17 @@ function binary(name) {
         .sort((a, b) => Number(b) - Number(a))
         .map((major) => `/usr/lib/postgresql/${major}/bin`)
     : [];
-  const dirs = [process.env.PG_BIN, '/opt/homebrew/bin', '/usr/local/bin', ...debian];
+  // Homebrew's versioned formulas are keg-only, so they aren't on the PATH.
+  const kegs = ['/opt/homebrew/opt', '/usr/local/opt'].flatMap((prefix) =>
+    fs.existsSync(prefix)
+      ? fs
+          .readdirSync(prefix)
+          .filter((name) => /^postgresql(@\d+)?$/.test(name))
+          .sort((a, b) => Number(b.split('@')[1] ?? 0) - Number(a.split('@')[1] ?? 0))
+          .map((name) => `${prefix}/${name}/bin`)
+      : []
+  );
+  const dirs = [process.env.PG_BIN, '/opt/homebrew/bin', '/usr/local/bin', ...kegs, ...debian];
   for (const dir of dirs.filter(Boolean)) {
     const candidate = path.join(dir, name);
     if (fs.existsSync(candidate)) return candidate;
