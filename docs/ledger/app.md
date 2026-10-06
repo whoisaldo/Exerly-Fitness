@@ -1,212 +1,171 @@
 # App agent ledger (Astra)
 
-Read the brief, this ledger and to-app.md after every reset. Done is not met.
-No parity row is fully device-verified. Keep working from this ledger.
+Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
+met. No parity row is fully device-verified. Continue without ending at a
+milestone. Current date 2026-10-06, updated 15:54 EDT.
 
-## Current milestone and next steps
+## Current work and next steps
 
-2026-10-06 15:27 EDT. A2 remains live in internal TestFlight. Primary agent/app
-is ba627bb3. It includes logic's exact migrated-payload fix 700cdc0d above
-integration 66b3dd1e. A3 remains unreleased and its source is frozen. App-next
-is A4 work, branch agent/app-next at cc32f2cc, rebased onto primary. Do not
-discard it. Done is not met.
+A3 account source is frozen and all final checks pass. Internal build2610061942
+uploaded successfully, Apple processing and Ali-only assignment pending.
+Current live TestFlight remains2610061654. Main agent/app includes exact Logic
+fix700cdc0d above integration66b3dd1e. Only docs changed since the tested source
+ba627bb3. Next fast-forward integration and push, then tell Logic it can land.
 
-1. Final A3 full native regression is running on the original Large simulator,
-   session62147, artifacts/account/full-a3-canonical.xcresult and .log. Started
-   15:18 EDT. Fresh current-source API219, Core183 and device build pass in
-   canonical-{api,core,device}.log. Prior lint/format/typecheck and six Node,
-   seven Python release checks passed; repeat the fast gate after current edits.
-2. Original full-a3-current ended118 pass, one failure, eight skips. Its lone
-   legacy-session test-hook port failure is fixed and focused verification
-   passes in legacy-isolated-port.xcresult. full-a3-final was deliberately
-   interrupted to adopt700cdc0d. Neither is final passing evidence.
-3. A3's prepared signed2610061907 archive predates700cdc0d and the large-text
-   Start workout wrap. Do not upload it. After final tests, create a fresh
-   signed upload, assign it internally, update PARITY/RELEASE and fast-forward
-   integration. Logic was asked to leave integration at66b3dd1e until then.
-4. A4 normal real-server review/accept-offline/relaunch/sync/undo/reject/audit,
-   token creation/revocation/write cancellation and stale refusal pass. All13
-   relevant normal screenshots were inspected. large-dark-scroll passes eight
-   hosted plus three UI tests; its13 captures are being inspected. Small-light
-   scroll failed because the test gesture crossed the navigation bar after an
-   offline banner appeared. The helper now drags within the visible list.
-5. A4 small-light-canonical/session86127 and large-light-canonical/session59253
-   are running, using fresh700cdc0d fixtures and cc32f2cc. Each has three UI
-   journeys; large also has eight hosted tests. Inspect images, run both dark
-   variants, then complete A4 full checks and release. Design009 is prepared
-   for A5 entry checks/observations. Logic's new00d9992f addresses the detector
-   review, but do not adopt M4/M5 into the frozen A3 source.
+1. Poll `node apps/ios/scripts/asc.mjs status`. When1942 is VALID, run
+   `node artifacts/account/finalize-internal.mjs 2610061942 artifacts/account/a3-notes.txt`.
+   Helper verifies exact app, Ali-only internal group and English notes. It
+   detaches older group builds only after new IN_BETA_TESTING. Save proof JSON,
+   update RELEASE/PARITY/ledger, tell Ali the build is available.
+2. A4 is in /Users/aldo/Desktop/Exerly-Fitness-app-next, branch agent/app-next,
+   remote4e696163. Do not discard. Final small-dark three UI journeys running
+   on SE, session74661, artifacts/agents/small-dark-final.{log,xcresult}.
+   Export attachments with artifacts/agents/export-images.py and inspect every
+   image. All other final matrix images now inspected, details below.
+3. After A3 lands and Logic lands M4/M5, rebase A4 onto integration. Adopt Core
+   legacy queue export and database close; attachment LegacyExportTests.swift
+   goes in hosted target. Request any review findings. Run full native suite,
+   API/Core/device build on one frozen base, archive/upload A4, update docs and
+   land. Then A5 entry checks/observations, A6 programs. Design009/010 are ready
+   in app-next. Do not stop after A3 or A4.
 
-Current fixtures on39203/39204/39205/39206 use primary700cdc0d source, sessions
-3247/7679/53930/93999. Logs: account/canonical-fixture-<port>.log. Environment
-key is EXERLY_FIXTURE_PORT, not PORT. Only stop verified app-owned PIDs, and
-never restart a fixture while a test uses it. No protected services changed.
+## A3 final evidence and release
 
-## Active A3 implementation and evidence
+- `artifacts/account/full-a3-canonical.xcresult`:100 hosted +19 UI pass,
+  eight opt-in skips, zero failures. Completed15:47 EDT. API219/Core183/device
+  pass in canonical-{api,core,device}.log. Lint/format/typecheck/SwiftLint pass
+  in canonical-* logs. Existing warnings only. Six Node/seven Python release
+  checks pass in final-release-* logs; release scripts unchanged since.
+- Four final largest-type account variants pass, two journeys each. All36
+  screenshots inspected in account/{small-light-final,small-dark-final,
+  large-light-final,large-dark-final}. Earlier32 recovery +11 normal captures
+  also inspected. Banner and Start workout wrap fixes verified.
+- Earlier full-a3-current had one legacy test-hook port failure, fixed and
+  focused verified. full-a3-final was interrupted to adopt700cdc0d. Neither
+  is the final evidence; full-a3-canonical is green.
+- Signed archive/IPA1942 passed validation. Upload success15:49 EDT.
+  `apps/ios/build/release/2610061942/{Exerly.xcarchive,export/Exerly.ipa,upload.log}`.
+  Obsolete1907 and1727 must not be uploaded. Upload session49030 finished.
 
-A3 uses AuthViewModel.accountAPI as the sole session owner. AppAccountWorkspace
-quiesces Core sync before sign-out, switch and deletion, and consumes the Core
-persistent accountsAwaitingLocalCleanup queue at launch/changes. Failed deletion
-restarts sync. Account export overlays unsynced training and proposals through
-AccountExport.merging. A separate offline training export works without a server;
-the UI discloses that queued legacy food/other entries are excluded. Core needs
-that queue merged before claiming full export. Requested an explicit persistence
-close lifecycle too. All requests and the UUID bug are in to-logic.md.
+A3 native Apple buttons validate nonce/state/token and call the shared Core
+bridge. Account methods link/unlink, Apple-only guard, export/share, explicit
+reauth/deletion. AppAccountWorkspace shuts down Core sync before account
+changes, consumes persistent confirmed cleanup queue and resumes sync after
+failed deletion. Training persistence is account-specific; hosts training+agent.
+Automatic foreground/120sec sync. Account export merges unsynced training and
+proposals; offline export works. UI discloses pending legacy rows excluded.
+Core now supplies queue export and explicit persistence close; wire into A4.
 
-Native Apple buttons validate nonce/state/token and use the shared bridge.
-Account settings support link/unlink, JSON sharing and explicit deletion alerts.
-Profile hides password changes for Apple-only accounts. Training sync responds
-to foreground/local changes and runs every 120 seconds while active. No API calls
-or domain maths were added to screens; no Core/API files edited.
+Root account notices sit above auth/TabView so they do not cover Back on iOS18.
+Saved-account banner describes cached details rather than incorrectly declaring
+training offline. Welcome uses original mark, scrolling/Reduce Motion, wrapping
+copy and opaque auth back button. Start workout wraps at largest type.
 
-Welcome now uses the original E/pulse asset, supports scrolling and Reduce Motion.
-ActionButton wraps at large type; floating fields stack labels at accessibility
-sizes. Latest 1aad43b8 fixes the welcome tagline's remaining large-phone ellipsis
-and gives auth back buttons an opaque background. These final fixes are in the
-current screenshot run, not the earlier evidence.
+## A4 implementation and evidence
 
-Verified on e961d96e over 7a97ae34:
+Design008 and tests preceded implementation. Four Features/Agents files, two
+hosted test files, project registration, Profile Connected agents and Training
+Suggestions entry are in app-next. AgentReviewModel uses Core accept/reject/undo,
+including stale/invalid refusal and sync of refusal audits. Full field diffs,
+unit presentation, raw JSON fallback, verified/mismatch/unavailable metrics,
+evidence/caveats/confidence/falsifier, offline decisions and activity history.
+Stale refusal scrolls into view and receives VoiceOver focus.
 
-- API 215, Core 180 and device build pass: account/recovery-{api,core,device}.log.
-- 21 hosted tests (15 adopted SessionBridge plus six workspace lifecycle/export):
-  artifacts/account/recovery-hosted.xcresult. Three presentation tests passed
-  earlier in connected-real.xcresult. No physical Apple sign-in verified.
-- recovery-real.xcresult: actual sync/export/lost-deletion-acknowledgement,
-  offline workout/relaunch/reconnect/offline export, welcome/login pass (3).
-- small-light-recovery and large-dark-recovery: two UI journeys each pass;
-  all 16 images inspected. Found large welcome clipping, fixed in 1aad43b8.
-- small-dark-recovery and large-light-recovery: two each pass; attachments still
-  need export/inspection. Current small-light-final and large-dark-final runs
-  cover 1aad43b8 and add an export-options capture.
-- The earlier small-dark-connected/large-light-connected images were inspected.
-- Lint, format and typecheck pass (existing warnings). Six Node/seven Python
-  release checks pass. First draft push failed because SwiftLint selected the
-  wrong Xcode; repeat push now sets DEVELOPER_DIR. Check draft-push-xcode.log.
+Tokens use account-bound API. Default read+propose; read-only available; direct
+write requires explicit native alert with Cancel. Secret masked until Show,
+copy is local-device-only with ten-minute expiry, clear on Close/disappear,
+hide on background and discard a creation completing after Close. Revocation
+requires confirmation and remains reflected if the subsequent refresh fails.
+Permission label wraps through Menu/Picker, fixed37299a9d.
 
-At 14:40 all four final largest-text variants pass (two journeys each) and all
-36 images were inspected. All earlier recovery matrix images plus the 11 normal
-recovery-real images were inspected too. Normal reconnection showed the cached
-account-details banner still said Offline after training sync succeeded; changed
-that copy and icon to describe saved details, preserving the Retry action.
+- Eight hosted tests pass, including actual store decisions and token races.
+- Real-server UI: offline accept/relaunch/sync/undo/reject/audit; stale proposal
+  preserves later workout edit; token default/masking/revoke/cancel/direct-write
+  cancellation. No token secrets printed or exposed in test captures.
+- Normal SE three journeys pass across real-api-first/offline-navigation-fixed;
+  all13 images inspected.
+- large-dark-scroll and large-light-canonical: eight hosted+three UI pass.
+  All13 and14 images inspected. Permission picker clipping found, fixed37299.
+- small-light-canonical review failed only upward gesture after undo. Helper
+  now drags inside visible list below account banner (4d89933a). Not passing
+  evidence. All13 captures inspected.
+- small-light-final: all three UI pass; all14 images inspected.
+- large-dark-final: all three UI pass; all14 images inspected.
+- large-light-permission-final: focused connection journey passes; all5 images
+  inspected. Completes verification of picker correction in light mode.
+- small-dark-final running session74661 on SE39204. Still inspect all captures.
+- Device build passes after picker fix in agents/permission-device.log.
+- Full native A4 suite and A4 TestFlight still pending.
 
-Full A3 regression on bc5fa8b8 is running, session85774,
-artifacts/account/full-a3-current.xcresult. It predates the banner-copy correction
-and UUID fix; rerun final validation after the logic fix/rebase. Draft push with
-Xcode26.2 succeeded. No A3 archive/upload yet.
+Native alerts remain scrollable at largest type; test both Cancel and confirm.
+Exercise evidence links currently explain unavailable; A5 will link to logged sets.
 
-A4 prep is now in app-next (rebased to1aad43b8), uncommitted. Design008 and tests
-were written first. Native proposal/evidence/diff/decision/audit screens and
-Connected agents/token creation/revocation are connected in that worktree only.
-Eight hosted presentation, real-store decision and token lifecycle tests pass in
-app-next/artifacts/agents/presentation-connected.xcresult. The first compile
-found legacy ExerciseLibrary/JSONValue shadowing; qualified new references with
-ExerlyCore. Need actual server UI journeys, final review, matrix and A4 release.
+## Logic handoffs and reviews
 
-Two newer app-owned to-logic inbox entries were absent from the logic worktree;
-appended only those entries there so the other agent can read them during its
-milestone. No logic-owned source edited. Logic is now working on UUID identity.
-Fresh fixture nodes on ports 39203/39204/39205 use the current middleware,
-including /v1 offline interception and dropped deletion acknowledgements.
-39206 is an isolated UUID reproducer fixture. Only stop verified app-owned PIDs.
-The full regression currently uses the original Large simulator. The usual full suite takes about 25 minutes.
+Logic worktree /Users/aldo/Desktop/Exerly-Fitness-logic, last seen branchlogic/next
+at7ba4f44e. It waits for A3 landing before M4/M5. App must not edit Core/API.
+Integration /Users/aldo/Desktop/Exerly-Fitness is merge-only, never edit files.
+App writes docs/handoff/to-logic.md in primary and logic worktree for timely review.
 
-## User corrections that persist
+Reviewed migrated UUID issue; exactfix700cdc0d adopted into A3/A4. Reviewed
+M4 weightMatch inert toggle: Logic explicitly reserves it now, omit from UI.
+New medium plate finding: greedy80kg/bar20/25pair1+15pairs2 returns70 despite80
+achievable; target10/bar20 reports zero shortfall. Reproduction in
+artifacts/app-review-plates/result.log. Inbox asks best combination and clear
+below-bar outcome including warm-ups. A4 remote4e696163 review requested.
 
-Ali rejected the mint monogram and green UI. Preserve Exerly's original
-purple/pink theme, neutral dark surfaces and dark default. Profile offers Light
-and System explicitly. No unsolicited brand changes. The icon is the existing
-purple E/pulse mark adapted from the repo's logo using built-in imagegen.
-Source: apps/ios/Brand/ExerlyMark.png. render-icon.swift only sizes it to 1024px.
+Available contracts on logic/next, not yet integrated:
+- b9736776 SQLiteTrainingPersistence.close(); deleteDatabase closes all instances
+  for that path. Use close on switch/signout. Reads/writes after close throw.
+- ecccb9fd AccountExport.merging(... pending: try SyncEngine.shared.pendingExportRows()).
+  Overlays all legacy queue entries/deletions with pending_sync; remove exclusion
+  copy. Adopt hosted attachment docs/handoff/attachments/LegacyExportTests.swift.
+- 00d9992f entry detector stable identity per workout and accurate same-workout
+  evidence, reject/undo wins. App A5 design009 uses this unchanged API.
+- ProgramStore + ProgramSchedule nextWorkout/lifecycle/overrides, sync and agent
+  host support. A6 design010, omit reserved weightMatch and await plate fix.
+- NutritionStore domains, energy-balance/trend estimates. Targets/search/import
+  still forthcoming from Logic; no nutrition UI started yet.
 
-Ali could not sign in to first build 2610061633. Reproduced: old DO production
-returns no refresh token or usable /api/bootstrap. Replacement 2610061654 uses
-working PostgreSQL staging at http://100.80.149.7:39110. Native AuthViewModel
-login/bootstrap passed with a synthetic test account. Credentials were sent in
-chat and live only in ~/private_keys/exerly-testflight-account.json, mode 600.
-Never commit or print credentials. Tailscale is required on Ali's phone and the
-login screen and TestFlight notes say so. No real personal data used.
+## User corrections and credentials
 
-## Implementation and review
+Ali rejected mint/green. Preserve original purple/pink, neutral dark, dark default,
+existing purple E/pulse mark. Profile can select Light/System. Icon source
+apps/ios/Brand/ExerlyMark.png; render-icon.swift sizes it. No brand redesign.
 
-Five native tabs: Home, Train, Library, Progress, Profile. TrainingStore uses
-SQLiteTrainingPersistence.defaultURL(accountID:), fixing logic's deletion-path
-finding. Test databases are isolated. Training supports search/muscle filters,
-notes/bodyweight, set kinds/RIR/continuations, one-tap completion, persistent
-rest, finish/discard, summaries and history. Training sync is connected in A3; A2 on TestFlight still uses local training. At largest text rest is an inline list section. Untouched
-load/duration/distance retain saved precision. Onboarding goal-entry fix and
-delayed iOS password-sheet helper are covered by full UI regressions.
+Old1633 could not sign in to incompatible DO API. Live1654 uses working staging
+http://100.80.149.7:39110; phone must enable Tailscale. Synthetic login/bootstrap
+passed, credentials already sent in chat and stored only in
+~/private_keys/exerly-testflight-account.json mode600. Never print or commit them.
+Physical replacement install/login not confirmed. Do not persist Mac password.
 
-Reviewed logic through 7a97ae34. Earlier session-generation, Keychain and
-proposal validation findings are fixed and tested by logic. A3 adopts the bridge
-and all 15 attachment tests. UUID case identity is the new high finding. Logic's
-programs and calculators are on agent/logic but not integrated/reviewed yet.
+## Signing and infrastructure
 
-## Verification evidence
+Exerly ASC6819776832, en-US, SKUsideband-exerly-ios, bundlecom.exerly.fitness,
+team9X79V37Q89, bundleresourceUJ5X8TJKNL. Record created website12:27 EDT.
+Internal groupc5ae1d39-0fe4-4bee-af89-0374d9519afe Exerly Internal · Ali,
+only Ali, no public link/autofuture. Existing dist certificate expires2027-09-25;
+never create/revoke. ProfileJ5J395Y9AF HealthKit+SIWA. ASCkey4Z7KFJ8DWZ/issuer
+under ~/private_keys. Never expose. Live1654 UUID7bf04912-8c97-4c45-9687-7a81cbb26524.
+Production Neon/DO and Apple revocation credentials are existing Ali questions,
+not a reason to stop UI work. External/App Review requires Ali after preparation.
 
-- Origin sidebandstudio/Exerly-Fitness verified with gh on 2026-10-06.
-- On a4eeba40: API182, Core129, device build pass. Logs under
-  artifacts/app-training/rebased-{api,core,device}.log.
-- Full native: 75 hosted tests and 14 UI journeys pass, 7 cross-client opt-in
-  skips. artifacts/app-training/rebased-native.xcresult. Before brand changes.
-- Brand matrix: small-dark, small-light, large-dark, large-light.xcresult in
-  artifacts/app-brand all pass; all eight largest-text screenshots inspected.
-  Human-readable training-completed-set.png and training-prefilled-one-tap.png
-  copied into the corresponding directories. Normal-size captures follow.
-- AccountInfrastructureTests: both tests passed in app-brand/account-smoke.xcresult.
-  Core hosted Keychain save/load/replace/isolation/accessibility/remove, plus
-  actual staging login/bootstrap with the app's compiled endpoint.
-- Release tests: 7 Python and 4 Node checks pass. Staging validation permits only
-  the exact authorized host/environment; public validation requires public HTTPS.
-- New signed staging archive/IPA 2610061654 passed the release validator and
-  uploaded successfully. Apple reports VALID and IN_BETA_TESTING.
+Always DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer, including
+push hooks. Origin sidebandstudio/Exerly-Fitness verified with gh15:48 EDT.
+Commit as Ali Younes, no coauthor/tool attribution.
 
-## Release
+App sims only, never Logic sims:
+- Original Large7189880A-91EC-4555-83E8-A37464802FE6,17ProMax26.2, main
+  .deriveddata/app-account, fixture39203. Free after A3 full suite.
+- SE7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B,SE3/iOS18.6, app-next
+  .deriveddata/a4-review, fixture39204. Current small-dark run.
+- Accessibility Large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19,17ProMax26.2,
+  app-next .deriveddata/a4-large, fixture39205. Free.
+- Device derived data account-device or a4-device by worktree.
 
-App: Exerly, ASC6819776832, iOS, en-US, com.exerly.fitness,
-SKU sideband-exerly-ios. Created on Apple's website at 12:27 EDT through normal
-unlocked desktop/passkey authorization. Never persist Mac or Apple credentials.
-
-Internal group c5ae1d39-0fe4-4bee-af89-0374d9519afe, Exerly Internal · Ali,
-contains exactly Ali and only build2610061654. No public link/automatic builds.
-Replacement UUID7bf04912-8c97-4c45-9687-7a81cbb26524, English notes saved,
-IN_BETA_TESTING verified 13:01 EDT. Bad build2610061633 detached; its notes say
-superseded. Ali told to update and enable Tailscale. Replacement installation on
-his physical phone is not yet confirmed.
-
-Existing distribution certificate reused, team9X79V37Q89, bundleUJ5X8TJKNL,
-HealthKit profileH5896RXW3D. Manual profile applies only to app target, not SPM.
-Archive/IPA/logs: apps/ios/build/release/2610061654. release.sh defaults to
-internal staging and always exports internal-only. Production DB and Apple
-revocation secrets remain Ali's QUESTIONS_FOR_ALI items. SIWA capability is enabled; current profileJ5J395Y9AF (see below).
-
-## Commands and processes
-
-DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer. Only app sims:
-
-- Large7189880A-91EC-4555-83E8-A37464802FE6, iPhone17ProMax/iOS26.2.
-- Small7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B, SE3/iOS18.6.
-- Accessibility large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19, iOS26.2.
-
-Use unique result bundles and -parallel-testing-enabled NO. Environment:
-TEST_RUNNER_EXERLY_TEST_APPEARANCE=dark|light|system,
-TEST_RUNNER_EXERLY_TEST_LARGEST_TYPE=1 for accessibility,
-TEST_RUNNER_EXERLY_UI_FIXTURE_URL=http://127.0.0.1:39203 and
-EXERLY_FIXTURE_EXTERNAL=1. Original Large uses .deriveddata/app-account; SE
-uses .deriveddata/account-small on39204; accessibility Large uses
-.deriveddata/account-large on39205. Device build uses account-device. Artifacts,
-signing files and private desktop captures are ignored, never commit.
-
-## A3 prepared UI evidence
-
-Prepared work from app-next is committed7038d86e and is now in the primary app
-worktree. Continue editing only primary; app-next is retained for its evidence.
-Prepared UI: three hosted presentation tests and two UI journeys pass. All four largest-text
-light/dark small/large variants pass and screenshots were inspected:
-app-next/artifacts/account/{small-light-fixed,large-dark-fixed,small-dark-final,
-large-light-final}.xcresult. Explicit native alerts include Cancel.
-
-APPLE_ID_AUTH is enabled as a primary app. ProfileJ5J395Y9AF includes HealthKit
-and Apple sign-in, existing certificate unchanged. Repeat provisioning reuses
-it. Signed archive/IPA2610061727 validates, not uploaded, predates final alert
-changes. Release checks require both entitlements and forbid DEBUG fixture code.
-Six Node/seven Python release tests pass. Real actions are now connected in primary; final A3 release still pending.
+Use -parallel-testing-enabled NO, unique result bundle. TEST_RUNNER_EXERLY_TEST_APPEARANCE,
+TEST_RUNNER_EXERLY_TEST_LARGEST_TYPE=1, TEST_RUNNER_EXERLY_UI_FIXTURE_URL and
+EXERLY_FIXTURE_EXTERNAL=1. Existing fixture39203/4/5/6 sessions3247/7679/53930/93999,
+current700cdc0d source, logs account/canonical-fixture-<port>.log. Environment
+EXERLY_FIXTURE_PORT, not PORT. Verify PID/cwd before stopping a fixture and never
+while tests use it. Protected devbox services untouched.

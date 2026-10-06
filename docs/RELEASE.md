@@ -5,31 +5,35 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Version 1.0, build 2610061654, is available to Ali on internal TestFlight.
-Apple reports VALID and IN_BETA_TESTING. The internal group contains only this
-build; its test notes explain Tailscale and on-device training storage.
-Restores the purple E/pulse icon, original purple/pink dark theme and dark default.
-Uses devbox1 staging (Tailscale required); a native AuthViewModel login/bootstrap
-smoke test passed with the synthetic TestFlight account.
+Account milestone A3, version1.0 build2610061942, uploaded successfully and
+is processing at Apple. Internal TestFlight currently serves2610061654 until
+the new build is valid and assigned. Both use devbox1 staging, so the phone
+needs Tailscale. The original purple/pink theme, dark default and E/pulse icon
+are preserved.
 
-The signed archive and IPA passed identity, HealthKit entitlement, profile,
-privacy manifest, icon, version, staging endpoint and debug-hook checks.
-The previous build, 2610061633, used an incompatible production backend and
-could not sign in. It was removed from the internal group and its notes now
-direct testers to the replacement. Ali reported installing the previous build;
-physical-device installation and sign-in for the replacement remain unverified.
+A3 adds native Apple authorization, account methods, training sync, offline
+training export and deletion with local cleanup. Final validation passed100
+hosted tests and19 UI journeys, eight opt-in skips, API219, Core183 and the
+iOS device build. Physical Apple sign-in and replacement installation remain
+unverified. Pending legacy food and other entries are excluded from export in
+this build; the UI and test notes disclose that limitation.
 
-- Archive: `apps/ios/build/release/2610061654/Exerly.xcarchive`
-- IPA: `apps/ios/build/release/2610061654/export/Exerly.ipa`
-- Logs: `apps/ios/build/release/2610061654/{archive,export,upload}.log`
+The signed archive and IPA passed identity, HealthKit and Apple sign-in
+entitlements, profile, privacy manifest, icon, version, staging endpoint and
+debug-hook checks. Existing certificate reused.
+
+- Archive: `apps/ios/build/release/2610061942/Exerly.xcarchive`
+- IPA: `apps/ios/build/release/2610061942/export/Exerly.ipa`
+- Logs: `apps/ios/build/release/2610061942/{archive,export,upload}.log`
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
-- Team: `9X79V37Q89`. Reused distribution certificate, expires 2027-09-25.
-- Exerly profile: `H5896RXW3D`, expires 2027-09-25. HealthKit enabled.
+- Team: `9X79V37Q89`. Distribution certificate expires2027-09-25.
+- Exerly profile: `J5J395Y9AF`, expires2027-09-25, HealthKit and Apple sign-in.
 - App Store Connect: Exerly, app ID `6819776832`, created through the website.
 - Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`; only Ali, no public link or automatic future builds.
 
-Build and signing outputs are ignored. Keys, certificate material, passwords and
-profiles stay outside the repository. No other app's identifiers or profiles changed.
+Bad build2610061633 used an incompatible production API and was detached.
+Credentials and signing material stay outside the repository. Build outputs
+are ignored. No other app's identifiers or profiles changed.
 
 ## Repeatable commands
 
@@ -69,21 +73,21 @@ bundles are not given an unsupported provisioning profile.
 
 | Item                              | State                 | Acceptance and next action                                                                                                                             |
 | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit enabled.                                                                                                 |
+| Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit and Apple sign-in enabled.                                                                                                 |
 | Distribution signing              | Done                  | Existing certificate reused; signed archive and export verified.                                                                                       |
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610061654), valid and in beta testing; Ali-only assignment verified. Replacement install pending.                                                |
+| Internal TestFlight upload        | Available internally  | 2610061654 available to Ali; account build2610061942 uploaded, processing.                                                |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | Final A2: API192, Core147, 77 hosted unit tests and 14 UI journeys pass; 7 cross-client tests opt-in. Device build passes.                             |
+| Native test suite                 | In progress           | Final A3: API219, Core183, 100 hosted tests and19 UI journeys pass; eight opt-in skips. Device build passes.                             |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
 | Offline and conflict behavior     | Partial               | Existing queue tests pass; every new domain needs equivalent device journeys.                                                                          |
-| Sign in with Apple                | Open                  | Logic contract plus native button, nonce and error flow.                                                                                               |
-| Account deletion                  | Open                  | Reauthentication, confirmation, server deletion and local cleanup.                                                                                     |
+| Sign in with Apple                | Built                 | Native nonce/state/token flow and Core bridge tests pass; physical authorization remains.                                                                                               |
+| Account deletion                  | Built                 | Confirmation, server deletion, lost response and local cleanup pass; physical Apple reauthorization remains.                                                                                     |
 | Export/import                     | Partial               | Full-fidelity export/import with user review and synthetic round-trip fixtures.                                                                        |
 | Production database               | Blocked on deployment | Ali supplies Neon/DO secrets; logic owns migration and backups.                                                                                        |
 | Privacy manifest                  | Built                 | UserDefaults reason CA92.1; account, health, fitness and user content for functionality; no tracking. Audit before submission.                         |
@@ -125,17 +129,15 @@ Draft description for the finished product, not the current build:
 Replace this draft with the capabilities actually verified at submission. Do not
 claim full parity, superior food coverage or sub-second launch until measured.
 
-## Internal test notes for the foundation build
+## Internal test notes for the account build
 
-Synthetic accounts only. This build adds a training logger backed by on-device
-SQLite, workout history, previous-set prefill and persistent rest timers. Training
-sync is not connected yet. Enable Tailscale to reach devbox1 staging before sign-in.
-The original purple/pink theme, dark default and purple E/pulse icon are restored.
-The diary, onboarding, preferences and progress flows
-remain available. Check training logging, one-tap completion, finish/history,
-offline relaunch and account separation. Proposal review, complete nutrients and
-migration flows are still under development.
-Report crashes through TestFlight. Do not import personal health data yet.
+Enable Tailscale before signing in to Exerly staging. Use synthetic data.
+Try email sign-in, a workout offline, relaunch, reconnect and Profile > Sync.
+Profile > Account contains sign-in methods, export options and account deletion.
+Exports include unsynced training; queued food and other legacy entries are
+not included yet, as the screen explains. Native Apple sign-in/linking and
+deletion reauthorization need physical-phone testing. Agent suggestion review
+and connected-agent settings follow in A4. Report crashes through TestFlight.
 
 [apps]: https://developer.apple.com/documentation/appstoreconnectapi/apps
 [invite]: https://developer.apple.com/documentation/appstoreconnectapi/betatester/attributes-data.dictionary

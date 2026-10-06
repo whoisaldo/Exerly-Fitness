@@ -137,9 +137,9 @@ same values to VoiceOver. Completeness is separate from nutrient intake.
 
 | ID  | Feature and primary source                                                               | Status  | Acceptance criteria                                                                                             | Beyond                            | Evidence                                |
 | --- | ---------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------- |
-| I01 | Email and Sign in with Apple [brief][brief]                                              | Partial | Secure signup/sign-in/recovery, session rotation, expiry and offline reopen; no cross-account data.             | Product requirement               | Email/session tests only                |
-| I02 | In-app deletion and export [MF export][export], [brief][brief]                           | Partial | Reauth, clear consequences, revoke sessions; export before deletion; remove local account cache.                | Product requirement               | Basic export; deletion gap              |
-| I03 | Offline logging and conflict review [brief][brief]                                       | Partial | Relaunch without network; idempotent retries; compare conflicts; interruption never drops an accepted save.     | B: all domains including training | Existing nutrition queues/tests         |
+| I01 | Email and Sign in with Apple [brief][brief]                                              | Partial | Secure signup/sign-in/recovery, session rotation, expiry and offline reopen; no cross-account data.             | Product requirement               | A3: native Apple/account UI, session isolation and offline reopen pass; physical Apple authorization pending                |
+| I02 | In-app deletion and export [MF export][export], [brief][brief]                           | Partial | Reauth, clear consequences, revoke sessions; export before deletion; remove local account cache.                | Product requirement               | A3: export/deletion/lost response/local cleanup pass; legacy queued export follows in A4              |
+| I03 | Offline logging and conflict review [brief][brief]                                       | Partial | Relaunch without network; idempotent retries; compare conflicts; interruption never drops an accepted save.     | B: all domains including training | A3: real-server training sync, offline/relaunch/reconnect and account separation pass         |
 | I04 | Health integration permissions [MF Health integration][health]                           | Partial | Explain each type; read/write toggles, denied/revoked/partial authorization, deduplication and source priority. | Parity                            | Existing steps/calories/workout service |
 | I05 | Health nutrients, weight, workouts and history [MF Health integration][health], [Export] | Missing | Authorized types synchronize and reconcile edits/deletes; history imports with preview and duplicate detection. | B: full supported type coverage   | None                                    |
 | I06 | Sleep, HRV and resting HR [brief][brief]                                                 | Partial | Separate permission controls; missing data visible; manual sleep path; timezone-safe overnight values.          | B: recovery context in B05        | Manual sleep exists                     |
@@ -254,3 +254,24 @@ opt-in/skipped. Native result: artifacts/app-brand/integration-native-retry.xcre
 The first attempt was aborted because SpringBoard refused to launch the app;
 restarting only the app simulator restored launch. No functional test failed in
 the completed retry. The test account smoke is included in these 77 hosted tests.
+
+### A3 account evidence, 2026-10-06
+
+The final full native run on ba627bb3 plus the migrated UUID fix700cdc0d
+passed100 hosted tests and19 UI journeys, with eight deliberate opt-in skips.
+Result: `artifacts/account/full-a3-canonical.xcresult`. API219, Core183, the
+iOS device build, lint, formatting, typecheck and release checks pass.
+
+Native Apple authorization, account methods, export/share and deletion are
+implemented. Real API tests cover offline workout persistence and sync, account
+separation, lost deletion acknowledgements and local cleanup. Four final largest
+text light/dark variants on SE3 and17ProMax pass; all36 captures were inspected
+in `artifacts/account/{small-light-final,small-dark-final,large-light-final,large-dark-final}`.
+Welcome, auth and workout actions wrap at accessibility text sizes.
+
+Signed internal build2610061942 passed archive/IPA validation and uploaded
+successfully. Apple processing and assignment are pending. Its account export
+includes unsynced training/proposals; pending legacy food and other entries are
+explicitly excluded until A4 adopts the new Core queue export. Physical Apple
+sign-in/reauthorization, installation, VoiceOver and performance remain open.
+I01-I03 remain Partial, not device-verified parity.
