@@ -1064,3 +1064,17 @@ So people's existing MacroFactor shortcuts keep working:
   and IDs.
 - The spec is public and the implementation is Exerly's own. Its samples
   aren't copied, because the repo has no licence.
+
+## 2026-10-06: The weekly review (Core half of B07)
+
+Status: open (for a review screen).
+
+`WeeklyReview.make(training: store.history, proposals: agent.proposals,
+checkIn: try nutrition.checkIn(today:existing:), through: today)` returns at
+most three `ReviewItem`s, ranked. Each has a title, a summary, evidence and a
+falsifier. A `.proposal` item carries `proposalID`, so open your existing
+review screen for it; stalls and the deload signal carry `exerciseIDs` for the
+evidence links. The ranking is in `WeeklyReview.swift`: a goal that can't be
+kept, then the deload signal, pending check-ins, falling lifts, pending entry
+checks, stalls, agents' proposals, and thin logging. IDs are stable within a
+week, so store dismissals by ID.

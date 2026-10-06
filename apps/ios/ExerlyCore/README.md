@@ -400,6 +400,11 @@ measured is in `docs/design/005-training-detectors.md`.
     volume caveats; a clearly falling trend is titled and summarised as a drop;
   - `deload(in:through:)`: several lifts down together over the last ten days.
   - `trend(of:in:through:days:)` exposes the numbers behind both.
+- `WeeklyReview.make(training:proposals:checkIn:through:firstWeekday:)` returns
+  at most three `ReviewItem`s, ranked, each with evidence and a falsifier: a
+  nutrition goal that can't be kept, the deload signal, pending check-ins,
+  falling lifts, pending entry checks, stalls, agents' proposals, then thin
+  logging. Item IDs are stable within a week, so a dismissal can stick.
 
 ## Programs and progression
 
