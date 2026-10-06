@@ -1007,3 +1007,24 @@ Status: open (for whichever milestone builds the nutrition screens).
   `EXERLY_RATE_LIMITS=off`, honoured only when `NODE_ENV=test`, because the
   suite signs in many synthetic accounts in seconds. If you run the API locally
   for UI tests with many sign-ins, the same pair works there.
+
+## 2026-10-06: Nutrient overview, goals, timing and goal ETA (M5f)
+
+Status: open (contract published). Covers PARITY N06, N28, N29, N31, the
+completeness half of N32, and the ETA and checkpoints of S06. See "Insights"
+in the README and `docs/design/013-nutrient-insights.md`.
+
+- **Overview (N28).** For yesterday or 7, 30, 90 or 365 days, call
+  `overview(from:through:)`. Each row has the average, `observedDays`, the
+  goal marker, `shareOfGoal` and `completeness`. A day counts when it has
+  entries and isn't partial, or it's fasting. Show `days` and `completeness`,
+  so a low average from foods without data isn't read as a deficiency.
+- **Goals (N29).** Edit `nutrientGoals` on a new plan version (`savePlan`);
+  `validationErrors` explains ordering mistakes. `plan.goal(for:on:)` returns
+  the goal in force. Energy and macros come from the daily targets.
+- **Timing (N06, N31).** `log(..., at:)` takes the time it was eaten.
+  `timing(from:through:timeZone:)` gives 24 hours of energy and entry counts,
+  plus `untimedEntries` for entries logged on another day.
+- **ETA (S06).** `plan.goal.eta(from: trend, on: today)` and
+  `checkpoints(from:on:weeks:)`.
+- Pinned nutrients are a display preference, so they're yours to store.

@@ -78,6 +78,41 @@ public struct DailyTargets: Sendable, Codable, Hashable {
     }
 }
 
+/// A goal for one nutrient a day: reach the floor, aim for the target, stay
+/// under the ceiling. Any of the three may be missing.
+public struct NutrientGoal: Sendable, Codable, Hashable {
+    public var floor: Double?
+    public var target: Double?
+    public var ceiling: Double?
+
+    public init(floor: Double? = nil, target: Double? = nil, ceiling: Double? = nil) {
+        self.floor = floor
+        self.target = target
+        self.ceiling = ceiling
+    }
+
+    /// The reference intake as a goal: a minimum becomes a floor, a maximum a
+    /// ceiling, and a typical amount a target.
+    public init?(reference nutrient: Nutrient) {
+        guard let reference = nutrient.reference else { return nil }
+        switch reference.kind {
+        case .atLeast: self.init(floor: reference.amount)
+        case .atMost: self.init(ceiling: reference.amount)
+        case .target: self.init(target: reference.amount)
+        }
+    }
+
+    /// The amount to compare intake with: the target, else the floor, else the ceiling.
+    public var reference: Double? { target ?? floor ?? ceiling }
+
+    var problems: [String] {
+        let values = [floor, target, ceiling].compactMap { $0 }
+        if values.isEmpty { return ["a goal needs a floor, a target or a ceiling"] }
+        if values.contains(where: { !$0.isFinite || $0 < 0 }) { return ["goal amounts must be 0 or more"] }
+        return values == values.sorted() ? [] : ["the floor, target and ceiling must be in that order"]
+    }
+}
+
 /// What a plan version's targets were computed from.
 public struct PlanBasis: Sendable, Codable, Hashable {
     /// In logged kcal a day, with one standard deviation.
@@ -114,11 +149,15 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
     public var basis: PlanBasis?
     /// Sunday first.
     public var targets: [DailyTargets]
+    /// Goals for other nutrients, in each nutrient's unit. Nutrients without
+    /// one use their reference intake; energy and macros come from `targets`.
+    public var nutrientGoals: [Nutrient: NutrientGoal]?
 
     public init(id: UUID = UUID(), startDate: LocalDate, createdAt: Date = Date().roundedToMilliseconds, goal: NutritionGoal,
                 mode: PlanMode = .coached, diet: DietType = .balanced, protein: ProteinLevel = .moderate,
                 weekdayWeights: [Double] = Array(repeating: 1, count: 7), checkInDay: Weekday = .monday,
-                allowBelowFloor: Bool = false, basis: PlanBasis? = nil, targets: [DailyTargets] = []) {
+                allowBelowFloor: Bool = false, basis: PlanBasis? = nil, targets: [DailyTargets] = [],
+                nutrientGoals: [Nutrient: NutrientGoal]? = nil) {
         self.id = id
         self.startDate = startDate
         self.createdAt = createdAt
@@ -131,6 +170,22 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
         self.allowBelowFloor = allowBelowFloor
         self.basis = basis
         self.targets = targets
+        self.nutrientGoals = nutrientGoals
+    }
+
+    /// The goal for a nutrient on a date: energy and macros from that weekday's
+    /// target, others from `nutrientGoals` or the reference intake.
+    public func goal(for nutrient: Nutrient, on date: LocalDate) -> NutrientGoal? {
+        if let day = targets(on: date) {
+            switch nutrient {
+            case .energy: return NutrientGoal(target: day.energy)
+            case .protein: return NutrientGoal(target: day.protein)
+            case .fat: return NutrientGoal(target: day.fat)
+            case .carbohydrate: return NutrientGoal(target: day.carbohydrate)
+            default: break
+            }
+        }
+        return nutrientGoals?[nutrient] ?? NutrientGoal(reference: nutrient)
     }
 
     public func targets(on date: LocalDate) -> DailyTargets? {
@@ -154,6 +209,13 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
         if targets.count != 7 { problems.append("A plan needs targets for all seven days") }
         for (index, day) in targets.enumerated() where [day.energy, day.protein, day.fat, day.carbohydrate].contains(where: { !$0.isFinite || $0 < 0 }) {
             problems.append("\(NutritionTargets.dayNames[index])'s targets must be zero or more")
+        }
+        for (nutrient, goal) in (nutrientGoals ?? [:]).sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            if [.energy, .protein, .fat, .carbohydrate].contains(nutrient) {
+                problems.append("\(nutrient.name) comes from the daily targets")
+            } else {
+                problems += goal.problems.map { "\(nutrient.name): \($0)" }
+            }
         }
         return problems
     }

@@ -85,11 +85,13 @@ public final class NutritionStore {
 
     /// Logs a food by weight, or by a number of servings.
     @discardableResult
+    /// `at` is when it was eaten, for timing; now when nil.
     public func log(_ food: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil,
-                    on date: LocalDate, meal: String) throws -> FoodEntry {
+                    on date: LocalDate, meal: String, at time: Date? = nil) throws -> FoodEntry {
         let weight = grams ?? (serving.map { $0.grams * (quantity ?? 1) })
         guard let weight else { throw StoreError.invalid(["give a weight or a serving"]) }
-        let entry = FoodEntry(date: date, meal: meal, loggedAt: now(), food: food.snapshot, grams: weight,
+        let entry = FoodEntry(date: date, meal: meal, loggedAt: time?.roundedToMilliseconds ?? now(), food: food.snapshot,
+                              grams: weight,
                               serving: serving, quantity: serving == nil ? nil : (quantity ?? 1))
         try saveEntry(entry)
         return entry

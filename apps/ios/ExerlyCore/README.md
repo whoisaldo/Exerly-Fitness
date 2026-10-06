@@ -481,6 +481,16 @@ trend weight and expenditure.
   which gives totals, totals per meal and `energyShares`.
   `contributors(of:on:)` ranks the entries behind one nutrient.
 - Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
+- Insights (`docs/design/013-nutrient-insights.md`):
+  - `overview(from:through:)` gives per-nutrient averages over the days that
+    count, observed days, the goal, the share of goal (each day against its
+    own goal) and completeness;
+  - `timing(from:through:timeZone:)` gives energy by local hour. Pass `at:` to
+    `log` to record when a meal was eaten;
+  - `plan.goal(for:on:)` is a nutrient's floor, target and ceiling that day,
+    from `nutrientGoals` or the reference intake;
+  - `NutritionGoal.eta(from:on:)` and `checkpoints(from:on:weeks:)` project the
+    goal weight.
 - `EnergyBalance.estimate(_:prior:parameters:)` smooths weigh-ins and logged
   intake into a daily `Estimate`: trend weight and expenditure, each with one
   standard deviation. Feed it `store.energyBalanceDays(from:through:)`; only
