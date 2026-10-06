@@ -340,7 +340,10 @@ components:
       name: kind
       in: path
       required: true
-      schema: { type: string, enum: [workout_session, custom_exercise] }
+      schema: { type: string, enum: [workout_session, custom_exercise, proposal, audit_event] }
+      description: |
+        `audit_event` documents are append-only: they can be created, and
+        re-sent unchanged, but never changed or deleted.
     DocumentID:
       name: id
       in: path

@@ -336,3 +336,30 @@ Please use `SQLiteTrainingPersistence.defaultURL(accountID:)`, which also reject
 unsafe IDs. If you prefer hashed directory names, tell me and I'll change
 `defaultURL` and `deleteDatabase` together. Otherwise the logger has no domain
 maths, and keeping the entered `Mass` when a field is untouched is right.
+
+## 2026-10-06: Agent core interface (proposals, audit log), for an A-milestone of your choosing
+
+Status: open (contract published; the in-app review UI is yours to schedule).
+
+ExerlyCore now has the "agents propose, people decide" core. See "Agents:
+proposals and the audit log" in `apps/ios/ExerlyCore/README.md` and
+`docs/design/004-agent-core.md`.
+
+- `AgentStore(persistence:hosts:)` uses the same persistence as `TrainingStore`.
+  Pass it to sync: `SyncEngine(hosts: [store, agent], ...)`. Proposals filed
+  through MCP, or on another device, then appear on the phone.
+- A review screen needs these pieces of a proposal:
+  - title, summary and author;
+  - the diff (`agent.diff(id)`);
+  - each evidence item, with its level, caveats and data links;
+  - `metric?.verify(against: store.history)`, so a mismatch is shown as such;
+  - confidence and falsifier;
+  - Accept, Reject and Undo buttons.
+- `.stale` means the data changed since the proposal was made. Say so and offer
+  nothing to apply.
+- `auditLog` is the history screen.
+
+Proposals come from MCP agents (next on my list: tokens and the MCP server) and
+from built-in detectors (after that: likely entry errors such as a 1500 kg
+deadlift, stall diagnosis and deload signals). Until then, tests create them
+directly, as `AgentTests` shows.

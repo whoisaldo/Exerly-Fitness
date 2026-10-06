@@ -260,3 +260,53 @@ final class Device {
         #expect(try persistence.syncCursor() > 0)
     }
 }
+
+@MainActor
+@Suite struct ProposalSyncTests {
+    @MainActor
+    final class AgentDevice {
+        let persistence = InMemoryTrainingPersistence()
+        let training: TrainingStore
+        let agent: AgentStore
+        let engine: SyncEngine
+
+        init(server: FakeDocumentServer) throws {
+            training = try TrainingStore(persistence: persistence, now: { Fixture.instant() })
+            agent = try AgentStore(persistence: persistence, hosts: [training], now: { Fixture.instant(minutes: 5) })
+            engine = SyncEngine(hosts: [training, agent], state: persistence, api: server)
+        }
+    }
+
+    @Test func aProposalFiledOnOneDeviceCanBeAcceptedOnAnother() async throws {
+        let server = FakeDocumentServer()
+        let phone = try AgentDevice(server: server)
+        let tablet = try AgentDevice(server: server)
+
+        try phone.training.startSession(name: "Typo", bodyweight: nil)
+        let deadlift = try phone.training.addExercise("deadlift")
+        var set = phone.training.activeSession!.exercises[0].sets[0]
+        set.primary = Effort(reps: 3, load: .kg(1500))
+        try phone.training.updateSet(set, in: deadlift)
+        try phone.training.completeSet(set.id)
+        let session = try phone.training.finishSession().session
+        var fixed = session
+        fixed.exercises[0].sets[0].primary.load = .kg(150)
+        let proposal = Proposal(author: AgentIdentity(kind: .mcp, name: "Synthetic agent", tokenID: "t1"),
+                                title: "Did you mean 150 kg?", summary: "Ten times your history.",
+                                changes: [try ProposedChange(kind: "workout_session", id: session.id.uuidString, before: session, after: fixed)],
+                                evidence: [], confidence: .high, falsifier: "You lifted 1500 kg.")
+        try phone.agent.file(proposal)
+        try await phone.engine.sync()
+
+        try await tablet.engine.sync()
+        #expect(tablet.agent.proposal(proposal.id)?.status == .pending)
+        try tablet.agent.accept(proposal.id)
+        try await tablet.engine.sync()
+
+        try await phone.engine.sync()
+        #expect(phone.agent.proposal(proposal.id)?.status == .accepted)
+        #expect(phone.training.history.sessions[0].exercises[0].sets[0].primary.load == .kg(150))
+        #expect(phone.agent.auditLog.map(\.action) == [.proposalFiled, .proposalAccepted])
+        #expect(phone.agent.auditLog == tablet.agent.auditLog)
+    }
+}

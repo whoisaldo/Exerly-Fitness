@@ -213,3 +213,73 @@ test('custom exercises sync as documents and appear in the export and deletion',
   await api.del('/api/account', { token: user.token, body: { confirm: true } });
   assert.equal(await api.store.count('documents', { account_id: user.user._id }), 0);
 });
+
+test('proposals and audit events sync, and audit events never change', async () => {
+  const { token } = await signUp(api);
+  const proposalID = randomUUID().toUpperCase();
+  const proposal = {
+    id: proposalID,
+    title: 'Did you mean 150 kg?',
+    summary: 'Ten times your history.',
+    falsifier: 'You lifted 1500 kg.',
+    status: 'pending',
+    confidence: 'high',
+    author: { kind: 'mcp', name: 'Synthetic agent' },
+    changes: [{ kind: 'workout_session', id: 'X', before: null, after: null }],
+    evidence: [],
+    createdAt: '2026-10-06T18:00:00.000Z',
+  };
+  const filed = await api.put(
+    `/v1/documents/proposal/${proposalID}`,
+    { payload: proposal, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(filed.status, 201, JSON.stringify(filed.body));
+  const decided = await api.put(
+    `/v1/documents/proposal/${proposalID}`,
+    { payload: { ...proposal, status: 'accepted' }, base_revision: 1 },
+    { token, headers: key() }
+  );
+  assert.equal(decided.status, 200);
+
+  const missingFalsifier = await api.put(
+    `/v1/documents/proposal/${randomUUID().toUpperCase()}`,
+    { payload: { ...proposal, id: undefined, falsifier: ' ' }, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(missingFalsifier.status, 400);
+
+  const eventID = randomUUID().toUpperCase();
+  const event = {
+    id: eventID,
+    action: 'proposalAccepted',
+    at: '2026-10-06T18:05:00.000Z',
+    actor: { kind: 'builtIn', name: 'You' },
+  };
+  const path = `/v1/documents/audit_event/${eventID}`;
+  assert.equal(
+    (await api.put(path, { payload: event, base_revision: 0 }, { token, headers: key() })).status,
+    201
+  );
+  // Re-sending the same event is harmless; changing or deleting it is refused.
+  assert.equal(
+    (await api.put(path, { payload: event, base_revision: 1 }, { token, headers: key() })).status,
+    200
+  );
+  assert.equal(
+    (
+      await api.put(
+        path,
+        { payload: { ...event, action: 'proposalRejected' }, base_revision: 1 },
+        { token, headers: key() }
+      )
+    ).status,
+    400
+  );
+  assert.equal((await api.del(`${path}?base_revision=1`, { token, headers: key() })).status, 400);
+  const changes = (await api.get('/v1/changes?after=0', { token })).body.changes;
+  assert.deepEqual(
+    changes.map((c) => `${c.kind}:${c.revision}`),
+    ['proposal:1', 'proposal:2', 'audit_event:1']
+  );
+});

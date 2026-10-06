@@ -7,6 +7,7 @@ const express = require('express');
 
 const store = require('../data');
 const sync = require('../lib/sync');
+const { canonicalJSON } = require('../lib/mutations');
 const { asyncHandler, badRequest, conflict, notFound } = require('../lib/errors');
 const { authenticate } = require('../lib/auth');
 const v = require('../lib/validate');
@@ -15,10 +16,23 @@ const router = express.Router();
 router.use(authenticate);
 
 // Kinds a client may sync, with the fields their payloads must carry.
+const PROPOSAL_STATUSES = new Set(['pending', 'accepted', 'rejected', 'undone', 'stale']);
 const KINDS = {
   workout_session: (p) => typeof p.startedAt === 'string' && Array.isArray(p.exercises),
   custom_exercise: (p) => typeof p.name === 'string' && typeof p.metric === 'string',
+  proposal: (p) =>
+    typeof p.title === 'string' &&
+    typeof p.falsifier === 'string' &&
+    p.falsifier.trim() !== '' &&
+    Array.isArray(p.changes) &&
+    p.changes.length > 0 &&
+    PROPOSAL_STATUSES.has(p.status) &&
+    !!p.author &&
+    typeof p.author.name === 'string',
+  audit_event: (p) => typeof p.action === 'string' && typeof p.at === 'string' && !!p.actor,
 };
+// Kinds that can be created but never changed or deleted.
+const APPEND_ONLY = new Set(['audit_event']);
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 
 function readKind(value) {
@@ -97,6 +111,15 @@ router.put(
     const base = readBase(req.body?.base_revision);
     const payload = readPayload(kind, id, req.body?.payload);
     const existing = await current(req, kind, id);
+    if (APPEND_ONLY.has(kind) && existing) {
+      if (
+        base === existing.revision &&
+        canonicalJSON(existing.payload) === canonicalJSON(payload)
+      ) {
+        return res.json(acknowledge(existing));
+      }
+      throw badRequest(`${kind} documents cannot be changed`);
+    }
     if (base !== (existing?.revision ?? 0)) {
       throw conflict('This document changed on another device. Merge and retry.', {
         document: existing ? present(existing) : null,
@@ -131,6 +154,7 @@ router.delete(
     const kind = readKind(req.params.kind);
     const id = readID(req.params.id);
     const base = readBase(req.query.base_revision ?? req.body?.base_revision);
+    if (APPEND_ONLY.has(kind)) throw badRequest(`${kind} documents cannot be deleted`);
     const existing = await current(req, kind, id);
     if (!existing) throw notFound('Document not found');
     if (base !== existing.revision) {

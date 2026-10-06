@@ -15,7 +15,7 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
         case invalidAccountID(String)
     }
 
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
 
     /// Rows that could not be decoded, as `table/id`. They stay in the file
     /// untouched so a later version can read them.
@@ -91,6 +91,14 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
             payload BLOB,
             push_key TEXT,
             push_hash TEXT,
+            PRIMARY KEY (kind, id)
+        );
+        """,
+        """
+        CREATE TABLE documents (
+            kind TEXT NOT NULL,
+            id TEXT NOT NULL,
+            payload BLOB NOT NULL,
             PRIMARY KEY (kind, id)
         );
         """,
@@ -180,5 +188,25 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
             }
         }
         return values
+    }
+}
+
+extension SQLiteTrainingPersistence: DocumentPersistence {
+    public func loadDocuments(kind: String) throws -> [Data] {
+        try database.query("SELECT payload FROM documents WHERE kind = ? ORDER BY id", kind).compactMap { row in
+            if case .blob(let payload) = row[0] { return payload }
+            return nil
+        }
+    }
+
+    public func saveDocument(kind: String, id: String, payload: Data) throws {
+        try database.execute(
+            "INSERT INTO documents (kind, id, payload) VALUES (?, ?, ?) ON CONFLICT (kind, id) DO UPDATE SET payload = excluded.payload",
+            kind, id, payload
+        )
+    }
+
+    public func deleteDocument(kind: String, id: String) throws {
+        try database.execute("DELETE FROM documents WHERE kind = ? AND id = ?", kind, id)
     }
 }

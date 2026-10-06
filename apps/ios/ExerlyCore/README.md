@@ -268,3 +268,51 @@ How it decides what to send:
   (`Date.roundedToMilliseconds`), so they round-trip exactly.
 - `SQLiteTrainingPersistence.deleteDatabase(accountID:)` removes an account's
   local data after it is deleted.
+
+## Agents: proposals and the audit log
+
+Agents propose and people decide. See `docs/design/004-agent-core.md`.
+
+```swift
+let agent = try AgentStore(persistence: persistence, hosts: [store])
+let sync = SyncEngine(hosts: [store, agent], state: persistence, api: api)   // proposals sync too
+
+try agent.file(proposal)      // validated; changes nothing; audited
+agent.diff(proposal.id)       // [DocumentDiff]: field paths with before and after
+try agent.accept(proposal.id) // all changes or none; throws .stale if the data moved on
+try agent.undo(proposal.id)   // restores exactly, or throws .stale
+try agent.reject(proposal.id)
+```
+
+### AgentStore
+
+`@MainActor @Observable`.
+
+- `proposals` are newest first and `auditLog` is oldest first.
+- `file(_:)`, `accept(_:)`, `reject(_:)`, `undo(_:)`, `diff(_:)` and
+  `proposal(_:)`.
+- Errors are `AgentError`: `notFound`, `duplicate`, `invalid(message)`, `stale`,
+  `alreadyDecided` and `notAccepted`.
+- A decision, its data changes and its audit event are saved as one unit.
+
+### Proposal
+
+- `author`: an `AgentIdentity` (built-in, MCP or API, with a name and token ID).
+- `title`, `summary`, `confidence` and `falsifier`, which must not be empty.
+- `changes`: `[ProposedChange]`, each with a kind and ID, plus `before` and
+  `after` as `JSONValue`.
+- `evidence`: `[Evidence]`, each with a claim, an `EvidenceLevel`, caveats, data
+  references, an optional `MetricReference` and an optional source.
+- `status` and `decidedAt`.
+
+### Supporting types
+
+- `MetricReference` names a number ExerlyCore can recompute: the best e1RM or
+  total volume of an exercise over a date range, or weekly sets for a muscle.
+  `verify(against: history)` returns `verified(actual)`, `mismatch(actual)` or
+  `unverifiable`. Show a mismatch: it means an agent's number is wrong.
+- `AuditEvent` is append-only: proposal filed, accepted, rejected, undone or
+  stale; a direct write; a token created or revoked.
+- `JSONValue` is any JSON value; `JSONValue.diff(_:_:)` lists field changes.
+- `DocumentHost` is the protocol `TrainingStore` and `AgentStore` implement, so
+  sync and proposals can work on any kind of document.

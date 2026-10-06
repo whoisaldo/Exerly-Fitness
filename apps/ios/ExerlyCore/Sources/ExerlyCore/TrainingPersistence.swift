@@ -27,6 +27,7 @@ public final class InMemoryTrainingPersistence: TrainingPersistence {
     public private(set) var customExercises: [ExerciseID: Exercise] = [:]
     public private(set) var values: [String: Data] = [:]
     var bases: [String: SyncBase] = [:]
+    var documents: [String: [String: Data]] = [:]
 
     public init(sessions: [WorkoutSession] = [], customExercises: [Exercise] = []) {
         for session in sessions { self.sessions[session.id] = session }
@@ -44,12 +45,21 @@ public final class InMemoryTrainingPersistence: TrainingPersistence {
     public func saveValue(_ value: Data?, forKey key: String) throws { values[key] = value }
 
     public func performAtomically(_ body: () throws -> Void) throws {
-        let snapshot = (sessions, customExercises, values, bases)
+        let snapshot = (sessions, customExercises, values, bases, documents)
         do {
             try body()
         } catch {
-            (sessions, customExercises, values, bases) = snapshot
+            (sessions, customExercises, values, bases, documents) = snapshot
             throw error
         }
     }
+}
+
+extension InMemoryTrainingPersistence: DocumentPersistence {
+    public func loadDocuments(kind: String) throws -> [Data] {
+        (documents[kind] ?? [:]).sorted { $0.key < $1.key }.map(\.value)
+    }
+
+    public func saveDocument(kind: String, id: String, payload: Data) throws { documents[kind, default: [:]][id] = payload }
+    public func deleteDocument(kind: String, id: String) throws { documents[kind]?[id] = nil }
 }

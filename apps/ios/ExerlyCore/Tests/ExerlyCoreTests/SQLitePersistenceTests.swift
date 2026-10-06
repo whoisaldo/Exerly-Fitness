@@ -78,7 +78,7 @@ import Testing
             try store.save(session)
         }
         let database = try SQLiteDatabase(url: url)
-        try database.executeScript("DROP TABLE sync_bases; DROP TABLE settings; PRAGMA user_version = 1;")
+        try database.executeScript("DROP TABLE documents; DROP TABLE sync_bases; DROP TABLE settings; PRAGMA user_version = 1;")
         let upgraded = try SQLiteTrainingPersistence(url: url)
         #expect(try upgraded.schemaVersion() == SQLiteTrainingPersistence.currentSchemaVersion)
         #expect(try upgraded.loadSessions() == [session])

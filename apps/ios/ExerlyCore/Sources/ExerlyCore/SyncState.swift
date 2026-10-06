@@ -23,6 +23,8 @@ public protocol SyncStateStore: AnyObject {
     func removeSyncBase(kind: String, id: String) throws
     func syncCursor() throws -> Int
     func saveSyncCursor(_ cursor: Int) throws
+    /// Runs several writes as one unit: all of them persist, or none.
+    func performAtomically(_ body: () throws -> Void) throws
 }
 
 private let cursorKey = "sync.cursor"
