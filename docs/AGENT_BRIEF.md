@@ -1,0 +1,366 @@
+# Exerly: brief for the long-running agent
+
+Read this file at the start of every session and after every context reset. Then read
+docs/AGENT_LEDGER.md (create it on the first run) and continue from it.
+
+## Mission
+
+Build Exerly into **the agentic-first training and nutrition app for optimizers**: people
+who track everything, want to know why their numbers move, and want their own AI agents to
+work with their data. It ships publicly on the App Store under Sideband.
+
+The bar is high. Exerly must cover everything MacroFactor and MacroFactor Workouts do,
+beat each feature on speed, clarity and intelligence, and then do what neither can,
+because it was designed for agents from the start.
+
+Be ambitious. Nobody uses Exerly today, so there are no users or old clients to protect.
+Redesign data models, APIs and screens freely, delete legacy code, and choose the best
+architecture over the safest patch.
+
+**Done means all of these hold:**
+
+- every row in docs/PARITY.md is verified on device builds;
+- the Beyond list is shipped;
+- the App Store readiness checklist is complete;
+- two consecutive full audits find nothing worth fixing.
+
+Finishing a phase, a long context or a hard problem is never a reason to stop.
+
+## Product principles: agentic-first, done right
+
+Most fitness apps bolt a chatbot onto the home screen. Exerly does the opposite.
+
+1. **Agents propose, people decide.** Anything an agent changes is a reviewable proposal:
+   a program, targets, a deload, a logged meal, a swapped exercise. Each proposal shows the
+   diff, the evidence, a confidence level and what would prove it wrong. Accepting is one
+   tap, and every agent action is in an audit log and can be undone.
+2. **Code computes, models explain.** e1RM, volume, progression, expenditure, trend weight
+   and macros come from tested pure functions. A model never does arithmetic in prose, and
+   every number it shows comes from those functions and links back to the logged data.
+3. **Open to your own agents.**
+   - A first-class MCP server and a versioned OpenAPI.
+   - Scoped personal access tokens (read, write, propose-only) and signed webhooks.
+   - App Intents and Shortcuts.
+   - The user's Claude, ChatGPT or custom agent can read the logs, run analyses and file
+     proposals through the same rules as the in-app agent.
+4. **Structured, not chat-first.** Intelligence appears where it's needed:
+   - today's session adjusted for poor sleep or missed meals;
+   - a stall diagnosed with evidence;
+   - a meal logged from a sentence or a photo and confirmed before saving;
+   - a weekly review.
+
+   Chat exists but is never the home screen.
+5. **Honest evidence.** Label claims (human RCT, observational, mechanism, anecdote). Say
+   when data is n=1, confounded or too short. Make no medical claims. No streak confetti and
+   no motivational filler.
+6. **Private and cheap by default.**
+   - On-device first: Apple's on-device Foundation Models where available, plus VisionKit
+     for barcodes and nutrition labels.
+   - Bring-your-own-agent through MCP and the API.
+   - Cloud inference is opt-in, disclosed, and never required for logging.
+   - Design the per-user cost to stay near zero.
+7. **Works with AI off.** Every feature has a manual path. AI never blocks logging.
+8. **Built for optimizers.**
+   - Dense, fast screens.
+   - Full raw-data export, custom metrics and tags.
+   - n=1 experiments (baseline window, test window, metrics chosen up front).
+   - Correlation views that state their limits.
+
+**Out of scope:** peptides, injectables, medications and dose tracking. Those belong to Ali's
+private Ascension project and must never appear in Exerly. Supplements are ordinary food or
+nutrient entries at most.
+
+## Scope
+
+- **The iPhone app is the product.** Add an Apple Watch app, widgets, Live Activities and
+  App Intents where they serve it.
+- **The backend exists to serve the app:** accounts, sync, backup, food search, the agent
+  API, MCP and webhooks.
+- **The web dashboard is out of scope.** Don't build or maintain it. Remove it from CI or
+  from the repo if it gets in the way, and record that in docs/DECISIONS.md.
+
+## Backend and hosting (scalable, student budget)
+
+Use this target stack unless you find a better one and record why in docs/DECISIONS.md.
+
+- **Database: PostgreSQL.** Replace MongoDB and the Mongo driver.
+  - Use plain SQL migrations.
+  - Isolate each user's data in every query, and add row-level security if you adopt it.
+  - Production target is Neon (free tier, scale to zero, branch databases for previews).
+- **API:** the Node service, containerised with a Dockerfile.
+  - Production target is DigitalOcean App Platform, where it already runs. GitHub Student
+    Developer Pack credit may cover it.
+  - No host-specific APIs, so it can move to Fly, Render or anything else.
+- **Self-host:** a docker-compose file (Postgres plus the API) that anyone can run. This
+  keeps open-sourcing possible and makes hosts interchangeable.
+- **Files:** progress photos stay on the device by default. Add S3-compatible storage
+  (Cloudflare R2) only when a feature needs it.
+- **Development and staging on devbox1:**
+  - Postgres and Docker are installed, so use scratch ports.
+  - Bind to 0.0.0.0 and report http://100.80.149.7:<port>.
+  - For a long-lived staging service, add one LaunchAgent, following
+    ~/Services/devbox-recovery/README.md. Run it from a deployed copy under ~/Services,
+    because LaunchAgents can't read ~/Desktop.
+- **Never:** AWS, paid tiers, or new accounts without Ali's approval. Ali creates the Neon
+  project and sets secrets in DigitalOcean. Ask for these in QUESTIONS_FOR_ALI.md and keep
+  working against local Postgres meanwhile.
+
+## Public-product requirements
+
+- **Accounts:** Sign in with Apple plus email, secure sessions, account deletion in the app
+  (App Store rule), full data export and import, and rate limits.
+- **Privacy:**
+  - A plain-language privacy policy and accurate App Store privacy labels.
+  - Follow HealthKit rules: no advertising use, a clear purpose for every type read, and
+    nothing written without consent.
+  - Encrypt data in transit and at rest.
+  - Collect the minimum.
+  - No third-party analytics or crash SDKs without Ali's approval; use MetricKit and
+    TestFlight crash reports.
+- **Reliability:** offline-first with conflict-safe sync, idempotent writes, migrations that
+  can be rolled back, and backups.
+- **App Store readiness checklist** in docs/RELEASE.md: metadata, screenshots, review
+  notes, export compliance, privacy labels, age rating, support URL. Submitting to App Review
+  or external TestFlight review is Ali's decision. Prepare everything, then ask.
+
+## Sideband
+
+Exerly is a Sideband product: Ali's studio, https://sideband.studio, GitHub org
+`sidebandstudio`.
+
+- **The repo is moving** from whoisaldo/Exerly-Fitness to the sidebandstudio org. Ali does
+  the transfer.
+  - At the start of each session, run `gh repo view sidebandstudio/Exerly-Fitness`.
+  - Once it resolves, run
+    `git remote set-url origin https://github.com/sidebandstudio/Exerly-Fitness.git`.
+  - Then update every old reference: README clone URL and badges, docs, CI, and
+    `.do/app.yaml` (`github.repo`).
+  - If DigitalOcean can't reach the new repo, ask Ali to grant its GitHub access to the
+    org.
+- **Public strings:**
+  - support and contact email: hello@sideband.studio;
+  - copyright: "© Sideband";
+  - links: https://sideband.studio.
+- **Never use as a public contact:** whois.younes@gmail.com, any eternalreverse.com address,
+  or a university address.
+- **Licence and repo visibility (open versus closed source) are Ali's decision.** Write
+  everything as if the repo could become public: no secrets, no personal data, clean
+  commits. Don't change the licence or the visibility.
+- **Apple:** builds use Ali's developer team 9X79V37Q89 unless Ali says Sideband has its own
+  Apple developer account.
+
+## Rules
+
+1. **Git.**
+   - Commit small and often, authored as Ali, with no Co-authored-by trailers or tool
+     attribution.
+   - Push branches and merge to main once the full suite and the iOS build are green. main
+     auto-deploys the API, which is fine while nobody uses it.
+2. **Synthetic data only.** Tests, fixtures, screenshots, demos and anything sent to an AI
+   service during development use synthetic data. Ali's real data stays in MacroFactor and
+   Ascension until Exerly is ready, and it never enters this repo.
+3. **Releases.** Internal TestFlight builds are yours to run.
+   - Use the App Store Connect API key in ~/private_keys (AuthKey_4Z7KFJ8DWZ.p8, issuer ID
+     in asc-issuer-id.txt) to register bundle IDs and capabilities, including HealthKit.
+   - Create the app record (bundle com.exerly.fitness). If the name is taken, use a variant
+     and record it.
+   - Create an internal group with only Ali in it.
+   - Upload a build at every milestone.
+   - Sign with the existing distribution certificate (~/private_keys/eternalmonitor-distribution).
+     Never create, revoke or replace certificates.
+   - Ascension's pipeline is the reference: ~/Desktop/health-dashboard/ios/scripts/release.sh
+     and deploy/ios-release.sh, which use manual profiles and a temporary keychain.
+   - Lessons from that pipeline:
+     - archive with /Applications/Xcode-26.2.app;
+     - use timestamp build numbers;
+     - App Intent titles and phrases must not name Apple products such as iPhone, Health
+       or Apple, or the upload is rejected with ITMS-90626.
+4. **Ask without stopping.** Put questions in docs/QUESTIONS_FOR_ALI.md and keep working on
+   everything else. Questions are only for:
+   - money, and new accounts or services;
+   - App Review or external TestFlight;
+   - licence and visibility;
+   - anything legal.
+
+   Decide everything else yourself and log it in docs/DECISIONS.md.
+5. **Leave the rest of devbox1 alone.**
+   - Don't touch other repos (health-dashboard/Ascension, Eternal Monitor).
+   - Don't touch running services: 8741, 18789, 8646, 3773/3774, 11434.
+   - Don't touch Ascension's or Eternal Monitor's bundle IDs or profiles.
+   - Use your own simulators and scratch ports.
+6. **Play fair with sources.**
+   - Don't reverse-engineer, scrape or copy MacroFactor's or any competitor's app, private
+     API or food database.
+   - Use public sources (websites, help centres, release notes,
+     github.com/MacroFactor/apple-shortcuts) and build original implementations.
+   - Respect food-data licences: Open Food Facts is ODbL with attribution, USDA FoodData
+     Central is public domain, FatSecret has its own API terms.
+7. **Honest claims.** Implemented, tested and on TestFlight are different claims. Never
+   report what you didn't run.
+
+## Step 1: docs/PARITY.md, the single source of truth
+
+Inventory every MacroFactor feature (food logging, database, program and coaching,
+analytics) and every MacroFactor Workouts feature (exercise library, logging, programs,
+progression, analytics), from primary sources. Check how the leading training apps handle
+logging and progression too. For each row record:
+
+- the feature and its source;
+- Exerly's status;
+- acceptance criteria;
+- evidence: tests, screenshots, TestFlight build.
+
+Add a **Beyond** column. Check every seed below against a source and drop what you can't
+confirm.
+
+### Ground truth: MacroFactor's own export (Oct 2026)
+
+- **Calories & Macros.**
+- **Micronutrients (50 columns):**
+  - alcohol and caffeine;
+  - B vitamins: B1, B2, B3, B5, B6, B12;
+  - minerals: calcium, copper, iron, magnesium, manganese, phosphorus, potassium,
+    selenium, sodium, zinc;
+  - cholesterol and choline;
+  - essential amino acids;
+  - fats: mono-, poly-, saturated and trans; omega-3 (ALA, DHA, EPA, total); omega-6;
+  - fiber, starch, sugars and added sugars;
+  - folate;
+  - vitamins A, C, D, E and K;
+  - water.
+- **Body:** Scale Weight (with fat percent), Weight Trend, Expenditure, Steps.
+- **Body Metrics:**
+  - bust, chest, hips, neck, shoulders and waist;
+  - left and right ankle, bicep, calf, forearm, thigh and wrist;
+  - visual body-fat assessment.
+- **Muscle Groups:** sets and volume for 22 muscles.
+- **Exercises:** 1-RM, 3-RM, 10-RM, total volume, best-set volume, heaviest weight, total
+  reps, best-set reps, total and best-set duration, total sets.
+- **Food library:** Recipes, Custom Foods, Favorites, History.
+- **Training Programs** (cycles, deload, colour, icon) and **Workouts** (exercise, notes,
+  per-set type, RIR and rest).
+- **Day flags and notes:** Fasting, Partial Logging, Micronutrient Goals, Food Log Notes,
+  Workout Log Notes.
+- **User Profile:** sex, birthday, height, activity level, sessions per week, lifting
+  experience, cardio experience, athletic pursuits, prediction style.
+- **Nutrition Program Settings:** per-weekday targets, expenditure and expenditure
+  calculation mode, one row per program update.
+- **Weight Goals:** goal weight, goal rate in % of bodyweight per week, start and end,
+  checkpoints, starting and ending scale and trend weight.
+- **Workout Settings:**
+  - previous reference, propagate changes, RIR tracking;
+  - superset auto-scroll, exercise auto-next, keep-alive, workout timer;
+  - bodyweight contribution;
+  - rest timers: between exercises, between left and right sets, and per compound upper
+    and lower;
+  - warm-up automation and schemes;
+  - expand rep range, weight match, deload, exercise assessment, hide completed sets;
+  - sound and vibration.
+- **Gym Profiles:** equipment and weights, allowed and disallowed exercises, bumper and
+  mixed-unit plates, offset weight.
+- **Custom Exercises:** type, trackable metric, laterality, primary and secondary muscles,
+  joint actions, resistance and support equipment, bodyweight contribution, range of motion,
+  stability, alternative names.
+
+### Seen in MacroFactor
+
+- **Nutrition Overview:** Yesterday, 1 week, 1 month, 3 months, 1 year. Each nutrient has a
+  bar against its target, with a target marker and a percentage.
+- **Contributors:** each food's share of a nutrient.
+- **Nutrient Timing:** calories across the day.
+- **Strategy-based targets.**
+- **Shortcuts:**
+  - "Log by JSON";
+  - "Find Recent Food";
+  - a today-summary JSON: `consumed` per nutrient, and `remaining` as minimum, target and
+    maximum.
+- **Apple Health:** writes nutrients, weight and workouts.
+
+### Beyond: seeds
+
+- **Speed:**
+  - a repeat food in 3 taps or fewer;
+  - a set in one tap, prefilled from last time;
+  - meal copy across days;
+  - suggestions by time of day;
+  - cold launch to logging in under 1 second.
+- **On-device intelligence:** barcode and label scanning; photo and text meal logging with
+  confirmation.
+- **Training intelligence:**
+  - RIR-based autoregulated progression;
+  - fractional volume per muscle;
+  - recovery-aware weekly volume, using sleep, HRV and resting HR from Apple Health;
+  - PR detection;
+  - plate and warm-up calculators;
+  - supersets;
+  - rest timer as a Live Activity;
+  - a Watch workout app with heart rate.
+- **Agent features:**
+  - a weekly review with at most three ranked suggestions, each with evidence and a
+    falsifier;
+  - program generation and adjustment as proposals;
+  - stall and plateau diagnosis;
+  - deload detection;
+  - n=1 experiments.
+- **A food database that beats MacroFactor's on coverage and accuracy:** USDA FDC, Open
+  Food Facts and FatSecret, with source shown and community or user corrections.
+- **Full Apple Health read and write**, widgets, and App Intents covering MacroFactor's
+  Shortcuts and more.
+- **Migration in:** import MacroFactor's export (every sheet above), Apple Health history,
+  and Hevy and Strong exports.
+- **A developer platform:** MCP server, OpenAPI, tokens and webhooks, full-fidelity
+  JSON/CSV/xlsx export, stable IDs, UTC plus timezone, and idempotent writes. Ali's
+  Ascension dashboard will consume it.
+
+## How to work: survive context resets
+
+- **First session:**
+  - Run every existing test command and the iOS build, and record a baseline.
+  - Create docs/AGENT_LEDGER.md: current milestone, next three steps, risks, and exactly
+    how to resume. Update it after every milestone, so a fresh context can continue from
+    the ledger alone.
+- **Priority order** (re-rank in PARITY.md when evidence says so):
+  1. Backend foundation: Postgres, migrations, auth with Sign in with Apple, sync,
+     docker-compose. Minimal but right, because everything else sits on it.
+  2. Training core: exercise library with muscles, joint actions and equipment; performed
+     sessions with sets, reps, load, RIR and set types; rest timers; history; e1RM; volume
+     per muscle.
+  3. Agent core: the proposal, review, accept and undo model; the audit log; the MCP server
+     and scoped tokens; the first agent features on top of the training data.
+  4. Programs, progression and autoregulation.
+  5. Nutrition depth: full micronutrients, food database strategy, adaptive expenditure
+     and coaching parity, and the MacroFactor import.
+  6. Apple Health, widgets, App Intents, Live Activities, Watch.
+  7. Analytics and the optimizer tools: experiments, correlations, custom metrics.
+  8. Public readiness: privacy, account lifecycle, docs/RELEASE.md.
+  9. Polish, accessibility, performance.
+  10. The rest of Beyond.
+- **For each milestone:**
+  1. Write a design note.
+  2. Write tests first.
+  3. Implement.
+  4. Run the unit tests and simulator UI tests with Xcode 26.2.
+  5. Take screenshots in light and dark, on a small and a large phone, at the largest
+     Dynamic Type size. Look at every one of them.
+  6. Upload a TestFlight build.
+  7. Update PARITY.md and the ledger.
+  8. Commit and merge.
+- **Quality bar, per feature:**
+  - zero failing tests and no new warnings;
+  - VoiceOver labels on everything;
+  - correct units, timezones and daylight-saving handling;
+  - no data loss when offline;
+  - 60 fps scrolling;
+  - each user's data isolated in every query.
+- **Algorithms** (expenditure, trend, progression, readiness) are checked against simulated
+  ground truth, with their error documented.
+- **The project is a classic .pbxproj.** Register files correctly and build after every
+  change. Move to XcodeGen or Tuist only if you record why in DECISIONS.md.
+- **After parity, keep going.** Do a competitor teardown each cycle, re-audit with fresh
+  eyes, fix, and ship again.
+
+## Stopping
+
+Stop only when Done is met, or when every remaining item is blocked on
+QUESTIONS_FOR_ALI.md. End with a summary: what's implemented, tested and on TestFlight;
+build numbers; screenshot paths; and open questions.
