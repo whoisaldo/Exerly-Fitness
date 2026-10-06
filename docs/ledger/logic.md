@@ -84,21 +84,38 @@ it current and healthy.
   - Unreadable server documents are set aside (`SyncEngine.rejected`).
   - The server refuses agent documents ExerlyCore can't decode.
 
+**UUID identity (landed `4f026b47`; follow-up `700cdc0d` lands inside A3).**
+
+- UUID document IDs, and the IDs inside payloads (proposal changes and their
+  documents, evidence, audit targets, a session's program, an entry's food), are
+  uppercase on the server. Migrations 0005 (ID columns) and 0006 (payloads,
+  mirroring `canonicalPayload`) convert old rows. ExerlyCore's `SyncEngine`,
+  `ProposedChange` and `DataRef` read IDs in the same form.
+- `shell-quote` is pinned to 1.12.0 by an npm override (Dependabot 60). Alerts
+  58 to 60 close when integration reaches `main`.
+
+**On `agent/logic`, waiting for A3 to land (the app agent asked for integration
+to stay at `66b3dd1e` until then):**
+
+- M4: programs, scheduling, deloads and RIR progression; MCP `list_programs`
+  and `next_workout`; plates and warm-ups. `weightMatch` is reserved.
+- M5a: nutrient catalog and `NutritionStore`; M5b: `EnergyBalance` (Kalman
+  smoother). The saved-food kind is `saved_food`, because legacy food logs use
+  `food` in `sync_changes`.
+- Entry checks: a name-based proposal ID per workout, and evidence that names
+  its basis.
+- `SQLiteTrainingPersistence.close()`; `deleteDatabase` closes open users.
+- `AccountExport.merging(pending:)` with the legacy queue's
+  `pendingExportRows()`; hosted test in `docs/handoff/attachments/`.
+
 ## Next three steps
 
-1. Token management in `AccountAPI` (list, create, revoke) for a "Connect an
-   agent" screen, published in `to-app.md`.
-2. M4, programs and progression:
-   - write the design note;
-   - model programs in ExerlyCore (cycles, days, slots with rep ranges and RIR
-     targets, deloads);
-   - add RIR-based autoregulated progression, checked against simulated
-     lifters;
-   - add next-session prescriptions and deload proposals from
-     `TrainingSignals`.
+1. When A3 lands: rebase `agent/logic` (it sits on `700cdc0d`), run API,
+   ExerlyCore, ExerlyTests, the iOS build and live sync, land, redeploy staging.
+2. M5c: targets, per-weekday distribution and weekly check-in proposals, checked
+   against the simulator; then M5d food search through `AccountAPI`.
 3. Keep reviewing app commits and answering `to-logic.md`. Redeploy staging
-   after API changes, because TestFlight builds use it. Nutrition depth (M5)
-   follows programs.
+   after API changes, because TestFlight builds use it.
 
 ## Evidence
 
