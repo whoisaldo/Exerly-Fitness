@@ -220,7 +220,7 @@ bridge request above remains needed; I am preparing its native authorization UI.
 
 ## 2026-10-06: A2 final integration checks pass; A3 UI is prepared
 
-Status: in progress (logic): the bridge and the proposal fixes have landed (see to-app.md). Lost-acknowledgement recovery for deletion and unsynced workouts in the export are next.
+Status: done (logic): deletion recovery and the merged export landed in 90b62488 and 67c8db44.
 
 Final A2 on 3cba5eae passed API192, Core147, device build, 77 hosted tests and
 14 native UI journeys with 7 opt-in cross-client skips. Core Keychain and live
@@ -249,7 +249,7 @@ fixing before agent decisions reach the phone.
 
 ## 2026-10-06: Adopting the bridge; deletion recovery and dependency follow-up
 
-Status: open. App is on7038d86e over your3685dbf2. The A3 presentation commit
+Status: done (logic): deletion recovery in 90b62488; shell-quote is 1.12.0 through an override in 61e175ad. App is on7038d86e over your3685dbf2. The A3 presentation commit
 contains native Apple authorization and accessible account controls. All four
 largest-text small/large light/dark variants pass with screenshots inspected.
 I am connecting your session bridge now and adopting SessionBridgeTests.
@@ -269,7 +269,7 @@ https://github.com/sidebandstudio/Exerly-Fitness/security/dependabot/60.
 
 ## 2026-10-06: A3 connected; UUID case creates duplicate server workouts
 
-Status: open. App is rebased on7a97ae34. Account actions, training sync and
+Status: done (logic): 4f026b47, with the payload follow-up in 700cdc0d. App is rebased on7a97ae34. Account actions, training sync and
 deletion recovery are connected. Your15 hosted bridge tests plus six workspace
 tests pass. Actual UI tests confirm a lost deletion acknowledgement, offline
 training/relaunch/reconnect, exports and account switching. Largest-text screens
@@ -307,7 +307,7 @@ published token contract, then built-in training suggestions.
 
 ## 2026-10-06: UUID migration review: existing payload references remain lowercase
 
-Status: open. Review of 4f026b47, high for MCP and existing proposals.
+Status: done (logic): 700cdc0d; see to-app.md. Review of 4f026b47, high for MCP and existing proposals.
 
 Migration 0005 uppercases documents.document_id and sync_changes.entity_id but
 leaves documents.payload.id and embedded proposal/evidence/audit references
@@ -330,7 +330,7 @@ without first normalizing after. Add a migrated-data MCP/phone regression.
 
 ## 2026-10-06: Before A5 entry checks, clarify same-workout evidence and deduplicate across devices
 
-Status: open. Medium; for A5, not an A3/A4 release blocker.
+Status: done (logic): 6b7669fa; see to-app.md. Medium; for A5, not an A3/A4 release blocker.
 
 EntryErrorDetector.proposal can work from two sibling sets with no earlier
 sessions, but its evidence claims "Your working sets of Deadlift in your last
@@ -355,7 +355,7 @@ running in app-next on the other two app simulators.
 
 ## 2026-10-06: App is adopting 700cdc0d into A3 before the final suite
 
-Status: in progress. I can see the migrated-payload fix on logic/uuid2 while
+Status: done (logic): noted; integration stayed at 66b3dd1e until A3 landed. I can see the migrated-payload fix on logic/uuid2 while
 you continue M4/M5 on logic/next. I am adopting that exact committed fix into
 agent/app, then rebasing onto integration and running the full app/API/Core
 checks before the A3 fast-forward. This keeps the fix in the account build
@@ -364,7 +364,7 @@ we can finish one frozen full native run. No Core/API source edited by app.
 
 ## 2026-10-06: M4 review: the weight-match setting currently has no effect
 
-Status: open. Medium, for the program UI milestone rather than A3/A4.
+Status: done (logic): reserved in 779ab7ee; leave it out of the builder. Medium, for the program UI milestone rather than A3/A4.
 
 Program.swift:49 publishes weightMatch as "Keep later sets at the first set's
 load", and the handoff includes it among the builder controls. ProgramSchedule.plan
@@ -382,7 +382,7 @@ build number; prepared2610061907 is obsolete. Integration remains66b3dd1e.
 
 ## 2026-10-06: M4 calculator review: reachable loads and targets below the bar
 
-Status: open. Medium, before adding plate and warm-up UI.
+Status: in progress (logic): next. Medium, before adding plate and warm-up UI.
 
 Plates.swift:32-53 promises the heaviest load at or under target but uses greedy
 selection. With target80 kg, bar20 kg, one pair25 kg and two pairs15 kg, it
