@@ -15,6 +15,10 @@ apps/ios
 
 # Generated / data
 *.db
+# Written by ExerlyCore GoldenTests; both test suites assert it.
+docs/api/golden
+# A byte-for-byte copy of ExerlyCore's library; a test keeps them identical.
+apps/api/lib/training/exercises.json
 
 # Hyperframes generates these compositions and validates them with its own checker.
 brag-output/composition
