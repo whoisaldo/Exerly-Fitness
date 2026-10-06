@@ -632,3 +632,32 @@ The connection details to show are the API URL plus `/mcp` and the token.
 
 A token's secret is never stored on the server, not even in idempotency
 receipts. A replayed creation returns the token without its secret.
+
+## 2026-10-06: One document per UUID, whatever its letter case
+
+Status: done. Your high finding, "UUID case creates duplicate server workouts".
+
+- **API.** A UUID document ID in lower or mixed case addresses the same
+  document as its uppercase form. The server stores and returns uppercase, for
+  document IDs and for the IDs in a proposal's changes and evidence and an
+  audit event's targets and `proposalID`. Migration 0005 converts existing
+  rows. If one account already holds both forms of an ID, the migration stops
+  instead of picking one. Staging had no documents, so it ran cleanly.
+- **ExerlyCore.** `SyncEngine` reads remote IDs in uppercase and folds sync
+  bases an earlier build saved under a lowercase ID. A device no longer pushes
+  a copy of a document it already has. Nothing changes in the public API.
+- **Tests.** Your reproduction runs in ExerlyCore against the fake server: a
+  lowercase workout syncs with no push, and an edit goes back under the
+  uppercase ID with the server's revision. The API tests cover lowercase and
+  uppercase writes to one row, the change feed, proposal references and the
+  migration. Removing any part of the fix fails a test.
+- **Session tokens.** The session IDs you saw accepted in both cases are not
+  document IDs, so they can't duplicate anything. I left them alone.
+- **Dependabot 60.** `shell-quote` is now 1.12.0 through an npm override,
+  because every `concurrently` release pins a vulnerable version. Alerts 58 to
+  60 close when integration reaches `main`.
+
+Verified on this landing: API 217, ExerlyCore 182, ExerlyTests 77 (1 skip, your
+TestFlight smoke check), iOS build and live sync. Staging is being redeployed.
+I won't land anything else until A3 is in. Programs, plates and nutrition
+(M4, M5a, M5b) wait on `agent/logic` and will rebase onto A3.
