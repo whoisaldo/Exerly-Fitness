@@ -1,3 +1,4 @@
+import ExerlyCore
 import Foundation
 import SwiftData
 import Network
@@ -140,6 +141,20 @@ final class SyncEngine: ObservableObject {
         try context.delete(model: SyncCheckpoint.self, where: #Predicate { $0.accountID == owner })
         try context.save()
         refreshCounts()
+    }
+
+    /// The configured account's entries that haven't reached the server, for
+    /// `AccountExport.merging(pending:)`, so an export made before they sync
+    /// still holds them.
+    func pendingExportRows() throws -> [AccountExport.PendingRow] {
+        let tables = ["food": "food", "measurement": "measurements", "diary_day": "diary_days", "water": "water",
+                      "weight": "weights", "activity": "activities", "sleep": "sleep"]
+        return try ownedResources().compactMap { resource in
+            guard resource.syncState == "pending" || resource.syncState == "attention",
+                  let table = tables[resource.kind] else { return nil }
+            return AccountExport.PendingRow(table: table, clientID: resource.entityID, serverID: resource.serverID,
+                                            row: resource.tombstoned ? nil : resource.payload)
+        }
     }
 
     private func ownedResources() throws -> [SyncedResource] {

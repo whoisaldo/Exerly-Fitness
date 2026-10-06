@@ -277,11 +277,13 @@ Errors are `APIError`, with user-facing descriptions (`LocalizedError`):
 
 ### AccountExport
 
-`AccountExport.merging(server:hosts:state:)` overlays this device's unsynced
-documents on the server's export from `exportAccount()`. Each added or replaced
-row is marked `"pending_sync": true`, and documents deleted on the device are
-left out. Pass `nil` while offline to export this device's documents only; the
-result says so in `note`.
+`AccountExport.merging(server:hosts:state:pending:)` overlays this device's
+unsynced documents on the server's export from `exportAccount()`. `pending` adds
+the legacy app's queued entries (`SyncEngine.shared.pendingExportRows()` in the
+app) to their tables: food, water, weights, measurements, diary days, activities
+and sleep. Each added or replaced row is marked `"pending_sync": true`, and
+anything deleted on the device is left out. Pass `nil` while offline to export
+this device's data only; the result says so in `note`.
 
 ### Credentials
 

@@ -67,4 +67,45 @@ import Testing
         #expect(json["exported_at"] as? String == "2026-10-05T18:00:00.000Z")
         #expect(try documents(data)["workout_session/\(session.id.uuidString)"]?["pending_sync"] as? Bool == true)
     }
+
+    @Test func entriesTheLegacyAppHasNotSyncedAreMergedIn() throws {
+        let edited = UUID().uuidString.lowercased()
+        let deleted = UUID().uuidString.lowercased()
+        let created = UUID().uuidString.lowercased()
+        func json(_ object: [String: Any]) throws -> Data { try JSONSerialization.data(withJSONObject: object) }
+        let server = try json([
+            "version": 3, "documents": [],
+            "food": [
+                ["id": "s1", "client_id": edited, "food_name": "Oats", "calories": 300, "account_id": "a"],
+                ["id": "s2", "client_id": deleted, "food_name": "Toast", "calories": 200, "account_id": "a"],
+                ["id": "s3", "client_id": UUID().uuidString.lowercased(), "food_name": "Rice", "calories": 400, "account_id": "a"],
+            ],
+            "water": [["id": "s4", "entry_date": "2026-10-05", "ml": 500, "account_id": "a"]],
+        ])
+        let pending = [
+            AccountExport.PendingRow(table: "food", clientID: edited, serverID: "s1",
+                                     row: try json(["id": "s1", "client_id": edited, "food_name": "Oats", "calories": 350])),
+            AccountExport.PendingRow(table: "food", clientID: deleted, serverID: "s2", row: nil),
+            AccountExport.PendingRow(table: "food", clientID: created, serverID: nil,
+                                     row: try json(["id": created, "client_id": created, "food_name": "Eggs", "calories": 150])),
+            AccountExport.PendingRow(table: "water", clientID: "2026-10-05", serverID: nil,
+                                     row: try json(["entry_date": "2026-10-05", "ml": 750])),
+        ]
+        let merged = try AccountExport.merging(server: server, hosts: [], state: InMemoryTrainingPersistence(), pending: pending)
+        let export = try #require(try JSONSerialization.jsonObject(with: merged) as? [String: Any])
+        let food = try #require(export["food"] as? [[String: Any]])
+        #expect(food.map { $0["food_name"] as? String }.sorted { ($0 ?? "") < ($1 ?? "") } == ["Eggs", "Oats", "Rice"])
+        let oats = try #require(food.first { $0["food_name"] as? String == "Oats" })
+        #expect(oats["calories"] as? Int == 350 && oats["pending_sync"] as? Bool == true)
+        #expect(oats["account_id"] as? String == "a", "Server-only columns are kept")
+        #expect(food.first { $0["food_name"] as? String == "Rice" }?["pending_sync"] == nil)
+        let water = try #require(export["water"] as? [[String: Any]])
+        #expect(water.count == 1 && water[0]["ml"] as? Int == 750 && water[0]["pending_sync"] as? Bool == true)
+
+        // Offline, the queued entries are all there is, and the note says so.
+        let offline = try #require(try JSONSerialization.jsonObject(
+            with: AccountExport.merging(server: nil, hosts: [], state: InMemoryTrainingPersistence(), pending: pending)) as? [String: Any])
+        #expect((offline["food"] as? [[String: Any]])?.count == 2)
+        #expect((offline["note"] as? String)?.contains("entries waiting to sync") == true)
+    }
 }
