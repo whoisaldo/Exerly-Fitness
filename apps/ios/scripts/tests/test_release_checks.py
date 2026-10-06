@@ -36,6 +36,17 @@ class ReleaseChecksTests(unittest.TestCase):
     def test_accepts_release_metadata(self):
         self.validate()
 
+    def test_staging_requires_explicit_validation_and_exact_internal_endpoint(self):
+        self.info["EXERLY_API_BASE_URL"] = "http://100.80.149.7:39110"
+        self.info["EXERLY_BUILD_ENVIRONMENT"] = "staging"
+        with self.assertRaises(ValueError):
+            self.validate()
+        checks.validate_metadata(self.info, self.privacy, "1.0", "2610061200", internal_staging=True)
+        for endpoint in ["http://100.80.149.7:3001", "http://example.test", "http://100.80.149.7:39110/other"]:
+            self.info["EXERLY_API_BASE_URL"] = endpoint
+            with self.subTest(endpoint=endpoint), self.assertRaises(ValueError):
+                checks.validate_metadata(self.info, self.privacy, "1.0", "2610061200", internal_staging=True)
+
     def test_rejects_wrong_identity_or_version(self):
         for key, value in [("CFBundleIdentifier", "other.app"), ("CFBundleVersion", "1"),
                            ("CFBundleShortVersionString", "0.9")]:

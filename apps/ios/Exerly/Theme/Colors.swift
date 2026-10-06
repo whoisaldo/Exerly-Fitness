@@ -2,21 +2,21 @@ import SwiftUI
 import UIKit
 
 extension Color {
-    static let exPrimary = adaptive(0x176344, 0x82D6B6)
-    static let exSecondary = adaptive(0x265F72, 0x9CCFE1)
-    static let exAccent = adaptive(0x855B22, 0xE5BF7A)
-    static let exBackground = adaptive(0xF5F6F3, 0x0B1519)
-    static let exSurface1 = adaptive(0xFFFFFF, 0x112026)
-    static let exSurface2 = adaptive(0xEEF1EC, 0x192B31)
-    static let exSurface3 = adaptive(0xE3E9E1, 0x253940)
-    static let exTextPrimary = adaptive(0x162924, 0xEDF4EF)
-    static let exTextSecondary = adaptive(0x4C635A, 0xACBFB7)
-    static let exTextMuted = adaptive(0x5B6C64, 0x94AAA0)
-    static let exSuccess = adaptive(0x176344, 0x82D6B6)
-    static let exWarning = adaptive(0x86541C, 0xE9C07E)
-    static let exError = adaptive(0xAE2834, 0xFF9A9F)
-    static let exInfo = adaptive(0x265F83, 0x99CCEC)
-    static let exBorder = adaptive(0xCFD9D0, 0x344C43)
+    static let exPrimary = adaptive(0x7C3AED, 0x8B5CF6)
+    static let exSecondary = adaptive(0x9333EA, 0xA855F7)
+    static let exAccent = adaptive(0xBE185D, 0xEC4899)
+    static let exBackground = adaptive(0xF8F7FC, 0x0A0A0F)
+    static let exSurface1 = adaptive(0xFFFFFF, 0x101016)
+    static let exSurface2 = adaptive(0xF1EEF8, 0x15151D)
+    static let exSurface3 = adaptive(0xE9E4F2, 0x1B1B24)
+    static let exTextPrimary = adaptive(0x1D1929, 0xF7F8FA)
+    static let exTextSecondary = adaptive(0x5B556A, 0xB2ADC2)
+    static let exTextMuted = adaptive(0x6C6479, 0x9D96B0)
+    static let exSuccess = adaptive(0x167044, 0x4ADE80)
+    static let exWarning = adaptive(0x86541C, 0xFBBF24)
+    static let exError = adaptive(0xAE2834, 0xFDA4AF)
+    static let exInfo = adaptive(0x265F83, 0x93C5FD)
+    static let exBorder = adaptive(0xD8D2E3, 0x373040)
     static let exBorderFocused = exPrimary
     static let exGlassBg = exSurface1
     static let exGlassBorder = exBorder
@@ -84,13 +84,13 @@ extension Color {
 
 extension LinearGradient {
     static let exPrimaryGradient = LinearGradient(
-        colors: [Color(hex: "176344"), Color(hex: "176344")],
+        colors: [.exPrimary, .exSecondary],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let exAccentGradient = LinearGradient(
-        colors: [Color(hex: "265F72"), Color(hex: "265F72")],
+        colors: [.exSecondary, .exAccent],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )

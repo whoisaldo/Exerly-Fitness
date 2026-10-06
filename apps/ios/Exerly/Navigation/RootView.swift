@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct RootView: View {
+    @AppStorage("exerlyAppearance") private var appearance = "dark"
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var sync = SyncEngine.shared
     @Environment(\.modelContext) private var modelContext
@@ -58,5 +59,6 @@ struct RootView: View {
             }
         }
         .tint(Color.exPrimary)
+        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
     }
 }

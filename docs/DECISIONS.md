@@ -175,3 +175,12 @@ LaunchAgent (`com.aldo.exerly-staging`), following the devbox recovery README.
   device. Token creation and revocation are audited too.
 - **Limits.** At most 20 active tokens per account. Last use is recorded at most
   once a minute.
+
+## 2026-10-06: Preserve Exerly's existing brand
+
+Ali rejected the unrelated mint monogram in the first internal build. The app
+keeps the established purple E/pulse mark from apps/web/src/components/Assets/
+ExerlyLogo.jpg. The app icon uses that symbol alone so it remains legible at home
+screen size. Restore purple/pink brand accents and neutral purple-tinted surfaces;
+retain adaptive light/dark colors, Dynamic Type and native controls. The green
+palette introduced in A2 is superseded. No new brand direction is being adopted.

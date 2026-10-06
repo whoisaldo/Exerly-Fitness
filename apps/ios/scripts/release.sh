@@ -9,6 +9,12 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-26.2.app/Contents/Dev
 BUILD="${BUILD:-$(date -u +%y%m%d%H%M)}"
 [[ "$BUILD" =~ ^[0-9]{10}$ ]] || { echo 'BUILD must be a ten-digit UTC yymmddHHMM timestamp' >&2; exit 2; }
 VERSION=1.0
+RELEASE_ENVIRONMENT="${EXERLY_RELEASE_ENVIRONMENT:-staging}"
+case "$RELEASE_ENVIRONMENT" in
+  staging) API_URL=http://100.80.149.7:39110 ;;
+  production) API_URL=https://exerly-fitness-93dyl.ondigitalocean.app ;;
+  *) echo 'EXERLY_RELEASE_ENVIRONMENT must be staging or production' >&2; exit 2 ;;
+esac
 OUT="${EXERLY_RELEASE_DIR:-$ROOT/build/release/$BUILD}"
 mkdir -p "$OUT"
 SDK="$(xcrun --sdk iphoneos --show-sdk-version)"
@@ -95,10 +101,13 @@ fi
 echo "Archiving Exerly $VERSION ($BUILD), $MODE"
 xcodebuild -project "$ROOT/Exerly.xcodeproj" -scheme Exerly -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" -derivedDataPath "$OUT/DerivedData" \
-  "CURRENT_PROJECT_VERSION=$BUILD" "MARKETING_VERSION=$VERSION" "${SIGN_ARGS[@]}" archive > "$OUT/archive.log" 2>&1 || {
+  "CURRENT_PROJECT_VERSION=$BUILD" "MARKETING_VERSION=$VERSION" \
+  "EXERLY_API_BASE_URL=$API_URL" "EXERLY_BUILD_ENVIRONMENT=$RELEASE_ENVIRONMENT" \
+  "${SIGN_ARGS[@]}" archive > "$OUT/archive.log" 2>&1 || {
     tail -35 "$OUT/archive.log"; exit 1;
   }
 CHECK_ARGS=()
+[[ "$RELEASE_ENVIRONMENT" != staging ]] || CHECK_ARGS+=(--internal-staging)
 [[ "$MODE" != --dry-run ]] || CHECK_ARGS+=(--unsigned)
 python3 "$ROOT/scripts/release_checks.py" "$ARCHIVE" --version "$VERSION" --build "$BUILD" ${CHECK_ARGS[@]+"${CHECK_ARGS[@]}"}
 if [[ "$MODE" == --dry-run ]]; then

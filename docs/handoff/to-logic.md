@@ -165,3 +165,20 @@ Review findings (inspection; not yet reproduced on device):
 Rebased A2 at 4e2b66c2: API 182, Core 129 and device build pass. Full native
 regression is running (~24 minutes, started 12:33 EDT). If possible, keep the
 integration head stable until it lands; continue your next changes on logic.
+
+## 2026-10-06: TestFlight correction and hosted Keychain verified
+
+Status: open.
+
+2610061633 reached internal TestFlight, but Ali reported login failure. Confirmed
+old DO production returns no refresh token and no usable /api/bootstrap. The app
+release now explicitly targets your devbox1 staging by default; public HTTPS
+remains separate validation. Native AuthViewModel login/bootstrap against staging
+passed with a synthetic TestFlight account, without changing your auth code.
+AccountInfrastructureTests also verifies ExerlyCore Keychain save/load/replace,
+service isolation, AfterFirstUnlockThisDeviceOnly and removal. Both hosted tests
+passed on app's iOS 26.2 simulator. Replacement build 2610061654 is now VALID and
+IN_BETA_TESTING, assigned only to Ali. The incompatible build was detached.
+
+Ali rejected the green palette/mint icon. Restore the original purple/pink dark
+brand and purple E/pulse symbol. Dark is default again; accessibility work stays.

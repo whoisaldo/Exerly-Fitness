@@ -5,14 +5,23 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Version 1.0, build 2610061616. Signed archive and IPA exported successfully with
-Xcode 26.2 and the iOS 26.2 SDK. Archive identity, HealthKit entitlement, profile,
-privacy manifest, icon, version and absence of debug fixture hooks passed the
-release validator. No upload or physical-device install has occurred.
+Version 1.0, build 2610061654, is available to Ali on internal TestFlight.
+Apple reports VALID and IN_BETA_TESTING. The internal group contains only this
+build; its test notes explain Tailscale and on-device training storage.
+Restores the purple E/pulse icon, original purple/pink dark theme and dark default.
+Uses devbox1 staging (Tailscale required); a native AuthViewModel login/bootstrap
+smoke test passed with the synthetic TestFlight account.
 
-- Archive: `apps/ios/build/release/2610061616/Exerly.xcarchive`
-- IPA: `apps/ios/build/release/2610061616/export/Exerly.ipa`
-- Logs: `apps/ios/build/release/2610061616/{archive,export}.log`
+The signed archive and IPA passed identity, HealthKit entitlement, profile,
+privacy manifest, icon, version, staging endpoint and debug-hook checks.
+The previous build, 2610061633, used an incompatible production backend and
+could not sign in. It was removed from the internal group and its notes now
+direct testers to the replacement. Ali reported installing the previous build;
+physical-device installation and sign-in for the replacement remain unverified.
+
+- Archive: `apps/ios/build/release/2610061654/Exerly.xcarchive`
+- IPA: `apps/ios/build/release/2610061654/export/Exerly.ipa`
+- Logs: `apps/ios/build/release/2610061654/{archive,export,upload}.log`
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
 - Team: `9X79V37Q89`. Reused distribution certificate, expires 2027-09-25.
 - Exerly profile: `H5896RXW3D`, expires 2027-09-25. HealthKit enabled.
@@ -38,7 +47,10 @@ node apps/ios/scripts/asc.mjs internal BUILD_NUMBER
 ```
 
 Use a new UTC timestamp for each archive. `BUILD` can override the default
-`yymmddHHMM`. The script refuses to overwrite an archive. Signed modes use a
+`yymmddHHMM`. The script refuses to overwrite an archive. Internal builds default to staging
+(http://100.80.149.7:39110). EXERLY_RELEASE_ENVIRONMENT=production chooses public
+HTTPS only after its API supports the native session protocol. Staging validation
+allows only the exact authorized address and explicit staging metadata. Signed modes use a
 temporary keychain, restore the prior keychain list and remove only the profile
 they installed. `--archive` produces a signed IPA without an upload. `--upload`
 exports for internal testing only, checks that the app record exists, then uploads.
@@ -59,13 +71,13 @@ bundles are not given an unsupported provisioning profile.
 | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit enabled.                                                                                                 |
 | Distribution signing              | Done                  | Existing certificate reused; signed archive and export verified.                                                                                       |
-| App icon                          | Built                 | Original 1024px opaque monogram; inspect installed home-screen appearance.                                                                             |
+| App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                             |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                             |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                                                  |
-| Internal TestFlight upload        | Pending upload        | Upload, poll processing, assign build, verify install.                                                                                                 |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610061654), valid and in beta testing; Ali-only assignment verified. Replacement install pending. |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | 72 unit tests and 14 native UI journeys pass; 7 cross-client tests opt-in. Rebased rerun pending.                                                                                     |
+| Native test suite                 | In progress           | Rebased A2: 75 unit tests and 14 UI journeys pass; 7 cross-client tests opt-in. Two hosted account checks also pass. Final integration rebase pending. |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
@@ -117,7 +129,9 @@ claim full parity, superior food coverage or sub-second launch until measured.
 
 Synthetic accounts only. This build adds a training logger backed by on-device
 SQLite, workout history, previous-set prefill and persistent rest timers. Training
-sync is not connected yet. The diary, onboarding, preferences and progress flows
+sync is not connected yet. Enable Tailscale to reach devbox1 staging before sign-in.
+The original purple/pink theme, dark default and purple E/pulse icon are restored.
+The diary, onboarding, preferences and progress flows
 remain available. Check training logging, one-tap completion, finish/history,
 offline relaunch and account separation. Proposal review, complete nutrients and
 migration flows are still under development.
@@ -126,3 +140,12 @@ Report crashes through TestFlight. Do not import personal health data yet.
 [apps]: https://developer.apple.com/documentation/appstoreconnectapi/apps
 
 [invite]: https://developer.apple.com/documentation/appstoreconnectapi/betatester/attributes-data.dictionary
+
+## Test account and release smoke
+
+Credentials are kept outside the repository in ~/private_keys/exerly-testflight-account.json.
+The account contains synthetic onboarding only. Set TEST_RUNNER_EXERLY_ACCOUNT_SMOKE_PATH
+to that file for AccountInfrastructureTests/testInternalTestAccountCompletesNativeSignInAndBootstrap.
+This tests the app target’s compiled endpoint, Keychain session persistence, login and
+bootstrap; it caught the difference from the stale production API. Hosted Core Keychain
+replacement/isolation/accessibility/removal also passes. Neither test prints credentials.

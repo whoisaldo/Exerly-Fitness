@@ -98,12 +98,12 @@ same values to VoiceOver. Completeness is separate from nutrient intake.
 | T04 | Duplicate/edit/exclude exercises [MF exercise help][workouts-index]                                        | Missing | Change defaults, duplicate/archive custom entries, exclude suggestions; old session snapshot remains intact.              | Parity                         | None                                                                                    |
 | T05 | Gym profiles [MF gym profiles][gyms]                                                                       | Missing | Named/icon gyms, default, equipment and allow/disallow lists; override per workout.                                       | Parity                         | None                                                                                    |
 | T06 | Equipment weights and stacks [MF equipment][equipment], [Export]                                           | Missing | Bumper/mixed-unit plates, bar offset, dumbbell increments and stack ranges restrict recommendations.                      | Parity                         | None                                                                                    |
-| T07 | Empty session and add exercises [MF logging][workout-log]                                                  | Partial | Start offline, find exercise and add several; one active session can reopen after termination.                            | Parity                         | A2: small-phone logging/relaunch UI test passed; no TestFlight yet                      |
+| T07 | Empty session and add exercises [MF logging][workout-log]                                                  | Partial | Start offline, find exercise and add several; one active session can reopen after termination.                            | Parity                         | A2: logging/relaunch UI passes; TestFlight 2610061633; physical install pending                      |
 | T08 | Load/reps/RIR/set types [MF logging][workout-log], [MF build program][program-build]                       | Partial | Completed/uncompleted, warm-up/working/drop/myo/failure, validation and edit after logging.                               | B: <=1 tap for a prefilled set | A2: set editor, kinds and RIR; one-tap prefill completion UI passed                     |
 | T09 | Duration, partial reps and unilateral sets [MF exercise options][exercise-options], [Export]               | Partial | Duration exercises, full/partial reps and independent left/right values round-trip.                                       | Parity                         | A2: duration/distance and side fields; partial reps pending                             |
 | T10 | Previous performance reference [MF logging][workout-log], [Hevy logging][hevy-log]                         | Partial | Show last eligible session or same-template reference with date; copy without overwriting later edits.                    | Parity                         | A2: previous values and prefill UI passed; reference selection/date pending             |
 | T11 | Exercise/session/program notes [MF exercise options][exercise-options]                                     | Partial | Separate note scopes with clear persistence and export.                                                                   | Parity                         | A2: session notes; exercise/program editors pending                                     |
-| T12 | Rest timer [MF timer defaults][timers], [Hevy timer][hevy-timer]                                           | Partial | Starts on set completion, adjustable/skippable; deadline survives background/relaunch; optional sound/haptics.            | Parity                         | A2: timer UI; Core deadline persistence pulled; full regression pending                 |
+| T12 | Rest timer [MF timer defaults][timers], [Hevy timer][hevy-timer]                                           | Partial | Starts on set completion, adjustable/skippable; deadline survives background/relaunch; optional sound/haptics.            | Parity                         | A2: deadline/skip relaunch tests pass; four largest-text variants inspected                 |
 | T13 | Rest timer preferences [MF timer defaults][timers], [Export]                                               | Missing | Per exercise, compound/isolation upper/lower, sides and between exercises; reset defaults.                                | Parity                         | None                                                                                    |
 | T14 | Session duration, pause, resume, minimize [MF logging][workout-log]                                        | Partial | Active session remains reachable from other tabs; timer excludes pauses and survives restart.                             | Parity                         | A2: elapsed timer and tab navigation; pause pending                                     |
 | T15 | Reorder/swap/skip/remove movements [MF exercise options][exercise-options]                                 | Missing | Change live exercise list with reviewed effects on logged sets and program; no silent loss.                               | Parity                         | None                                                                                    |
@@ -229,3 +229,21 @@ Full audits completed: 0. Consecutive audits with no worthwhile fixes: 0.
 [hevy-features]: https://www.hevyapp.com/features/
 [strong-warmup]: https://help.strongapp.io/article/171-warm-up-calculator
 [strong-supersets]: https://help.strongapp.io/article/98-supersets-and-circuits
+
+### A2 device evidence, 2026-10-06
+
+Training logging, relaunch, finish and prefill pass on the SE 3 (iOS 18.6) and
+17 Pro Max (iOS 26.2). Largest text screenshots in light and dark were inspected
+in `artifacts/app-training/{small-light-final,small-dark-final,large-light-final,large-dark-final}`.
+The rest bar no longer covers the logger at accessibility sizes. The full native
+run on a4eeba40 passed 75 hosted unit tests and 14 UI journeys, with 7 opt-in
+cross-client skips. API 182, Core 129 and the device build also pass.
+
+After Ali requested the original brand, all four largest-text variants passed
+again with purple accents. All eight screenshots were inspected in
+`artifacts/app-brand/{small-light,small-dark,large-light,large-dark}`.
+Hosted Core Keychain and native staging login/bootstrap both pass in
+`artifacts/app-brand/account-smoke.xcresult`. TestFlight 1.0 (2610061654) is
+valid, internal only and assigned to Ali. It replaces 2610061633, which could
+not log in to the old production API. Replacement physical-device installation,
+VoiceOver and performance measurements remain open; no complete row is Verified.

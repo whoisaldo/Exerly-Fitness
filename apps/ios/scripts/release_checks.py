@@ -17,21 +17,26 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def validate_metadata(info, privacy, version, build):
+def validate_metadata(info, privacy, version, build, internal_staging=False):
     for key, expected in [("CFBundleIdentifier", BUNDLE),
                           ("CFBundleShortVersionString", version), ("CFBundleVersion", build)]:
         require(info.get(key) == expected, f"Unexpected {key}")
     endpoint = urlparse(info.get("EXERLY_API_BASE_URL", ""))
-    require(endpoint.scheme == "https" and endpoint.hostname and not endpoint.username
-            and not endpoint.password, "Release API must use public HTTPS without credentials")
-    host = endpoint.hostname.lower()
-    require(host != "localhost" and not host.endswith((".local", ".ts.net")), "Local release API")
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        address = None
-    if address:
-        require(address.is_global, "Private release API")
+    if internal_staging:
+        require(info.get("EXERLY_BUILD_ENVIRONMENT") == "staging"
+                and info.get("EXERLY_API_BASE_URL") == "http://100.80.149.7:39110",
+                "Internal staging must use the authorized devbox1 API")
+    else:
+        require(endpoint.scheme == "https" and endpoint.hostname and not endpoint.username
+                and not endpoint.password, "Release API must use public HTTPS without credentials")
+        host = endpoint.hostname.lower()
+        require(host != "localhost" and not host.endswith((".local", ".ts.net")), "Local release API")
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            address = None
+        if address:
+            require(address.is_global, "Private release API")
     require(not info.get("NSAppTransportSecurity", {}).get("NSAllowsArbitraryLoads", False),
             "Release cannot allow arbitrary HTTP")
     require(info.get("CFBundleIcons", {}).get("CFBundlePrimaryIcon", {}).get("CFBundleIconName") == "AppIcon",
@@ -70,11 +75,12 @@ def main():
     parser.add_argument("--version", required=True)
     parser.add_argument("--build", required=True)
     parser.add_argument("--unsigned", action="store_true")
+    parser.add_argument("--internal-staging", action="store_true")
     args = parser.parse_args()
     app = args.archive / "Products/Applications/Exerly.app"
     info = plistlib.loads((app / "Info.plist").read_bytes())
     privacy = plistlib.loads((app / "PrivacyInfo.xcprivacy").read_bytes())
-    validate_metadata(info, privacy, args.version, args.build)
+    validate_metadata(info, privacy, args.version, args.build, args.internal_staging)
     require((app / "Assets.car").is_file(), "Compiled assets missing")
     binary = subprocess.run(["strings", str(app / "Exerly")], capture_output=True, text=True, check=True).stdout
     for marker in ["--ui-testing", "EXERLY_TEST_STORE_ID", "EXERLY_TEST_LEGACY_TOKEN"]:

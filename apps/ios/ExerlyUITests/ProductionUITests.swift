@@ -37,7 +37,9 @@ final class ProductionUITests: XCTestCase {
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        capture(app, "training-home")
         tap(app.buttons["Train"], in: app)
+        capture(app, "training-empty")
         tap(app.buttons["training.start"], in: app)
         tap(app.buttons["training.confirmStart"], in: app)
         tap(app.buttons["training.addExercise"], in: app)
@@ -1259,6 +1261,10 @@ final class ProductionUITests: XCTestCase {
     private func launch(resetSession: Bool, legacyToken: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = resetSession ? ["--ui-testing"] : []
+        if let appearance = ProcessInfo.processInfo.environment["EXERLY_TEST_APPEARANCE"],
+           ["light", "dark", "system"].contains(appearance) {
+            app.launchArguments += ["-exerlyAppearance", appearance]
+        }
         if ProcessInfo.processInfo.environment["EXERLY_TEST_LARGEST_TYPE"] == "1" {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         }

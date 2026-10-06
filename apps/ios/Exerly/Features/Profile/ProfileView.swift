@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("exerlyAppearance") private var appearance = "dark"
     @State private var showEditProfile = false
     @State private var showChangePassword = false
 
@@ -79,6 +80,15 @@ struct ProfileView: View {
                     settingsRowContent(icon: "slider.horizontal.3", title: "Profile and Preferences")
                 }
                 .accessibilityIdentifier("profile.preferences")
+                Picker("Appearance", selection: $appearance) {
+                    Text("Dark").tag("dark")
+                    Text("Light").tag("light")
+                    Text("System").tag("system")
+                }
+                .pickerStyle(.menu)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .accessibilityIdentifier("profile.appearance")
             }
             settingsGroup("Account") {
                 Button { showChangePassword = true } label: {

@@ -9,14 +9,13 @@ The Core store supplies previous sets, validation, rest choices and history.
 Completing a prefilled set takes one tap. Unfinished work survives a relaunch.
 
 Use a native five-tab shell: Home, Train, Library, Progress and Profile. Keep the
-existing diary and account flows reachable. Replace forced dark appearance with
-semantic light/dark surfaces, restrained green accents and scalable system type.
+existing diary and account flows reachable. Preserve Exerly's dark default and
+purple/pink accents, with Light and System options in Profile and scalable system type.
 At accessibility sizes set rows stack vertically; controls keep 44-point targets.
 Errors stay visible and failed writes never appear saved. Motion is incidental.
 
-The app composes one TrainingStore per authenticated account. Hash the account ID
-for a safe path below Application Support/Exerly/Accounts; never use the package's
-shared default database. Recreate the shell when the account changes. A storage
+The app composes one TrainingStore per authenticated account. Use SQLiteTrainingPersistence.defaultURL(accountID:) so account deletion and
+workspace creation agree on the same account-specific path. Recreate the shell when the account changes. A storage
 failure gets a retry screen, without a temporary in-memory replacement. Test
 stores use a separate UUID directory in Debug only.
 

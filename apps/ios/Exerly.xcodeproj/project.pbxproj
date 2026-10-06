@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        E30000000000000000000001 /* AccountInfrastructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30000000000000000000002; };
         6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2B6F531BC1D8FC2035C04; };
         8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B345BC97A55F08A3888B7E; };
         C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19ABFEE6B9699ED88D168606; };
@@ -96,6 +97,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        E30000000000000000000002 /* AccountInfrastructureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountInfrastructureTests.swift; sourceTree = SOURCE_ROOT; };
         D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/WorkoutHistoryView.swift; sourceTree = SOURCE_ROOT; };
         05B345BC97A55F08A3888B7E /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingView.swift; sourceTree = SOURCE_ROOT; };
         19ABFEE6B9699ED88D168606 /* TrainingSetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingSetEditor.swift; sourceTree = SOURCE_ROOT; };
@@ -467,6 +469,7 @@
                 197BDBF6142E2E0747117C81 /* TrainingPresentation.swift */,
                 E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */,
                 E20000000000000000000005 /* TrainingPresentationTests.swift */,
+                E30000000000000000000002 /* AccountInfrastructureTests.swift */,
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
 				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
 				378A3EBCD0EE468791534C6F,
@@ -694,7 +697,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
@@ -758,7 +761,8 @@
 		444444444444444444444444 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				EXERLY_API_BASE_URL = "http://100.80.149.7:3001";
+				EXERLY_API_BASE_URL = "http://100.80.149.7:39110";
+				EXERLY_BUILD_ENVIRONMENT = staging;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -791,6 +795,7 @@
 			buildSettings = {
 				PROVISIONING_PROFILE_SPECIFIER = "$(EXERLY_PROVISIONING_PROFILE)";
 				EXERLY_API_BASE_URL = "https://exerly-fitness-93dyl.ondigitalocean.app";
+				EXERLY_BUILD_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

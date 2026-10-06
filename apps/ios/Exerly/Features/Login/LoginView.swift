@@ -18,6 +18,11 @@ struct LoginView: View {
                     inputFields
                     errorMessage
                     loginButton
+                    if Bundle.main.object(forInfoDictionaryKey: "EXERLY_BUILD_ENVIRONMENT") as? String == "staging" {
+                        Text("Internal testing. Enable Tailscale to connect.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     socialPlaceholders
                 }
                 .padding(.horizontal, 24)
