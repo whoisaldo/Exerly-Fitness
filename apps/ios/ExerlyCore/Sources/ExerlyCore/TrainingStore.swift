@@ -220,6 +220,25 @@ public final class TrainingStore {
         history = TrainingHistory(sessions: history.sessions.map { $0.id == session.id ? session : $0 }, library: library)
     }
 
+    /// Adds finished sessions, such as an import or a workout logged after the
+    /// fact (PARITY T20). One whose ID is already in the history is left as it
+    /// is, so importing a file twice adds nothing. All are checked first, then
+    /// saved together. Returns how many were added.
+    @discardableResult
+    public func importSessions(_ sessions: [WorkoutSession]) throws -> Int {
+        var seen = Set<UUID>()
+        let added = sessions.filter { history.session($0.id) == nil && seen.insert($0.id).inserted }
+        for session in added {
+            guard session.isFinished else { throw StoreError.sessionNotFinished }
+            try validated(session)
+        }
+        try persistence.performAtomically {
+            for session in added { try persistence.save(session) }
+        }
+        history = TrainingHistory(sessions: history.sessions + added, library: library)
+        return added.count
+    }
+
     public func deleteSession(_ id: UUID) throws {
         guard history.session(id) != nil else { throw StoreError.sessionNotFound(id) }
         try persistence.deleteSession(id)

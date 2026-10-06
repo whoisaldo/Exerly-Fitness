@@ -473,6 +473,21 @@ accuracy.
   loadable weights and never repeats a load. Barbell schemes start with an
   empty-bar set (PARITY T17).
 
+### Importing from Hevy and Strong
+
+See `docs/design/018-workout-imports.md` (PARITY I13, T20).
+
+- `WorkoutImport.parse(_ csv:timeZone:unit:library:mapping:)` reads a Hevy or
+  Strong export and returns a `Result`: the `source`, finished `sessions`, how
+  each name was `matched`, `unmatched` names with their set counts, `skipped`
+  sets with reasons, and `assumptions` (a unit the file didn't state). It
+  throws `.unrecognized(headers)` for any other file.
+- Show the preview and let the person map unmatched names with
+  `ExerciseLibrary.search`, then parse again with `mapping`.
+- `training.importSessions(result.sessions)` adds them all or none and
+  returns how many were new. IDs come from the file, so importing it twice
+  adds nothing. Use it to backfill a past workout too.
+
 ### Gyms
 
 See `docs/design/016-gym-profiles.md` (PARITY T05, T06).
