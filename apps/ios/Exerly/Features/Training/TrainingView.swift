@@ -12,7 +12,7 @@ struct TrainingHostView: View {
         Group {
             if let workspace = account.training, workspace.accountID == accountID {
                 TrainingView(store: workspace.store, unit: unit, timeZone: timeZone,
-                             unreadableCount: workspace.unreadableCount)
+                             unreadableCount: workspace.unreadableCount, workspace: workspace)
                     .onChange(of: workspace.store.activeSession?.id) { _, _ in
                         Task { await workspace.synchronize() }
                     }
@@ -38,6 +38,7 @@ struct TrainingView: View {
     let timeZone: TimeZone
     let unreadableCount: Int
     @Environment(\.dynamicTypeSize) private var typeSize
+    var workspace: TrainingWorkspace?
     @State private var starting = false
     @State private var browsing = false
 
@@ -60,6 +61,15 @@ struct TrainingView: View {
                                 .buttonStyle(.borderedProminent).controlSize(.large)
                                 .accessibilityIdentifier("training.start")
                         }.padding(.vertical, 8)
+                    }
+                    if let workspace {
+                        Section {
+                            NavigationLink {
+                                AgentReviewView(workspace: workspace, unit: unit)
+                            } label: {
+                                Label("Suggestions", systemImage: "tray")
+                            }.accessibilityIdentifier("suggestions.open")
+                        }
                     }
                     Section {
                         Button("Exercise library", systemImage: "dumbbell") { browsing = true }

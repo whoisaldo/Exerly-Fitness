@@ -171,6 +171,205 @@ final class ProductionUITests: XCTestCase {
         capture(app, "account-reconnected-navigation")
     }
 
+    func testAgentSuggestionReviewOfflineAcceptanceUndoRejectionAndAudit() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "agent-review")
+        let correction = try await seedAgentProposal(title: "Check the deadlift load", token: person.token)
+        let rejected = try await seedAgentProposal(title: "Another load suggestion", token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        let correctionRow = app.buttons["suggestions.proposal.\(correction.proposalID)"]
+        reveal(correctionRow, in: app)
+        XCTAssertTrue(correctionRow.waitForExistence(timeout: 20))
+        capture(app, "suggestions-inbox")
+        tap(correctionRow, in: app)
+        capture(app, "suggestions-review-title")
+        reveal(app.staticTexts["Before: 1500 kg"], in: app)
+        XCTAssertTrue(app.staticTexts["Before: 1500 kg"].exists)
+        reveal(app.staticTexts["After: 150 kg"], in: app)
+        XCTAssertTrue(app.staticTexts["After: 150 kg"].exists)
+        capture(app, "suggestions-before-after")
+        let mismatch = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Does not match saved data")).firstMatch
+        reveal(mismatch, in: app)
+        XCTAssertTrue(mismatch.exists)
+        capture(app, "suggestions-evidence-mismatch")
+        reveal(app.staticTexts["You confirm that the original load is correct."], in: app)
+        capture(app, "suggestions-falsifier")
+        try await control(["offline": true])
+        tap(app.buttons["suggestions.accept"], in: app)
+        XCTAssertTrue(app.buttons["suggestions.undo"].waitForExistence(timeout: 5))
+        capture(app, "suggestions-accepted-offline")
+
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        tap(correctionRow, in: app)
+        reveal(app.buttons["suggestions.undo"], in: app)
+        XCTAssertTrue(app.buttons["suggestions.undo"].exists)
+        try await control([:])
+        tap(app.navigationBars.buttons["Suggestions"], in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        try await assertWorkoutLoad(150, id: correction.sessionID, token: person.token)
+        tap(app.buttons["Train"], in: app)
+        tap(correctionRow, in: app)
+        tap(app.buttons["suggestions.undo"], in: app)
+        XCTAssertFalse(app.buttons["suggestions.accept"].exists)
+        XCTAssertFalse(app.buttons["suggestions.undo"].exists)
+        try await assertWorkoutLoad(1500, id: correction.sessionID, token: person.token)
+        tap(app.navigationBars.buttons["Suggestions"], in: app)
+        tap(app.buttons["suggestions.proposal.\(rejected.proposalID)"], in: app)
+        tap(app.buttons["suggestions.reject"], in: app)
+        XCTAssertFalse(app.buttons["suggestions.accept"].exists)
+        try await assertWorkoutLoad(1500, id: rejected.sessionID, token: person.token)
+        tap(app.navigationBars.buttons["Suggestions"], in: app)
+        tap(app.buttons["suggestions.audit"], in: app)
+        XCTAssertTrue(app.staticTexts["Suggestion rejected"].waitForExistence(timeout: 10))
+        capture(app, "suggestions-audit")
+        reveal(app.staticTexts["Suggestion undone"], in: app)
+        XCTAssertTrue(app.staticTexts["Suggestion undone"].exists)
+        reveal(app.staticTexts["Suggestion accepted"], in: app)
+        XCTAssertTrue(app.staticTexts["Suggestion accepted"].exists)
+    }
+
+    func testStaleAgentSuggestionPreservesLaterWorkoutEdits() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "agent-stale")
+        let suggestion = try await seedAgentProposal(title: "An outdated load suggestion", token: person.token)
+        let path = "/v1/documents/workout_session/\(suggestion.sessionID)"
+        let stored = try await request("GET", path, token: person.token)
+        var payload = try XCTUnwrap(stored["payload"] as? [String: Any])
+        payload["notes"] = "Later manual note to preserve"
+        _ = try await request("PUT", path, body: ["base_revision": try XCTUnwrap(stored["revision"]), "payload": payload], token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        tap(app.buttons["suggestions.proposal.\(suggestion.proposalID)"], in: app)
+        tap(app.buttons["suggestions.accept"], in: app)
+        XCTAssertTrue(app.staticTexts["suggestions.error"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["suggestions.error"], in: app)
+        XCTAssertFalse(app.buttons["suggestions.accept"].exists)
+        capture(app, "suggestions-stale")
+        let unchanged = try await request("GET", path, token: person.token)
+        XCTAssertEqual((unchanged["payload"] as? [String: Any])?["notes"] as? String, "Later manual note to preserve")
+        try await assertWorkoutLoad(1500, id: suggestion.sessionID, token: person.token)
+    }
+
+    func testAgentConnectionDefaultsToProposalsAndCanBeRevoked() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "agent-access")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.agents"], in: app)
+        capture(app, "agents-empty")
+        tap(app.buttons["agents.create"], in: app)
+        replace(app.textFields["agents.name"], with: "Morgan's agent", in: app)
+        dismissKeyboard(app)
+        reveal(app.buttons["agents.permission"], in: app)
+        XCTAssertTrue(app.buttons["agents.permission"].label.contains("Read and propose"))
+        capture(app, "agents-propose-form")
+        tap(app.buttons["agents.confirmCreate"], in: app)
+        XCTAssertTrue(app.navigationBars["Save your token"].waitForExistence(timeout: 15))
+        reveal(app.staticTexts["Token hidden"], in: app)
+        XCTAssertTrue(app.staticTexts["Token hidden"].exists)
+        reveal(app.buttons["agents.copyToken"], in: app)
+        XCTAssertTrue(app.buttons["agents.copyToken"].exists)
+        // Never reveal or capture a token in a UI attachment or test log.
+        tap(app.buttons["agents.tokenDone"], in: app)
+        let tokens = try await requestArray("GET", "/v1/tokens", token: person.token)
+        let token = try XCTUnwrap(tokens.first)
+        XCTAssertEqual(tokens.count, 1)
+        XCTAssertEqual(Set(token["scopes"] as? [String] ?? []), Set(["read", "propose"]))
+        XCTAssertNil(token["token"])
+        let id = try XCTUnwrap(token["id"] as? String)
+        let revoke = app.buttons["agents.revoke.\(id)"]
+        reveal(revoke, in: app)
+        capture(app, "agents-connected")
+        tap(revoke, in: app)
+        capture(app, "agents-revoke-confirmation")
+        tap(app.alerts.buttons["Cancel"], in: app)
+        XCTAssertTrue(revoke.exists)
+        tap(revoke, in: app)
+        tap(app.alerts.buttons["Revoke access"], in: app)
+        XCTAssertTrue(app.staticTexts["No connected agents"].waitForExistence(timeout: 15))
+        let remaining = try await requestArray("GET", "/v1/tokens", token: person.token)
+        XCTAssertTrue(remaining.isEmpty)
+
+        tap(app.buttons["agents.create"], in: app)
+        replace(app.textFields["agents.name"], with: "Direct access check", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["agents.permission"], in: app)
+        tap(app.buttons["Direct write"], in: app)
+        tap(app.buttons["agents.confirmCreate"], in: app)
+        XCTAssertTrue(app.alerts["Allow direct changes?"].waitForExistence(timeout: 5))
+        capture(app, "agents-direct-write-confirmation")
+        tap(app.alerts.buttons["Cancel"], in: app)
+        let afterCancel = try await requestArray("GET", "/v1/tokens", token: person.token)
+        XCTAssertTrue(afterCancel.isEmpty)
+    }
+
+    private func seedAgentProposal(title: String, token: String) async throws -> (sessionID: String, proposalID: String) {
+        let sessionID = UUID().uuidString
+        func workout(load: Double) -> [String: Any] {
+            ["id": sessionID, "name": title, "notes": "", "startedAt": "2026-10-06T14:00:00.000Z",
+             "endedAt": "2026-10-06T15:00:00.000Z", "timeZoneID": "America/New_York",
+             "bodyweight": ["unit": "kg", "value": 80], "exercises": [[
+                "id": UUID().uuidString, "exerciseID": "deadlift", "notes": "", "sets": [[
+                    "id": UUID().uuidString, "kind": "standard", "rir": 2,
+                    "completedAt": "2026-10-06T14:15:00.000Z", "efforts": [["reps": 3, "load": ["unit": "kg", "value": load]]]
+                ]]
+             ]]]
+        }
+        let before = workout(load: 1500)
+        _ = try await request("PUT", "/v1/documents/workout_session/\(sessionID)", body: ["base_revision": 0, "payload": before], token: token)
+        var after = before
+        var exercises = try XCTUnwrap(after["exercises"] as? [[String: Any]])
+        var sets = try XCTUnwrap(exercises[0]["sets"] as? [[String: Any]])
+        sets[0]["efforts"] = [["reps": 3, "load": ["unit": "kg", "value": 150]]]
+        exercises[0]["sets"] = sets
+        after["exercises"] = exercises
+        let created = try await request("POST", "/v1/tokens", body: ["name": "Synthetic coach", "scopes": ["propose"], "expires_in_days": 7], token: token)
+        let secret = try XCTUnwrap(created["token"] as? String)
+        let envelope = try await request("POST", "/mcp", body: [
+            "jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["name": "propose", "arguments": [
+                "title": title, "summary": "Review a possible extra zero in the recorded load.", "confidence": "medium",
+                "falsifier": "You confirm that the original load is correct.",
+                "evidence": [["claim": "This claim deliberately differs from the saved workout.", "level": "personalData",
+                              "caveats": ["A single session cannot establish a trend."], "dataRefs": [["kind": "workout_session", "id": sessionID]],
+                              "metric": ["name": "exercise.e1rm.best", "parameters": ["exercise": "deadlift", "from": "2026-10-01", "through": "2026-10-31"], "claimed": 1]]],
+                "changes": [["kind": "workout_session", "id": sessionID, "after": after]]
+            ]]
+        ], token: secret)
+        let result = try XCTUnwrap(envelope["result"] as? [String: Any])
+        XCTAssertNotEqual(result["isError"] as? Bool, true)
+        let text = try XCTUnwrap((result["content"] as? [[String: Any]])?.first?["text"] as? String)
+        let proposal = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        let id = try XCTUnwrap(proposal["proposal_id"] as? String)
+        return (sessionID, try XCTUnwrap(UUID(uuidString: id)).uuidString)
+    }
+
+    private func assertWorkoutLoad(_ expected: Double, id: String, token: String) async throws {
+        var load: Double?
+        for _ in 0..<30 {
+            let result = try await request("GET", "/v1/documents/workout_session/\(id)", token: token)
+            let exercises = (result["payload"] as? [String: Any])?["exercises"] as? [[String: Any]]
+            let sets = exercises?.first?["sets"] as? [[String: Any]]
+            let efforts = sets?.first?["efforts"] as? [[String: Any]]
+            load = (efforts?.first?["load"] as? [String: Any])?["value"] as? Double
+            if load == expected { break }
+            try await Task.sleep(for: .milliseconds(300))
+        }
+        XCTAssertEqual(load, expected)
+    }
+
     private func createAccount(prefix: String) async throws -> (email: String, token: String) {
         let email = "\(prefix)-\(UUID().uuidString.prefix(8).lowercased())@exerly.test"
         let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
@@ -1533,9 +1732,18 @@ final class ProductionUITests: XCTestCase {
         _ = try await request("POST", "/__test/control", body: body)
     }
     private func request(_ method: String, _ path: String, body: [String: Any]? = nil, token: String? = nil) async throws -> [String: Any] {
+        let result = try await responseJSON(method, path, body: body, token: token)
+        return try XCTUnwrap(result as? [String: Any])
+    }
+    private func requestArray(_ method: String, _ path: String, token: String) async throws -> [[String: Any]] {
+        let result = try await responseJSON(method, path, token: token)
+        return try XCTUnwrap(result as? [[String: Any]])
+    }
+    private func responseJSON(_ method: String, _ path: String, body: [String: Any]? = nil, token: String? = nil) async throws -> Any {
         var request = URLRequest(url: URL(string: fixtureURL + path)!)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if path == "/mcp" { request.setValue("application/json, text/event-stream", forHTTPHeaderField: "Accept") }
         request.setValue("isolated-simulator", forHTTPHeaderField: "X-Test-Fixture")
         request.setValue(TimeZone.current.identifier, forHTTPHeaderField: "X-Timezone")
         if method != "GET" { request.setValue(UUID().uuidString, forHTTPHeaderField: "Idempotency-Key") }
@@ -1543,6 +1751,6 @@ final class ProductionUITests: XCTestCase {
         if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
         let (data, response) = try await URLSession.shared.data(for: request)
         XCTAssertTrue((200..<300).contains((response as! HTTPURLResponse).statusCode), String(data: data, encoding: .utf8) ?? "")
-        return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        return try JSONSerialization.jsonObject(with: data)
     }
 }

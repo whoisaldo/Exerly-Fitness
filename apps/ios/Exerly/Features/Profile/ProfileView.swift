@@ -118,6 +118,12 @@ struct ProfileView: View {
                 }
             }
             settingsGroup("Integrations") {
+                if let api = authVM.accountAPI {
+                    NavigationLink {
+                        AgentConnectionsView(api: api).id(api.accountID)
+                    } label: { settingsRowContent(icon: "key", title: "Connected agents") }
+                    .accessibilityIdentifier("profile.agents")
+                }
                 NavigationLink(destination: HealthKitSettingsView()) {
                     settingsRowContent(icon: "heart.circle", title: "Apple Health")
                 }
