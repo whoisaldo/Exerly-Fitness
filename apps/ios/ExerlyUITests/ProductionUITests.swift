@@ -224,11 +224,13 @@ final class ProductionUITests: XCTestCase {
         XCTAssertFalse(app.buttons["suggestions.undo"].exists)
         try await assertWorkoutLoad(1500, id: correction.sessionID, token: person.token)
         tap(app.navigationBars.buttons["Suggestions"], in: app)
+        revealAbove(app.buttons["suggestions.proposal.\(rejected.proposalID)"], in: app)
         tap(app.buttons["suggestions.proposal.\(rejected.proposalID)"], in: app)
         tap(app.buttons["suggestions.reject"], in: app)
         XCTAssertFalse(app.buttons["suggestions.accept"].exists)
         try await assertWorkoutLoad(1500, id: rejected.sessionID, token: person.token)
         tap(app.navigationBars.buttons["Suggestions"], in: app)
+        revealAbove(app.buttons["suggestions.audit"], in: app)
         tap(app.buttons["suggestions.audit"], in: app)
         XCTAssertTrue(app.staticTexts["Suggestion rejected"].waitForExistence(timeout: 10))
         capture(app, "suggestions-audit")
@@ -303,6 +305,7 @@ final class ProductionUITests: XCTestCase {
         let remaining = try await requestArray("GET", "/v1/tokens", token: person.token)
         XCTAssertTrue(remaining.isEmpty)
 
+        revealAbove(app.buttons["agents.create"], in: app)
         tap(app.buttons["agents.create"], in: app)
         replace(app.textFields["agents.name"], with: "Direct access check", in: app)
         dismissKeyboard(app)
@@ -1664,6 +1667,10 @@ final class ProductionUITests: XCTestCase {
         }
         return false
     }
+    private func revealAbove(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<12 where !element.exists { app.swipeDown() }
+        reveal(element, in: app)
+    }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         dismissPasswordPrompt(in: app)
         if !element.exists { _ = element.waitForExistence(timeout: 5) }
@@ -1678,7 +1685,7 @@ final class ProductionUITests: XCTestCase {
         if app.keyboards.firstMatch.exists && (!visibleFrame(element) || !element.isHittable) && app.buttons["Done"].firstMatch.exists {
             app.buttons["Done"].firstMatch.tap()
         }
-        for _ in 0..<16 {
+        for _ in 0..<32 {
             // The system can present the sheet after the diary first appears.
             dismissPasswordPrompt(in: app)
             let home = app.buttons["Home"]
