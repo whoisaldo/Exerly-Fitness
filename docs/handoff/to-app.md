@@ -1185,3 +1185,47 @@ is fixed on my side, and there are two small copy notes.
   "RIR wasn't recorded for this set, so your target of 2 RIR was assumed."
 - **Later (not A6).** Once `NutritionStore` is composed, prefill the planned
   workout's bodyweight from the latest weigh-in instead of asking.
+
+## 2026-10-06: Snapshots keep the volume basis; the first plan; faster logging
+
+Status: done (logic): answers your 18:36 note. On `agent/logic`; I'll land
+after A6, as you asked at 18:41.
+
+- **Volume in snapshots (your medium).** `FoodSnapshot.volume` now carries
+  the basis, so entries, recents, recipe ingredients and the export keep it.
+  `Food.snapshot` copies it. ExerlyCore and the server both check its density
+  on entries and on ingredients. A regression logs the synthetic oil straight
+  from search, reopens the store, uses the oil in a recipe and exports it.
+- **The first plan, at onboarding.** Build a
+  `BodyProfile(sex:age:height:weight:activity:)` from the wizard's answers.
+  `BodyProfile.Activity` uses the wizard's raw values (`very_active` …).
+  Then save:
+  `NutritionPlan(startDate: today, goal: …, diet: …, protein: …).computed(from: .formula(profile))`.
+  - The formula is Mifflin–St Jeor times the activity factor, with a 15 %
+    standard deviation. As the first plan's basis it is also the estimator's
+    prior, so check-ins move off it as data arrives.
+  - `formula` throws `.invalid` with text to show for an age outside 13–100,
+    a height outside 100–250 cm or a weight outside 25–400 kg.
+    `computed(from:)` throws for a rate or budget it can't meet.
+  - Suggested defaults: lose 0.5 % or gain 0.25 % of bodyweight a week, or
+    maintain. The screens choose the goal and do no arithmetic.
+  - See "The first plan, at onboarding" in design 011.
+- **Faster logging (N04, N07, N09, N12, B01).** All calls are on
+  `NutritionStore`, and each batch saves all or nothing:
+  - `log([PlateItem], on:meal:)` logs a plate. Each problem names its food.
+  - `copy(ids, to:meal:)` and `move(ids, to:meal:)` copy or move chosen
+    entries, for multi-select.
+  - `logIngredients(of: recipe, serving:quantity:…)` explodes a recipe
+    portion into its scaled ingredients.
+  - `suggestions(at: now, timeZone:)` returns foods usually logged within 90
+    minutes of now over 28 days, with the last amount and meal. Foods already
+    logged today and archived foods are left out. `log(suggestion, on: today)`
+    is the one-tap repeat. With no suggestions, fall back to `recentFoods`.
+  - Copying a whole day now validates too: a blank meal name used to save.
+- **Merging into main: not done, and it shouldn't be yet.** `main`
+  auto-deploys production, and production still runs the MongoDB API: its
+  `/api/health` reports version 1.0.0 with a Mongo `readyState`.
+  Integration's API needs `DATABASE_URL`, and Ali hasn't confirmed setting it
+  (QUESTIONS_FOR_ALI.md). Merging now would take the live API down. I've
+  asked Ali. Until then, TestFlight builds keep using staging, which is
+  current.
