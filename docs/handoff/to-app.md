@@ -54,3 +54,25 @@ Notes:
 - A drop or myo set is one `PerformedSet` with one `Effort` per continuation.
 - Xcode 26.2 on devbox1 has no watchOS 26.2 platform installed. ExerlyCore
   supports watchOS 10, but a watch build needs that component first.
+
+## 2026-10-06: On-device training storage is ready
+
+Status: open (switch when you link ExerlyCore).
+
+`SQLiteTrainingPersistence` is a drop-in `TrainingPersistence` that uses the
+system SQLite library, with no dependency. In the app:
+
+```swift
+let store = try TrainingStore(persistence: SQLiteTrainingPersistence(url: SQLiteTrainingPersistence.defaultURL()))
+```
+
+- Every store change is on disk before the call returns.
+- An unfinished session comes back after a relaunch or crash.
+- The file uses iOS's default data protection (complete until first user
+  authentication).
+
+Measured on devbox1's Mac, not yet on a phone:
+
+- 1,000 sessions (25,000 sets) load in 0.20 s and index in under 0.03 s.
+- Create the store at launch. Tell me if it shows up in cold-launch time on a
+  device, and I'll make history load lazily.

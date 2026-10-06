@@ -134,5 +134,14 @@ Failures throw `WorkoutSession.EditError`.
 Errors are `TrainingStore.StoreError`. An unfinished session is restored at
 launch.
 
-`TrainingPersistence` is the storage protocol. `InMemoryTrainingPersistence` is
-for previews and tests. The on-device SQLite store comes next.
+`TrainingPersistence` is the storage protocol.
+
+- `SQLiteTrainingPersistence(url:)` is the on-device store. Use
+  `SQLiteTrainingPersistence.defaultURL()`, which is
+  `Application Support/Exerly/exerly.sqlite`.
+  - Each session is one JSON document, written atomically in WAL mode with full
+    sync.
+  - The schema version is in `user_version`. A file from a newer version is refused,
+    never downgraded.
+  - Rows it cannot decode are listed in `unreadableRows` and left untouched.
+- `InMemoryTrainingPersistence` is for previews and tests.
