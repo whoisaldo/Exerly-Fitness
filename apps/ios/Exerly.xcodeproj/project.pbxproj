@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        486FCF0D4F60CBE1CC60056E /* TrainingProgramPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2074878F71D31A245ACA8736; };
+        370ABFA07E731E4D8972EF46 /* ProgramPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011E7B46AA3A63658E338D7A; };
         00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E44FA7F87F9617606E66ECF; };
         E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAD7DC52A9FFDB47C2DF6B7; };
         86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = C745E4F12E1C1CC27ED04506; };
@@ -116,6 +118,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingProgramPresentation.swift; sourceTree = SOURCE_ROOT; };
+        011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/ProgramPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ExerciseLogView.swift; sourceTree = SOURCE_ROOT; };
         2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingObservationsView.swift; sourceTree = SOURCE_ROOT; };
         C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingEntryChecks.swift; sourceTree = SOURCE_ROOT; };
@@ -501,6 +505,8 @@
 		BBBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
+                2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */,
+                011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */,
                 0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */,
                 2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */,
                 C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */,
@@ -673,6 +679,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                486FCF0D4F60CBE1CC60056E /* TrainingProgramPresentation.swift in Sources */,
                 00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */,
                 E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */,
                 86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */,
@@ -766,7 +773,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

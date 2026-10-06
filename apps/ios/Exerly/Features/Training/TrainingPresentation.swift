@@ -9,6 +9,7 @@ final class TrainingWorkspace: ObservableObject {
     let accountID: String
     let url: URL
     let store: TrainingStore
+    let programs: ProgramStore
     let agent: AgentStore
     let entryChecks: TrainingEntryChecks
     private let persistence: SQLiteTrainingPersistence
@@ -31,7 +32,8 @@ final class TrainingWorkspace: ObservableObject {
         }
         persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
-        agent = try AgentStore(persistence: persistence, hosts: [store])
+        programs = try ProgramStore(persistence: persistence, training: store)
+        agent = try AgentStore(persistence: persistence, hosts: [store, programs])
         entryChecks = TrainingEntryChecks(training: store, agent: agent, accountID: accountID)
         unreadableCount = persistence.unreadableRows.count
         if let api { resumeSync(api: api) }
@@ -39,7 +41,7 @@ final class TrainingWorkspace: ObservableObject {
 
     func resumeSync(api: AccountAPI) {
         guard api.accountID == accountID, !persistence.isClosed else { return }
-        sync = ExerlyCore.SyncEngine(hosts: [store, agent], state: persistence, api: api)
+        sync = ExerlyCore.SyncEngine(hosts: [store, programs, agent], state: persistence, api: api)
     }
 
     func synchronize() async {
@@ -59,11 +61,12 @@ final class TrainingWorkspace: ObservableObject {
     }
 
     func export(server: Data?, pending: [AccountExport.PendingRow] = []) throws -> Data {
-        try AccountExport.merging(server: server, hosts: [store, agent], state: persistence, pending: pending)
+        try AccountExport.merging(server: server, hosts: [store, programs, agent], state: persistence, pending: pending)
     }
 
     func supportsChanges(in proposal: Proposal) -> Bool {
-        proposal.changes.allSatisfy { store.documentKinds.contains($0.kind) }
+        let kinds = store.documentKinds + programs.documentKinds
+        return proposal.changes.allSatisfy { kinds.contains($0.kind) }
     }
 
     static func deleteStorage(accountID: String, root: URL? = nil) throws {
