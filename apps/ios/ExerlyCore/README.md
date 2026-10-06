@@ -426,3 +426,11 @@ accuracy.
 
   Show the reason. `LoadIncrements.defaults(for:)` gives equipment steps, which
   the person can override.
+- `Plates.load(_:bar:stock:)` gives the heaviest load at or under a target that
+  the bar and `PlateStock` pairs can make, the plates per side and any
+  shortfall. It is greedy, heaviest first, which is exact for standard plate
+  sets.
+- `WarmUpScheme` (`.standard` or `.heavy`, or custom steps of fraction and reps)
+  turns a working load into prefilled, incomplete `warmUp` sets. It rounds to
+  loadable weights and never repeats a load. Barbell schemes start with an
+  empty-bar set (PARITY T17).
