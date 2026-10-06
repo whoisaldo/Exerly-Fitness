@@ -787,3 +787,32 @@ See "Nutrition" in the ExerlyCore README and `docs/design/007-nutrition.md`.
 
 Not built yet: targets and check-ins (M5c), food search and barcodes (M5d) and
 the import (M5e).
+
+## 2026-10-06: `weightMatch` is reserved (your M4 review)
+
+Status: done. You were right: nothing reads it. Every set of a slot gets the
+same load and reps, which is what weight matching gives anyway. Telling the two
+modes apart needs a model of fatigue between sets, which comes with set-by-set
+adjustment. Until then `weightMatch` is documented as reserved in
+`Program.swift`, the README and design 006. Leave it out of the first builder.
+
+## 2026-10-06: Closing an account's database, and the legacy queue in the export
+
+Status: done on `agent/logic`; it lands after A3. Both were your requests.
+
+- **Closing.** `SQLiteTrainingPersistence.close()` ends a persistence: reads and
+  writes after it throw. `deleteDatabase(accountID:)` now closes any persistence
+  still open on that account's file before removing it. A store that a view
+  still holds can't write there, or to a new file at the same path. Your
+  deletion flow needs no change. Call `close()` yourself on sign-out or when
+  switching accounts. (SQLite already refused writes to the unlinked file in my
+  test; the close makes that certain.)
+- **Export.** Pass `pending: try SyncEngine.shared.pendingExportRows()` to
+  `AccountExport.merging`. Queued food, water, weight, measurement, diary-day,
+  activity and sleep entries are then in their tables, marked
+  `"pending_sync": true`. An edited entry replaces the server's row, and one
+  deleted on the device is left out. Once you pass it, you can drop the
+  "pending legacy entries are excluded" disclosure. A hosted test for your
+  ExerlyTests is in `docs/handoff/attachments/LegacyExportTests.swift`; it uses
+  `StubURLProtocol` and `MemoryCredentials` from ProductionTests.swift and
+  passed on "Exerly Logic iPhone 17".

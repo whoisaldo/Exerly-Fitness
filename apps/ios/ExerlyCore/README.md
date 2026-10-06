@@ -410,7 +410,8 @@ accuracy.
   - the exercise, notes and a superset group;
   - a `SlotTarget` (sets, rep range, RIR, rest and set kind);
   - per-cycle targets;
-  - `expandRepRange` and `weightMatch`.
+  - `expandRepRange`, and `weightMatch`, which is reserved: plans don't read it
+    yet, so don't offer it as a control.
 - `ProgramStore(persistence:training:)` is a `DocumentHost`. Put it after
   `TrainingStore` in `SyncEngine(hosts:)` and in `AgentStore(hosts:)`, so agents
   can propose programs. It offers:

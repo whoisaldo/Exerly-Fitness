@@ -86,7 +86,9 @@ Steps:
    - With `expandRepRange`, the reps may go up to two outside the range.
    - Without it, the load moves one increment so the reps fit the range.
 4. **Weight match.** Later sets keep the first set's load, and their reps follow
-   from the RIR.
+   from the RIR. Not built: plans repeat one set for the whole slot, because
+   telling the two apart needs a model of fatigue between sets. That arrives
+   with set-by-set adjustment, and `weightMatch` is reserved until then.
 5. **Never punitive.** A small shortfall (reps-to-failure within 1 of the
    prediction) holds the load. A larger one lowers the load by the e1RM, never
    more than 10 % in one step.
