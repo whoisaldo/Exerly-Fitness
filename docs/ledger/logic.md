@@ -100,22 +100,40 @@ answered: `saved_food` (not `food`, which legacy food logs use in
 `SQLiteTrainingPersistence.close()`, and `AccountExport.merging(pending:)` for
 the legacy queue. The plate search fix landed in `69fac1e4`.
 
-**M5c: targets and check-ins.** Done on `agent/logic` (`589d5c5b`), waiting
-for A4 to land (the app agent asked for integration to stay stable during its
-final run).
+**M5c: targets and check-ins.** Landed (`707c815b`): `NutritionPlan`
+versions, `NutritionTargets`, `NutritionCheckIn`, the `nutrition_plan` kind,
+design 011, and `EnergyBalance` coupling expenditure to weight.
 
-- `NutritionPlan` versions, `NutritionTargets`, `NutritionCheckIn`, the
-  `nutrition_plan` kind on the server, design 011 with the closed-loop
-  simulation. `EnergyBalance` now couples expenditure to weight (`725da15f`).
-- The A4 review is in `to-app.md` (program proposals can't be applied until
-  the app wires `ProgramStore`).
+**On `agent/logic`, waiting for A5 to land** (the app agent asked for
+integration to stay at `707c815b` until then):
+
+- M5d: `/v1/foods` search and barcode lookup from Open Food Facts as
+  ExerlyCore Foods, with the golden contract `docs/api/golden/foods-v1.json`.
+  Labels per 100 ml keep a `volume` basis with a category density
+  (`60845884`, from the app agent's review).
+- M6a/M6b: nutrition through MCP, and agents proposing meals as food entries.
+- M5f: nutrient goals, overview, timing and goal ETA. Apple Health weigh-ins,
+  MacroFactor Shortcuts JSON, the weekly review (B07 Core half).
+- M7: custom metrics, day tags, correlations and n=1 experiments (design
+  014, measured error rates).
+- A7: `NutritionStore.preview` and `Food.per100g(fromLabel:)`. The legacy
+  diary is retired rather than bridged, as the brief says nobody uses Exerly
+  yet. If Ali wants test entries carried over, build a server-side
+  idempotent import.
+- A6 review: `ProgramSchedule.next` no longer restarts a program when its
+  last day done is removed (`7aa44bad`).
+
+The API gained kinds and routes (`custom_metric`, `metric_entry`,
+`experiment`, `/v1/foods`, nutrition MCP tools), so redeploy staging when
+this lands.
 
 ## Next three steps
 
-1. When A4 lands: rebase `agent/logic`, run API, ExerlyCore, ExerlyTests, the
-   iOS build and live sync, land, redeploy staging (new `nutrition_plan` kind).
-2. M5d: food search and barcode lookup through `AccountAPI` (USDA FoodData
-   Central and Open Food Facts, with attribution), then recipes and history.
+1. When A5 lands: rebase `logic/next`, run API, ExerlyCore, ExerlyTests, the
+   iOS build and live sync, land, and redeploy staging.
+2. The MacroFactor import (M5e) waits on Ali's export headers; USDA search
+   waits on a FoodData Central key. Meanwhile, take the next PARITY and
+   Beyond rows with logic work.
 3. Keep reviewing app commits and answering `to-logic.md`. Redeploy staging
    after API changes, because TestFlight builds use it.
 
