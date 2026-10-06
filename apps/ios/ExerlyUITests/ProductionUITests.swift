@@ -242,6 +242,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Save workout"], in: app)
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 10))
         tap(app.buttons["program.nextWorkout"], in: app)
+        XCTAssertTrue(app.navigationBars["Next workout"].waitForExistence(timeout: 10))
+        reveal(app.staticTexts["Two-day strength: Push"], in: app)
         XCTAssertTrue(app.staticTexts["Two-day strength: Push"].waitForExistence(timeout: 10))
         capture(app, "program-next-skips-rest")
         tap(app.buttons["Close"], in: app)

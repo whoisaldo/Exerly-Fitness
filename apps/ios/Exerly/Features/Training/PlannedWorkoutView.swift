@@ -36,13 +36,6 @@ struct PlannedWorkoutView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    TextField("Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)
-                        .keyboardType(.decimalPad).focused($typing)
-                        .accessibilityIdentifier("program.bodyweight")
-                    Text("Enter today's bodyweight for bodyweight exercise estimates, or leave it empty. Your profile weight is not filled in automatically.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
                 if workspace.store.activeSession != nil {
                     Section {
                         Text("A workout is already in progress. Close this preview to continue it in Training.")
@@ -54,6 +47,13 @@ struct PlannedWorkoutView: View {
                         if plan.isDeload { Label("Deload cycle", systemImage: "arrow.down.right") }
                         Text("Targets come from your saved program and completed sets. Review them before starting. You can change any set while logging.")
                             .foregroundStyle(.secondary)
+                    }
+                    Section {
+                        TextField("Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)
+                            .keyboardType(.decimalPad).focused($typing)
+                            .accessibilityIdentifier("program.bodyweight")
+                        Text("Enter today's bodyweight for bodyweight exercise estimates, or leave it empty. Your profile weight is not filled in automatically.")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                     ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, planned in
                         PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit)
