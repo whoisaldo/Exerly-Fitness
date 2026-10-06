@@ -41,6 +41,7 @@ struct TrainingView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var starting = false
     @State private var browsing = false
+    @State private var reviewingPlan = false
 
     var body: some View {
         Group {
@@ -48,6 +49,9 @@ struct TrainingView: View {
                 ActiveWorkoutView(store: store, session: session, unit: unit)
             } else {
                 List {
+                    if let workspace {
+                        NextTrainingWorkoutSection(workspace: workspace) { reviewingPlan = true }
+                    }
                     Section {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("No workout in progress").font(.title2.weight(.semibold))
@@ -64,6 +68,11 @@ struct TrainingView: View {
                     }
                     if let workspace {
                         Section {
+                            NavigationLink {
+                                TrainingProgramsView(workspace: workspace, unit: unit, timeZone: timeZone)
+                            } label: {
+                                Text("Programs").fixedSize(horizontal: false, vertical: true)
+                            }.accessibilityIdentifier("programs.open")
                             NavigationLink {
                                 AgentReviewView(workspace: workspace, unit: unit)
                             } label: {
@@ -111,6 +120,9 @@ struct TrainingView: View {
         }
         .sheet(isPresented: $browsing) {
             ExercisePickerView(store: store, onSelect: nil)
+        }
+        .sheet(isPresented: $reviewingPlan) {
+            if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
         }
     }
 }

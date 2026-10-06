@@ -90,7 +90,7 @@ struct ProposalDetailView: View {
                                 .foregroundStyle(Color.exWarning)
                         }
                         ForEach(Array(proposal.evidence.enumerated()), id: \.offset) { _, evidence in
-                            ProposalEvidenceView(evidence: evidence, store: workspace.store, unit: unit)
+                            ProposalEvidenceView(evidence: evidence, store: workspace.store, unit: unit, programs: workspace.programs)
                         }
                     }
                     Section("Confidence") {
@@ -171,6 +171,22 @@ private struct ProposalChangeView: View {
     let unit: MassUnit
 
     var body: some View {
+        if change.kind == "program" {
+            if let before = try? change.before?.decode(Program.self) {
+                NavigationLink("Read original program") {
+                    ProposalProgramView(program: before, library: library, title: "Original program")
+                }.accessibilityIdentifier("suggestions.program.before")
+            } else if change.before == nil {
+                Text("Creates a new program").font(.headline)
+            }
+            if let after = try? change.after?.decode(Program.self) {
+                NavigationLink("Read proposed program") {
+                    ProposalProgramView(program: after, library: library, title: "Proposed program")
+                }.accessibilityIdentifier("suggestions.program.after")
+            } else if change.after == nil {
+                Text("Removes this program").font(.headline)
+            }
+        }
         ForEach(Array(diff.fields.enumerated()), id: \.offset) { _, field in
             let display = ProposalFieldPresentation(field: field, change: change, library: library, unit: unit)
             VStack(alignment: .leading, spacing: 8) {
@@ -202,6 +218,34 @@ private struct ProposalChangeView: View {
     }
 }
 
+private struct ProposalProgramView: View {
+    let program: Program
+    let library: ExerlyCore.ExerciseLibrary
+    let title: String
+
+    var body: some View {
+        List {
+            Section {
+                Text(program.name).font(.title2.weight(.semibold))
+                Text("\(program.cycles) cycles · \(TrainingProgramFormat.deload(program.deload))")
+                if program.archivedAt != nil { Text("Archived") }
+                if let date = program.activatedAt {
+                    Text("Followed: \(date.formatted(date: .abbreviated, time: .shortened))")
+                }
+                Text("These are the program's saved targets. Planned workouts also use your completed sets and the cycle's deload setting.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            TrainingProgramDays(program: program, library: library)
+            Section("Appearance") {
+                Text("Icon: \(program.icon ?? "Default")")
+                Text("Color: \(program.color ?? "Default")")
+            }
+        }
+        .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden).background(Color.exBackground)
+    }
+}
+
 private struct ProposalRawChangeView: View {
     let title: String
     let before: ExerlyCore.JSONValue?
@@ -219,6 +263,7 @@ struct ProposalEvidenceView: View {
     let evidence: Evidence
     let store: TrainingStore
     let unit: MassUnit
+    var programs: ProgramStore? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -229,7 +274,7 @@ struct ProposalEvidenceView: View {
             }
             if let metric = evidence.metric { metricView(metric) }
             ForEach(Array(evidence.dataRefs.enumerated()), id: \.offset) { _, reference in
-                AgentDataLink(reference: reference, store: store, unit: unit)
+                AgentDataLink(reference: reference, store: store, unit: unit, programs: programs)
             }
             if let source = evidence.source, !source.isEmpty {
                 if let url = URL(string: source), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
@@ -262,6 +307,7 @@ private struct AgentDataLink: View {
     let reference: DataRef
     let store: TrainingStore
     let unit: MassUnit
+    var programs: ProgramStore? = nil
 
     var body: some View {
         if reference.kind == "workout_session", let id = UUID(uuidString: reference.id),
@@ -275,6 +321,11 @@ private struct AgentDataLink: View {
                 ExerciseLogView(store: store, exerciseID: exercise.id, unit: unit)
             } label: { Label("Logged sets · \(exercise.name)", systemImage: "list.bullet.rectangle") }
                 .accessibilityIdentifier("evidence.exercise.\(exercise.id.rawValue)")
+        } else if reference.kind == "program", let id = UUID(uuidString: reference.id), let program = programs?.program(id) {
+            NavigationLink {
+                ProposalProgramView(program: program, library: store.library, title: "Saved program")
+            } label: { Label(program.name, systemImage: "dumbbell") }
+                .accessibilityIdentifier("evidence.program.\(id.uuidString)")
         } else {
             Text("Referenced \(TrainingFormat.words(reference.kind).lowercased()) is unavailable on this device.")
                 .font(.footnote).foregroundStyle(.secondary)
@@ -305,7 +356,7 @@ struct AgentAuditView: View {
                         }
                     }
                     ForEach(Array(event.targets.enumerated()), id: \.offset) { _, reference in
-                        AgentDataLink(reference: reference, store: workspace.store, unit: unit)
+                        AgentDataLink(reference: reference, store: workspace.store, unit: unit, programs: workspace.programs)
                     }
                 }
             }

@@ -4,6 +4,44 @@ import XCTest
 
 @MainActor
 final class ProgramPresentationTests: XCTestCase {
+    func testProgramTargetDiffNamesTheDayExerciseCycleAndRestUnit() throws {
+        var before = sampleProgram()
+        before.days[0].slots[0].cycleTargets[0] = SlotTarget(sets: 3, minReps: 5, maxReps: 8, rir: 2, rest: 90)
+        var after = before
+        after.days[0].slots[0].cycleTargets[0]?.rir = 3
+        after.days[0].slots[0].cycleTargets[0]?.rest = 120
+        let change = try ProposedChange(kind: "program", id: before.id.uuidString, before: before, after: after)
+        let fields = ExerlyCore.JSONValue.diff(change.before, change.after)
+        let rir = try XCTUnwrap(fields.first { $0.path.hasSuffix(".rir") })
+        let rirDisplay = ProposalFieldPresentation(field: rir, change: change, library: .bundled, unit: .kilograms)
+        XCTAssertEqual(rirDisplay.title, "Day 1 · Pull · Deadlift · Cycle 1 · Reps in reserve")
+        XCTAssertEqual(rirDisplay.before, "2")
+        XCTAssertEqual(rirDisplay.after, "3")
+        let rest = try XCTUnwrap(fields.first { $0.path.hasSuffix(".rest") })
+        let restDisplay = ProposalFieldPresentation(field: rest, change: change, library: .bundled, unit: .kilograms)
+        XCTAssertEqual(restDisplay.title, "Day 1 · Pull · Deadlift · Cycle 1 · Rest time")
+        XCTAssertEqual(restDisplay.before, "90 seconds")
+        XCTAssertEqual(restDisplay.after, "120 seconds")
+    }
+
+    func testProgramExerciseReplacementUsesBothLibraryNamesAndKeepsReservedValues() throws {
+        let before = sampleProgram()
+        var after = before
+        after.days[0].slots[0].exerciseID = "barbell-bench-press"
+        after.days[0].slots[0].weightMatch = false
+        let change = try ProposedChange(kind: "program", id: before.id.uuidString, before: before, after: after)
+        let fields = ExerlyCore.JSONValue.diff(change.before, change.after)
+        let exercise = try XCTUnwrap(fields.first { $0.path.hasSuffix(".exerciseID") })
+        let display = ProposalFieldPresentation(field: exercise, change: change, library: .bundled, unit: .kilograms)
+        XCTAssertEqual(display.before, "Deadlift")
+        XCTAssertEqual(display.after, "Barbell Bench Press")
+        let reserved = try XCTUnwrap(fields.first { $0.path.hasSuffix(".weightMatch") })
+        let reservedDisplay = ProposalFieldPresentation(field: reserved, change: change, library: .bundled, unit: .kilograms)
+        XCTAssertTrue(reservedDisplay.title.contains("Weight matching (reserved)"))
+        XCTAssertEqual(reservedDisplay.before, "Yes")
+        XCTAssertEqual(reservedDisplay.after, "No")
+    }
+
     func testAccountExportIncludesProgramsSavedOnThisDevice() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

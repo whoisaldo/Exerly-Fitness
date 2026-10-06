@@ -108,9 +108,9 @@ enum TrainingProgramFormat {
     }
 
     static func target(_ target: SlotTarget, exercise: ExerlyCore.Exercise?) -> String {
-        var parts = ["\(target.sets) sets"]
+        var parts = [target.sets == 1 ? "1 set" : "\(target.sets) sets"]
         if exercise?.metric.tracksReps == true {
-            parts.append("\(target.minReps)–\(target.maxReps) reps")
+            parts.append(target.minReps == target.maxReps ? "\(target.minReps) reps" : "\(target.minReps)–\(target.maxReps) reps")
             parts.append("\(TrainingFormat.number(target.rir)) RIR")
         }
         return parts.joined(separator: " · ")

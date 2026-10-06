@@ -45,6 +45,13 @@ struct ProposalFieldPresentation {
     let after: String
 
     init(field: FieldChange, change: ProposedChange, library: ExerlyCore.ExerciseLibrary, unit: MassUnit) {
+        if change.kind == "program" {
+            let display = ProgramProposalField(field: field, change: change, library: library)
+            title = display.title
+            before = display.before
+            after = display.after
+            return
+        }
         let oldSession = try? change.before?.decode(WorkoutSession.self)
         let newSession = try? change.after?.decode(WorkoutSession.self)
         let context = newSession ?? oldSession
@@ -119,6 +126,72 @@ struct ProposalFieldPresentation {
         case "distance": return "\(TrainingFormat.number(number)) metres"
         default: return AgentFormat.value(value)
         }
+    }
+}
+
+private struct ProgramProposalField {
+    let title: String
+    let before: String
+    let after: String
+
+    init(field: FieldChange, change: ProposedChange, library: ExerlyCore.ExerciseLibrary) {
+        let old = try? change.before?.decode(Program.self)
+        let new = try? change.after?.decode(Program.self)
+        let context = new ?? old
+        func index(_ pattern: String) -> Int? {
+            guard let expression = try? NSRegularExpression(pattern: pattern),
+                  let match = expression.firstMatch(in: field.path, range: NSRange(field.path.startIndex..., in: field.path)),
+                  let range = Range(match.range(at: 1), in: field.path) else { return nil }
+            return Int(field.path[range])
+        }
+        var labels: [String] = []
+        if let dayIndex = index(#"days\[(\d+)\]"#), let program = context, program.days.indices.contains(dayIndex) {
+            let day = program.days[dayIndex]
+            labels += ["Day \(dayIndex + 1)", day.name]
+            if let slotIndex = index(#"slots\[(\d+)\]"#), day.slots.indices.contains(slotIndex) {
+                let exerciseID = day.slots[slotIndex].exerciseID
+                labels.append(library.exercise(exerciseID)?.name ?? exerciseID.rawValue)
+            }
+        }
+        if let cycle = index(#"cycleTargets\.(\d+)(?:\.|$)"#) { labels.append("Cycle \(cycle + 1)") }
+        if field.path.contains(".target.") { labels.append("Base targets") }
+        let leaf = field.path.components(separatedBy: ".").last ?? ""
+        labels.append(Self.label(leaf))
+        title = labels.joined(separator: " · ")
+        before = Self.display(field.before, leaf: leaf, library: library)
+        after = Self.display(field.after, leaf: leaf, library: library)
+    }
+
+    private static func label(_ leaf: String) -> String {
+        switch leaf {
+        case "": "Whole program"
+        case "sets": "Sets"
+        case "minReps": "Minimum reps"
+        case "maxReps": "Maximum reps"
+        case "rir": "Reps in reserve"
+        case "rest": "Rest time"
+        case "kind": "Set type"
+        case "exerciseID": "Exercise"
+        case "cycleTargets": "Cycle targets"
+        case "target": "Base targets"
+        case "expandRepRange": "Allow expanded rep range"
+        case "weightMatch": "Weight matching (reserved)"
+        case "supersetID": "Superset group"
+        case "createdAt": "Created time"
+        case "activatedAt": "Followed time"
+        case "archivedAt": "Archived time"
+        default: Int(leaf) == nil ? TrainingFormat.words(leaf) : "Targets"
+        }
+    }
+
+    private static func display(_ value: ExerlyCore.JSONValue?, leaf: String, library: ExerlyCore.ExerciseLibrary) -> String {
+        if leaf == "rest", case .number(let number) = value { return "\(TrainingFormat.number(number)) seconds" }
+        if leaf == "exerciseID", case .string(let id) = value { return library.exercise(ExerciseID(id))?.name ?? id }
+        if leaf == "kind", case .string(let raw) = value, let kind = SetKind(rawValue: raw) { return TrainingFormat.kind(kind) }
+        if leaf == "deload", case .string(let raw) = value, let deload = DeloadPlacement(rawValue: raw) {
+            return TrainingProgramFormat.deload(deload)
+        }
+        return AgentFormat.value(value)
     }
 }
 
