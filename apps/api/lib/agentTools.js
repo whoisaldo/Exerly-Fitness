@@ -330,7 +330,7 @@ function readEvidence(items, ws) {
       caveats: (item.caveats ?? []).map(String),
       dataRefs: (item.dataRefs ?? []).map((ref) => ({
         kind: String(ref.kind),
-        id: String(ref.id),
+        id: docs.canonicalID(String(ref.id)),
       })),
     };
     if (item.source) evidence.source = String(item.source);
@@ -373,7 +373,7 @@ async function propose(ws, pat, input) {
     const id = docs.readID(String(change.id ?? ''));
     const current = await docs.current(ws.account, kind, id);
     const before = current && !current.deleted_at ? current.payload : null;
-    const after = change.after ?? null;
+    const after = docs.canonicalPayload(kind, change.after ?? null);
     if (before === null && after === null)
       throw badRequest(`changes[${i}] deletes ${kind} ${id}, which doesn't exist`);
     if (after !== null) {

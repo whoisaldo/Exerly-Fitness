@@ -51,33 +51,37 @@ function readID(value) {
   return canonicalID(value);
 }
 
-/** The payload with every document reference in canonical form. */
-function canonicalReferences(kind, payload) {
-  const refs = (list) =>
-    Array.isArray(list)
-      ? list.map((ref) =>
-          ref && typeof ref === 'object' ? { ...ref, id: canonicalID(ref.id) } : ref
-        )
-      : list;
+const isObject = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
+/** `value` with `key` mapped by `f`, when it is an object that has the key. */
+const mapKey = (value, key, f) =>
+  isObject(value) && key in value ? { ...value, [key]: f(value[key]) } : value;
+const mapEach = (f) => (list) => (Array.isArray(list) ? list.map(f) : list);
+const withID = (value) => mapKey(value, 'id', canonicalID);
+
+/**
+ * The payload with its own ID and every document ID it refers to in canonical
+ * form: a proposal's changes, the documents in them and its evidence, and an
+ * audit event's targets and proposal. Migration 0006 applies the same rule to
+ * stored payloads.
+ */
+function canonicalPayload(kind, payload) {
+  let document = withID(payload);
   if (kind === 'proposal') {
-    return {
-      ...payload,
-      changes: refs(payload.changes),
-      evidence: Array.isArray(payload.evidence)
-        ? payload.evidence.map((e) =>
-            e && typeof e === 'object' ? { ...e, dataRefs: refs(e.dataRefs) } : e
-          )
-        : payload.evidence,
-    };
+    document = mapKey(
+      document,
+      'changes',
+      mapEach((change) => mapKey(mapKey(withID(change), 'before', withID), 'after', withID))
+    );
+    document = mapKey(
+      document,
+      'evidence',
+      mapEach((item) => mapKey(item, 'dataRefs', mapEach(withID)))
+    );
+  } else if (kind === 'audit_event') {
+    document = mapKey(document, 'targets', mapEach(withID));
+    document = mapKey(document, 'proposalID', canonicalID);
   }
-  if (kind === 'audit_event') {
-    return {
-      ...payload,
-      targets: refs(payload.targets),
-      ...(payload.proposalID ? { proposalID: canonicalID(payload.proposalID) } : {}),
-    };
-  }
-  return payload;
+  return document;
 }
 
 function readPayload(kind, id, payload) {
@@ -85,7 +89,7 @@ function readPayload(kind, id, payload) {
     throw badRequest('payload must be an object');
   }
   if (canonicalID(payload.id) !== id) throw badRequest('payload.id must match the document ID');
-  payload = canonicalReferences(kind, { ...payload, id });
+  payload = canonicalPayload(kind, { ...payload, id });
   const problems = KINDS[kind](payload);
   if (problems.length) {
     throw badRequest(`payload is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`);
@@ -157,6 +161,7 @@ function tokenActor(pat) {
 module.exports = {
   KINDS,
   canonicalID,
+  canonicalPayload,
   APPEND_ONLY,
   isKind,
   readKind,

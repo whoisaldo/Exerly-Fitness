@@ -233,3 +233,14 @@ refer to, and migration 0005 converts existing rows. ExerlyCore's `SyncEngine`
 reads remote IDs and its own saved sync bases in the same form. Before this, a
 lowercase ID written by another client became a second server document when a
 device synced it. Other IDs, such as custom exercise IDs, stay as written.
+
+## 2026-10-06: IDs inside payloads are canonical too
+
+Migration 0006 gives the IDs inside stored and change-feed payloads the same
+uppercase form: a payload's own ID, a proposal's change IDs and the documents
+in them, its evidence references, and an audit event's targets and proposal.
+`canonicalPayload` in `apps/api/lib/documents.js` applies the rule to every
+write, and the migration mirrors it in SQL; a test checks that they agree.
+ExerlyCore's `ProposedChange` and `DataRef` keep a UUID ID in uppercase however
+it arrived, so a proposal stored before the fix can still be accepted and
+undone.

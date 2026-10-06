@@ -285,3 +285,64 @@ test('a read token cannot propose', async () => {
   assert.match(result.content[0].text, /not found/i);
   await client.close();
 });
+
+test('a workout stored with a lowercase UUID before migration 0005 works through MCP', async () => {
+  const user = await signUp(api);
+  const workout = structuredClone(
+    golden.sessions.find(
+      (s) => s.endedAt && s.exercises.every((p) => !p.exerciseID.startsWith('custom-'))
+    )
+  );
+  const lower = randomUUID();
+  workout.id = lower;
+  const now = new Date();
+  await api.store.insert('documents', {
+    account_id: user.user._id,
+    kind: 'workout_session',
+    document_id: lower,
+    revision: 1,
+    payload: workout,
+    deleted_at: null,
+    created_at: now,
+    updated_at: now,
+  });
+  for (const name of ['0005_canonical_document_ids', '0006_canonical_payload_ids']) {
+    await api.store.query(
+      fs.readFileSync(path.join(__dirname, '../db/migrations', `${name}.up.sql`), 'utf8')
+    );
+  }
+
+  const client = await connect((await token(user, ['propose'])).token);
+  for (const id of [lower, lower.toUpperCase()]) {
+    const read = await call(client, 'get_document', { kind: 'workout_session', id });
+    assert.equal(read.payload?.id, lower.toUpperCase(), JSON.stringify(read));
+  }
+  const filed = await call(client, 'propose', {
+    title: 'Add a note',
+    confidence: 'low',
+    falsifier: 'You disagree.',
+    evidence: [
+      {
+        claim: 'From this workout',
+        level: 'personalData',
+        dataRefs: [{ kind: 'workout_session', id: lower }],
+      },
+    ],
+    changes: [{ kind: 'workout_session', id: lower, after: { ...workout, notes: 'Noted' } }],
+  });
+  assert.equal(filed.status, 'pending', JSON.stringify(filed));
+  const proposal = (
+    await api.get(`/v1/documents/proposal/${filed.proposal_id}`, { token: user.token })
+  ).body.payload;
+  const upper = lower.toUpperCase();
+  assert.deepEqual(
+    [
+      proposal.changes[0].id,
+      proposal.changes[0].before.id,
+      proposal.changes[0].after.id,
+      proposal.evidence[0].dataRefs[0].id,
+    ],
+    [upper, upper, upper, upper]
+  );
+  await client.close();
+});

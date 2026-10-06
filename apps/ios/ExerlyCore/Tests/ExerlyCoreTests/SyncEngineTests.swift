@@ -18,7 +18,7 @@ final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
     /// Every write the server received, including ones refused as conflicts.
     private(set) var attempts: [(id: String, baseRevision: Int)] = []
 
-    private func key(_ kind: String, _ id: String) -> String { "\(kind)/\(SyncEngine.canonical(id))" }
+    private func key(_ kind: String, _ id: String) -> String { "\(kind)/\(DocumentWrite.canonicalID(id))" }
 
     func revision(_ kind: String, _ id: String) -> Int? { lock.withLock { documents[key(kind, id)]?.revision } }
 
@@ -400,5 +400,44 @@ final class Device {
         try await phone.engine.sync()
         #expect(server.attempts.count == attempts, "The folded base matches the local copy, so nothing is pushed")
         #expect(try phone.persistence.syncBases().map(\.id) == [id])
+    }
+
+    /// A proposal an older server stored with lowercase IDs can still be
+    /// accepted and undone on the phone.
+    @Test func aProposalWithLowercaseIDsCanBeAcceptedAndUndone() async throws {
+        let server = FakeDocumentServer()
+        let phone = try AgentDevice(server: server)
+        try phone.training.startSession(name: "Typo", bodyweight: nil)
+        let deadlift = try phone.training.addExercise("deadlift")
+        var set = phone.training.activeSession!.exercises[0].sets[0]
+        set.primary = Effort(reps: 3, load: .kg(1500))
+        try phone.training.updateSet(set, in: deadlift)
+        try phone.training.completeSet(set.id)
+        let session = try phone.training.finishSession().session
+        try await phone.engine.sync()
+
+        var fixed = session
+        fixed.exercises[0].sets[0].primary.load = .kg(150)
+        let sessionID = session.id.uuidString
+        let proposal = Proposal(author: AgentIdentity(kind: .mcp, name: "Synthetic agent", tokenID: "t1"),
+                                title: "Did you mean 150 kg?", summary: "",
+                                changes: [try ProposedChange(kind: "workout_session", id: sessionID, before: session, after: fixed)],
+                                evidence: [Evidence(claim: "Ten times your history", level: .personalData,
+                                                    dataRefs: [DataRef(kind: "workout_session", id: sessionID)])],
+                                confidence: .high, falsifier: "You lifted 1500 kg.")
+        let json = try #require(String(bytes: try ExerlyJSON.canonical(proposal), encoding: .utf8))
+            .replacingOccurrences(of: sessionID, with: sessionID.lowercased())
+            .replacingOccurrences(of: proposal.id.uuidString, with: proposal.id.uuidString.lowercased())
+        server.inject(kind: "proposal", id: proposal.id.uuidString.lowercased(), payload: Data(json.utf8))
+        try await phone.engine.sync()
+
+        let received = try #require(phone.agent.proposal(proposal.id))
+        #expect(received.changes.map(\.id) == [sessionID])
+        #expect(received.evidence[0].dataRefs[0].id == sessionID)
+        try phone.agent.accept(proposal.id)
+        #expect(phone.training.history.sessions[0].exercises[0].sets[0].primary.load == .kg(150))
+        try phone.agent.undo(proposal.id)
+        #expect(phone.training.history.sessions == [session])
+        #expect(phone.agent.auditLog.last?.targets == [DataRef(kind: "workout_session", id: sessionID)])
     }
 }

@@ -45,6 +45,10 @@ public struct DocumentWrite: Sendable, Hashable {
         self.id = id
         self.payload = payload
     }
+
+    /// A UUID in the uppercase form `UUID.uuidString` gives, and any other ID as
+    /// it is, so one document never goes by two IDs.
+    static func canonicalID(_ id: String) -> String { UUID(uuidString: id)?.uuidString ?? id }
 }
 
 extension DocumentHost {

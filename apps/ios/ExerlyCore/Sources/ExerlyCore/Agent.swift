@@ -25,7 +25,8 @@ public struct AgentIdentity: Sendable, Codable, Hashable {
 
 /// One document a proposal creates, changes or deletes. `before` is the
 /// canonical payload the change was computed against (nil to create);
-/// `after` is what it proposes (nil to delete).
+/// `after` is what it proposes (nil to delete). A UUID `id` is kept in
+/// uppercase, however it arrived.
 public struct ProposedChange: Sendable, Codable, Hashable {
     public var kind: String
     public var id: String
@@ -34,9 +35,16 @@ public struct ProposedChange: Sendable, Codable, Hashable {
 
     public init(kind: String, id: String, before: JSONValue?, after: JSONValue?) {
         self.kind = kind
-        self.id = id
+        self.id = DocumentWrite.canonicalID(id)
         self.before = before
         self.after = after
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(kind: c.decode(String.self, forKey: .kind), id: c.decode(String.self, forKey: .id),
+                      before: c.decodeIfPresent(JSONValue.self, forKey: .before),
+                      after: c.decodeIfPresent(JSONValue.self, forKey: .after))
     }
 
     public init<T: Encodable>(kind: String, id: String, before: T?, after: T?) throws {
@@ -55,12 +63,18 @@ public enum EvidenceLevel: String, Sendable, Codable, Hashable, CaseIterable {
     case personalData
 }
 
+/// A reference to a document. A UUID `id` is kept in uppercase.
 public struct DataRef: Sendable, Codable, Hashable {
     public var kind: String
     public var id: String
     public init(kind: String, id: String) {
         self.kind = kind
-        self.id = id
+        self.id = DocumentWrite.canonicalID(id)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(kind: c.decode(String.self, forKey: .kind), id: c.decode(String.self, forKey: .id))
     }
 }
 

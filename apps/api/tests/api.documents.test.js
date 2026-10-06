@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { startServer, signUp } = require('./helpers/server');
+const docs = require('../lib/documents');
 
 let api;
 test.before(async () => {
@@ -357,12 +358,13 @@ test('a UUID document ID is one document whatever its letter case', async () => 
   assert.equal(stored.evidence[0].dataRefs[0].id, upper);
 });
 
+const migration = (name) =>
+  fs.readFileSync(path.join(__dirname, '../db/migrations', `${name}.up.sql`), 'utf8');
+const LOWERCASE_UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+
 test('the migration uppercases UUID document IDs and refuses to merge twins', async () => {
   const { user } = await signUp(api);
-  const sql = fs.readFileSync(
-    path.join(__dirname, '../db/migrations/0005_canonical_document_ids.up.sql'),
-    'utf8'
-  );
+  const sql = migration('0005_canonical_document_ids');
   const now = new Date();
   const insertDocument = (id) =>
     api.store.insert('documents', {
@@ -406,4 +408,97 @@ test('the migration uppercases UUID document IDs and refuses to merge twins', as
   await insertDocument(twin);
   await insertDocument(twin.toUpperCase());
   await assert.rejects(api.store.query(sql), /duplicate key|unique/i);
+  await api.store.query('DELETE FROM documents WHERE account_id = $1', [user._id]);
+});
+
+test('migration 0006 makes stored and feed payloads canonical, as the API writes them', async () => {
+  const { token, user } = await signUp(api);
+  const [workout, proposal, audit] = [randomUUID(), randomUUID(), randomUUID()];
+  const before = session(workout, 'before');
+  const legacy = [
+    ['workout_session', workout, before],
+    [
+      'proposal',
+      proposal,
+      {
+        id: proposal,
+        createdAt: '2026-10-06T18:30:00.000Z',
+        author: { kind: 'builtIn', name: 'Exerly' },
+        title: 'Fix',
+        summary: '',
+        changes: [
+          { kind: 'workout_session', id: workout, before, after: session(workout, 'after') },
+        ],
+        evidence: [
+          {
+            claim: 'c',
+            level: 'anecdote',
+            caveats: [],
+            dataRefs: [{ kind: 'workout_session', id: workout }],
+          },
+        ],
+        confidence: 'low',
+        falsifier: 'f',
+        status: 'pending',
+      },
+    ],
+    [
+      'audit_event',
+      audit,
+      {
+        id: audit,
+        at: '2026-10-06T18:30:00.000Z',
+        action: 'proposalFiled',
+        actor: { kind: 'builtIn', name: 'Exerly' },
+        proposalID: proposal,
+        targets: [{ kind: 'workout_session', id: workout }],
+      },
+    ],
+  ];
+  const now = new Date();
+  for (const [i, [kind, id, payload]] of legacy.entries()) {
+    await api.store.insert('documents', {
+      account_id: user._id,
+      kind,
+      document_id: id,
+      revision: 1,
+      payload,
+      deleted_at: null,
+      created_at: now,
+      updated_at: now,
+    });
+    await api.store.insert('sync_changes', {
+      account_id: user._id,
+      sequence: 2001 + i,
+      kind,
+      entity_id: id,
+      server_id: id,
+      revision: 1,
+      deleted: false,
+      payload: { id, client_id: id, revision: 1, payload, updated_at: now.toISOString() },
+      created_at: now,
+    });
+  }
+
+  await api.store.query(migration('0005_canonical_document_ids'));
+  await api.store.query(migration('0006_canonical_payload_ids'));
+  for (const [kind, id, payload] of legacy) {
+    const row = await api.store.findOne('documents', { account_id: user._id, kind });
+    assert.equal(row.document_id, id.toUpperCase());
+    assert.deepEqual(row.payload, docs.canonicalPayload(kind, payload), kind);
+    assert.doesNotMatch(JSON.stringify(row.payload), LOWERCASE_UUID, kind);
+  }
+  const feed = (await api.get('/v1/changes?after=2000', { token })).body.changes;
+  assert.equal(feed.length, 3);
+  assert.doesNotMatch(JSON.stringify(feed), LOWERCASE_UUID);
+  const read = await api.get(`/v1/documents/proposal/${proposal}`, { token });
+  assert.equal(read.body.payload.changes[0].after.id, workout.toUpperCase());
+
+  // A device re-sending the audit event in its canonical form is not a change.
+  const resent = await api.put(
+    `/v1/documents/audit_event/${audit}`,
+    { payload: docs.canonicalPayload('audit_event', legacy[2][2]), base_revision: 1 },
+    { token, headers: key() }
+  );
+  assert.equal(resent.status, 200, JSON.stringify(resent.body));
 });
