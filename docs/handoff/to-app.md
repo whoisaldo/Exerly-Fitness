@@ -612,3 +612,23 @@ included.
   now a no-op; you can delete it.
 - I fixed a real race that CI caught: concurrent first Apple sign-ins could
   return 500. Housekeeping now runs outside the transaction.
+
+## 2026-10-06: Tokens for a "Connect an agent" screen
+
+Status: open (for an A-milestone of your choosing).
+
+`authVM.accountAPI` now manages personal access tokens:
+
+- `accessTokens()` lists them: name, prefix, scopes, created, last used and
+  expiry dates.
+- `createAccessToken(name:scopes:expiresInDays:)` returns a `CreatedAccessToken`
+  whose `secret` is shown once and never again. Offer a copy button and say so.
+- `revokeAccessToken(id:)` cuts an agent off at once.
+
+Every token can read. `.propose` lets the agent file proposals, which the person
+decides on; suggest that by default. `.write` lets it change data, so warn
+before offering it. The MCP guide for the person's agent is `docs/api/mcp.md`.
+The connection details to show are the API URL plus `/mcp` and the token.
+
+A token's secret is never stored on the server, not even in idempotency
+receipts. A replayed creation returns the token without its secret.

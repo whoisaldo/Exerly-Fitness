@@ -228,6 +228,38 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
     }
 }
 
+@Suite struct AccessTokenTests {
+    @Test func createsListsAndRevokesTokens() async throws {
+        let store = InMemoryCredentialStore()
+        let start = Date.milliseconds(1_791_223_200_000)
+        try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600),
+                                   sessionID: "s", accountID: "a"))
+        let row: [String: Any] = ["id": "tok-1", "name": "Claude", "prefix": "exr_abcdefgh", "scopes": ["read", "propose"],
+                                  "created_at": "2026-10-05T18:00:00.000Z", "last_used_at": NSNull(), "expires_at": NSNull()]
+        var replayed = false
+        let transport = FakeTransport { request in
+            switch (request.method, request.path) {
+            case ("POST", "/v1/tokens"):
+                #expect(request.body?["scopes"] as? [String] == ["read", "propose"])
+                #expect(request.body?["name"] as? String == "Claude")
+                return (201, row.merging(["token": replayed ? NSNull() : "exr_secret"]) { _, new in new })
+            case ("GET", "/v1/tokens"): return (200, [row])
+            default:
+                #expect(request.method == "DELETE" && request.path == "/v1/tokens/tok-1")
+                return (200, ["revoked": true])
+            }
+        }
+        let api = ExerlyAPI(baseURL: URL(string: "https://api.exerly.test")!, transport: transport, credentials: store, now: { start })
+        let account = try await api.account()
+        let created = try await account.createAccessToken(name: "Claude", scopes: [.propose])
+        #expect(created.secret == "exr_secret" && created.token.createdAt == start)
+        #expect(try await account.accessTokens().map(\.scopes) == [[.read, .propose]])
+        try await account.revokeAccessToken(id: "tok-1")
+        replayed = true
+        await #expect(throws: APIError.self) { try await account.createAccessToken(name: "Claude", scopes: [.propose]) }
+    }
+}
+
 @Suite struct AccountDeletedTests {
     let base = URL(string: "https://api.exerly.test")!
     let start = Date.milliseconds(1_791_223_200_000)

@@ -287,3 +287,20 @@ test('deleting the account removes its tokens', async () => {
   assert.equal(await api.store.count('personal_access_tokens', { id: created.id }), 0);
   assert.equal((await api.get('/v1/changes', { token: created.token })).status, 401);
 });
+
+test('a token secret is never kept in an idempotency receipt; a replay says it was shown once', async () => {
+  const user = await signUp(api);
+  const headers = { 'Idempotency-Key': `create-${randomUUID()}` };
+  const body = { name: 'Synthetic agent', scopes: ['read'] };
+  const created = await api.post('/v1/tokens', body, { token: user.token, headers });
+  assert.equal(created.status, 201);
+  assert.match(created.body.token, /^exr_/);
+  const receipts = await api.store.find('operations', { account_id: user.user._id });
+  assert.ok(receipts.length >= 1);
+  assert.ok(!JSON.stringify(receipts).includes(created.body.token), 'the secret is not at rest');
+  const replay = await api.post('/v1/tokens', body, { token: user.token, headers });
+  assert.equal(replay.status, 201);
+  assert.equal(replay.body.id, created.body.id);
+  assert.equal(replay.body.token, null);
+  assert.equal(replay.body.token_shown_once, true);
+});

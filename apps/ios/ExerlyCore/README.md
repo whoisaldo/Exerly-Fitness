@@ -236,6 +236,10 @@ try await api.signOut()
   - `exportAccount()`, which returns the JSON `Data`;
   - `deleteAccount(appleAuthorizationCode:)`, which deletes on the server. The
     session owner then forgets the session.
+  - `accessTokens()`, `createAccessToken(name:scopes:expiresInDays:)` and
+    `revokeAccessToken(id:)` for the person's own agents. Every token can read;
+    `.propose` files proposals, and `.write` changes data. The secret in
+    `CreatedAccessToken.secret` is shown once and never again.
 
 ### ExerlyAPI
 

@@ -95,6 +95,38 @@ public struct AccountAPI: DocumentAPI {
         }
     }
 
+    // MARK: Personal access tokens
+
+    /// The account's active tokens, for a "Connected agents" screen.
+    public func accessTokens() async throws -> [AccessToken] {
+        let (status, data) = try await send("GET", "/v1/tokens")
+        guard status == 200, let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data))
+        }
+        return try rows.map(AccessToken.init(json:))
+    }
+
+    /// Creates a token for the person's own agent. Every token can read;
+    /// `propose` lets it file proposals and `write` lets it change data. The
+    /// secret is returned here once and never again.
+    public func createAccessToken(name: String, scopes: Set<AccessToken.Scope>,
+                                  expiresInDays: Int? = nil) async throws -> CreatedAccessToken {
+        let all = scopes.union([.read])
+        var body: [String: Any] = ["name": name, "scopes": AccessToken.Scope.allCases.filter(all.contains).map(\.rawValue)]
+        if let expiresInDays { body["expires_in_days"] = expiresInDays }
+        let (status, json) = try await sendJSON("POST", "/v1/tokens", body: body)
+        guard status == 201, let row = json as? [String: Any] else { throw Wire.failure(status, json) }
+        guard let secret = row["token"] as? String else {
+            throw APIError.server(status: 409, message: "The token was created, but its secret can only be shown once. Revoke it and create another.")
+        }
+        return CreatedAccessToken(token: try AccessToken(json: row), secret: secret)
+    }
+
+    public func revokeAccessToken(id: String) async throws {
+        let (status, json) = try await sendJSON("DELETE", "/v1/tokens/\(id)", body: nil)
+        guard status == 200 else { throw Wire.failure(status, json) }
+    }
+
     // MARK: Requests
 
     private func send(_ method: String, _ path: String, body: Data? = nil,
@@ -107,6 +139,44 @@ public struct AccountAPI: DocumentAPI {
         let (status, data) = try await send(method, path, body: try body.map { try JSONSerialization.data(withJSONObject: $0) })
         return (status, try? JSONSerialization.jsonObject(with: data))
     }
+}
+
+/// A personal access token for the person's own agent, without its secret.
+public struct AccessToken: Sendable, Hashable, Identifiable {
+    public enum Scope: String, Sendable, Hashable, CaseIterable {
+        case read, propose, write
+    }
+
+    public var id: String
+    public var name: String
+    /// The first characters of the secret, to tell tokens apart.
+    public var prefix: String
+    public var scopes: [Scope]
+    public var createdAt: Date
+    public var lastUsedAt: Date?
+    public var expiresAt: Date?
+
+    init(json: [String: Any]) throws {
+        func date(_ key: String) -> Date? {
+            (json[key] as? String).flatMap(ISOMilliseconds.parse).map(Date.milliseconds)
+        }
+        guard let id = json["id"] as? String, let name = json["name"] as? String, let prefix = json["prefix"] as? String,
+              let scopes = json["scopes"] as? [String], let created = date("created_at")
+        else { throw APIError.invalidResponse }
+        self.id = id
+        self.name = name
+        self.prefix = prefix
+        self.scopes = scopes.compactMap(Scope.init(rawValue:))
+        createdAt = created
+        lastUsedAt = date("last_used_at")
+        expiresAt = date("expires_at")
+    }
+}
+
+/// A token just created, with the secret to give the agent. Shown once.
+public struct CreatedAccessToken: Sendable, Hashable {
+    public var token: AccessToken
+    public var secret: String
 }
 
 /// Parsing shared by the API types.

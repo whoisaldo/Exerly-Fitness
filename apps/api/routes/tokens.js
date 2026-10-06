@@ -83,6 +83,8 @@ router.post(
       targets: [{ kind: 'token', id: row.id }],
       note: name,
     });
+    // The secret is shown once: a replay of this request returns everything but it.
+    res.locals.receipt = (body) => ({ ...body, token: null, token_shown_once: true });
     res.status(201).json({ ...present(row), token });
   })
 );

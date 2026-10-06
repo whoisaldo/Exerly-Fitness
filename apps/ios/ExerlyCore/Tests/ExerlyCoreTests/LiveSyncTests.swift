@@ -140,7 +140,9 @@ struct LiveSyncTests {
         #expect(documents?.contains { $0["document_id"] as? String == custom.id.rawValue } == true)
         try await phone.api.deleteAccount(appleAuthorizationCode: nil)
         #expect(await !phone.api.isSignedIn)
-        await #expect(throws: APIError.sessionExpired) { _ = try await watch.api.account().changes(after: 0, limit: 10) }
+        // The other device learns the account is gone, not merely that its session ended.
+        await #expect(throws: APIError.accountDeleted) { _ = try await watch.api.account().changes(after: 0, limit: 10) }
+        #expect(await !watch.api.isSignedIn)
     }
 
     @Test func anAgentsProposalThroughMCPIsReviewedAndAcceptedOnThePhone() async throws {
@@ -157,11 +159,11 @@ struct LiveSyncTests {
 
         // The person gives their agent a propose-only token.
         let access = try #require(try phone.credentials.load()).accessToken
-        let (created, tokenJSON) = try await call("POST", "/v1/tokens", bearer: access,
-                                                  body: ["name": "Synthetic agent", "scopes": ["propose"]],
-                                                  headers: ["Idempotency-Key": UUID().uuidString])
-        #expect(created == 201)
-        let token = try #require((tokenJSON as? [String: Any])?["token"] as? String)
+        let account = try await phone.api.account()
+        let created = try await account.createAccessToken(name: "Synthetic agent", scopes: [.propose], expiresInDays: 30)
+        #expect(created.token.scopes == [.read, .propose] && created.token.expiresAt != nil)
+        #expect(try await account.accessTokens().map(\.id) == [created.token.id])
+        let token = created.secret
 
         // The agent reads the session and the e1RM through MCP, then proposes the fix.
         let stored = try await tool("get_document", ["kind": "workout_session", "id": session.id.uuidString], token: token)
@@ -218,5 +220,13 @@ struct LiveSyncTests {
         let (_, proposalJSON) = try await call("GET", "/v1/documents/proposal/\(proposalID.uuidString)", bearer: access)
         #expect(((proposalJSON as? [String: Any])?["payload"] as? [String: Any])?["status"] as? String == "accepted")
         #expect(phone.agent.auditLog.map(\.action) == [.tokenCreated, .proposalFiled, .proposalAccepted])
+
+        // Revoking the token cuts the agent off.
+        try await account.revokeAccessToken(id: created.token.id)
+        #expect(try await account.accessTokens().isEmpty)
+        let (refused, _) = try await call("POST", "/mcp", bearer: token,
+                                          body: ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],
+                                          headers: ["Accept": "application/json, text/event-stream"])
+        #expect(refused == 401)
     }
 }

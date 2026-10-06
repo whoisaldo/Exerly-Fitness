@@ -72,11 +72,13 @@ async function executeMutation(req, res, fn) {
           throw error;
         }
         if (key) {
+          // A handler can keep secrets out of the stored receipt (res.locals.receipt).
+          const receipt = res.locals.receipt ? res.locals.receipt(captured.body) : captured.body;
           await store.insert('operations', {
             ...owner,
             fingerprint,
             status: captured.status,
-            response: captured.body,
+            response: receipt,
             created_at: new Date(),
           });
         }
