@@ -7,6 +7,7 @@ struct TrainingProgramEditor: View {
     @StateObject private var draft: TrainingProgramDraft
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDiscard = false
+    @State private var editMode = EditMode.inactive
     @FocusState private var typing: Bool
 
     init(workspace: TrainingWorkspace, editing: Program? = nil) {
@@ -15,22 +16,35 @@ struct TrainingProgramEditor: View {
         _draft = StateObject(wrappedValue: TrainingProgramDraft(store: workspace.programs, editing: editing))
     }
 
+    private var iconName: String {
+        guard let icon = draft.program.icon else { return "Default" }
+        return ProgramAppearance.icons.first { $0.symbol == icon }?.name ?? "Saved icon"
+    }
+
+    private var colorName: String {
+        guard let color = draft.program.color else { return "Default" }
+        return ProgramAppearance.colors.first { $0.hex == color }?.name ?? "Saved color \(color)"
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
                 Form {
-                    Section("Program") {
-                        TextField("Program name", text: $draft.program.name)
+                    Section(isNew ? "New program" : "Edit program") {
+                        TextField("Program name", text: $draft.program.name, axis: .vertical)
                             .focused($typing).accessibilityIdentifier("program.name")
                         ProgramNumberField("Cycles", text: $draft.cycles, integer: true)
                             .focused($typing).accessibilityIdentifier("program.cycles")
-                        Picker("Deload", selection: $draft.program.deload) {
-                            ForEach(DeloadPlacement.allCases, id: \.self) {
-                                Text(TrainingProgramFormat.deload($0)).tag($0)
+                        ProgramChoiceField("Deload", value: TrainingProgramFormat.deload(draft.program.deload)) {
+                            Picker("Deload", selection: $draft.program.deload) {
+                                ForEach(DeloadPlacement.allCases, id: \.self) {
+                                    Text(TrainingProgramFormat.deload($0)).tag($0)
+                                }
                             }
-                        }
+                        }.accessibilityIdentifier("program.deload")
                     }
                     Section {
+                        EditButton().accessibilityLabel("Reorder or remove days")
                         ForEach($draft.program.days) { $day in
                             NavigationLink {
                                 TrainingProgramDayEditor(day: $day, store: workspace.store,
@@ -55,22 +69,26 @@ struct TrainingProgramEditor: View {
                         Text("Add exercises to make a training day. Days without exercises are rest days. Finished workouts advance the program; rest days do not assign calendar dates.")
                     }
                     Section("Appearance") {
-                        Picker("Icon", selection: $draft.program.icon) {
-                            Text("Default").tag(String?.none)
-                            ForEach(ProgramAppearance.icons, id: \.symbol) { choice in
-                                Label(choice.name, systemImage: choice.symbol).tag(Optional(choice.symbol))
-                            }
-                            if let icon = draft.program.icon, !ProgramAppearance.icons.contains(where: { $0.symbol == icon }) {
-                                Text("Saved icon").tag(Optional(icon))
+                        ProgramChoiceField("Icon", value: iconName) {
+                            Picker("Icon", selection: $draft.program.icon) {
+                                Text("Default").tag(String?.none)
+                                ForEach(ProgramAppearance.icons, id: \.symbol) { choice in
+                                    Label(choice.name, systemImage: choice.symbol).tag(Optional(choice.symbol))
+                                }
+                                if let icon = draft.program.icon, !ProgramAppearance.icons.contains(where: { $0.symbol == icon }) {
+                                    Text("Saved icon").tag(Optional(icon))
+                                }
                             }
                         }
-                        Picker("Color", selection: $draft.program.color) {
-                            Text("Default").tag(String?.none)
-                            ForEach(ProgramAppearance.colors, id: \.hex) { choice in
-                                Text(choice.name).tag(Optional(choice.hex))
-                            }
-                            if let color = draft.program.color, !ProgramAppearance.colors.contains(where: { $0.hex == color }) {
-                                Text("Saved color \(color)").tag(Optional(color))
+                        ProgramChoiceField("Color", value: colorName) {
+                            Picker("Color", selection: $draft.program.color) {
+                                Text("Default").tag(String?.none)
+                                ForEach(ProgramAppearance.colors, id: \.hex) { choice in
+                                    Text(choice.name).tag(Optional(choice.hex))
+                                }
+                                if let color = draft.program.color, !ProgramAppearance.colors.contains(where: { $0.hex == color }) {
+                                    Text("Saved color \(color)").tag(Optional(color))
+                                }
                             }
                         }
                     }
@@ -84,16 +102,16 @@ struct TrainingProgramEditor: View {
                         }.id("errors").accessibilityIdentifier("program.errors")
                     }
                 }
+                .environment(\.editMode, $editMode)
                 .onChange(of: draft.errors) { _, errors in
                     if !errors.isEmpty { scroll.scrollTo("errors", anchor: .bottom) }
                 }
             }
-            .navigationTitle(isNew ? "New program" : "Edit program").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Program").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if draft.hasChanges { confirmingDiscard = true } else { dismiss() } }
                 }
-                ToolbarItem(placement: .primaryAction) { EditButton().accessibilityLabel("Reorder or remove days") }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         typing = false
@@ -119,6 +137,31 @@ struct TrainingProgramEditor: View {
     }
 }
 
+private struct ProgramChoiceField<Content: View>: View {
+    let title: String
+    let value: String
+    let content: () -> Content
+
+    init(_ title: String, value: String, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.value = value
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+            Menu(content: content) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(value).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption)
+                }.frame(minHeight: 44).padding(.vertical, 4)
+            }.accessibilityLabel("\(title), \(value)")
+        }
+    }
+}
+
 private enum ProgramAppearance {
     static let icons = [(name: "Strength", symbol: "dumbbell"), (name: "Training", symbol: "figure.strengthtraining.traditional"),
                         (name: "Running", symbol: "figure.run"), (name: "Power", symbol: "bolt"), (name: "Fitness", symbol: "heart")]
@@ -136,7 +179,7 @@ private struct TrainingProgramDayEditor: View {
     var body: some View {
         Form {
             Section {
-                TextField("Day name", text: $day.name).focused($typing).accessibilityIdentifier("program.dayName")
+                TextField("Day name", text: $day.name, axis: .vertical).focused($typing).accessibilityIdentifier("program.dayName")
             }
             Section {
                 ForEach($day.slots) { $slot in
@@ -224,8 +267,10 @@ private struct TrainingProgramSlotEditor: View {
                     }
                 }
                 if !availableCycles.isEmpty {
-                    Picker("Cycle to customize", selection: $selectedCycle) {
-                        ForEach(availableCycles, id: \.self) { Text("Cycle \($0 + 1)").tag($0) }
+                    ProgramChoiceField("Cycle to customize", value: "Cycle \(selectedCycle + 1)") {
+                        Picker("Cycle to customize", selection: $selectedCycle) {
+                            ForEach(availableCycles, id: \.self) { Text("Cycle \($0 + 1)").tag($0) }
+                        }
                     }
                     Button("Add cycle targets") {
                         guard let cycle = availableCycles.contains(selectedCycle) ? selectedCycle : availableCycles.first else { return }

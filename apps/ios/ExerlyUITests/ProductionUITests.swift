@@ -179,10 +179,14 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Train"], in: app)
         tap(app.buttons["programs.open"], in: app)
         tap(app.buttons["program.create"], in: app)
-        replace(app.textFields["program.name"], with: "Two-day strength", in: app)
+        replace(app.descendants(matching: .any).matching(identifier: "program.name").firstMatch, with: "Two-day strength", in: app)
         replace(app.textFields["Cycles"], with: "2", in: app)
         dismissKeyboard(app)
         capture(app, "program-builder-start")
+        tap(app.buttons["program.deload"], in: app)
+        XCTAssertTrue(app.buttons["No deload cycle"].waitForExistence(timeout: 5))
+        capture(app, "program-deload-choices")
+        tap(app.buttons["No deload cycle"], in: app)
         tap(app.buttons["program.save"], in: app)
         XCTAssertTrue(app.staticTexts["a program needs a training day"].waitForExistence(timeout: 10))
         capture(app, "program-builder-invalid")
@@ -298,7 +302,7 @@ final class ProductionUITests: XCTestCase {
         capture(app, "program-duplicated")
         revealAbove(app.buttons["program.edit"], in: app)
         tap(app.buttons["program.edit"], in: app)
-        let name = app.textFields["program.name"]
+        let name = app.descendants(matching: .any).matching(identifier: "program.name").firstMatch
         tap(name, in: app)
         // At large text sizes a tap can put the caret in the middle of a
         // horizontally scrolling name. Select the whole paragraph first.
@@ -309,7 +313,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Cancel"], in: app)
         capture(app, "program-discard-confirmation")
         tap(app.buttons["program.confirmCancel"], in: app)
-        XCTAssertEqual(app.textFields["program.name"].value as? String, "Unsaved name")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "program.name").firstMatch.value as? String, "Unsaved name")
         tap(app.buttons["Cancel"], in: app)
         tap(app.buttons["program.confirm"], in: app)
         revealAbove(app.staticTexts["Current strength"], in: app)
@@ -427,6 +431,8 @@ final class ProductionUITests: XCTestCase {
         reveal(caveat, in: app)
         XCTAssertTrue(caveat.exists)
         capture(app, "program-estimate-caveat")
+        reveal(app.buttons["program.source.deadlift"], in: app)
+        capture(app, "program-estimate-assumption")
         tap(app.buttons["program.source.deadlift"], in: app)
         XCTAssertTrue(app.navigationBars["Latest program evidence"].waitForExistence(timeout: 10))
         capture(app, "program-estimate-source")
@@ -473,7 +479,7 @@ final class ProductionUITests: XCTestCase {
     }
 
     private func configureProgramDay(_ app: XCUIApplication, name: String, exercise: String, override: Bool) throws {
-        replace(app.textFields["program.dayName"], with: name, in: app)
+        replace(app.descendants(matching: .any).matching(identifier: "program.dayName").firstMatch, with: name, in: app)
         dismissKeyboard(app)
         tap(app.buttons["program.addExercise"], in: app)
         tap(app.searchFields.firstMatch, in: app)

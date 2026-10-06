@@ -6,74 +6,63 @@ milestone. Current date 2026-10-06, updated 18:44 EDT.
 
 ## Current work and next steps
 
-2026-10-06 18:44 EDT. This is A6, agent/app-programs. Done is not met. Continue.
+2026-10-06 19:03 EDT. A6, agent/app-programs. Done is not met. Continue.
 A5 is live as2610062144, only Ali/only build, VALID/IN_BETA_TESTING. Its final
-123 hosted+25 UI passed,8 skips; Core233/API226/device pass. A5 landed/pushed
-integrationdf84650c. Logic then landed778540cf. Primary's additional handoff
-commit481694ec is pushed on agent/app.2038 detached; neverupload2128.
+123 hosted+25 UI passed,8 skips; Core233/API226/device pass. A5 landed/pushed,
+then Logic landed778540cf. A6 rebased on that and was reviewed/approved by Logic.
+Integration is held for A6 since18:41. A7 will adopt subsequent Core work.
 
-A6 successfully rebased onto integration778540cf, source3c76dc6d. Ledger-only
-conflicts resolved with A5 current evidence, then this A6 state restored. Source
-commits are39fd9d5d composition,b85a8c68 UI,400232e1 full-width confirmations,
-1f2ac0d3 plan heading first,051238ee heading capture,d60fd8c1 explicit assumed
-RIR,3c76dc6d test helper recognizes native tabs instead of symbol labels. Production
-source is frozen. Logic approved A6 and fixed removed-day schedule restart in
-2f1f3844, included here. Integration hold requested again18:41 in Logic inbox.
+The image audit found real truncation in the builder at largest text: name,
+deload choice and crowded navigation title. Program/day names now wrap; deload,
+icon, color and cycle selectors use wrapping Menu labels. Reorder moved into
+the Days section and the navigation title is Program. Core math is unchanged.
+The source-RIR note explicitly names the assumed target. Full-a6-final was
+interrupted to include these changes, so it is NOT final release evidence.
 
-FINAL GATES ACTIVE, based on3c76dc6d:
-- full-a6-final/session63739 on SE39B20FBF-F0A2-4FD3-917D-A7A807851B02,
-  fixture39211/session93879, DerivedData a6-full. This simulator was used for A7
-  hosted tests but now belongs to this full run; do not run A7 there concurrently.
-- final-core/session14165; final-api/session33312; final-device/session36096.
-  API uses NODE_PATH to primary node_modules. Do not edit Core/API.
-- Push rebased branch with force-with-lease after committing this ledger. Remote
-  lastfe2e52db is ours. A6 archive/release not created yet. Do not reuse A5 builds.
+Core259 tests/52 suites and API238 pass in final-core.log/final-api.log. Earlier
+final-device passed before the wrapping fix. Lint/typecheck pass with warnings;
+format check found only this ledger and it will be formatted before commit.
+SwiftLint passed before wrapping; repeat device/SwiftLint for final source.
 
-A6 implementation: ProgramStore in sync/agent/export/supported kinds, validated
-stale-safe drafts, builder/lifecycle, planned start/advance and complete program
-proposal diff/original/proposed/source views. All math/selection in Core. Reserved
-weightMatch hidden. iOS26 compact confirmation popover hid Cancel; fixed with
-scrollable full-width sheet and fixed Cancel. Last copy improvement explicitly
-states the target RIR assumed when the source set has none.
+Current AX wrapping runs, all compiled on the latest product source:
 
-Evidence before final rebase:
-- Normal builder209s/lifecycle91s/proposal pass;13 hosted. All31 normal captures
-  inspected including the final proposal server undo verification.
-- Nine ProgramPresentation tests pass including first-workout/no invented load
-  and timed-exercise handling. Device passed340cb895, new final device running.
-- Large-light-sheet: nine hosted+all4 UI pass;29 captures exported, NOT inspected.
-  Includes full builder450s, lifecycle203s, proposal298s, source86s. Compiled before
-  heading moved first; large-light-heading passes90s for that change, not yet
-  exported/inspected. large-light-assumption/session8282 checks latest RIR copy.
-- Large-dark-sheet lifecycle208s, all7 captures inspected.
-- Small-light-sheet lifecycle190s,7 relevant captures exported, NOT inspected.
-  Its builder fails only offscreen second-preview heading; fixed1f2ac0d3.
-- Small-dark-sheet lifecycle193s and proposal299s pass. Relevant13 captures
-  exported, NOT inspected. Its builder has same fixed heading-only failure.
-- Small-light-input proposal288s passes, all6 captures inspected, superseded
-  final run adds a capture of After3 values.
+- large-light-wrapping/session99623, LargeAX02A671D3/39207,a6-large:
+  builder+cancel/lifecycle. Source wording already passed large-light-assumption.
+- small-light-wrapping/session85894, SE7D2096/39206,a6-fields:
+  source+builder+lifecycle.
+- small-dark-wrapping/session78078, SE45D463AE/39209,a6-proposals:
+  source+builder.
+- large-dark-wrapping/session87661, Large7189880A/39208,a6-original:
+  source+builder.
+  Native full test will restart on SE39B20FBF/39211,a6-full, unique result bundle
+  full-a6-wrapping. Do not use that simulator for A7 while it runs.
 
-Active AX final runs (compiled before RIR copy wording, so rerun source journey
-for final wording afterward; all unchanged journey results still count):
-- small-light-final/session77882, SE7D2096/39206,a6-fields: source94s and
-  builder600s pass; proposal running. Then latest source copy needs one rerun.
-- large-dark-final/session29713, OriginalLarge7189/39208,a6-original:
-  source87s and builder776s pass; proposal running. Then latest source copy rerun.
-- small-dark-final/session22338, ProgramsSE45D463AE/39209,a6-proposals:
-  source81s pass; builder running. Then latest source copy rerun.
-- large-light-assumption/session8282, LargeAX02A671D3/39207,a6-large:
-  latest copy/source plus new native-tab helper. Finish/export/inspect its4 images.
-No initial stopped runs count as final proof. Once AX images, Logic review,
-full/Core/API/device gates pass, create new signed archive, internal release,
-update PARITY/RELEASE, ff land/push and release Logic's integration hold.
+Completed earlier: small-light-final and large-dark-final each source/builder/
+proposal pass; small-dark-final source/builder pass. Their captures exported.
+Normal31 captures inspected. Large-dark-sheet lifecycle7 inspected. The detailed
+image audit continues; artifacts/programs/visual-review.md records inspected
+images and any remaining fixes. Never claim exported images as inspected.
+Large-light-assumption4 captures inspected; copy wraps, new heading is first.
+The next source captures also show the tail of the RIR assumption beside its
+workout link. Additional UI capture does not change product source.
 
-A7 worktree Exerly-Fitness-app-nutrition, agent/app-nutrition,e6d8ed3d based on
-oldfe2e52db. NutritionStore composition/design015 committed. Two red regressions
-then green;12 account+nutrition hosted tests pass. Own ledger and18:36 volume
-snapshot/starting-target requests. Rebase A7 onto this new A6 lineage before
-continuing against published preview/volume contracts. Legacy diary will retire
-but server/export and pending queue remain; no app migration code. Latest review
-found FoodSnapshot drops VolumeBasis; Logic asked to preserve it before A7.
+Once wrapping runs/images and final full native/device/quality gates pass,
+create a fresh signed timestamp archive, upload, wait for VALID/IN_BETA_TESTING,
+assign only Ali and detach2144 only after readiness. Update PARITY/RELEASE,
+ff land/push and release Logic's integration hold. No A6 archive created yet.
+
+A7 worktree Exerly-Fitness-app-nutrition, agent/app-nutrition,b83a896f rebased
+onto A6e6ea5dd7. NutritionStore composition/design015 committed. Two regressions
+red then green;12 account+nutrition hosted tests pass. Next food/amount drafts
+and diary. Legacy diary retires per Logic, its sync queue/server/export remain.
+Logic has published the volume snapshot fix, initial BodyProfile/formula plan,
+and batch logging/copy/move/recipe suggestions, landing after A6. Do not edit
+Core/API. A7 can build drafts with current NutritionStore.preview/per-label API.
+
+Login reverified19:00: correct /login endpoint returns200 for the stored
+synthetic TestFlight account. Credentials remain only in private_keys and were
+sent to Ali in chat. Phone requires Tailscale and current2144. Original theme
+and logo retained. No Mac password saved.
 
 ## A3 final evidence and release
 
