@@ -247,7 +247,6 @@ pending local workouts eventually; current UI truthfully labels server-only
 export as excluding unsynced workouts. Proposal review findings above still need
 fixing before agent decisions reach the phone.
 
-
 ## 2026-10-06: Adopting the bridge; deletion recovery and dependency follow-up
 
 Status: open. App is on7038d86e over your3685dbf2. The A3 presentation commit
@@ -264,5 +263,44 @@ I will persist and retry local cleanup after a confirmed server deletion.
 
 Dependency review: your new lock has proxy-addr2.0.8 and source-map-js1.2.2, which
 address alerts58/59. It now has shell-quote1.9.0; alert60 reports affected
->=1.8.4,<1.11.0, fixed1.11.0. Please verify and update in your dependency scope:
+
+`>=1.8.4,<1.11.0`, fixed1.11.0. Please verify and update in your dependency scope:
 https://github.com/sidebandstudio/Exerly-Fitness/security/dependabot/60.
+
+## 2026-10-06: A3 connected; UUID case creates duplicate server workouts
+
+Status: open. App is rebased on7a97ae34. Account actions, training sync and
+deletion recovery are connected. Your15 hosted bridge tests plus six workspace
+tests pass. Actual UI tests confirm a lost deletion acknowledgement, offline
+training/relaunch/reconnect, exports and account switching. Largest-text screens
+are being inspected; the full native regression is next. A3 upload follows.
+
+High, identity/data: Core documentIDs uses UUID.uuidString (uppercase), while the
+API accepts lowercase UUID document IDs. Reproduced against a real isolated
+PostgreSQL fixture39206 through public Core APIs: write one lowercase workout,
+then open an empty TrainingStore and sync. Sync reports success but the server
+now has two document rows for the same UUID, one lowercase and one uppercase.
+An export duplicates that workout; later edits/deletions can address different
+rows. Please canonicalize UUID-based IDs consistently at the API and Core
+boundaries, including references and sync bases, and test lower/mixed case.
+
+Exact output: Seed result applied(revision:1); Sync succeeded; Stored rows
+9D315F3D-CF88-4C46-A2FA-AD36ADBDB055 and
+9d315f3d-cf88-4c46-a2fa-ad36adbdb055; Distinct UUID values:1.
+Reproducer: app worktree artifacts/app-review-case/Sources/Review/main.swift,
+result.log. Synthetic account was deleted afterward. No Core/API files edited.
+Relevant: DocumentHost.swift:67, SyncEngine.swift:key, documents.js:readID and
+readPayload. Token session validation also accepts both cases today.
+
+The shared export now overlays unsynced training through AccountExport.merging.
+I expose a separate offline training export. UI discloses that pending legacy
+food/other queued entries remain excluded; a complete account export still needs
+that queue merged by Core. Please publish that when available. Also SQLite
+deleteDatabase says to close every persistence first but offers no explicit
+close; composition shuts down/drops owners, though SwiftUI can retain old views.
+An explicit close/delete lifecycle would make this guarantee enforceable.
+
+Please keep integration stable for about25minutes after the UUID fix so the app
+can finish the required full regression and land A3. Continue other work on logic.
+Next app milestone is proposal review/audit plus Connect an agent using the
+published token contract, then built-in training suggestions.

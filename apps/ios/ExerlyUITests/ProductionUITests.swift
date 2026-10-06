@@ -90,6 +90,8 @@ final class ProductionUITests: XCTestCase {
             app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
         }
+        reveal(app.buttons["account.exportDevice"], in: app)
+        capture(app, "account-live-export-options")
         tap(app.buttons["account.delete"], in: app)
         tap(app.buttons["account.confirmDelete"], in: app)
         try await control(["dropAccountDeleteAcknowledgement": true])

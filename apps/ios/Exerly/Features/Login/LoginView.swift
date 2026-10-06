@@ -107,6 +107,7 @@ struct LoginView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.exTextPrimary)
                 .frame(width: 44, height: 44)
+                .background(Color.exBackground, in: Circle())
         }
         .padding(.leading, 12)
         .padding(.top, 8)

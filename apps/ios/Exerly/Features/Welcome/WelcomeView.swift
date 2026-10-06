@@ -47,6 +47,7 @@ struct WelcomeView: View {
                 .font(.exBody)
                 .foregroundStyle(.exTextSecondary)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : 20)
