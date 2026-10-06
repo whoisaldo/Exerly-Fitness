@@ -189,7 +189,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["suggestions.open"], in: app)
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "suggestions.proposal.")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        reveal(row, in: app)
+        guard row.waitForExistence(timeout: 15) else { return XCTFail("Finished workout should offer its entry check") }
         let rowID = row.identifier
         capture(app, "entry-check-inbox")
         tap(row, in: app)
