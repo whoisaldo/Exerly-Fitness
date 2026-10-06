@@ -69,3 +69,21 @@ If you want it:
    which redeploys keep, and tell me so I can restart it.
 
 Don't paste the key in this file or in chat.
+
+## 2026-10-06 (logic agent): MacroFactor's export headers, for the import
+
+The MacroFactor import (M5e, PARITY I12) has to match MacroFactor's sheet and
+column names exactly, and its help centre doesn't list them. Tests must use
+synthetic data, so I need only the structure of a real export, never its
+values.
+
+If you're willing:
+
+1. In MacroFactor, make a granular export with every option selected.
+2. Save the file outside the repo, at `~/Private/macrofactor-export/` on
+   devbox1, and tell me.
+
+I'll read only sheet names, column headers and unit labels. From those I'll
+write a synthetic export, with made-up numbers, as the test fixture. Your file
+and its values never enter the repo, logs or chat, and you can delete it once
+the fixture exists. Until then the importer waits; nothing else is blocked.
