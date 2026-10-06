@@ -350,3 +350,25 @@ try agent.reject(proposal.id)
 - `JSONValue` is any JSON value; `JSONValue.diff(_:_:)` lists field changes.
 - `DocumentHost` is the protocol `TrainingStore` and `AgentStore` implement, so
   sync and proposals can work on any kind of document.
+
+## Built-in detectors
+
+Code, not a model, finds these, from the training log alone. How they were
+measured is in `docs/design/005-training-detectors.md`.
+
+- `EntryErrorDetector` finds likely typing slips in a finished session:
+  - a load ten times off;
+  - a load entered in the unit this person doesn't use for that lift;
+  - a stray digit in the reps.
+
+  `proposal(for:history:existing:now:)` turns them into one `Proposal` from
+  `EntryErrorDetector.author`, ready for `agent.file(_:)`. It never proposes
+  twice for a session, whatever the person decided. Run it after finishing a
+  session and after sync brings in sessions.
+- `TrainingSignals` gives evidence, not proposals, as a `Diagnosis` (kind,
+  title, summary, exercises, evidence):
+  - `stall(of:in:through:)` and `stalls(in:through:)`: an e1RM trend that hasn't
+    gained 0.3 % a week over eight weeks, with its slope, sessions, RIR and
+    volume caveats;
+  - `deload(in:through:)`: several lifts down together over the last ten days.
+  - `trend(of:in:through:days:)` exposes the numbers behind both.
