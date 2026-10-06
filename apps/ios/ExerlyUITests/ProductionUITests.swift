@@ -1685,7 +1685,7 @@ final class ProductionUITests: XCTestCase {
         if app.keyboards.firstMatch.exists && (!visibleFrame(element) || !element.isHittable) && app.buttons["Done"].firstMatch.exists {
             app.buttons["Done"].firstMatch.tap()
         }
-        for _ in 0..<32 {
+        for _ in 0..<48 {
             // The system can present the sheet after the diary first appears.
             dismissPasswordPrompt(in: app)
             let home = app.buttons["Home"]
@@ -1701,8 +1701,15 @@ final class ProductionUITests: XCTestCase {
             // A full-screen swipe can jump from below the SE's tab bar to
             // above its navigation bar. Short drags avoid that oscillation.
             let down = element.exists && element.frame.height > 0 && element.frame.midY < upperEdge
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: down ? 0.4 : 0.6))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: down ? 0.6 : 0.4))
+            // Keep the gesture inside the scrolling area. A large-type account
+            // notice can occupy the upper third of the screen after relaunch.
+            let top = upperEdge + 8
+            let height = max(80, lowerEdge - 8 - top)
+            let distance = element.exists ? 0.16 : 0.34
+            let low = top + height * (0.5 - distance)
+            let high = top + height * (0.5 + distance)
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? low : high) / app.frame.height))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
     }

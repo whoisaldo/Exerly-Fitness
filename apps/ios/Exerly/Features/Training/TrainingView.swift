@@ -39,6 +39,7 @@ struct TrainingView: View {
     let unreadableCount: Int
     @Environment(\.dynamicTypeSize) private var typeSize
     var workspace: TrainingWorkspace?
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var starting = false
     @State private var browsing = false
 
@@ -67,7 +68,9 @@ struct TrainingView: View {
                             NavigationLink {
                                 AgentReviewView(workspace: workspace, unit: unit)
                             } label: {
-                                Label("Suggestions", systemImage: "tray")
+                                if typeSize.isAccessibilitySize {
+                                    Text("Suggestions").fixedSize(horizontal: false, vertical: true)
+                                } else { Label("Suggestions", systemImage: "tray") }
                             }.accessibilityIdentifier("suggestions.open")
                         }
                     }
