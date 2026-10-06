@@ -1670,7 +1670,18 @@ final class ProductionUITests: XCTestCase {
         return false
     }
     private func revealAbove(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<12 where !element.exists { app.swipeDown() }
+        // A full-app swipe starts inside the saved-account banner at large
+        // text sizes on SE. Keep upward-list navigation in the visible list too.
+        for _ in 0..<24 where !element.exists {
+            let bar = app.navigationBars.allElementsBoundByIndex.last ?? app.navigationBars.firstMatch
+            let home = app.buttons["Home"]
+            let top = bar.exists ? bar.frame.maxY + 16 : 48
+            let bottom = home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38
+            let height = max(80, bottom - top)
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.84) / app.frame.height))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }
         reveal(element, in: app)
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
