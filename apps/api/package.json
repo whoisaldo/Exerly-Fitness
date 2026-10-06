@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "start:local": "cross-env DB_MODE=local node index.js",
     "dev": "node index.js",
     "test": "node scripts/run-tests.js",
     "migrate": "node db/migrate.js"
@@ -19,14 +18,10 @@
     "@modelcontextprotocol/sdk": "^1.32.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
-    "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.23.1",
     "zod": "^4.6.5"
-  },
-  "devDependencies": {
-    "sqlite3": "^6.0.1"
   }
 }

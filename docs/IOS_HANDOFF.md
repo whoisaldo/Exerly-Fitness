@@ -47,10 +47,13 @@ hardcodes `http://127.0.0.1:3001` under `#if targetEnvironment(simulator)`, so
 the simulator needs no configuration:
 
 ```bash
-cd apps/api && DB_MODE=local node index.js
+docker compose up
 ```
 
-`DB_MODE=local` uses SQLite and canned AI responses. No MongoDB, no API keys.
+That runs PostgreSQL and the API (see `docker-compose.yml`) with canned AI
+responses and no API keys. `bash scripts/ios.sh test` starts its own fixture API
+on a throwaway PostgreSQL cluster instead. The SQLite mode (`DB_MODE=local`) was
+removed on 2026-10-06.
 
 ---
 
@@ -317,7 +320,7 @@ cards, decorative emoji, and glow for its own sake.
 ## Definition of done
 
 - `npm run ios:build` succeeds with no new warnings.
-- The app runs in the simulator against a local `DB_MODE=local` API, and you
+- The app runs in the simulator against a local API on PostgreSQL, and you
   have actually driven each screen you touched rather than assuming.
 - Weigh in on the phone, then confirm the same value appears on the web app at
   `localhost:3000/#/dashboard/weight`. Cross-client sync is the thing that was

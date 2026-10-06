@@ -10,7 +10,6 @@ set -euo pipefail
 PORT="${PORT:-39101}"
 export JWT_SECRET="${JWT_SECRET:-ci-smoke-secret}"
 export PORT
-unset DB_MODE
 
 API_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/api" && pwd)"
 BASE="http://127.0.0.1:${PORT}"

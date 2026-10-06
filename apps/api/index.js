@@ -1,9 +1,6 @@
 // Entry point.
 //
 // DATABASE_URL -> PostgreSQL. Pending migrations run before the server listens.
-// DB_MODE=local -> SQLite, kept only for the isolated simulator fixture.
-//
-// Both modes run the same routes; only the storage driver changes.
 
 require('dotenv').config();
 
@@ -27,7 +24,7 @@ async function main() {
       'Without it the server would sign tokens with a value that is in the public repo.',
     ]);
   }
-  if (!store.isLocal && !process.env.DATABASE_URL) {
+  if (!process.env.DATABASE_URL) {
     fail('DATABASE_URL is required', [
       'Point it at PostgreSQL 16 or later, for example the docker-compose database.',
     ]);

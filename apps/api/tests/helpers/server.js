@@ -7,7 +7,6 @@
 if (!process.env.EXERLY_TEST_DATABASE_URL) {
   throw new Error('Run the API tests with npm test, which provides EXERLY_TEST_DATABASE_URL');
 }
-delete process.env.DB_MODE;
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-not-used-anywhere-real';
 process.env.ADMIN_EMAILS = 'admin@exerly.test';
