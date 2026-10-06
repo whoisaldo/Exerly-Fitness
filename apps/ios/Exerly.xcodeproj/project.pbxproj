@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* PrivacyInfo.xcprivacy */; };
 		C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */; };
 		011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */; };
 		016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BF2340338FFC506848ED23 /* Components/ActionButton.swift */; };
@@ -89,6 +90,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E10000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E10000000000000000000003 /* Exerly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Exerly.entitlements; sourceTree = "<group>"; };
 		7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
 		06812EA8FB4EB2F7E611D262 /* Features/LogActivity/LogActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogActivityView.swift; sourceTree = "<group>"; };
 		0DCCC3942EB1A138CC384579 /* Features/Home/HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -386,6 +389,8 @@
 				06FF4E05B0BB211FCDBA270D /* Theme */,
 				6B57B03678DF5E35DF78F5DD /* Info.plist */,
 				F4332E01185D898C4AF96654 /* Assets.xcassets */,
+				E10000000000000000000002 /* PrivacyInfo.xcprivacy */,
+				E10000000000000000000003 /* Exerly.entitlements */,
 			);
 			path = Exerly;
 			sourceTree = "<group>";
@@ -580,6 +585,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0965E75A6ACBC768840B0291 /* Assets.xcassets in Resources */,
+				E10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -727,6 +733,7 @@
 			buildSettings = {
 				EXERLY_API_BASE_URL = "http://100.80.149.7:3001";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -757,6 +764,7 @@
 			buildSettings = {
 				EXERLY_API_BASE_URL = "https://exerly-fitness-93dyl.ondigitalocean.app";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

@@ -140,14 +140,14 @@ struct MeasurementsTab: View {
             }
         }
         .sheet(isPresented: $addingWeight) {
-            WeightEntrySheet(date: weightDate, onDeleted: { lastDeletedWeight = $0 }) {
+            WeightEntrySheet(date: weightDate, onDeleted: { lastDeletedWeight = $0 }, onSaved: {
                 Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
-            }
+            })
         }
         .sheet(isPresented: $showAddSheet) {
-            AddMeasurementSheet(initialDate: sync.today) {
+            AddMeasurementSheet(initialDate: sync.today, onSaved: {
                 Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
-            }
+            })
         }
         .sheet(item: $editing) { measurement in
             AddMeasurementSheet(initialDate: sync.today, editing: measurement, onDeleted: { lastDeletedID = $0 }) { Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } }

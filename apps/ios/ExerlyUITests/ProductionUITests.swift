@@ -6,7 +6,14 @@ final class ProductionUITests: XCTestCase {
 
     // Let async test bodies finish or throw before XCTest starts the next test.
     // Aborting at an assertion can leave their fixture requests running.
-    override func setUpWithError() throws { continueAfterFailure = true }
+    override func setUpWithError() throws {
+        continueAfterFailure = true
+        addUIInterruptionMonitor(withDescription: "Password saving") { alert in
+            guard alert.label.contains("Save Password"), alert.buttons["Not Now"].exists else { return false }
+            alert.buttons["Not Now"].tap()
+            return true
+        }
+    }
 
     func testWelcomeCanOpenSignIn() throws {
         let app = launch(resetSession: true)
@@ -1205,7 +1212,23 @@ final class ProductionUITests: XCTestCase {
         app.launch()
         return app
     }
+    private func dismissPasswordPrompt(in app: XCUIApplication) {
+        // Fresh iOS 26 simulators offer to save the synthetic account password.
+        // The app's elements still exist behind that system sheet, but none are
+        // hittable. Handle only this prompt, leaving permission dialogs testable.
+        let passwordSheet = app.sheets["Save Password?"]
+        if passwordSheet.exists && passwordSheet.buttons["Not Now"].exists {
+            passwordSheet.buttons["Not Now"].tap()
+        } else {
+            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            let passwordPrompt = springboard.alerts.matching(NSPredicate(format: "label CONTAINS %@", "Save Password")).firstMatch
+            if passwordPrompt.exists && passwordPrompt.buttons["Not Now"].exists {
+                passwordPrompt.buttons["Not Now"].tap()
+            }
+        }
+    }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        dismissPasswordPrompt(in: app)
         if !element.exists { _ = element.waitForExistence(timeout: 5) }
         func visibleFrame(_ item: XCUIElement) -> Bool {
             guard item.exists else { return false }
@@ -1219,6 +1242,8 @@ final class ProductionUITests: XCTestCase {
             app.buttons["Done"].firstMatch.tap()
         }
         for _ in 0..<16 {
+            // The system can present the sheet after the diary first appears.
+            dismissPasswordPrompt(in: app)
             let home = app.buttons["Home"]
             if visibleFrame(element) && element.isHittable && home.exists,
                ["Home", "Library", "Progress", "Profile"].contains(element.label),

@@ -29,3 +29,17 @@ When you're ready:
    `APPLE_PRIVATE_KEY` (the `.p8` contents; `\n` escapes are fine).
 
 Don't paste the key in this file or in chat.
+
+## 2026-10-06: First App Store Connect record
+
+Open. Exerly's bundle ID com.exerly.fitness is registered with HealthKit on team
+9X79V37Q89. The existing distribution certificate was reused. Apple does not expose
+app-record creation through its REST API, and the available browser is signed out.
+Create the record at https://appstoreconnect.apple.com/apps with iOS, English US,
+name Exerly, and SKU sideband-exerly-ios. If the name is taken, use Exerly Training
+& Nutrition. Reply with the chosen name or app ID. No secrets are needed.
+
+This blocks upload only. The app agent continues signed archives, simulator checks
+and implementation. Internal TestFlight is already authorized; no extra release
+approval is requested. Apple's restriction is documented at
+https://developer.apple.com/documentation/appstoreconnectapi/apps.
