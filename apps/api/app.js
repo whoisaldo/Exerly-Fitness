@@ -66,6 +66,8 @@ function createApp({ logger = console } = {}) {
     });
   });
 
+  // Before the path-less routers below, some of which authenticate everything they see.
+  app.use(require('./routes/mcp'));
   app.use(require('./routes/auth'));
   app.use(require('./routes/account'));
   app.use(require('./routes/onboarding'));

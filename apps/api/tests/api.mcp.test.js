@@ -1,0 +1,287 @@
+// The MCP server, driven by the official MCP client over real HTTP. The data
+// is the synthetic golden history, so every number can be checked against
+// what ExerlyCore computes for the same sessions.
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { randomUUID } = require('node:crypto');
+const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+const {
+  StreamableHTTPClientTransport,
+} = require('@modelcontextprotocol/sdk/client/streamableHttp.js');
+const { startServer, signUp } = require('./helpers/server');
+
+const golden = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../../../docs/api/golden/training-v1.json'), 'utf8')
+);
+const BENCH = 'barbell-bench-press';
+let api;
+
+test.before(async () => {
+  api = await startServer();
+});
+test.after(async () => {
+  await api.close();
+});
+
+const key = () => ({ 'Idempotency-Key': randomUUID() });
+
+async function token(user, scopes) {
+  const res = await api.post(
+    '/v1/tokens',
+    { name: `Synthetic agent (${scopes.join('+')})`, scopes },
+    { token: user.token, headers: key() }
+  );
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  return res.body;
+}
+
+async function put(user, kind, payload) {
+  const res = await api.put(
+    `/v1/documents/${kind}/${payload.id}`,
+    { base_revision: 0, payload },
+    { token: user.token, headers: key() }
+  );
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+}
+
+/** A person with the whole golden history synced. */
+async function seededUser() {
+  const user = await signUp(api, { timezone: 'America/New_York' });
+  for (const exercise of golden.customExercises) await put(user, 'custom_exercise', exercise);
+  for (const session of golden.sessions) await put(user, 'workout_session', session);
+  return user;
+}
+
+async function connect(secret) {
+  const client = new Client({ name: 'exerly-tests', version: '1.0.0' });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(`${api.base}/mcp`), {
+      requestInit: { headers: { Authorization: `Bearer ${secret}` } },
+    })
+  );
+  return client;
+}
+
+async function call(client, name, args = {}) {
+  const result = await client.callTool({ name, arguments: args });
+  const text = result.content[0].text;
+  return result.isError ? { error: text } : JSON.parse(text);
+}
+
+const round = (value, places = 2) => Math.round(value * 10 ** places) / 10 ** places;
+
+test('a read token gets the read tools, with numbers that match ExerlyCore', async () => {
+  const user = await seededUser();
+  const client = await connect((await token(user, ['read'])).token);
+  const names = (await client.listTools()).tools.map((t) => t.name).sort();
+  assert.deepEqual(names, [
+    'exercise_history',
+    'get_document',
+    'get_profile',
+    'get_workout',
+    'list_proposals',
+    'list_workouts',
+    'search_exercises',
+    'verify_metric',
+    'weekly_volume',
+  ]);
+
+  const profile = await call(client, 'get_profile');
+  assert.equal(profile.time_zone, 'America/New_York');
+  assert.equal(profile.finished_workouts, golden.sessions.filter((s) => s.endedAt).length);
+
+  const bench = await call(client, 'exercise_history', { exercise: 'Bench Press' });
+  const expected = golden.expected.statistics[BENCH];
+  assert.equal(bench.exercise.id, BENCH);
+  assert.equal(bench.statistics.e1rm_kg, round(expected.estimatedOneRepMax));
+  assert.equal(bench.statistics.total_volume_kg_reps, round(expected.totalVolume, 1));
+  assert.equal(bench.statistics.total_sets, expected.totalSets);
+  assert.deepEqual(
+    bench.e1rm_trend.map((p) => p.e1rm_kg),
+    golden.expected.trends[BENCH].map((p) => round(p.oneRepMax))
+  );
+
+  const listed = await call(client, 'list_workouts', { limit: 5 });
+  assert.equal(listed.total, golden.sessions.length);
+  assert.equal(listed.workouts.length, 5);
+  assert.ok(listed.workouts[0].in_progress, 'the newest session is still in progress');
+  const finished = listed.workouts.find((w) => !w.in_progress);
+  const workout = await call(client, 'get_workout', { id: finished.id });
+  const summary = golden.expected.summaries.find((s) => s.session === finished.id);
+  assert.equal(workout.date, summary.localDate);
+  assert.equal(workout.working_sets, summary.workingSets);
+  assert.equal(workout.volume.total_kg_reps, round(summary.tonnage.total, 1));
+  const records = golden.expected.records[finished.id] ?? [];
+  assert.equal(workout.records.length, records.length);
+
+  const weekly = await call(client, 'weekly_volume', { weeks: 2, through: '2026-10-04' });
+  const week = golden.expected.weeklyVolume.monday['2026-09-28'];
+  assert.equal(weekly.weeks[0].week_starting, '2026-09-28');
+  for (const row of weekly.weeks[0].muscles) assert.equal(row.sets, round(week[row.muscle].sets));
+
+  const search = await call(client, 'search_exercises', { query: 'zercher' });
+  assert.equal(search.exercises[0].id, 'custom-golden-zercher-squat');
+  assert.equal(search.exercises[0].custom, true);
+
+  const metric = golden.expected.metrics[2];
+  assert.equal((await call(client, 'verify_metric', metric.reference)).status, metric.status);
+  await client.close();
+});
+
+test('MCP refuses sessions, missing tokens and other methods', async () => {
+  const user = await signUp(api);
+  const rpc = { jsonrpc: '2.0', id: 1, method: 'tools/list' };
+  const accept = { Accept: 'application/json, text/event-stream' };
+  assert.equal((await api.post('/mcp', rpc, { headers: accept })).status, 401);
+  assert.equal((await api.post('/mcp', rpc, { token: user.token, headers: accept })).status, 403);
+  assert.equal((await api.get('/mcp')).status, 405);
+});
+
+test('a token reads only its own account', async () => {
+  const owner = await seededUser();
+  const stranger = await signUp(api);
+  const client = await connect((await token(stranger, ['read'])).token);
+  assert.equal((await call(client, 'list_workouts')).total, 0);
+  const id = golden.sessions[0].id;
+  assert.match((await call(client, 'get_workout', { id })).error, /No workout/);
+  assert.ok(owner);
+  await client.close();
+});
+
+test('propose files a pending correction with the stored document as before', async () => {
+  const user = await seededUser();
+  const agent = await token(user, ['propose']);
+  const client = await connect(agent.token);
+  assert.ok((await client.listTools()).tools.some((t) => t.name === 'propose'));
+
+  const target = golden.sessions.find(
+    (s) => s.endedAt && s.exercises.some((p) => p.exerciseID === BENCH)
+  );
+  const stored = await call(client, 'get_document', { kind: 'workout_session', id: target.id });
+  const after = structuredClone(stored.payload);
+  const set = after.exercises.find((p) => p.exerciseID === BENCH).sets.at(-1);
+  set.efforts[0].load = { unit: 'kg', value: 100 };
+  set.completedAt ??= after.startedAt;
+  set.efforts[0].reps ??= 5;
+
+  const benchMax = golden.expected.metrics[0].reference;
+  const filed = await call(client, 'propose', {
+    title: 'Was that set 100 kg?',
+    summary: 'The load is far from your usual working weight.',
+    confidence: 'medium',
+    falsifier: 'You confirm the load you logged.',
+    evidence: [
+      { claim: 'Your September best', level: 'personalData', metric: benchMax, caveats: ['n=1'] },
+      {
+        claim: 'Invented number',
+        level: 'personalData',
+        metric: { ...benchMax, claimed: benchMax.claimed + 25 },
+      },
+    ],
+    changes: [{ kind: 'workout_session', id: target.id, after }],
+  });
+  assert.equal(filed.status, 'pending', JSON.stringify(filed));
+  assert.deepEqual(
+    filed.evidence_checks.map((c) => c.status),
+    ['verified', 'mismatch']
+  );
+
+  const proposal = (
+    await api.get(`/v1/documents/proposal/${filed.proposal_id}`, { token: user.token })
+  ).body.payload;
+  assert.equal(proposal.status, 'pending');
+  assert.deepEqual(proposal.author, { kind: 'mcp', name: agent.name, tokenID: agent.id });
+  assert.deepEqual(proposal.changes[0].before, stored.payload);
+  assert.deepEqual(proposal.changes[0].after, after);
+  assert.equal(proposal.evidence[0].metric.claimed, benchMax.claimed);
+  assert.ok(!('verification' in proposal.evidence[0]), 'ExerlyCore recomputes; nothing stored');
+  assert.match(proposal.createdAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+
+  const changes = (await api.get('/v1/changes?after=0&limit=1000', { token: user.token })).body
+    .changes;
+  const audit = changes.filter((c) => c.kind === 'audit_event').map((c) => c.payload);
+  assert.ok(
+    audit.some(
+      (e) =>
+        e.action === 'proposalFiled' && e.proposalID === filed.proposal_id && e.actor.kind === 'mcp'
+    )
+  );
+  // The session itself is untouched until the person accepts.
+  const session = await api.get(`/v1/documents/workout_session/${target.id}`, {
+    token: user.token,
+  });
+  assert.deepEqual(session.body.payload, stored.payload);
+
+  const listed = await call(client, 'list_proposals', { status: 'pending' });
+  assert.equal(listed.proposals[0].id, filed.proposal_id);
+  await client.close();
+});
+
+test('propose refuses documents the phone could not apply', async () => {
+  const user = await seededUser();
+  const client = await connect((await token(user, ['propose'])).token);
+  const target = golden.sessions.find(
+    (s) => s.endedAt && s.exercises.some((p) => p.exerciseID === BENCH)
+  );
+  const base = { title: 'Fix', confidence: 'low', falsifier: 'You disagree.' };
+  const broken = structuredClone(target);
+  const set = broken.exercises.find((p) => p.exerciseID === BENCH).sets.find((s) => s.completedAt);
+  delete set.efforts[0].load;
+  const missingLoad = await call(client, 'propose', {
+    ...base,
+    changes: [{ kind: 'workout_session', id: target.id, after: broken }],
+  });
+  assert.match(missingLoad.error, /completed without the values Barbell Bench Press records/);
+
+  const unknown = structuredClone(target);
+  unknown.exercises[0].exerciseID = 'not-an-exercise';
+  assert.match(
+    (
+      await call(client, 'propose', {
+        ...base,
+        changes: [{ kind: 'workout_session', id: target.id, after: unknown }],
+      })
+    ).error,
+    /not a known exercise/
+  );
+
+  assert.match(
+    (
+      await call(client, 'propose', {
+        ...base,
+        changes: [{ kind: 'workout_session', id: target.id, after: target }],
+      })
+    ).error,
+    /doesn't change/
+  );
+  assert.match(
+    (
+      await call(client, 'propose', {
+        ...base,
+        changes: [{ kind: 'workout_session', id: randomUUID().toUpperCase(), after: null }],
+      })
+    ).error,
+    /doesn't exist/
+  );
+  const noFalsifier = await client.callTool({
+    name: 'propose',
+    arguments: { title: 'x', confidence: 'low', falsifier: '', changes: [] },
+  });
+  assert.equal(noFalsifier.isError, true);
+  await client.close();
+});
+
+test('a read token cannot propose', async () => {
+  const user = await seededUser();
+  const client = await connect((await token(user, ['read'])).token);
+  const result = await client.callTool({
+    name: 'propose',
+    arguments: { title: 'x', confidence: 'low', falsifier: 'y', changes: [] },
+  });
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /not found/i);
+  await client.close();
+});

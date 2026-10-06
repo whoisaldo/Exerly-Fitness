@@ -23,12 +23,39 @@ struct LiveSyncTests {
         return (email, password)
     }
 
+    /// A JSON request to the API with the device's session or a token.
+    func call(_ method: String, _ path: String, bearer: String, body: Any? = nil,
+              headers: [String: String] = [:]) async throws -> (Int, Any?) {
+        var request = URLRequest(url: URL(string: path, relativeTo: base)!)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+        if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        return ((response as! HTTPURLResponse).statusCode, try? JSONSerialization.jsonObject(with: data))
+    }
+
+    /// Calls an MCP tool the way an agent's client does, and returns its JSON result.
+    func tool(_ name: String, _ arguments: [String: Any], token: String) async throws -> [String: Any] {
+        let (status, json) = try await call(
+            "POST", "/mcp", bearer: token,
+            body: ["jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["name": name, "arguments": arguments]],
+            headers: ["Accept": "application/json, text/event-stream"])
+        #expect(status == 200)
+        let result = try #require((json as? [String: Any])?["result"] as? [String: Any])
+        let text = try #require((result["content"] as? [[String: Any]])?.first?["text"] as? String)
+        #expect(result["isError"] as? Bool != true, "\(name): \(text)")
+        return try #require(try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+    }
+
     @MainActor
     final class LiveDevice {
         let api: ExerlyAPI
         let credentials = InMemoryCredentialStore()
         let persistence: InMemoryTrainingPersistence
         let store: TrainingStore
+        let agent: AgentStore
         private(set) var engine: SyncEngine!
 
         init(base: URL) throws {
@@ -36,12 +63,13 @@ struct LiveSyncTests {
             self.persistence = persistence
             api = ExerlyAPI(baseURL: base, credentials: credentials)
             store = try TrainingStore(persistence: persistence)
+            agent = try AgentStore(persistence: persistence, hosts: [store])
         }
 
         /// Signs in, then binds sync to the signed-in account.
         func signIn(email: String, password: String) async throws -> SignInResult {
             let result = try await api.signIn(email: email, password: password)
-            engine = SyncEngine(store: store, state: persistence, api: try await api.account())
+            engine = SyncEngine(hosts: [store, agent], state: persistence, api: try await api.account())
             return result
         }
 
@@ -113,5 +141,82 @@ struct LiveSyncTests {
         try await phone.api.deleteAccount(appleAuthorizationCode: nil)
         #expect(await !phone.api.isSignedIn)
         await #expect(throws: APIError.sessionExpired) { _ = try await watch.api.account().changes(after: 0, limit: 10) }
+    }
+
+    @Test func anAgentsProposalThroughMCPIsReviewedAndAcceptedOnThePhone() async throws {
+        let (email, password) = try await signUp()
+        let phone = try LiveDevice(base: base)
+        _ = try await phone.signIn(email: email, password: password)
+        try phone.store.startSession(name: "Heavy day", bodyweight: .kg(80), timeZone: TimeZone(identifier: "America/New_York")!)
+        try phone.store.addExercise("barbell-bench-press")
+        try phone.logSet(reps: 5, kg: 100)
+        try phone.logSet(reps: 5, kg: 1000) // A stray zero.
+        try phone.store.finishSession()
+        try await phone.engine.sync()
+        let session = try #require(phone.store.history.sessions.first)
+
+        // The person gives their agent a propose-only token.
+        let access = try #require(try phone.credentials.load()).accessToken
+        let (created, tokenJSON) = try await call("POST", "/v1/tokens", bearer: access,
+                                                  body: ["name": "Synthetic agent", "scopes": ["propose"]],
+                                                  headers: ["Idempotency-Key": UUID().uuidString])
+        #expect(created == 201)
+        let token = try #require((tokenJSON as? [String: Any])?["token"] as? String)
+
+        // The agent reads the session and the e1RM through MCP, then proposes the fix.
+        let stored = try await tool("get_document", ["kind": "workout_session", "id": session.id.uuidString], token: token)
+        var payload = try #require(stored["payload"] as? [String: Any])
+        var exercises = try #require(payload["exercises"] as? [[String: Any]])
+        var sets = try #require(exercises[0]["sets"] as? [[String: Any]])
+        let wrong = try #require(sets.firstIndex { set in
+            let load = (set["efforts"] as? [[String: Any]])?.first?["load"] as? [String: Any]
+            return load?["value"] as? Double == 1000
+        })
+        var efforts = try #require(sets[wrong]["efforts"] as? [[String: Any]])
+        efforts[0]["load"] = ["unit": "kg", "value": 100]
+        sets[wrong]["efforts"] = efforts
+        exercises[0]["sets"] = sets
+        payload["exercises"] = exercises
+
+        let day = session.localDate.description
+        let history = try await tool("exercise_history", ["exercise": "barbell-bench-press", "from": day, "through": day],
+                                     token: token)
+        let claimed = try #require((history["statistics"] as? [String: Any])?["e1rm_kg"] as? Double)
+        let filed = try await tool("propose", [
+            "title": "Was that set 100 kg?",
+            "summary": "1000 kg is ten times your other working set.",
+            "confidence": "high",
+            "falsifier": "You confirm you benched 1000 kg.",
+            "evidence": [["claim": "The logged set implies this e1RM", "level": "personalData", "caveats": ["n=1"],
+                          "metric": ["name": "exercise.e1rm.best",
+                                     "parameters": ["exercise": "barbell-bench-press", "from": day, "through": day],
+                                     "claimed": claimed]]],
+            "changes": [["kind": "workout_session", "id": session.id.uuidString, "after": payload]],
+        ], token: token)
+        let filedID = try #require(filed["proposal_id"] as? String)
+        let proposalID = try #require(UUID(uuidString: filedID))
+
+        // The phone receives it, checks the agent's number and shows a one-field diff.
+        try await phone.engine.sync()
+        let proposal = try #require(phone.agent.proposal(proposalID))
+        #expect(proposal.status == .pending && proposal.author.kind == .mcp && proposal.author.name == "Synthetic agent")
+        guard case .verified = try #require(proposal.evidence.first?.metric).verify(against: phone.store.history) else {
+            Issue.record("The agent's e1RM should verify against ExerlyCore's")
+            return
+        }
+        #expect(phone.agent.diff(proposalID).flatMap(\.fields).map(\.path) == ["exercises[0].sets[\(wrong)].efforts[0].load.value"])
+
+        // One tap applies it, and the correction and decision reach the server.
+        try phone.agent.accept(proposalID)
+        #expect(phone.store.history.sessions[0].exercises[0].sets[wrong].primary.load == .kg(100))
+        try await phone.engine.sync()
+        let (_, sessionJSON) = try await call("GET", "/v1/documents/workout_session/\(session.id.uuidString)", bearer: access)
+        let serverSets = ((((sessionJSON as? [String: Any])?["payload"] as? [String: Any])?["exercises"] as? [[String: Any]])?[0]["sets"]
+            as? [[String: Any]])
+        let serverLoad = ((serverSets?[wrong]["efforts"] as? [[String: Any]])?[0]["load"] as? [String: Any])?["value"] as? Double
+        #expect(serverLoad == 100)
+        let (_, proposalJSON) = try await call("GET", "/v1/documents/proposal/\(proposalID.uuidString)", bearer: access)
+        #expect(((proposalJSON as? [String: Any])?["payload"] as? [String: Any])?["status"] as? String == "accepted")
+        #expect(phone.agent.auditLog.map(\.action) == [.tokenCreated, .proposalFiled, .proposalAccepted])
     }
 }

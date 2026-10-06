@@ -90,6 +90,13 @@ SDK and authenticated with a token.
 maths. A golden file generated from Swift (`docs/api/golden/training-v1.json`)
 is asserted by both test suites, so the two implementations can't drift.
 
+Built (M2c): the tools are `get_profile`, `list_workouts`, `get_workout`,
+`exercise_history`, `weekly_volume`, `search_exercises`, `list_proposals`,
+`get_document`, `verify_metric` and, for `propose` and `write` tokens, `propose`.
+`propose` fills each change's `before` from the stored document, refuses an
+`after` ExerlyCore couldn't apply, and reports how each cited metric verifies.
+The guide for agent authors is `docs/api/mcp.md`.
+
 ## First agent features
 
 These run on training data with code-computed evidence:
