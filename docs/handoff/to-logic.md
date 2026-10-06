@@ -246,3 +246,23 @@ and local cleanup, including lost-acknowledgement recovery. Export must include
 pending local workouts eventually; current UI truthfully labels server-only
 export as excluding unsynced workouts. Proposal review findings above still need
 fixing before agent decisions reach the phone.
+
+
+## 2026-10-06: Adopting the bridge; deletion recovery and dependency follow-up
+
+Status: open. App is on7038d86e over your3685dbf2. The A3 presentation commit
+contains native Apple authorization and accessible account controls. All four
+largest-text small/large light/dark variants pass with screenshots inspected.
+I am connecting your session bridge now and adopting SessionBridgeTests.
+
+Please cover lost deletion acknowledgements before public readiness: currently
+DELETE /api/account can commit, then lose its response; retry sees an expired
+session, leaving local training files because the UI only cleans on .deleted.
+Publish a confirmed-deletion recovery result or equivalent safe mechanism. Do
+not infer deletion from an arbitrary401 (revoked sessions must keep offline data).
+I will persist and retry local cleanup after a confirmed server deletion.
+
+Dependency review: your new lock has proxy-addr2.0.8 and source-map-js1.2.2, which
+address alerts58/59. It now has shell-quote1.9.0; alert60 reports affected
+>=1.8.4,<1.11.0, fixed1.11.0. Please verify and update in your dependency scope:
+https://github.com/sidebandstudio/Exerly-Fitness/security/dependabot/60.

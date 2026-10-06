@@ -5,23 +5,17 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 13:34 EDT. A2 training logger is on internal TestFlight, with Ali's
-requested purple theme/logo restored and its sign-in backend fixed. A1/A2 are
-committed locally on agent/app but have not landed on integration yet.
+2026-10-06 13:49 EDT. A2 landed and pushed at84b7de51. Integration advanced
+to3685dbf2 with logic's shared session bridge, review fixes and MCP. Primary
+agent/app fast-forwarded to7038d86e, including the prepared A3 UI commit.
 
-1. A2 final checks on 3cba5eae pass: API192/Core147/device, 77 hosted tests
-   and 14 UI journeys, 7 opt-in skips. Native retry result under app-brand.
-   First attempt hit SpringBoard Busy; restarting only that simulator fixed it.
-   Commit the final docs, fast-forward integration to agent/app and push both.
-   App code has not changed since the checked f38e4b87.
-2. Normal-size training screenshots exported and inspected in
-   artifacts/app-brand/integration-native-retry. Training empty/completed/prefill
-   are clear. The Home capture caught the system password sheet mid-animation;
-   do not use that image as a clean Home preview. Recapture during A3 testing.
-3. Continue A3 accounts/sync. Read latest Core README and inbox. Logic owns the
-   session bridge requested in to-logic.md. Build native Apple authorization,
-   export/deletion UI, sync status and proposal review against its contracts.
-   Add SIWA capability/profile, then upload the next internal milestone.
+1. Connect A3 account UI and training sync through AuthViewModel.accountAPI;
+   adopt docs/handoff/attachments/SessionBridgeTests.swift. Read the new handoff.
+2. Add hosted lifecycle composition and actual fixture-server UI coverage for
+   sync, account switching, export and deletion. Run full suite/device build.
+3. Review largest-text matrix for connected screens, archive/upload A3, update
+   PARITY/RELEASE, rebase and land. Do not claim real Apple authorization until
+   exercised on a signed device. TestFlight currently2610061654.
 
 ## User corrections that persist
 
@@ -95,7 +89,7 @@ Existing distribution certificate reused, team9X79V37Q89, bundleUJ5X8TJKNL,
 HealthKit profileH5896RXW3D. Manual profile applies only to app target, not SPM.
 Archive/IPA/logs: apps/ios/build/release/2610061654. release.sh defaults to
 internal staging and always exports internal-only. Production DB and Apple
-revocation secrets remain Ali's QUESTIONS_FOR_ALI items. SIWA capability pending.
+revocation secrets remain Ali's QUESTIONS_FOR_ALI items. SIWA capability is enabled; current profileJ5J395Y9AF (see below).
 
 ## Commands and processes
 
@@ -120,23 +114,17 @@ Proposal review reproduced remote acceptance of invalid completed reps and lost
 first custom exercise after a two-exercise proposal. Details and reproduction
 paths sent in to-logic.md. A3 still needs the shared auth bridge.
 
-## A3 work prepared during the regression
+## A3 prepared UI evidence
 
-Separate owned worktree: /Users/aldo/Desktop/Exerly-Fitness-app-next,
-branch agent/app-next, branched at f38e4b87. Do not lose its uncommitted work.
-AppleAuthorizationButton, AccountManagementView, native action injection and
-DEBUG-only account UI fixture are built. Three hosted account presentation tests
-pass; two normal dark SE UI journeys pass and screenshots were inspected.
-Largest-text runs found missing Cancel in the iOS26 confirmation popover and
-needed scrolling in the test helpers. Replaced confirmations with explicit native
-alerts/cancel. Retests small-light-fixed and large-dark-fixed both passed. Export and inspect
-them, then run the remaining two variants.
+Prepared work from app-next is committed7038d86e and is now in the primary app
+worktree. Continue editing only primary; app-next is retained for its evidence.
+Three hosted presentation tests and two UI journeys pass. All four largest-text
+light/dark small/large variants pass and screenshots were inspected:
+app-next/artifacts/account/{small-light-fixed,large-dark-fixed,small-dark-final,
+large-light-final}.xcresult. Explicit native alerts include Cancel.
 
-A3 provisioner adds APPLE_ID_AUTH with APPLE_ID_AUTH_APP_CONSENT /
-PRIMARY_APP_CONSENT, checks profile entitlements and reuses profiles that match.
-New Exerly profile J5J395Y9AF, existing certificate unchanged. Repeat provision
-succeeded. Signed archive/IPA2610061727 validates, not uploaded; source later has
-alert/UI-test changes. Its release checker requires SIWA in profile/signature and
-rejects the DEBUG account-fixture marker. Real account views are unconnected,
-waiting on logic's session bridge. Do not claim that synthetic UI tests verify
-Apple login, server export or deletion. Current TestFlight remains2610061654.
+APPLE_ID_AUTH is enabled as a primary app. ProfileJ5J395Y9AF includes HealthKit
+and Apple sign-in, existing certificate unchanged. Repeat provisioning reuses
+it. Signed archive/IPA2610061727 validates, not uploaded, predates final alert
+changes. Release checks require both entitlements and forbid DEBUG fixture code.
+Six Node/seven Python release tests pass. Connect real actions next.
