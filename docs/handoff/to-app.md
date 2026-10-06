@@ -723,3 +723,67 @@ Not built yet:
 
 The MCP server has `list_programs` and `next_workout`. A live test shows they
 give exactly the plan the phone makes.
+
+## 2026-10-06: IDs inside payloads are canonical too (your review of 4f026b47)
+
+Status: done in `700cdc0d`, which you're adopting into A3.
+
+- **Stored data.** Migration 0006 rewrites the IDs inside stored and
+  change-feed payloads: a payload's own ID, a proposal's change IDs and the
+  `before` and `after` documents' IDs, its evidence references, and an audit
+  event's targets and `proposalID`. It mirrors `canonicalPayload`, which every
+  write now uses, and a test checks that the two agree on legacy-shaped rows.
+- **MCP.** `get_document` finds a migrated lowercase workout by either case.
+  `propose` normalises the proposed document and the evidence references before
+  checking them, so lowercase IDs work and are stored uppercase.
+- **Phone.** `ProposedChange` and `DataRef` keep a UUID ID in uppercase however
+  it arrives. A proposal stored with lowercase IDs is accepted and undone on the
+  phone; before this, accepting it failed with "The session ID doesn't match".
+- **Regressions.** On the API: legacy rows through migrations 0005 and 0006,
+  then the feed, a document read and an unchanged audit re-send; an MCP read and
+  proposal of a migrated workout. In ExerlyCore: a synced lowercase proposal
+  accepted and undone. I removed each part of the fix in turn, and each
+  removal failed a test.
+- **Not done.** No end-to-end run through `live-sync.sh`: that script migrates
+  an empty database at start-up, so it can't hold pre-0005 rows without new
+  plumbing. The API tests use real PostgreSQL, HTTP and the MCP client.
+
+## 2026-10-06: Entry checks: the evidence basis, and one proposal per workout (your A5 note)
+
+Status: done on `agent/logic`; it lands after A3.
+
+- **Basis.** `Finding.earlierSessions` is now the number of earlier sessions the
+  band came from, and 0 when it came only from the workout's other sets. The
+  evidence then reads "Your other working sets of Deadlift in this workout were
+  55–135 kg." With history it reads "in this workout and your last 4 sessions".
+- **Identity.** The proposal's ID is a name-based UUID from the workout's ID.
+  Two devices that check the same workout before syncing file the same
+  proposal, and sync keeps one. A decision on any device beats a pending copy,
+  so a rejected or undone check stays that way when another device files it
+  again. Tests cover two devices filing at once and a rejection meeting a fresh
+  copy. Nothing in the published interface changed.
+- Filing on finish and after sync is safe: `proposal(for:history:existing:now:)`
+  returns nil once the device knows of the check, and `file` would refuse the
+  same ID anyway.
+
+## 2026-10-06: Nutrition is ready to build on (M5a, M5b)
+
+Status: open (contract published; the screens are yours to schedule).
+
+See "Nutrition" in the ExerlyCore README and `docs/design/007-nutrition.md`.
+
+**Wiring.** Create `NutritionStore(persistence:)` and add it to
+`SyncEngine(hosts:)` and `AgentStore(hosts:)` like the other stores.
+
+- The kinds are `saved_food`, `food_entry`, `nutrition_day` and `weight_entry`.
+  Saved foods aren't called `food`, because the legacy food log already uses
+  that kind in the server's change table.
+- These documents are separate from the legacy food log, which keeps working.
+  Moving the legacy log over comes with the MacroFactor import (M5e).
+- The trend weight and expenditure come from `EnergyBalance.estimate`, fed by
+  `energyBalanceDays(from:through:)`. Show the ±1 SD band it returns. On
+  simulated people with weekly weigh-ins, its trend error is 0.32 kg against
+  1.03 kg for the legacy average.
+
+Not built yet: targets and check-ins (M5c), food search and barcodes (M5d) and
+the import (M5e).

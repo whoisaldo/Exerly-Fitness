@@ -434,3 +434,36 @@ accuracy.
   turns a working load into prefilled, incomplete `warmUp` sets. It rounds to
   loadable weights and never repeats a load. Barbell schemes start with an
   empty-bar set (PARITY T17).
+
+## Nutrition
+
+`docs/design/007-nutrition.md` has the design and the measured accuracy of the
+trend weight and expenditure.
+
+- `Nutrient` is the catalog: energy, macros, carbohydrates and fats in detail,
+  vitamins, minerals, essential amino acids, alcohol, caffeine and water, in
+  `Nutrient.Group`s. Each has a `name`, a `unit` and, where public, an adult
+  `reference` intake marked `.atLeast`, `.atMost` or `.target`.
+  `NutrientAmounts` holds amounts per nutrient; a missing value means unknown,
+  not zero.
+- `NutritionStore(persistence:now:)` is a `DocumentHost` for four synced kinds:
+  - `saved_food`: a `Food` (custom, recipe or database), with nutrients per
+    100 g, servings as gram weights, a barcode and a favourite flag;
+  - `food_entry`: a `FoodEntry` on a `LocalDate` and meal, which keeps a
+    `FoodSnapshot` so editing the food later doesn't rewrite the log;
+  - `nutrition_day`: a `NutritionDay` with a `DayStatus` (unlogged, partial,
+    complete or fasting) and notes;
+  - `weight_entry`: a `WeightEntry`, with optional body fat.
+- Foods: `saveFood`, `setFavorite`, `archiveFood`, `food(_:)` and
+  `recentFoods(limit:)`.
+- Logging: `log(_:grams:serving:quantity:on:meal:)`, `saveEntry`,
+  `deleteEntry`, `entries(on:)` and `copy(from:meal:to:meal:)` for a meal or a
+  whole day. `NutritionStore.defaultMeals` names the usual four.
+- Days: `day(_:)`, `setStatus(_:on:)`, `setNotes(_:on:)`, and `summary(on:)`,
+  which gives totals, totals per meal and `energyShares`.
+  `contributors(of:on:)` ranks the entries behind one nutrient.
+- Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
+- `EnergyBalance.estimate(_:prior:parameters:)` smooths weigh-ins and logged
+  intake into a daily `Estimate`: trend weight and expenditure, each with one
+  standard deviation. Feed it `store.energyBalanceDays(from:through:)`; only
+  complete and fasting days count as known intake. Show the band.
