@@ -481,6 +481,12 @@ trend weight and expenditure.
   which gives totals, totals per meal and `energyShares`.
   `contributors(of:on:)` ranks the entries behind one nutrient.
 - Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
+- Apple Health: `importHealthWeights(_:deleted:timeZone:)` merges `HealthWeight`
+  samples as one unit and returns what it added, updated, removed and skipped.
+  Each weigh-in keeps its sample's UUID, so a repeat import, on any device,
+  changes nothing. `deleted` sample IDs remove theirs, and weigh-ins entered in
+  Exerly are never touched. These have `source == .appleHealth`: don't write
+  them back to Health, and `deleteWeight` refuses them (delete in Health).
 - Insights (`docs/design/013-nutrient-insights.md`):
   - `overview(from:through:)` gives per-nutrient averages over the days that
     count, observed days, the goal, the share of goal (each day against its

@@ -179,19 +179,28 @@ public struct NutritionDay: Sendable, Codable, Hashable, Identifiable {
 }
 
 public struct WeightEntry: Sendable, Codable, Hashable, Identifiable {
+    /// Where a weigh-in came from; nil when it was entered in Exerly.
+    public enum Source: String, Sendable, Codable, Hashable {
+        /// Read from Apple Health. Its ID is the Health sample's, and Health
+        /// stays its source of truth, so it isn't written back there.
+        case appleHealth
+    }
+
     public var id: UUID
     public var at: Date
     public var date: LocalDate
     public var weight: Mass
     /// Body fat, in percent, when the scale reports it.
     public var bodyFat: Double?
+    public var source: Source?
 
-    public init(id: UUID = UUID(), at: Date, date: LocalDate, weight: Mass, bodyFat: Double? = nil) {
+    public init(id: UUID = UUID(), at: Date, date: LocalDate, weight: Mass, bodyFat: Double? = nil, source: Source? = nil) {
         self.id = id
         self.at = at
         self.date = date
         self.weight = weight
         self.bodyFat = bodyFat
+        self.source = source
     }
 
     var problems: [String] {

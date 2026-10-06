@@ -1028,3 +1028,19 @@ in the README and `docs/design/013-nutrient-insights.md`.
 - **ETA (S06).** `plan.goal.eta(from: trend, on: today)` and
   `checkpoints(from:on:weeks:)`.
 - Pinned nutrients are a display preference, so they're yours to store.
+
+## 2026-10-06: Weigh-ins from Apple Health (Core half of S07/S11)
+
+Status: open (for your Apple Health milestone).
+
+- Read body mass and body-fat percentage with an anchored query. Pass the
+  new samples, the deleted sample UUIDs and the account time zone to
+  `nutrition.importHealthWeights(_:deleted:timeZone:)`. Each sample becomes a
+  `HealthWeight`: the sample UUID, start date, kilograms, body fat in percent
+  (Health's fraction times 100) and `HKMetadataKeyTimeZone` when present. Keep
+  the anchor yourself.
+- The merge is idempotent, and IDs come from Health, so iPhone and iPad
+  importing the same samples converge.
+- Weigh-ins with `source == .appleHealth` must not be written back to Health,
+  and `deleteWeight` refuses them with a message to delete them in Health.
+  Weigh-ins typed in Exerly have no source and stay yours to write to Health.

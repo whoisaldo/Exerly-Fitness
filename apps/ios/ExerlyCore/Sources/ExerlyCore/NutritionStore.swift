@@ -29,7 +29,7 @@ public final class NutritionStore {
     static let weightKind = "weight_entry"
     nonisolated static let planKind = "nutrition_plan"
 
-    @ObservationIgnored private let persistence: TrainingPersistence & DocumentPersistence
+    @ObservationIgnored let persistence: TrainingPersistence & DocumentPersistence
     @ObservationIgnored private let now: () -> Date
 
     public init(persistence: TrainingPersistence & DocumentPersistence, now: @escaping () -> Date = Date.init) throws {
@@ -185,7 +185,10 @@ public final class NutritionStore {
     }
 
     public func deleteWeight(_ id: UUID) throws {
-        guard weights.contains(where: { $0.id == id }) else { throw StoreError.notFound }
+        guard let weight = weights.first(where: { $0.id == id }) else { throw StoreError.notFound }
+        guard weight.source != .appleHealth else {
+            throw StoreError.invalid(["This weigh-in comes from Apple Health. Delete it in the Health app and Exerly will follow."])
+        }
         let publish = try prepareWrite(kind: Self.weightKind, id: id.uuidString, payload: nil)
         publish()
     }
