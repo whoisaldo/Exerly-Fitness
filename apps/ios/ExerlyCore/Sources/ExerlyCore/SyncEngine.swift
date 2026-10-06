@@ -34,6 +34,9 @@ public final class SyncEngine {
 
     public private(set) var state: State = .idle
     public private(set) var lastSyncedAt: Date?
+    /// Server versions this device couldn't read, set aside so sync carries on.
+    /// Loaded at the start of each sync.
+    public private(set) var rejected: [RejectedDocument] = []
 
     @ObservationIgnored private let hosts: [DocumentHost]
     @ObservationIgnored private let stateStore: SyncStateStore
@@ -106,6 +109,7 @@ public final class SyncEngine {
     private func run() async throws {
         state = .syncing
         bases = Dictionary(try stateStore.syncBases().map { (Self.key($0.kind, $0.id), $0) }, uniquingKeysWith: { a, _ in a })
+        rejected = try stateStore.rejectedDocuments()
         try await pull()
         if try await push() { try await pull() }
     }
@@ -126,14 +130,22 @@ public final class SyncEngine {
         }
     }
 
-    /// Applies a remote version, merging with unpushed local changes.
-    private func receive(_ change: RemoteDocument) throws {
+    /// Applies a remote version, merging with unpushed local changes. Returns
+    /// false when the version can't be read and was set aside.
+    @discardableResult
+    private func receive(_ change: RemoteDocument) throws -> Bool {
         try checkActive()
-        guard let host = host(for: change.kind) else { return }
+        guard let host = host(for: change.kind) else { return true }
         let key = Self.key(change.kind, change.id)
         let base = bases[key]
-        if let base, change.revision <= base.revision { return }
-        let remote = try change.payload.map { try host.canonicalize(kind: change.kind, payload: $0) }
+        if let base, change.revision <= base.revision { return true }
+        let remote: Data?
+        do {
+            remote = try change.payload.map { try host.canonicalize(kind: change.kind, payload: $0) }
+        } catch {
+            try setAside(change, reason: "\(error)")
+            return false
+        }
         let local = try host.payload(kind: change.kind, id: change.id)
         let clean = base.map { local == $0.payload } ?? (local == nil)
         var write: Data??
@@ -147,13 +159,24 @@ public final class SyncEngine {
         }
         // Changed here, deleted there: local stays and is pushed back.
         let newBase = SyncBase(kind: change.kind, id: change.id, revision: change.revision, payload: remote)
+        let remaining = rejected.filter { $0.kind != change.kind || $0.id != change.id }
         var publish: () -> Void = {}
         try stateStore.performAtomically {
             if let write { publish = try host.prepareWrite(kind: change.kind, id: change.id, payload: write) }
             try stateStore.saveSyncBase(newBase)
+            if remaining != rejected { try stateStore.saveRejectedDocuments(remaining) }
         }
         publish()
         bases[key] = newBase
+        rejected = remaining
+        return true
+    }
+
+    private func setAside(_ change: RemoteDocument, reason: String) throws {
+        let entry = RejectedDocument(kind: change.kind, id: change.id, revision: change.revision, reason: String(reason.prefix(500)))
+        let updated = rejected.filter { $0.kind != change.kind || $0.id != change.id } + [entry]
+        try stateStore.saveRejectedDocuments(updated)
+        rejected = updated
     }
 
     // MARK: Push
@@ -212,7 +235,8 @@ public final class SyncEngine {
                 try saveBase(SyncBase(kind: kind, id: id, revision: revision, payload: current))
                 return true
             case .conflict(let remote?):
-                try receive(remote)
+                // An unreadable server version can't be merged; leave this document.
+                if try !receive(remote) { return false }
             case .conflict(nil):
                 // The server has no such document: start again from nothing.
                 try saveBase(SyncBase(kind: kind, id: id, revision: 0))

@@ -14,6 +14,17 @@ public struct SyncBase: Sendable, Hashable {
     public var pushHash: String?
 }
 
+/// A version of a document from the server that this device couldn't read,
+/// for example one written by a newer app or a faulty agent. Sync sets it aside
+/// and carries on; a later readable version replaces it.
+public struct RejectedDocument: Sendable, Hashable, Codable {
+    public var kind: String
+    public var id: String
+    public var revision: Int
+    /// Why it couldn't be read, for diagnostics rather than display.
+    public var reason: String
+}
+
 /// Where the sync engine keeps bases and its cursor. Both training
 /// persistence implementations provide it, in the same store as the data.
 @MainActor
@@ -23,11 +34,22 @@ public protocol SyncStateStore: AnyObject {
     func removeSyncBase(kind: String, id: String) throws
     func syncCursor() throws -> Int
     func saveSyncCursor(_ cursor: Int) throws
+    func rejectedDocuments() throws -> [RejectedDocument]
+    func saveRejectedDocuments(_ documents: [RejectedDocument]) throws
     /// Runs several writes as one unit: all of them persist, or none.
     func performAtomically(_ body: () throws -> Void) throws
 }
 
 private let cursorKey = "sync.cursor"
+private let rejectedKey = "sync.rejected"
+
+private func loadRejected(_ data: Data?) throws -> [RejectedDocument] {
+    try data.map { try JSONDecoder().decode([RejectedDocument].self, from: $0) } ?? []
+}
+
+private func encodeRejected(_ documents: [RejectedDocument]) throws -> Data? {
+    documents.isEmpty ? nil : try ExerlyJSON.canonical(documents)
+}
 
 extension InMemoryTrainingPersistence: SyncStateStore {
     public func syncBases() throws -> [SyncBase] { Array(bases.values) }
@@ -37,6 +59,10 @@ extension InMemoryTrainingPersistence: SyncStateStore {
         try loadValue(forKey: cursorKey).flatMap { String(bytes: $0, encoding: .utf8).flatMap(Int.init) } ?? 0
     }
     public func saveSyncCursor(_ cursor: Int) throws { try saveValue(Data(String(cursor).utf8), forKey: cursorKey) }
+    public func rejectedDocuments() throws -> [RejectedDocument] { try loadRejected(loadValue(forKey: rejectedKey)) }
+    public func saveRejectedDocuments(_ documents: [RejectedDocument]) throws {
+        try saveValue(encodeRejected(documents), forKey: rejectedKey)
+    }
 }
 
 extension SQLiteTrainingPersistence: SyncStateStore {
@@ -73,4 +99,8 @@ extension SQLiteTrainingPersistence: SyncStateStore {
     }
 
     public func saveSyncCursor(_ cursor: Int) throws { try saveValue(Data(String(cursor).utf8), forKey: cursorKey) }
+    public func rejectedDocuments() throws -> [RejectedDocument] { try loadRejected(loadValue(forKey: rejectedKey)) }
+    public func saveRejectedDocuments(_ documents: [RejectedDocument]) throws {
+        try saveValue(encodeRejected(documents), forKey: rejectedKey)
+    }
 }

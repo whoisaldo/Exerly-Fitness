@@ -68,8 +68,11 @@ public final class AgentStore {
 
     /// Applies every change as one unit, only if each target still equals its
     /// `before`. Otherwise the proposal becomes stale and nothing is applied.
+    /// A proposal that arrived by sync is checked here as strictly as one filed
+    /// on this device.
     public func accept(_ id: UUID) throws {
         var proposal = try pending(id)
+        try check(proposal)
         guard try matches(proposal.changes, \.before) else {
             proposal.status = .stale
             try commit(proposal, event(.proposalStale, proposal, actor: proposal.author), stage: { [] })
@@ -93,6 +96,7 @@ public final class AgentStore {
     public func undo(_ id: UUID) throws {
         guard var proposal = self.proposal(id) else { throw AgentError.notFound }
         guard proposal.status == .accepted else { throw AgentError.notAccepted }
+        try checkWrites(proposal.changes, \.before)
         guard try matches(proposal.changes, \.after) else { throw AgentError.stale }
         proposal.status = .undone
         proposal.decidedAt = now()
@@ -125,15 +129,29 @@ public final class AgentStore {
         if blank(proposal.title) { throw AgentError.invalid("A proposal needs a title") }
         if blank(proposal.falsifier) { throw AgentError.invalid("A proposal needs a falsifier: what would show it is wrong") }
         if proposal.changes.isEmpty { throw AgentError.invalid("A proposal needs at least one change") }
-        for change in proposal.changes {
-            let host = try host(change.kind)
+        try checkWrites(proposal.changes, \.after)
+    }
+
+    /// Checks the writes one side of the changes would make, per host and as a
+    /// batch, before anything is written. Each document may appear once.
+    private func checkWrites(_ changes: [ProposedChange], _ side: KeyPath<ProposedChange, JSONValue?>) throws {
+        var seen = Set<String>()
+        var batches: [ObjectIdentifier: (host: DocumentHost, writes: [DocumentWrite])] = [:]
+        for change in changes {
+            guard seen.insert("\(change.kind)/\(change.id)").inserted else {
+                throw AgentError.invalid("The proposal changes \(change.kind) \(change.id) more than once")
+            }
             if change.before == nil && change.after == nil { throw AgentError.invalid("A change needs a before or an after") }
-            if let after = change.after {
-                do {
-                    try host.validate(kind: change.kind, id: change.id, payload: after.canonicalData)
-                } catch {
-                    throw AgentError.invalid("The proposed \(change.kind) \(change.id) is not valid")
-                }
+            let host = try host(change.kind)
+            let write = DocumentWrite(kind: change.kind, id: change.id, payload: change[keyPath: side]?.canonicalData)
+            batches[ObjectIdentifier(host), default: (host, [])].writes.append(write)
+        }
+        for (host, writes) in batches.values {
+            do {
+                try host.validate(batch: writes)
+            } catch {
+                let reason = (error as? DocumentError)?.message ?? "\(error)"
+                throw AgentError.invalid("The proposed changes can't be applied: \(reason)")
             }
         }
     }

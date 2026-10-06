@@ -13,6 +13,9 @@ public protocol DocumentHost: AnyObject {
     func canonicalize(kind: String, payload: Data) throws -> Data
     /// Stricter than `canonicalize`: what a proposal may write.
     func validate(kind: String, id: String, payload: Data) throws
+    /// Checks several writes together, nil to delete, so one can depend on
+    /// another (a session using a custom exercise created alongside it).
+    func validate(batch: [DocumentWrite]) throws
     func merge(kind: String, base: Data?, local: Data, remote: Data) throws -> Data
     /// Persists a write, nil to delete, and returns the step that publishes it in
     /// memory. Call inside `performAtomically` and publish only after it commits.
@@ -29,6 +32,27 @@ public protocol DocumentPersistence: AnyObject {
 
 public struct DocumentError: Error, Equatable {
     public let message: String
+}
+
+/// One write in a batch: a document's kind, ID and payload, nil to delete.
+public struct DocumentWrite: Sendable, Hashable {
+    public var kind: String
+    public var id: String
+    public var payload: Data?
+
+    public init(kind: String, id: String, payload: Data?) {
+        self.kind = kind
+        self.id = id
+        self.payload = payload
+    }
+}
+
+extension DocumentHost {
+    public func validate(batch: [DocumentWrite]) throws {
+        for write in batch {
+            if let payload = write.payload { try validate(kind: write.kind, id: write.id, payload: payload) }
+        }
+    }
 }
 
 extension TrainingStore: DocumentHost {
@@ -65,18 +89,36 @@ extension TrainingStore: DocumentHost {
     }
 
     public func validate(kind: String, id: String, payload: Data) throws {
-        switch kind {
-        case Self.sessionKind:
-            let session = try ExerlyJSON.decoder.decode(WorkoutSession.self, from: payload)
-            guard session.id.uuidString == id else { throw DocumentError(message: "The session ID doesn't match") }
-            try session.validate(library: library)
-        case Self.exerciseKind:
-            let exercise = try ExerlyJSON.decoder.decode(Exercise.self, from: payload)
-            guard exercise.id.rawValue == id, exercise.id.isCustom, exercise.validationErrors.isEmpty else {
-                throw DocumentError(message: "Not a valid custom exercise")
+        try validate(batch: [DocumentWrite(kind: kind, id: id, payload: payload)])
+    }
+
+    /// Custom exercises first, so the batch's sessions are checked against a
+    /// library that includes them. Custom exercises are never removed.
+    public func validate(batch: [DocumentWrite]) throws {
+        var library = self.library
+        for write in batch where write.kind == Self.exerciseKind {
+            guard let payload = write.payload else {
+                throw DocumentError(message: "Custom exercises can't be removed; sessions may use them")
             }
-        default:
-            throw DocumentError(message: "Unknown kind \(kind)")
+            try validateExercise(id: write.id, payload: payload)
+            library = try library.replacing(ExerlyJSON.decoder.decode(Exercise.self, from: payload))
+        }
+        for write in batch where write.kind != Self.exerciseKind {
+            guard write.kind == Self.sessionKind else { throw DocumentError(message: "Unknown kind \(write.kind)") }
+            guard let payload = write.payload else {
+                guard UUID(uuidString: write.id) != nil else { throw DocumentError(message: "Invalid session ID") }
+                continue
+            }
+            let session = try ExerlyJSON.decoder.decode(WorkoutSession.self, from: payload)
+            guard session.id.uuidString == write.id else { throw DocumentError(message: "The session ID doesn't match") }
+            try session.validate(library: library)
+        }
+    }
+
+    private func validateExercise(id: String, payload: Data) throws {
+        let exercise = try ExerlyJSON.decoder.decode(Exercise.self, from: payload)
+        guard exercise.id.rawValue == id, exercise.id.isCustom, exercise.validationErrors.isEmpty else {
+            throw DocumentError(message: "Not a valid custom exercise")
         }
     }
 

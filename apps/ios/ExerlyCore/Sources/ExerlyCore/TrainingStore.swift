@@ -262,11 +262,13 @@ public final class TrainingStore {
     }
 
     func stageExercise(_ exercise: Exercise) throws -> () -> Void {
-        let updated = try library.replacing(exercise)
+        _ = try library.replacing(exercise)
         try persistence.save(exercise)
         return { [self] in
-            library = updated
-            history = TrainingHistory(sessions: history.sessions, library: updated)
+            // Built from the library at publish time, so several exercises
+            // staged in one unit all land. It was validated above.
+            library = (try? library.replacing(exercise)) ?? library
+            history = TrainingHistory(sessions: history.sessions, library: library)
         }
     }
 

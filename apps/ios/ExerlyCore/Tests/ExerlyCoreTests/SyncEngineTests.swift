@@ -53,6 +53,17 @@ final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
         }
     }
 
+    /// Puts a document straight into the feed, as another client could, even one
+    /// this device can't read.
+    func inject(kind: String, id: String, payload: Data?) {
+        lock.withLock {
+            let revision = (documents[key(kind, id)]?.revision ?? 0) + 1
+            documents[key(kind, id)] = Stored(revision: revision, payload: payload)
+            feed.append(RemoteDocument(kind: kind, id: id, revision: revision, deleted: payload == nil, payload: payload,
+                                       sequence: feed.count + 1))
+        }
+    }
+
     func changes(after cursor: Int, limit: Int) async throws -> ChangePage {
         try lock.withLock {
             if offline { throw Offline() }
@@ -308,5 +319,37 @@ final class Device {
         #expect(phone.training.history.sessions[0].exercises[0].sets[0].primary.load == .kg(150))
         #expect(phone.agent.auditLog.map(\.action) == [.proposalFiled, .proposalAccepted])
         #expect(phone.agent.auditLog == tablet.agent.auditLog)
+    }
+
+    @Test func anUnreadableRemoteDocumentIsSetAsideAndSyncCarriesOn() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let tablet = try Device(server: server)
+        let badID = UUID().uuidString
+        server.inject(kind: "workout_session", id: badID,
+                      payload: Data(#"{"id":"\#(badID)","startedAt":"yesterday","exercises":[]}"#.utf8))
+        try tablet.store.startSession(name: "Legs", bodyweight: .kg(80))
+        try tablet.store.addExercise("back-squat")
+        try tablet.logSet(reps: 5, kg: 100)
+        try tablet.store.finishSession()
+        try await tablet.engine.sync()
+
+        try await phone.engine.sync()
+        #expect(phone.engine.state == .idle)
+        #expect(phone.store.history.sessions.map(\.name) == ["Legs"])
+        #expect(phone.engine.rejected.map(\.id) == [badID])
+        #expect(phone.engine.rejected.first?.revision == 1)
+        #expect(phone.store.history.session(UUID(uuidString: badID)!) == nil)
+
+        // It is remembered across launches, and a later readable version replaces it.
+        let relaunched = SyncEngine(store: phone.store, state: phone.persistence, api: server)
+        try await relaunched.sync()
+        #expect(relaunched.rejected.map(\.id) == [badID])
+        let fixed = WorkoutSession(id: UUID(uuidString: badID)!, name: "Fixed", startedAt: Fixture.instant(days: -1),
+                                   endedAt: Fixture.instant(days: -1, minutes: 30), timeZone: Fixture.utc)
+        server.inject(kind: "workout_session", id: badID, payload: try ExerlyJSON.canonical(fixed))
+        try await relaunched.sync()
+        #expect(relaunched.rejected.isEmpty)
+        #expect(Set(phone.store.history.sessions.map(\.name)) == ["Legs", "Fixed"])
     }
 }
