@@ -146,6 +146,10 @@ extension APIClient {
         )
     }
 
+    func signInWithApple(_ body: AppleSignInRequest) async throws -> AuthResponse {
+        try await post("/auth/apple", body: body, authenticated: false)
+    }
+
     // MARK: Onboarding
 
     func completeOnboarding(_ data: OnboardingRequest, operationID: String) async throws -> OnboardingResponse {

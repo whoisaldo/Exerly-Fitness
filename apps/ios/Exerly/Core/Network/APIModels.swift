@@ -85,10 +85,26 @@ struct AuthRequest: Encodable {
     var name: String?
 }
 
+struct AppleSignInRequest: Encodable {
+    let identityToken: String
+    /// The raw nonce; Apple was given its SHA-256.
+    let nonce: String
+    let name: String?
+    let timezone: String
+    let unitSystem: String?
+}
+
 struct AuthResponse: Decodable {
     let token: String
     let refreshToken: String?
     let user: UserDTO?
+}
+
+/// How the account can sign in, so Settings offers only actions that work:
+/// disconnecting Apple needs a password.
+struct SignInMethods: Decodable, Equatable {
+    var password: Bool
+    var apple: Bool
 }
 
 struct UserDTO: Codable, Identifiable {
@@ -282,6 +298,7 @@ struct SetupStatus: Decodable {
 struct BootstrapResponse: Decodable {
     let account: UserDTO
     let account_id: String
+    let sign_in_methods: SignInMethods?
     let onboarding: SetupStatus
     let targets: SetupTargets?
 }

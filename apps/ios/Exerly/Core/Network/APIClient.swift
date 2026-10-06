@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import ExerlyCore
 
 extension Notification.Name {
     static let exerlySessionExpired = Notification.Name("exerlySessionExpired")
@@ -100,9 +101,21 @@ actor APIClient {
         _ method: String, path: String, body: Encodable? = nil,
         authenticated: Bool = true, operationID: String? = nil, expectedAccountID: String? = nil
     ) async throws -> T {
+        try await exchange(method, path: path, body: try body.map { try encoder.encode($0) }, headers: [:],
+                           authenticated: authenticated, operationID: operationID,
+                           expectedAccountID: expectedAccountID) { try self.decoded($0, $1) }
+    }
+
+    /// Sends a request with the session and passes every status except 401 to `accept`.
+    private func exchange<T>(
+        _ method: String, path: String, body: Data?, headers: [String: String],
+        authenticated: Bool, operationID: String?, expectedAccountID: String?,
+        accept: (Int, Data) throws -> T
+    ) async throws -> T {
         guard let url = URL(string: baseURL + path) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("2", forHTTPHeaderField: "X-Session-Protocol")
         request.setValue(TimeZone.current.identifier, forHTTPHeaderField: "X-Timezone")
@@ -127,7 +140,7 @@ actor APIClient {
             guard let token else { throw APIError.unauthorized }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        if let body { request.httpBody = try encoder.encode(body) }
+        request.httpBody = body
         if (authenticated || operationID != nil) && !["GET", "HEAD"].contains(method) {
             request.setValue(operationID ?? UUID().uuidString, forHTTPHeaderField: "Idempotency-Key")
         }
@@ -137,7 +150,7 @@ actor APIClient {
         for attempt in 0..<attempts {
             try Task.checkCancellation()
             do {
-                return try await perform(request, token: token)
+                return try await perform(request, token: token, accept: accept)
             } catch let error as APIError {
                 if case .unauthorized = error, let token, path != "/api/change-password" {
                     if path != "/auth/refresh", keychain.getRefreshToken() != nil {
@@ -152,7 +165,7 @@ actor APIClient {
                         var retry = request
                         retry.setValue("Bearer \(renewed.token)", forHTTPHeaderField: "Authorization")
                         do {
-                            return try await perform(retry, token: renewed.token)
+                            return try await perform(retry, token: renewed.token, accept: accept)
                         } catch APIError.unauthorized {
                             try expireSession(matching: renewed.token)
                             throw APIError.unauthorized
@@ -168,7 +181,7 @@ actor APIClient {
         throw APIError.unknown
     }
 
-    private func perform<T: Decodable>(_ request: URLRequest, token: String?) async throws -> T {
+    private func perform<T>(_ request: URLRequest, token: String?, accept: (Int, Data) throws -> T) async throws -> T {
         try Task.checkCancellation()
         if let token, keychain.getToken() != token { throw CancellationError() }
         let data: Data
@@ -184,16 +197,17 @@ actor APIClient {
         // current account after logout, login, or credential rotation.
         if let token, keychain.getToken() != token { throw CancellationError() }
         guard let http = response as? HTTPURLResponse else { throw APIError.unknown }
-        switch http.statusCode {
-        case 200...299:
-            do { return try decoder.decode(T.self, from: data) }
-            catch { throw APIError.decodingError(error) }
-        case 401:
-            throw APIError.unauthorized
-        default:
+        if http.statusCode == 401 { throw APIError.unauthorized }
+        return try accept(http.statusCode, data)
+    }
+
+    private func decoded<T: Decodable>(_ status: Int, _ data: Data) throws -> T {
+        guard (200...299).contains(status) else {
             let message = try? decoder.decode(APIMessageResponse.self, from: data)
-            throw APIError.serverError(http.statusCode, message?.message ?? "The server could not complete this request.")
+            throw APIError.serverError(status, message?.message ?? "The server could not complete this request.")
         }
+        do { return try decoder.decode(T.self, from: data) }
+        catch { throw APIError.decodingError(error) }
     }
 
     func get<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {
@@ -258,7 +272,7 @@ actor APIClient {
         request.httpMethod = "POST"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(UUID().uuidString, forHTTPHeaderField: "Idempotency-Key")
-        let _: APIMessageResponse? = try? await perform(request, token: nil)
+        let _: APIMessageResponse? = try? await perform(request, token: nil) { try self.decoded($0, $1) }
     }
     private func refreshOperation(token: String, refresh: String?) throws -> (key: String, value: String, previousKey: String?) {
         let digest = SHA256.hash(data: Data((refresh ?? token).utf8)).map { String(format: "%02x", $0) }.joined()
@@ -300,7 +314,7 @@ actor APIClient {
                 request.setValue("Exerly iPhone", forHTTPHeaderField: "X-Device-Name")
                 request.setValue("Bearer \(originalToken)", forHTTPHeaderField: "Authorization")
                 request.setValue(operation.value, forHTTPHeaderField: "Idempotency-Key")
-                response = try await perform(request, token: originalToken)
+                response = try await perform(request, token: originalToken) { try self.decoded($0, $1) }
             }
             guard keychain.getToken() == originalToken, keychain.getRefreshToken() == refresh else { throw CancellationError() }
             try Self.validateSession(response, replacing: originalToken)
@@ -339,3 +353,27 @@ actor APIClient {
 }
 
 private struct RefreshRequest: Encodable { let refreshToken: String }
+
+/// ExerlyCore's requests share this client's session, so the app has one
+/// session owner. Errors become ExerlyCore's.
+extension APIClient: SessionTransport {
+    func send(_ method: String, path: String, body: Data?, headers: [String: String],
+              as accountID: String) async throws -> (status: Int, data: Data) {
+        do {
+            return try await exchange(method, path: path, body: body, headers: headers, authenticated: true,
+                                      operationID: headers["Idempotency-Key"], expectedAccountID: accountID) { ($0, $1) }
+        } catch is CancellationError {
+            // Raised when the session's owner isn't `accountID` or changed in flight.
+            if Task.isCancelled { throw CancellationError() }
+            throw ExerlyCore.APIError.accountChanged
+        } catch let error as APIError {
+            switch error {
+            case .unauthorized: throw ExerlyCore.APIError.sessionExpired
+            case .networkError(let underlying): throw underlying
+            case .invalidURL, .unknown, .decodingError, .invalidSessionResponse: throw ExerlyCore.APIError.invalidResponse
+            case .serverError(let status, let message): throw ExerlyCore.APIError.server(status: status, message: message)
+            case .sessionStorage: throw ExerlyCore.APIError.server(status: 0, message: error.localizedDescription)
+            }
+        }
+    }
+}

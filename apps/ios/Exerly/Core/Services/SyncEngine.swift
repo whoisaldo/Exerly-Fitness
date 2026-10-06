@@ -123,6 +123,25 @@ final class SyncEngine: ObservableObject {
         if accountID != nil && automaticallySync { Task { await synchronize(force: true) } }
     }
 
+    enum PurgeError: Error { case notConfigured }
+
+    /// Removes a deleted account's offline queue, synced copies, cached responses
+    /// and checkpoint. If that account is the configured one, syncing it stops.
+    func purge(accountID: String) throws {
+        guard let context else { throw PurgeError.notConfigured }
+        let owner = "\(api.storageNamespace):\(accountID)"
+        if self.accountID == owner {
+            retryTask?.cancel()
+            self.accountID = nil
+        }
+        try context.delete(model: SyncedResource.self, where: #Predicate { $0.accountID == owner })
+        try context.delete(model: PendingMutation.self, where: #Predicate { $0.accountID == owner })
+        try context.delete(model: CachedAPIResponse.self, where: #Predicate { $0.accountID == owner })
+        try context.delete(model: SyncCheckpoint.self, where: #Predicate { $0.accountID == owner })
+        try context.save()
+        refreshCounts()
+    }
+
     private func ownedResources() throws -> [SyncedResource] {
         guard let accountID, let context else { return [] }
         return try context.fetch(FetchDescriptor<SyncedResource>(predicate: #Predicate { $0.accountID == accountID }))

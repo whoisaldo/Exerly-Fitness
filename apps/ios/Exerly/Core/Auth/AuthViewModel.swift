@@ -1,9 +1,17 @@
 import Foundation
 import SwiftUI
 import CryptoKit
+import ExerlyCore
 
 enum AuthState: Equatable {
     case loading, unauthenticated, onboarding, authenticated, connectionFailed
+}
+
+enum AccountDeletionOutcome: Equatable {
+    case deleted
+    /// The account uses Sign in with Apple: ask Apple for a fresh authorization
+    /// code and call `deleteAccount` again with it. Nothing was deleted.
+    case appleReauthorizationRequired
 }
 
 @MainActor
@@ -20,6 +28,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isSubmitting = false
     @Published var isOffline = false
     @Published private(set) var setupStatus: SetupStatus?
+    /// From the last bootstrap; nil until the server has been reached.
+    @Published private(set) var signInMethods: SignInMethods?
 
     private let api: APIClient
     private let keychain: any SessionCredentials
@@ -77,6 +87,7 @@ final class AuthViewModel: ObservableObject {
         keychain.deleteToken()
         currentUser = nil
         setupStatus = nil
+        signInMethods = nil
         authState = .unauthenticated
         isOffline = false
     }
@@ -112,6 +123,7 @@ final class AuthViewModel: ObservableObject {
                   bootstrap.account_id == owner, bootstrap.account.id == owner,
                   bootstrap.onboarding.user.id == owner else { throw APIError.invalidSessionResponse }
             setupStatus = bootstrap.onboarding
+            signInMethods = bootstrap.sign_in_methods
             accept(bootstrap.account, setupComplete: bootstrap.onboarding.complete)
         } catch is CancellationError {
             if generation == sessionGeneration && authState == .loading {
@@ -156,6 +168,80 @@ final class AuthViewModel: ObservableObject {
             try finalizeAuthenticatedSession(response)
             if let user = currentUser { accept(user, setupComplete: false) }
         } catch { if generation == sessionGeneration { self.error = error.localizedDescription } }
+    }
+
+    /// Signs in with a native Apple credential, then bootstraps exactly as `login` does.
+    /// Give Apple the nonce's SHA-256 and pass the raw nonce here. When a password
+    /// account already owns the email, `error` asks the person to sign in with the
+    /// password and connect Apple in Settings.
+    func signInWithApple(identityToken: String, rawNonce: String, name: String?) async {
+        guard !isSubmitting else { return }
+        isSubmitting = true
+        error = nil
+        let generation = sessionGeneration
+        defer { isSubmitting = false }
+        do {
+            let response = try await api.signInWithApple(AppleSignInRequest(
+                identityToken: identityToken, nonce: rawNonce, name: name,
+                timezone: TimeZone.current.identifier, unitSystem: defaults.string(forKey: "unitSystem")))
+            guard generation == sessionGeneration else { return }
+            try finalizeAuthenticatedSession(response)
+            await checkAuth(useCached: false)
+        } catch { if generation == sessionGeneration { self.error = error.localizedDescription } }
+    }
+
+    // MARK: Account
+
+    /// The signed-in account's documents and account actions, for ExerlyCore's
+    /// `SyncEngine` and Settings. Every request is bound to this account and
+    /// fails with `ExerlyCore.APIError.accountChanged` if the session changes.
+    var accountAPI: AccountAPI? {
+        guard let id = currentUser?.id, APIClient.accountID(in: keychain.getToken()) == id else { return nil }
+        return AccountAPI(accountID: id, transport: api)
+    }
+
+    private func signedInAccount() throws -> AccountAPI {
+        guard let account = accountAPI else { throw ExerlyCore.APIError.notSignedIn }
+        return account
+    }
+
+    /// Connects Sign in with Apple. Throws `ExerlyCore.APIError.linkConflict` when
+    /// the Apple ID belongs to another account.
+    func linkApple(identityToken: String, rawNonce: String) async throws {
+        let account = try signedInAccount()
+        try await account.connectApple(identityToken: identityToken, rawNonce: rawNonce)
+        if currentUser?.id == account.accountID { signInMethods?.apple = true }
+    }
+
+    /// Disconnects Sign in with Apple. The server refuses when the account has no
+    /// password; `signInMethods` says so in advance.
+    func unlinkApple() async throws {
+        let account = try signedInAccount()
+        try await account.disconnectApple()
+        if currentUser?.id == account.accountID { signInMethods?.apple = false }
+    }
+
+    /// The full JSON export, for the share sheet.
+    func exportAccount() async throws -> Data {
+        try await signedInAccount().exportAccount()
+    }
+
+    /// Deletes the account and all of its data on the server, then signs out and
+    /// forgets this account's session and cached account data.
+    ///
+    /// The caller then removes the rest of the account's local data, in order:
+    /// `await` its ExerlyCore `SyncEngine.shutdown()`, delete the training database
+    /// with `SQLiteTrainingPersistence.deleteDatabase(accountID:)`, and call
+    /// `SyncEngine.shared.purge(accountID:)` for the legacy offline data.
+    func deleteAccount(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome {
+        let account = try signedInAccount()
+        do {
+            try await account.deleteAccount(appleAuthorizationCode: appleAuthorizationCode)
+        } catch ExerlyCore.APIError.appleReauthorizationRequired {
+            return .appleReauthorizationRequired
+        }
+        if APIClient.accountID(in: keychain.getToken()) == account.accountID { invalidateSession() }
+        return .deleted
     }
 
     @discardableResult
