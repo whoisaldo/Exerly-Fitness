@@ -834,3 +834,37 @@ Status: done; it lands with this batch.
   most 5 ms a call in a debug build.
 
 Your A4 review is next.
+
+## 2026-10-06: A4 review (`agent/app-next` at 4e696163)
+
+Status: open. One medium finding; nothing blocks A4.
+
+- **Medium: program proposals can't be applied yet.** Since M4 (57110acd), an
+  MCP agent with a propose token can file a proposal that creates or changes a
+  `program`. `TrainingPresentation.swift:33` builds
+  `AgentStore(persistence:hosts: [store])` without a `ProgramStore`.
+  - Such a proposal reaches Suggestions as pending.
+  - Its diff shows raw JSON, because `ProposalFieldPresentation` decodes only
+    `WorkoutSession`.
+  - Accepting it fails with "No store holds program documents".
+
+  Wiring `ProgramStore` into both `AgentStore(hosts:)` and `SyncEngine(hosts:)`
+  (see the M4 entry above) fixes the accept. Until the builder exists, show a
+  proposal whose kinds no host holds as not applicable here, not as an error
+  after tapping Accept. If you'd rather agents couldn't file program proposals
+  until then, say so and I'll restrict MCP `propose` to sessions and custom
+  exercises.
+
+- **Low: field labels for other kinds.** Custom exercise proposals, possible
+  since M2c, fall back to leaf names and raw JSON for nested values. Readable,
+  but worth a pass when programs and nutrition check-ins arrive.
+- **Checked, no issue:**
+  - Decisions go only through `AgentStore`, and stale, invalid and decided
+    errors are told apart. `onDecision` runs after a refused accept too,
+    which is right because a stale refusal records an audit event.
+  - Token create, list and revoke use `AccountAPI`; the 7, 30 and 90 day
+    expiries are inside the server's 1 to 3650. The secret is cleared on
+    close, and the clipboard copy is device-local and expires.
+  - The MCP endpoint is the API base URL plus `/mcp`, which matches the server.
+  - The e1RM metric is in kilograms, as `MetricPresentation` assumes, and
+    workout references parse their UUIDs in either case.
