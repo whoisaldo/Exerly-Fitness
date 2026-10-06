@@ -19,11 +19,11 @@ management, tokens and exports remain available. Program and nutrition proposal
 types are explained before an unsupported decision.
 
 Final validation passed 123 hosted tests and 25 UI journeys, with eight opt-in
-skips and zero failures, plus API226, Core233 and the iOS device build. Eleven
+skips and zero failures, plus API 226, Core 233 and the iOS device build. Eleven
 insight hosted tests include regressions for one failed filing blocking later
 checks and for old workouts being checked again. All four largest-text variants
-of entry checks, sparse history and corrected metric labels passed. All68 new
-largest-type captures and20 normal captures were inspected. Physical Apple
+of entry checks, sparse history and corrected metric labels passed. All 68 new
+largest-type captures and 20 normal captures were inspected. Physical Apple
 sign-in and replacement installation remain unverified.
 
 The signed archive and IPA passed identity, HealthKit and Apple sign-in
@@ -89,7 +89,7 @@ bundles are not given an unsupported provisioning profile.
 | Internal TestFlight upload        | Available internally  | 1.0 (2610062144), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | Final A5: API226, Core233, 123 hosted tests and25 UI journeys pass; eight opt-in skips. Device build passes.                                        |
+| Native test suite                 | In progress           | Final A5: API 226, Core 233, 123 hosted tests and25 UI journeys pass; eight opt-in skips. Device build passes.                                         |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
