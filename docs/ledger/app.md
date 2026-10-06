@@ -5,54 +5,67 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 13:49 EDT. A2 landed and pushed at84b7de51. Integration advanced
-to3685dbf2 with logic's shared session bridge, review fixes and MCP. Primary
-agent/app fast-forwarded to7038d86e, including the prepared A3 UI commit.
+2026-10-06 14:28 EDT. A2 is on integration at 84b7de51. A3 source is committed
+on agent/app at 1aad43b8, rebased over integration 7a97ae34. Work in this primary
+worktree; app-next retains earlier evidence only. Done is not met.
 
-1. Connect A3 account UI and training sync through AuthViewModel.accountAPI;
-   adopt docs/handoff/attachments/SessionBridgeTests.swift. Read the new handoff.
-2. Add hosted lifecycle composition and actual fixture-server UI coverage for
-   sync, account switching, export and deletion. Run full suite/device build.
-3. Review largest-text matrix for connected screens, archive/upload A3, update
-   PARITY/RELEASE, rebase and land. Do not claim real Apple authorization until
-   exercised on a signed device. TestFlight currently2610061654.
+1. Resolve the UUID case duplication reported in to-logic.md; only logic edits
+   Core/API. The actual-server reproducer is artifacts/app-review-case. Check
+   integration and the other agent's inbox/commits while doing independent work.
+2. Finish the four largest-text light/dark small/large visual checks. Then
+   rebase, freeze source and run the full native regression, API/Core suites and
+   unsigned device build. The previous full-native.xcresult was deliberately
+   interrupted for the final layout changes and UUID finding; it is NOT a pass.
+3. Archive/upload A3, set internal-group notes/build, update PARITY/RELEASE,
+   fast-forward integration and push. Continue A4 proposal review/audit and
+   Connect an agent, then detectors/programs. Do not stop at a milestone.
 
-## Active A3 work, 2026-10-06 14:09 EDT
+## Active A3 implementation and evidence
 
-Primary rebased to67c8db44; app commit8b2f4c40 connects the shared session,
-training sync, native Apple sign-in, export and deletion. New recovery/export and
-accessibility fixes are uncommitted. Do not lose them. Latest integration now
-7a97ae34 adds token management; review/rebase before the full final run.
+A3 uses AuthViewModel.accountAPI as the sole session owner. AppAccountWorkspace
+quiesces Core sync before sign-out, switch and deletion, and consumes the Core
+persistent accountsAwaitingLocalCleanup queue at launch/changes. Failed deletion
+restarts sync. Account export overlays unsynced training and proposals through
+AccountExport.merging. A separate offline training export works without a server;
+the UI discloses that queued legacy food/other entries are excluded. Core needs
+that queue merged before claiming full export. Requested an explicit persistence
+close lifecycle too. All requests and the UUID bug are in to-logic.md.
 
-21 hosted tests pass in artifacts/account/recovery-hosted.xcresult: 15 shared
-session tests adopted from the attachment plus six workspace lifecycle/export
-checks. Uses AuthViewModel.accountsAwaitingLocalCleanup as the sole persistent
-queue, waits for Core sync shutdown, purges local training/legacy data, then
-finishLocalCleanup. Root responds at launch and when that queue changes.
-AccountExport.merging now includes unsynced training; the separate offline
-export is explicitly training/suggestions only. Pending legacy food is disclosed
-as excluded and needs a later Core export extension.
+Native Apple buttons validate nonce/state/token and use the shared bridge.
+Account settings support link/unlink, JSON sharing and explicit deletion alerts.
+Profile hides password changes for Apple-only accounts. Training sync responds
+to foreground/local changes and runs every 120 seconds while active. No API calls
+or domain maths were added to screens; no Core/API files edited.
 
-Earlier connected checks: API213/Core164/device build passed. Account switching
-passed. Actual sync/export/delete passed normal plus small-dark and large-light
-at largest type; all 10 matrix images inspected. They predate the export changes.
-The first normal run's share-sheet assertion used a hidden UIKit identifier;
-changed to visible Close. Offline test initially forgot offline:true and the
-fixture did not intercept /v1, so its status assertion failed. Both corrected;
-workout relaunch and reconnect server upload already passed. New tests also drop
-the deletion acknowledgement to exercise server-confirmed recovery.
+Welcome now uses the original E/pulse asset, supports scrolling and Reduce Motion.
+ActionButton wraps at large type; floating fields stack labels at accessibility
+sizes. Latest 1aad43b8 fixes the welcome tagline's remaining large-phone ellipsis
+and gives auth back buttons an opaque background. These final fixes are in the
+current screenshot run, not the earlier evidence.
 
-Screenshot review found Welcome's old flame placeholder and clipped largest-text
-buttons. Uncommitted fixes use the exact E/pulse asset and wrapping/min-height
-ActionButtons in a scrolling Welcome. Need inspect fresh light/dark/small/large
-screens and run full regressions after final rebase. No new A3 TestFlight upload.
+Verified on e961d96e over 7a97ae34:
 
-Fixtures39203/39204/39205 are running OLD code and must be restarted before the
-new offline/deletion tests. Their nodes are app-owned. Old39201/39202 were stopped
-cleanly. All completed UI/hosted sessions can be closed; no current test run.
-Use Primary derived data app-account/originalLarge, account-small/SE and
-account-large/accessibilityLarge. Original app-next keeps only earlier evidence;
-continue source work solely in primary.
+- API 215, Core 180 and device build pass: account/recovery-{api,core,device}.log.
+- 21 hosted tests (15 adopted SessionBridge plus six workspace lifecycle/export):
+  artifacts/account/recovery-hosted.xcresult. Three presentation tests passed
+  earlier in connected-real.xcresult. No physical Apple sign-in verified.
+- recovery-real.xcresult: actual sync/export/lost-deletion-acknowledgement,
+  offline workout/relaunch/reconnect/offline export, welcome/login pass (3).
+- small-light-recovery and large-dark-recovery: two UI journeys each pass;
+  all 16 images inspected. Found large welcome clipping, fixed in 1aad43b8.
+- small-dark-recovery and large-light-recovery: two each pass; attachments still
+  need export/inspection. Current small-light-final and large-dark-final runs
+  cover 1aad43b8 and add an export-options capture.
+- The earlier small-dark-connected/large-light-connected images were inspected.
+- Lint, format and typecheck pass (existing warnings). Six Node/seven Python
+  release checks pass. First draft push failed because SwiftLint selected the
+  wrong Xcode; repeat push now sets DEVELOPER_DIR. Check draft-push-xcode.log.
+
+Current tool sessions: push 81144; small-light-final 73137; large-dark-final 3341.
+Fresh fixture nodes on ports 39203/39204/39205 use the current middleware,
+including /v1 offline interception and dropped deletion acknowledgements.
+39206 is an isolated UUID reproducer fixture. Only stop verified app-owned PIDs.
+No full native test is running now. The usual full suite takes about 25 minutes.
 
 ## User corrections that persist
 
@@ -76,19 +89,14 @@ Five native tabs: Home, Train, Library, Progress, Profile. TrainingStore uses
 SQLiteTrainingPersistence.defaultURL(accountID:), fixing logic's deletion-path
 finding. Test databases are isolated. Training supports search/muscle filters,
 notes/bodyweight, set kinds/RIR/continuations, one-tap completion, persistent
-rest, finish/discard, summaries and history. Training sync is still unconnected
-and labeled local. At largest text rest is an inline list section. Untouched
+rest, finish/discard, summaries and history. Training sync is connected in A3; A2 on TestFlight still uses local training. At largest text rest is an inline list section. Untouched
 load/duration/distance retain saved precision. Onboarding goal-entry fix and
 delayed iOS password-sheet helper are covered by full UI regressions.
 
-Reviewed logic through a4eeba40. Open high findings: in-flight API refresh can
-restore an old session; a retained sync task can outlive account switch/deletion.
-Medium: Keychain delete-before-add loses old credentials on failed replacement.
-A3 also needs one session owner shared with legacy AuthViewModel/APIClient;
-request and exact methods are in to-logic.md. Do not build a second independent
-refresh owner. No Core files removed. Legacy ProgramView uses its old library.
-The PostgreSQL fixture now owns/cleans its cluster. Told logic it may remove the
-SQLite adapter and required web CI; keep optional cross-client sources for now.
+Reviewed logic through 7a97ae34. Earlier session-generation, Keychain and
+proposal validation findings are fixed and tested by logic. A3 adopts the bridge
+and all 15 attachment tests. UUID case identity is the new high finding. Logic's
+programs and calculators are on agent/logic but not integrated/reviewed yet.
 
 ## Verification evidence
 
@@ -136,26 +144,20 @@ DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer. Only app sims:
 - Small7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B, SE3/iOS18.6.
 - Accessibility large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19, iOS26.2.
 
-Full native run finished; regular fixture39001 cleaned. Screenshot fixtures on
-39201/39202 remain; stop only their owned nodes after captures. Brand matrix is
-finished. Use unique result bundles and -parallel-testing-enabled NO. Environment:
+Use unique result bundles and -parallel-testing-enabled NO. Environment:
 TEST_RUNNER_EXERLY_TEST_APPEARANCE=dark|light|system,
 TEST_RUNNER_EXERLY_TEST_LARGEST_TYPE=1 for accessibility,
-TEST_RUNNER_EXERLY_UI_FIXTURE_URL=http://127.0.0.1:39201 and
-EXERLY_FIXTURE_EXTERNAL=1 for an existing fixture. Defaults use new fixture39001.
-Full run on original Large uses .deriveddata/app-training. Small uses
-.deriveddata/app-training-small; accessibility Large uses .deriveddata/app-brand.
-Artifacts, signing files and private desktop captures are ignored, never commit.
-
-Proposal review reproduced remote acceptance of invalid completed reps and lost
-first custom exercise after a two-exercise proposal. Details and reproduction
-paths sent in to-logic.md. A3 still needs the shared auth bridge.
+TEST_RUNNER_EXERLY_UI_FIXTURE_URL=http://127.0.0.1:39203 and
+EXERLY_FIXTURE_EXTERNAL=1. Original Large uses .deriveddata/app-account; SE
+uses .deriveddata/account-small on39204; accessibility Large uses
+.deriveddata/account-large on39205. Device build uses account-device. Artifacts,
+signing files and private desktop captures are ignored, never commit.
 
 ## A3 prepared UI evidence
 
 Prepared work from app-next is committed7038d86e and is now in the primary app
 worktree. Continue editing only primary; app-next is retained for its evidence.
-Three hosted presentation tests and two UI journeys pass. All four largest-text
+Prepared UI: three hosted presentation tests and two UI journeys pass. All four largest-text
 light/dark small/large variants pass and screenshots were inspected:
 app-next/artifacts/account/{small-light-fixed,large-dark-fixed,small-dark-final,
 large-light-final}.xcresult. Explicit native alerts include Cancel.
@@ -164,4 +166,4 @@ APPLE_ID_AUTH is enabled as a primary app. ProfileJ5J395Y9AF includes HealthKit
 and Apple sign-in, existing certificate unchanged. Repeat provisioning reuses
 it. Signed archive/IPA2610061727 validates, not uploaded, predates final alert
 changes. Release checks require both entitlements and forbid DEBUG fixture code.
-Six Node/seven Python release tests pass. Connect real actions next.
+Six Node/seven Python release tests pass. Real actions are now connected in primary; final A3 release still pending.
