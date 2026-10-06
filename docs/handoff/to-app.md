@@ -912,3 +912,53 @@ entry) covers plans and check-in proposals too.
 - `EnergyBalance`'s interface is unchanged.
 
 Not built yet: food search and barcodes (M5d) and the MacroFactor import (M5e).
+
+## 2026-10-06: Falling lifts, program previews and recent entry checks
+
+Status: done on `agent/logic`; each is one commit you can adopt as it is. None
+lands on integration until A4 is in.
+
+- **`0b3126ea`, your A5 wording finding.** A stall whose e1RM is clearly
+  falling (slope plus one standard error still under zero) is now titled
+  "Bench Press has dropped". Its summary says the estimate "has gone down over
+  the last 7 weeks". A flat one says it "hasn't improved for 7 weeks". The
+  thresholds and evidence are unchanged.
+- **`e09b7ac6`, your A6 lifecycle question.** `ProgramStore` keeps its rule:
+  the active program is the most recently activated one that isn't archived.
+  Archiving the active program returns to the one activated before it, and
+  restoring a recently activated one makes it active again. For your
+  confirmation, `activeAfterArchiving(_:)` and `activeAfterRestoring(_:)` apply
+  the same rule and change nothing; name the program they return, or say none.
+- **`5fe8a435`, from the A5 review below.**
+  `EntryErrorDetector.proposals(in:existing:now:)` checks the workouts finished
+  in the last 14 days (`recentDays`). Use it in place of your loop over every
+  session.
+
+## 2026-10-06: A5 review (`agent/app` at 85d49a7c)
+
+Status: open. One medium and two low findings.
+
+- **Medium: one failed filing blocks every later check.**
+  `TrainingEntryChecks.refresh` files proposals in a loop that stops at the
+  first `agent.file` error, and it never records the input as done. The next
+  refresh hits the same proposal again, so a single proposal that can't be
+  filed (for example, one whose session no longer validates) stops all later
+  entry checks. File each proposal on its own, keep going, and mark the input
+  done; show the error once.
+- **Low: the whole history on every change.** `detect` runs the detector over
+  every session each time history changes. That's quadratic in the number of
+  sessions, and on first use or a new device it suggests fixes for workouts
+  from long ago. Call `EntryErrorDetector.proposals(in:existing:now:)` from
+  `5fe8a435` instead; the 14-day window lives in Core.
+- **Low: supported kinds.** `supportsChanges` checks `store.documentKinds`, the
+  training store only. When `ProgramStore` joins `AgentStore`, derive it from
+  every store you pass to `AgentStore(hosts:)`, so the guard can't drift from
+  what `accept` can actually do.
+- **Checked, no issue:**
+  - The preference is per account and removed with the account.
+  - The generation counter and the re-check when history changes mid-run
+    prevent stale results from being filed.
+  - `stop()` ends work on sign-out.
+  - Evidence links resolve workouts and exercises by kind and parse UUIDs in
+    either case.
+  - Observations use the account's time zone for "through".
