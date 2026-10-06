@@ -1,128 +1,82 @@
-// v1 document sync for ExerlyCore entities. See docs/design/003-document-sync.md.
+// v1 document sync for ExerlyCore entities. See docs/design/003-document-sync.md
+// and, for what personal access tokens may do, docs/design/004-agent-core.md.
 //
 // Every write runs inside the mutation transaction (lib/mutations.js), so the
-// document, its change-feed entry and the idempotency receipt commit together.
+// document, its change-feed entry, any audit event and the idempotency
+// receipt commit together.
 
 const express = require('express');
 
 const store = require('../data');
-const sync = require('../lib/sync');
-const { canonicalJSON } = require('../lib/mutations');
-const { asyncHandler, badRequest, conflict, notFound } = require('../lib/errors');
+const { asyncHandler, badRequest, conflict, forbidden, notFound } = require('../lib/errors');
 const { authenticate } = require('../lib/auth');
+const { canonicalJSON } = require('../lib/mutations');
 const v = require('../lib/validate');
+const docs = require('../lib/documents');
 
 const router = express.Router();
 router.use(authenticate);
-
-// Kinds a client may sync, with the fields their payloads must carry.
-const PROPOSAL_STATUSES = new Set(['pending', 'accepted', 'rejected', 'undone', 'stale']);
-const KINDS = {
-  workout_session: (p) => typeof p.startedAt === 'string' && Array.isArray(p.exercises),
-  custom_exercise: (p) => typeof p.name === 'string' && typeof p.metric === 'string',
-  proposal: (p) =>
-    typeof p.title === 'string' &&
-    typeof p.falsifier === 'string' &&
-    p.falsifier.trim() !== '' &&
-    Array.isArray(p.changes) &&
-    p.changes.length > 0 &&
-    PROPOSAL_STATUSES.has(p.status) &&
-    !!p.author &&
-    typeof p.author.name === 'string',
-  audit_event: (p) => typeof p.action === 'string' && typeof p.at === 'string' && !!p.actor,
-};
-// Kinds that can be created but never changed or deleted.
-const APPEND_ONLY = new Set(['audit_event']);
-const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-
-function readKind(value) {
-  if (!Object.prototype.hasOwnProperty.call(KINDS, value))
-    throw badRequest(`Unknown document kind ${value}`);
-  return value;
-}
-
-function readID(value) {
-  if (!ID_RE.test(value))
-    throw badRequest(
-      'Document IDs are 1 to 128 letters, digits, dots, colons, underscores or hyphens'
-    );
-  return value;
-}
 
 function readBase(value) {
   if (value == null || value === '') throw badRequest('base_revision is required; use 0 to create');
   return v.int(value, 'base_revision', { min: 0 });
 }
 
-function readPayload(kind, id, payload) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    throw badRequest('payload must be an object');
+const canWrite = (pat) => pat.scopes.includes('write');
+const canPropose = (pat) => canWrite(pat) || pat.scopes.includes('propose');
+
+/**
+ * What a personal access token may write. Tokens never decide proposals or
+ * write audit events: the person decides, and the server keeps the log.
+ * Returns the payload to store, with a proposal's author set to the token.
+ */
+function tokenWrite(pat, kind, base, existing, payload) {
+  if (kind === 'audit_event') throw forbidden('Audit events are written by the server');
+  if (kind === 'proposal') {
+    if (!canPropose(pat)) throw forbidden('This token cannot file proposals');
+    if (existing || base !== 0)
+      throw forbidden('Tokens can file new proposals; only you can decide them');
+    if (payload.status !== 'pending') throw forbidden('A token can only file pending proposals');
+    return { ...payload, author: docs.tokenActor(pat) };
   }
-  if (payload.id !== id) throw badRequest('payload.id must match the document ID');
-  if (!KINDS[kind](payload)) throw badRequest(`payload is not a valid ${kind}`);
+  if (!canWrite(pat)) throw forbidden('This token cannot change data; file a proposal instead');
   return payload;
-}
-
-function present(row) {
-  return {
-    kind: row.kind,
-    id: row.document_id,
-    revision: row.revision,
-    deleted: !!row.deleted_at,
-    payload: row.payload ?? null,
-    updated_at: row.updated_at,
-  };
-}
-
-function acknowledge(row) {
-  const { payload: _payload, ...rest } = present(row);
-  return rest;
-}
-
-async function current(req, kind, id) {
-  return store.findOne('documents', { account_id: req.account.id, kind, document_id: id });
-}
-
-async function record(req, row) {
-  await sync.change(req.account, row.kind, {
-    id: row.document_id,
-    client_id: row.document_id,
-    revision: row.revision,
-    deleted_at: row.deleted_at,
-    payload: row.payload ?? null,
-    updated_at: row.updated_at,
-  });
 }
 
 router.get(
   '/documents/:kind/:id',
   asyncHandler(async (req, res) => {
-    const row = await current(req, readKind(req.params.kind), readID(req.params.id));
+    const row = await docs.current(
+      req.account,
+      docs.readKind(req.params.kind),
+      docs.readID(req.params.id)
+    );
     if (!row) throw notFound('Document not found');
-    res.json(present(row));
+    res.json(docs.present(row));
   })
 );
 
 router.put(
   '/documents/:kind/:id',
   asyncHandler(async (req, res) => {
-    const kind = readKind(req.params.kind);
-    const id = readID(req.params.id);
+    const kind = docs.readKind(req.params.kind);
+    const id = docs.readID(req.params.id);
     const base = readBase(req.body?.base_revision);
-    const payload = readPayload(kind, id, req.body?.payload);
-    const existing = await current(req, kind, id);
-    if (APPEND_ONLY.has(kind) && existing) {
+    let payload = docs.readPayload(kind, id, req.body?.payload);
+    const existing = await docs.current(req.account, kind, id);
+    if (req.pat) payload = tokenWrite(req.pat, kind, base, existing, payload);
+    if (docs.APPEND_ONLY.has(kind) && existing) {
       if (
         base === existing.revision &&
         canonicalJSON(existing.payload) === canonicalJSON(payload)
       ) {
-        return res.json(acknowledge(existing));
+        return res.json(docs.acknowledge(existing));
       }
       throw badRequest(`${kind} documents cannot be changed`);
     }
     if (base !== (existing?.revision ?? 0)) {
       throw conflict('This document changed on another device. Merge and retry.', {
-        document: existing ? present(existing) : null,
+        document: existing ? docs.present(existing) : null,
       });
     }
     const now = new Date();
@@ -143,34 +97,59 @@ router.put(
           created_at: now,
           updated_at: now,
         });
-    await record(req, row);
-    res.status(existing ? 200 : 201).json(acknowledge(row));
+    await docs.record(req.account, row);
+    if (req.pat) {
+      const actor = docs.tokenActor(req.pat);
+      await docs.appendAudit(
+        req.account,
+        kind === 'proposal'
+          ? {
+              action: 'proposalFiled',
+              actor,
+              proposalID: id,
+              targets: payload.changes.map((c) => ({ kind: String(c.kind), id: String(c.id) })),
+            }
+          : { action: 'directWrite', actor, targets: [{ kind, id }] }
+      );
+    }
+    res.status(existing ? 200 : 201).json(docs.acknowledge(row));
   })
 );
 
 router.delete(
   '/documents/:kind/:id',
   asyncHandler(async (req, res) => {
-    const kind = readKind(req.params.kind);
-    const id = readID(req.params.id);
+    const kind = docs.readKind(req.params.kind);
+    const id = docs.readID(req.params.id);
     const base = readBase(req.query.base_revision ?? req.body?.base_revision);
-    if (APPEND_ONLY.has(kind)) throw badRequest(`${kind} documents cannot be deleted`);
-    const existing = await current(req, kind, id);
+    if (docs.APPEND_ONLY.has(kind)) throw badRequest(`${kind} documents cannot be deleted`);
+    if (req.pat && (!canWrite(req.pat) || kind === 'proposal')) {
+      throw forbidden('This token cannot delete documents');
+    }
+    const existing = await docs.current(req.account, kind, id);
     if (!existing) throw notFound('Document not found');
     if (base !== existing.revision) {
       throw conflict('This document changed on another device. Merge and retry.', {
-        document: present(existing),
+        document: docs.present(existing),
       });
     }
-    if (existing.deleted_at) return res.json(acknowledge(existing));
+    if (existing.deleted_at) return res.json(docs.acknowledge(existing));
     const now = new Date();
     const row = await store.update(
       'documents',
       { id: existing.id },
       { revision: base + 1, payload: null, deleted_at: now, updated_at: now }
     );
-    await record(req, row);
-    res.json(acknowledge(row));
+    await docs.record(req.account, row);
+    if (req.pat) {
+      await docs.appendAudit(req.account, {
+        action: 'directWrite',
+        actor: docs.tokenActor(req.pat),
+        targets: [{ kind, id }],
+        note: 'deleted',
+      });
+    }
+    res.json(docs.acknowledge(row));
   })
 );
 
@@ -188,7 +167,7 @@ router.get(
     );
     res.json({
       changes: scanned
-        .filter((row) => Object.prototype.hasOwnProperty.call(KINDS, row.kind))
+        .filter((row) => docs.isKind(row.kind))
         .map((row) => ({
           sequence: row.sequence,
           kind: row.kind,
@@ -205,4 +184,3 @@ router.get(
 );
 
 module.exports = router;
-module.exports.KINDS = KINDS;

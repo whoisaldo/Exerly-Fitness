@@ -14,6 +14,7 @@ const OWNERSHIP = {
   users: { keys: ['id'], export: false },
   account_identities: { keys: ['account_id'], omit: ['subject'] },
   sessions: { keys: ['account_id'], export: false },
+  personal_access_tokens: { keys: ['account_id'], export: false },
   operations: { keys: ['account_id'], export: false },
   sync_cursors: { keys: ['account_id'], export: false },
   sync_changes: { keys: ['account_id'], export: false },

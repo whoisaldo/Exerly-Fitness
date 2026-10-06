@@ -1,6 +1,7 @@
 // Token issuing and request authentication.
 
 const jwt = require('jsonwebtoken');
+const { createHash } = require('node:crypto');
 const { unauthorized, forbidden } = require('./errors');
 
 // In production a missing secret is fatal: signing with a value that's in the
@@ -43,12 +44,52 @@ function readBearer(req) {
   return parts[1];
 }
 
+// Personal access tokens reach only these paths, and never token management.
+function tokenMayUse(path) {
+  if (path.startsWith('/v1/tokens')) return false;
+  return (
+    path.startsWith('/v1/') ||
+    path === '/mcp' ||
+    path.startsWith('/mcp?') ||
+    path.startsWith('/mcp/')
+  );
+}
+
+async function authenticateToken(req, token, next) {
+  try {
+    const store = require('../data');
+    const row = await store.findOne('personal_access_tokens', {
+      token_hash: createHash('sha256').update(token).digest('hex'),
+    });
+    if (!row || row.revoked_at || (row.expires_at && row.expires_at <= new Date())) {
+      return next(unauthorized('This token is invalid, expired or revoked.'));
+    }
+    const user = await store.findById('users', row.account_id);
+    if (!user) return next(unauthorized('This token is invalid, expired or revoked.'));
+    if (!tokenMayUse(req.originalUrl)) {
+      return next(forbidden('Personal access tokens can use /v1 and /mcp only.'));
+    }
+    req.account = user;
+    req.token = token;
+    req.pat = { id: row.id, name: row.name, scopes: row.scopes, via: req.pat?.via };
+    req.user = { email: user.email, name: user.name, is_admin: false, sub: String(user.id) };
+    // Record use, at most once a minute.
+    if (!row.last_used_at || Date.now() - row.last_used_at.getTime() > 60_000) {
+      await store.update('personal_access_tokens', { id: row.id }, { last_used_at: new Date() });
+    }
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function authenticate(req, _res, next) {
   if (req.account && req.token === readBearer(req)) return next();
   const token = readBearer(req);
   if (!token) {
     return next(unauthorized('Authorization header missing. Provide a Bearer token.'));
   }
+  if (token.startsWith('exr_')) return authenticateToken(req, token, next);
   try {
     req.user = verifyToken(token);
     req.token = token;

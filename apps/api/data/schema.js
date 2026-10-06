@@ -503,6 +503,23 @@ const collections = {
     indexes: [{ keys: { account_id: 1, kind: 1, document_id: 1 }, unique: true }],
   },
 
+  // Personal access tokens. Migration 0004.
+  personal_access_tokens: {
+    collection: 'personalaccesstokens',
+    fields: {
+      account_id: t.str,
+      name: t.str,
+      token_hash: t.str,
+      prefix: t.str,
+      scopes: t.json,
+      created_at: t.date,
+      last_used_at: t.date,
+      expires_at: t.date,
+      revoked_at: t.date,
+    },
+    indexes: [{ keys: { token_hash: 1 }, unique: true }, { keys: { account_id: 1 } }],
+  },
+
   barcode_cache: {
     collection: 'barcodecaches',
     fields: {

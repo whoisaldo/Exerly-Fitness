@@ -86,6 +86,7 @@ function createApp({ logger = console } = {}) {
   app.use('/api/library', require('./routes/library'));
   app.use('/api/ai', require('./routes/ai'));
   app.use('/api/admin', require('./routes/admin'));
+  app.use('/v1/tokens', require('./routes/tokens'));
   app.use('/v1', require('./routes/documents'));
 
   app.use(notFoundHandler);

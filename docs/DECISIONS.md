@@ -159,3 +159,19 @@ LaunchAgent (`com.aldo.exerly-staging`), following the devbox recovery README.
 - **Recovery.** It is an advisory check in `~/Services/devbox-recovery/check.py`,
   so it never fails Ali's required startup checks.
 - **Scripts.** Install and uninstall scripts live in `apps/api/deploy/staging/`.
+
+## 2026-10-06: Personal access tokens
+
+- **Format.** `exr_` plus 32 random bytes in base64url. Only a SHA-256 hash is
+  stored, and the token is shown once.
+- **Scopes.** `read` (every token), `propose` and `write`.
+- **Reach.** Tokens reach only `/v1/*` and `/mcp`. Token management, sessions,
+  identities, passwords, legacy `/api/*` routes and account deletion refuse them.
+- **Proposals.** A token can file only new pending proposals. The server stamps
+  the token's identity as the author, so an agent can't pose as the person or as
+  Exerly, and only a signed-in session can decide.
+- **Audit.** Every token write and filed proposal appends a server-written
+  `audit_event` document in the same transaction, so the log reaches every
+  device. Token creation and revocation are audited too.
+- **Limits.** At most 20 active tokens per account. Last use is recorded at most
+  once a minute.

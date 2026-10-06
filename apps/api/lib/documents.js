@@ -1,0 +1,127 @@
+// Shared document logic for the v1 routes, the token routes and MCP:
+// payload checks, the change feed, and server-written audit events.
+
+const { randomUUID } = require('node:crypto');
+const store = require('../data');
+const sync = require('./sync');
+const { badRequest } = require('./errors');
+
+const PROPOSAL_STATUSES = new Set(['pending', 'accepted', 'rejected', 'undone', 'stale']);
+const KINDS = {
+  workout_session: (p) => typeof p.startedAt === 'string' && Array.isArray(p.exercises),
+  custom_exercise: (p) => typeof p.name === 'string' && typeof p.metric === 'string',
+  proposal: (p) =>
+    typeof p.title === 'string' &&
+    typeof p.falsifier === 'string' &&
+    p.falsifier.trim() !== '' &&
+    Array.isArray(p.changes) &&
+    p.changes.length > 0 &&
+    PROPOSAL_STATUSES.has(p.status) &&
+    !!p.author &&
+    typeof p.author.name === 'string',
+  audit_event: (p) => typeof p.action === 'string' && typeof p.at === 'string' && !!p.actor,
+};
+// Kinds that can be created but never changed or deleted.
+const APPEND_ONLY = new Set(['audit_event']);
+const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+
+const isKind = (value) => Object.prototype.hasOwnProperty.call(KINDS, value);
+
+function readKind(value) {
+  if (!isKind(value)) throw badRequest(`Unknown document kind ${value}`);
+  return value;
+}
+
+function readID(value) {
+  if (!ID_RE.test(value)) {
+    throw badRequest(
+      'Document IDs are 1 to 128 letters, digits, dots, colons, underscores or hyphens'
+    );
+  }
+  return value;
+}
+
+function readPayload(kind, id, payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw badRequest('payload must be an object');
+  }
+  if (payload.id !== id) throw badRequest('payload.id must match the document ID');
+  if (!KINDS[kind](payload)) throw badRequest(`payload is not a valid ${kind}`);
+  return payload;
+}
+
+function present(row) {
+  return {
+    kind: row.kind,
+    id: row.document_id,
+    revision: row.revision,
+    deleted: !!row.deleted_at,
+    payload: row.payload ?? null,
+    updated_at: row.updated_at,
+  };
+}
+
+function acknowledge(row) {
+  const { payload: _payload, ...rest } = present(row);
+  return rest;
+}
+
+function current(account, kind, id) {
+  return store.findOne('documents', { account_id: account.id, kind, document_id: id });
+}
+
+/** Appends a change to the account's feed. */
+function record(account, row) {
+  return sync.change(account, row.kind, {
+    id: row.document_id,
+    client_id: row.document_id,
+    revision: row.revision,
+    deleted_at: row.deleted_at,
+    payload: row.payload ?? null,
+    updated_at: row.updated_at,
+  });
+}
+
+/**
+ * Writes an audit event as an append-only document, so it reaches every
+ * device through the feed. `actor` is { kind, name, tokenID? }.
+ */
+async function appendAudit(account, { action, actor, proposalID, targets = [], note }) {
+  const id = randomUUID().toUpperCase();
+  const now = new Date();
+  const payload = { id, at: now.toISOString(), action, actor, targets };
+  if (proposalID) payload.proposalID = proposalID;
+  if (note) payload.note = note;
+  const row = await store.insert('documents', {
+    account_id: account.id,
+    kind: 'audit_event',
+    document_id: id,
+    revision: 1,
+    payload,
+    deleted_at: null,
+    created_at: now,
+    updated_at: now,
+  });
+  await record(account, row);
+  return payload;
+}
+
+/** The identity a token acts under. MCP sets `via` to 'mcp'. */
+function tokenActor(pat) {
+  return { kind: pat.via === 'mcp' ? 'mcp' : 'api', name: pat.name, tokenID: pat.id };
+}
+
+module.exports = {
+  KINDS,
+  APPEND_ONLY,
+  isKind,
+  readKind,
+  readID,
+  readPayload,
+  present,
+  acknowledge,
+  current,
+  record,
+  appendAudit,
+  tokenActor,
+};

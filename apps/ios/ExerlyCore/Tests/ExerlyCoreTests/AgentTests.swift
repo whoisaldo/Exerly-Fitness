@@ -219,3 +219,19 @@ import Testing
         #expect(metric.verify(against: history) == .unverifiable)
     }
 }
+
+@Suite struct ServerDocumentCompatibilityTests {
+    @Test func decodesAuditEventsTheServerWrites() throws {
+        let json = #"""
+        {"id":"5F1E5A6E-0D4B-4F7A-9C5A-2B8E4C1D9A10","at":"2026-10-06T18:05:00.123Z","action":"proposalFiled",
+         "actor":{"kind":"api","name":"Synthetic agent","tokenID":"7d1c0a7e-1111-4111-8111-000000000001"},
+         "targets":[{"kind":"workout_session","id":"ABC"}],"proposalID":"0B6F0E7A-3C2D-4E1F-8A9B-1C2D3E4F5A6B"}
+        """#
+        let event = try ExerlyJSON.decoder.decode(AuditEvent.self, from: Data(json.utf8))
+        #expect(event.action == .proposalFiled)
+        #expect(event.actor.kind == .api && event.actor.tokenID != nil)
+        #expect(event.at == Date.milliseconds(1_791_309_900_123))
+        let token = #"{"id":"5F1E5A6E-0D4B-4F7A-9C5A-2B8E4C1D9A11","at":"2026-10-06T18:05:00.000Z","action":"tokenCreated","actor":{"kind":"builtIn","name":"You"},"targets":[{"kind":"token","id":"x"}],"note":"Claude"}"#
+        #expect(try ExerlyJSON.decoder.decode(AuditEvent.self, from: Data(token.utf8)).note == "Claude")
+    }
+}

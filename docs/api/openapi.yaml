@@ -228,6 +228,77 @@ paths:
                 additionalProperties: true
         '401': { $ref: '#/components/responses/Problem' }
 
+  /v1/tokens:
+    get:
+      tags: [Account]
+      operationId: listTokens
+      summary: Active personal access tokens (signed-in session only)
+      responses:
+        '200':
+          description: Tokens, without their secrets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Token' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Account]
+      operationId: createToken
+      summary: Create a personal access token for your own agent
+      description: |
+        The secret is returned once. Scopes: `read` (every token), `propose`
+        (file pending proposals) and `write` (change documents directly). A
+        token reaches only `/v1/*` and `/mcp`, never token management or
+        the account, and can never decide a proposal. Every token write and
+        filed proposal adds an audit event.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name: { type: string, maxLength: 60 }
+                scopes:
+                  type: array
+                  minItems: 1
+                  items: { type: string, enum: [read, propose, write] }
+                expires_in_days: { type: integer, minimum: 1, maximum: 3650 }
+      responses:
+        '201':
+          description: The token, including its secret, shown only now.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Token'
+                  - type: object
+                    required: [token]
+                    properties:
+                      token: { type: string, example: exr_... }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /v1/tokens/{id}:
+    delete:
+      tags: [Account]
+      operationId: revokeToken
+      summary: Revoke a personal access token
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': { description: Revoked }
+        '404': { $ref: '#/components/responses/Problem' }
+
   /v1/documents/{kind}/{id}:
     parameters:
       - $ref: '#/components/parameters/Kind'
@@ -324,7 +395,7 @@ components:
     bearer:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      description: A session access token (JWT), or a personal access token (`exr_...`) on `/v1/*` and `/mcp`.
 
   parameters:
     IdempotencyKey:
@@ -415,6 +486,19 @@ components:
         deleted: { type: boolean }
         payload: { type: [object, 'null'] }
         updated_at: { type: string, format: date-time }
+    Token:
+      type: object
+      required: [id, name, prefix, scopes, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        prefix: { type: string, description: 'The first 12 characters, to recognise it.' }
+        scopes:
+          type: array
+          items: { type: string, enum: [read, propose, write] }
+        created_at: { type: string, format: date-time }
+        last_used_at: { type: [string, 'null'], format: date-time }
+        expires_at: { type: [string, 'null'], format: date-time }
     Problem:
       type: object
       required: [message]
