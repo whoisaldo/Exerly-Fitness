@@ -11,9 +11,11 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
     public enum PersistenceError: Error, Equatable {
         /// The file was written by a newer app version. It is never downgraded.
         case newerSchema(found: Int, supported: Int)
+        /// Account IDs become directory names, so only letters, digits and dashes are allowed.
+        case invalidAccountID(String)
     }
 
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     /// Rows that could not be decoded, as `table/id`. They stay in the file
     /// untouched so a later version can read them.
@@ -30,10 +32,16 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
         try migrate()
     }
 
-    /// `Application Support/Exerly/exerly.sqlite`.
-    public static func defaultURL() throws -> URL {
-        try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    /// `Application Support/Exerly/<accountID>/exerly.sqlite`. Each account
+    /// gets its own file, so signing in as someone else never shows the
+    /// previous person's training.
+    public static func defaultURL(accountID: String) throws -> URL {
+        guard (1...64).contains(accountID.count),
+              accountID.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") })
+        else { throw PersistenceError.invalidAccountID(accountID) }
+        return try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent("Exerly", isDirectory: true)
+            .appendingPathComponent(accountID, isDirectory: true)
             .appendingPathComponent("exerly.sqlite")
     }
 
@@ -56,6 +64,13 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
         CREATE TABLE custom_exercises (
             id TEXT PRIMARY KEY,
             payload BLOB NOT NULL,
+            updated_at REAL NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE settings (
+            key TEXT PRIMARY KEY,
+            value BLOB NOT NULL,
             updated_at REAL NOT NULL
         );
         """,
@@ -112,6 +127,27 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
             """,
             exercise.id.rawValue, try encoder.encode(exercise), Date()
         )
+    }
+
+    public func loadValue(forKey key: String) throws -> Data? {
+        guard case .blob(let value) = try database.query("SELECT value FROM settings WHERE key = ?", key).first?.first else {
+            return nil
+        }
+        return value
+    }
+
+    public func saveValue(_ value: Data?, forKey key: String) throws {
+        if let value {
+            try database.execute(
+                """
+                INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+                """,
+                key, value, Date()
+            )
+        } else {
+            try database.execute("DELETE FROM settings WHERE key = ?", key)
+        }
     }
 
     private func load<T: Decodable>(_ type: T.Type, table: String, order: String) throws -> [T] {

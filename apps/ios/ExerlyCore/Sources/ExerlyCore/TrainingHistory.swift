@@ -17,6 +17,9 @@ public struct ExerciseStatistics: Sendable, Hashable {
     public var estimatedThreeRepMax: Mass?
     public var estimatedTenRepMax: Mass?
     public var totalVolume: Double = 0
+    /// False when a bodyweight exercise was logged without a known bodyweight,
+    /// so the volume figures leave that bodyweight out.
+    public var isVolumeComplete = true
     public var bestSetVolume: Double = 0
     public var heaviestLoad: Mass?
     public var totalReps = 0
@@ -39,7 +42,9 @@ public struct ExerciseStatistics: Sendable, Hashable {
             bestSetDuration = max(bestSetDuration, set.totalDuration)
             totalDistance += set.totalDistance
             bestSetDistance = max(bestSetDistance, set.totalDistance)
-            let volume = Volume.tonnage(set, exercise: exercise, bodyweight: record.bodyweight).total
+            let tonnage = Volume.tonnage(set, exercise: exercise, bodyweight: record.bodyweight)
+            let volume = tonnage.total
+            isVolumeComplete = isVolumeComplete && tonnage.isComplete
             totalVolume += volume
             bestSetVolume = max(bestSetVolume, volume)
             if let load = Volume.effectiveLoad(set.primary, exercise: exercise, bodyweight: record.bodyweight),

@@ -7,15 +7,28 @@ public struct SetPosition: Sendable, Hashable {
 }
 
 extension PerformedSet {
-    /// Whether the set has what its exercise's metric needs to be completed.
-    public func isLoggable(for exercise: Exercise) -> Bool {
-        let metric = exercise.metric
-        if let rir, !(0...6).contains(rir) { return false }
+    /// Whether every value present is meaningful: at least one effort, one
+    /// effort unless the kind allows continuations, no negative or non-finite
+    /// numbers, and RIR from 0 to 6. Drafts may leave fields empty.
+    public var isSane: Bool {
+        if efforts.isEmpty { return false }
+        if let rir, !(rir.isFinite && (0...6).contains(rir)) { return false }
         if efforts.count > 1 && !kind.allowsContinuations { return false }
         return efforts.allSatisfy { effort in
+            if let reps = effort.reps, reps < 0 { return false }
             if let load = effort.load, !(load.value.isFinite && load.value >= 0) { return false }
             if let duration = effort.duration, !(duration.isFinite && duration >= 0) { return false }
             if let distance = effort.distance, !(distance.isFinite && distance >= 0) { return false }
+            return true
+        }
+    }
+
+    /// Whether the set is sane and has what its exercise's metric needs to be
+    /// completed.
+    public func isLoggable(for exercise: Exercise) -> Bool {
+        guard isSane else { return false }
+        let metric = exercise.metric
+        return efforts.allSatisfy { effort in
             let hasDuration = (effort.duration ?? 0) > 0
             let hasDistance = (effort.distance ?? 0) > 0
             if metric.tracksReps && (effort.reps ?? 0) < 1 { return false }
@@ -43,7 +56,32 @@ extension WorkoutSession {
         case exerciseNotFound(UUID)
         case setNotFound(UUID)
         case incomplete(UUID)
+        case invalidSet(UUID)
+        case duplicateID(UUID)
+        case invalidTimeZone(String)
+        case endsBeforeStart
         case supersetNeedsTwoExercises
+    }
+
+    /// Throws the first problem that would make the session untrustworthy:
+    /// duplicate IDs, unknown exercises or zones, an end before the start,
+    /// nonsense values in any set, or a completed set missing what its metric
+    /// needs. Incomplete sets may leave fields empty.
+    public func validate(library: ExerciseLibrary) throws {
+        guard TimeZone(identifier: timeZoneID) != nil else { throw EditError.invalidTimeZone(timeZoneID) }
+        if let endedAt, endedAt < startedAt { throw EditError.endsBeforeStart }
+        var seen = Set<UUID>()
+        for performed in exercises {
+            guard seen.insert(performed.id).inserted else { throw EditError.duplicateID(performed.id) }
+            guard let exercise = library.exercise(performed.exerciseID) else {
+                throw EditError.unknownExercise(performed.exerciseID)
+            }
+            for set in performed.sets {
+                guard seen.insert(set.id).inserted else { throw EditError.duplicateID(set.id) }
+                guard set.isSane else { throw EditError.invalidSet(set.id) }
+                if set.isCompleted && !set.isLoggable(for: exercise) { throw EditError.incomplete(set.id) }
+            }
+        }
     }
 
     // MARK: Lookup

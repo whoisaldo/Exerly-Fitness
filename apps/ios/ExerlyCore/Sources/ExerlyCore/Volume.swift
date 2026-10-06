@@ -26,6 +26,11 @@ public struct Tonnage: Sendable, Codable, Hashable {
 
     public static func += (lhs: inout Tonnage, rhs: Tonnage) { lhs = lhs + rhs }
 
+    /// Totals for display in kilogram-reps or pound-reps.
+    public func total(in unit: MassUnit) -> Double { total / unit.kilogramsPerUnit }
+    public func resistance(in unit: MassUnit) -> Double { resistance / unit.kilogramsPerUnit }
+    public func bodyweight(in unit: MassUnit) -> Double { bodyweight / unit.kilogramsPerUnit }
+
     public func scaled(by factor: Double) -> Tonnage {
         Tonnage(resistance: resistance * factor, bodyweight: bodyweight * factor, isComplete: isComplete)
     }
@@ -126,5 +131,36 @@ public enum Volume {
                 }
             }
         }
+    }
+}
+
+/// Totals for one session, so screens never add sets up themselves.
+public struct WorkoutSummary: Sendable, Hashable {
+    public var exerciseCount: Int
+    public var totalSets: Int
+    public var completedSets: Int
+    /// Completed sets that aren't warm-ups.
+    public var workingSets: Int
+    /// Seconds from the start to the end, or to `now` while in progress.
+    public var duration: Double
+    public var tonnage: Tonnage
+    public var muscles: [Muscle: MuscleVolume]
+
+    public init(session: WorkoutSession, library: ExerciseLibrary, at now: Date) {
+        let sets = session.exercises.flatMap(\.sets)
+        exerciseCount = session.exercises.count
+        totalSets = sets.count
+        completedSets = sets.filter(\.isCompleted).count
+        workingSets = sets.filter(\.counts).count
+        duration = max(0, (session.endedAt ?? now).timeIntervalSince(session.startedAt))
+        var tonnage = Tonnage.zero
+        for performed in session.exercises {
+            guard let exercise = library.exercise(performed.exerciseID) else { continue }
+            for set in performed.sets where set.counts {
+                tonnage += Volume.tonnage(set, exercise: exercise, bodyweight: session.bodyweight)
+            }
+        }
+        self.tonnage = tonnage
+        muscles = Volume.byMuscle([session], library: library)
     }
 }

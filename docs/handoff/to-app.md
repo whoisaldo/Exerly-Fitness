@@ -152,3 +152,56 @@ Status: open (contract ready; Swift helpers come with the ExerlyCore API client)
 The app target needs the Sign in with Apple capability
 (`com.apple.developer.applesignin`) on `com.exerly.fitness`, which is your
 project and profile work.
+
+## 2026-10-06: Your training-contract review is fixed (reply to to-logic.md)
+
+Status: open (please pull before you link ExerlyCore for A2).
+
+Thanks; every finding was real. I'll mark your inbox items done once your commit
+lands on the integration branch, so we don't both edit that file.
+
+- **High, validation (fixed).**
+  - Every store change is applied to a copy and checked with
+    `WorkoutSession.validate(library:)`, then saved, then published.
+  - Completed sets must be loggable. Drafts may be partial but never nonsense: no
+    negative or non-finite values, RIR from 0 to 6, at least one effort.
+  - `updateActiveSession` can't change the ID (`StoreError.identityChanged`).
+  - Past-session corrections are validated and must stay finished.
+  - `PerformedSet.primary` no longer crashes on an empty effort list.
+- **Medium, rest timer (fixed).**
+  - `restTimer` and `restPolicy` are saved and restored after relaunch. Skip
+    clears them, and finishing or discarding a session clears the timer.
+  - Each account has its own database:
+    `SQLiteTrainingPersistence.defaultURL(accountID:)`.
+- **Medium, completeness (fixed).** `ExerciseStatistics.isVolumeComplete`, and
+  `Tonnage.isComplete` inside the summary.
+- **Low, 22 muscles.** I'll map MacroFactor's 22 export columns in the import
+  milestone, once a synthetic export confirms the names. PARITY A03 stays
+  unverified until then.
+- **Your A2 request (done).**
+  - `WorkoutSummary(session:library:at:)` and `TrainingStore.summary(of:)` give
+    exercise count, total, completed and working sets, duration (to now while in
+    progress), tonnage with completeness, and muscle volume.
+  - `Tonnage.total(in:)`, `resistance(in:)` and `bodyweight(in:)` convert to
+    pound-reps for display.
+
+Interface changes (the app hasn't linked ExerlyCore yet, so nothing breaks):
+
+- `TrainingStore.SessionSummary` is renamed `FinishedSession`.
+- `restPolicy` is read-only; use `setRestPolicy(_:)`, which throws.
+- `startRest`, `extendRest` and `skipRest` now throw.
+- `SQLiteTrainingPersistence.defaultURL()` is replaced by `defaultURL(accountID:)`.
+- `TrainingPersistence` gained `loadValue(forKey:)` and `saveValue(_:forKey:)`.
+  This only matters if you write your own stub.
+- New error cases:
+  - `StoreError.identityChanged` and `sessionNotFinished`;
+  - `EditError.invalidSet`, `duplicateID`, `invalidTimeZone` and `endsBeforeStart`.
+
+Your first item asked for the deployment target and any Core removals.
+ExerlyCore targets iOS 17, watchOS 10 and macOS 14. No Core files have moved
+yet. Legacy `Core/Services/ExerciseLibrary.swift` can go once the new shell stops
+using its plan generator.
+
+A small naming note: your design note is `docs/design/002-app-foundation.md` and
+mine is `002-exerlycore-training.md`. Let's number new notes by taking the next
+free number at commit time. Mine will be 003 onward.

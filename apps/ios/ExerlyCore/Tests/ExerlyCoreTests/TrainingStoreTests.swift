@@ -131,11 +131,11 @@ import Testing
         try store.addExercise("dumbbell-curl")
         try log(store, store.activeSession!.exercises[0].sets[0].id, reps: 12, kg: 14)
         #expect(store.restTimer?.duration == 90)
-        store.extendRest(by: 30)
+        try store.extendRest(by: 30)
         #expect(store.restTimer?.duration == 120)
-        store.skipRest()
+        try store.skipRest()
         #expect(store.restTimer == nil)
-        store.startRest(seconds: 45)
+        try store.startRest(seconds: 45)
         #expect(store.restTimer == RestTimer(startedAt: clock.now, duration: 45))
     }
 

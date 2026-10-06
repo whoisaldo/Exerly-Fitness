@@ -69,6 +69,18 @@ Editing functions on `WorkoutSession` (the store wraps all of them):
 `set(_:)`, `performanceOrder`, `nextSet(after:)` and `finish(at:discardIncompleteSets:)`.
 Failures throw `WorkoutSession.EditError`.
 
+`validate(library:)` throws the first problem that makes a session
+untrustworthy:
+
+- duplicate exercise or set IDs, or an unknown exercise or time zone;
+- an end before the start;
+- a set that isn't sane: no efforts, negative or non-finite numbers, RIR outside
+  0 to 6, or continuations on a set kind that has none;
+- a completed set missing a field its metric needs.
+
+Incomplete sets are drafts and may leave fields empty. `PerformedSet.isSane` and
+`isLoggable(for:)` expose the two levels.
+
 - `propagate: true` copies each changed field down to later incomplete sets that
   held the old value, and stops at the first one that differs.
 - `nextSet(after:)` walks straight sets exercise by exercise and superset members round by
@@ -103,6 +115,20 @@ Failures throw `WorkoutSession.EditError`.
   volume, reps at a load, duration, distance), compared with earlier sessions.
 - `weeklyMuscleVolume(firstWeekday:)` and `muscleVolume(from:through:)`
 
+`ExerciseStatistics.isVolumeComplete` is false when a bodyweight exercise was logged
+without a known bodyweight.
+
+`WorkoutSummary(session:library:at:)` totals one session:
+
+- `exerciseCount`, `totalSets`, `completedSets` and `workingSets` (completed,
+  not warm-ups);
+- `duration`, measured to `at` while the session is in progress;
+- `tonnage`, with its completeness;
+- `muscles`.
+
+`Tonnage.total(in:)`, `resistance(in:)` and `bodyweight(in:)` give kilogram-reps or
+pound-reps for display.
+
 ### Rest
 
 | Type | Purpose |
@@ -115,6 +141,11 @@ Failures throw `WorkoutSession.EditError`.
 `TrainingStore` is `@MainActor @Observable`. Bind screens to `library`, `history`,
 `activeSession`, `restTimer` and `restPolicy`.
 
+Every change is applied to a copy and validated with `validate(library:)`. A
+whole-session edit may not change the ID. The copy is saved first and published
+only after that, so a failed change leaves memory and disk as they were. The rest
+timer and rest policy are saved too, and come back after relaunch.
+
 - `startSession(name:bodyweight:timeZone:)`
 - `addExercise(_:at:)`, which prefills from history
 - `addSet(to:kind:)`
@@ -124,10 +155,12 @@ Failures throw `WorkoutSession.EditError`.
   `removeFromSuperset`
 - `updateActiveSession { $0.notes = ... }`
 - `previousSets(for:)`, the "previous" column
-- `finishSession(discardIncompleteSets:)`, which returns a `SessionSummary` with
-  `records`
+- `summary(of:)`, which returns a `WorkoutSummary` measured to now
+- `finishSession(discardIncompleteSets:)`, which returns a `FinishedSession` with
+  `session` and `records`
 - `discardSession()`
-- `startRest(seconds:)`, `extendRest(by:)`, `skipRest()`
+- `startRest(seconds:)`, `extendRest(by:)`, `skipRest()` and `setRestPolicy(_:)`,
+  all of which save and can throw
 - `saveSession(_:)` and `deleteSession(_:)` for finished sessions
 - `addCustomExercise(_:)`
 
@@ -137,11 +170,14 @@ launch.
 `TrainingPersistence` is the storage protocol.
 
 - `SQLiteTrainingPersistence(url:)` is the on-device store. Use
-  `SQLiteTrainingPersistence.defaultURL()`, which is
-  `Application Support/Exerly/exerly.sqlite`.
+  `SQLiteTrainingPersistence.defaultURL(accountID:)`, which is
+  `Application Support/Exerly/<accountID>/exerly.sqlite`. Each account has its
+  own file.
   - Each session is one JSON document, written atomically in WAL mode with full
     sync.
   - The schema version is in `user_version`. A file from a newer version is refused,
     never downgraded.
   - Rows it cannot decode are listed in `unreadableRows` and left untouched.
+  - `loadValue(forKey:)` and `saveValue(_:forKey:)` hold small values, such as the
+    rest timer and settings.
 - `InMemoryTrainingPersistence` is for previews and tests.

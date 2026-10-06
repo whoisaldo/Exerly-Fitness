@@ -12,10 +12,15 @@ public final class TrainingStore {
         case sessionInProgress
         case sessionNotFound(UUID)
         case invalidCustomExercise([String])
+        /// A whole-session edit changed the session's ID.
+        case identityChanged
+        /// A past-session correction removed the end time.
+        case sessionNotFinished
         case edit(WorkoutSession.EditError)
     }
 
-    public struct SessionSummary: Sendable {
+    /// What finishing a session returns: the saved session and the records it set.
+    public struct FinishedSession: Sendable {
         public var session: WorkoutSession
         public var records: [PersonalRecord]
     }
@@ -24,11 +29,15 @@ public final class TrainingStore {
     /// Finished sessions.
     public private(set) var history: TrainingHistory
     public private(set) var activeSession: WorkoutSession?
+    /// Survives relaunch; cleared when the session finishes or is discarded.
     public private(set) var restTimer: RestTimer?
-    public var restPolicy: RestPolicy
+    /// Change with `setRestPolicy(_:)`, which saves it.
+    public private(set) var restPolicy: RestPolicy
 
     @ObservationIgnored private let persistence: TrainingPersistence
     @ObservationIgnored private let now: () -> Date
+    private static let restPolicyKey = "training.restPolicy"
+    private static let restTimerKey = "training.restTimer"
 
     public init(
         persistence: TrainingPersistence, library: ExerciseLibrary = .bundled,
@@ -36,7 +45,8 @@ public final class TrainingStore {
     ) throws {
         self.persistence = persistence
         self.now = now
-        self.restPolicy = restPolicy
+        self.restPolicy = try persistence.loadValue(forKey: Self.restPolicyKey)
+            .map { try JSONDecoder().decode(RestPolicy.self, from: $0) } ?? restPolicy
         var library = library
         for exercise in try persistence.loadCustomExercises() where library.exercise(exercise.id) == nil {
             library = try library.adding(exercise)
@@ -45,6 +55,10 @@ public final class TrainingStore {
         let sessions = try persistence.loadSessions()
         history = TrainingHistory(sessions: sessions.filter(\.isFinished), library: library)
         activeSession = sessions.filter { !$0.isFinished }.max { $0.startedAt < $1.startedAt }
+        if activeSession != nil {
+            restTimer = try persistence.loadValue(forKey: Self.restTimerKey)
+                .map { try JSONDecoder().decode(RestTimer.self, from: $0) }
+        }
     }
 
     // MARK: The session in progress
@@ -79,7 +93,7 @@ public final class TrainingStore {
         let date = now()
         try edit { try $0.completeSet(setID, at: date, library: library) }
         if let session = activeSession {
-            restTimer = RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library))
+            try setRestTimer(RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library)))
         }
     }
 
@@ -95,9 +109,15 @@ public final class TrainingStore {
 
     public func removeFromSuperset(_ performedID: UUID) throws { try edit { try $0.removeFromSuperset(performedID) } }
 
-    /// Changes the session's name, notes, bodyweight or exercise notes.
+    /// Changes the session's name, notes, bodyweight or exercise notes. The
+    /// result is validated like every other edit, and the ID cannot change.
     public func updateActiveSession(_ change: (inout WorkoutSession) -> Void) throws {
         try edit { change(&$0) }
+    }
+
+    /// Totals for a session, with the duration measured to now for one in progress.
+    public func summary(of session: WorkoutSession) -> WorkoutSummary {
+        WorkoutSummary(session: session, library: library, at: now())
     }
 
     /// Sets from the last performance of this exercise, to show beside the
@@ -108,35 +128,54 @@ public final class TrainingStore {
     }
 
     @discardableResult
-    public func finishSession(discardIncompleteSets: Bool = true) throws -> SessionSummary {
+    public func finishSession(discardIncompleteSets: Bool = true) throws -> FinishedSession {
         guard var session = activeSession else { throw StoreError.noActiveSession }
         session.finish(at: now(), discardIncompleteSets: discardIncompleteSets)
+        try validated(session)
         try persistence.save(session)
         let records = history.records(in: session)
         history = TrainingHistory(sessions: history.sessions + [session], library: library)
         activeSession = nil
-        restTimer = nil
-        return SessionSummary(session: session, records: records)
+        try setRestTimer(nil)
+        return FinishedSession(session: session, records: records)
     }
 
     public func discardSession() throws {
         guard let session = activeSession else { throw StoreError.noActiveSession }
         try persistence.deleteSession(session.id)
         activeSession = nil
-        restTimer = nil
+        try setRestTimer(nil)
     }
 
     // MARK: Rest
 
-    public func startRest(seconds: Double) { restTimer = RestTimer(startedAt: now(), duration: seconds) }
-    public func extendRest(by seconds: Double) { restTimer?.extend(by: seconds) }
-    public func skipRest() { restTimer = nil }
+    public func startRest(seconds: Double) throws { try setRestTimer(RestTimer(startedAt: now(), duration: seconds)) }
+
+    public func extendRest(by seconds: Double) throws {
+        guard var timer = restTimer else { return }
+        timer.extend(by: seconds)
+        try setRestTimer(timer)
+    }
+
+    public func skipRest() throws { try setRestTimer(nil) }
+
+    public func setRestPolicy(_ policy: RestPolicy) throws {
+        try persistence.saveValue(JSONEncoder().encode(policy), forKey: Self.restPolicyKey)
+        restPolicy = policy
+    }
+
+    private func setRestTimer(_ timer: RestTimer?) throws {
+        try persistence.saveValue(timer.map { try JSONEncoder().encode($0) }, forKey: Self.restTimerKey)
+        restTimer = timer
+    }
 
     // MARK: History
 
     /// Replaces a finished session, for corrections after the fact.
     public func saveSession(_ session: WorkoutSession) throws {
-        guard session.isFinished, history.session(session.id) != nil else { throw StoreError.sessionNotFound(session.id) }
+        guard history.session(session.id) != nil else { throw StoreError.sessionNotFound(session.id) }
+        guard session.isFinished else { throw StoreError.sessionNotFinished }
+        try validated(session)
         try persistence.save(session)
         history = TrainingHistory(sessions: history.sessions.map { $0.id == session.id ? session : $0 }, library: library)
     }
@@ -166,16 +205,29 @@ public final class TrainingStore {
 
     // MARK: Private
 
+    /// Applies a change to a copy, validates the result, saves it, and only
+    /// then publishes it. A failed change leaves memory and disk untouched.
     private func edit<T>(_ change: (inout WorkoutSession) throws -> T) throws -> T {
-        guard var session = activeSession else { throw StoreError.noActiveSession }
+        guard let original = activeSession else { throw StoreError.noActiveSession }
+        var session = original
         let result: T
         do {
             result = try change(&session)
         } catch let error as WorkoutSession.EditError {
             throw StoreError.edit(error)
         }
+        guard session.id == original.id else { throw StoreError.identityChanged }
+        try validated(session)
         try persistence.save(session)
         activeSession = session
         return result
+    }
+
+    private func validated(_ session: WorkoutSession) throws {
+        do {
+            try session.validate(library: library)
+        } catch let error as WorkoutSession.EditError {
+            throw StoreError.edit(error)
+        }
     }
 }

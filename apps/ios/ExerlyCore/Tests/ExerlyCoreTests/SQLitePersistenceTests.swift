@@ -71,6 +71,31 @@ import Testing
         #expect(throws: SQLiteTrainingPersistence.PersistenceError.self) { try SQLiteTrainingPersistence(url: url) }
     }
 
+    @Test func upgradesAVersionOneFileWithoutLosingSessions() throws {
+        let session = sampleSession()
+        do {
+            let store = try SQLiteTrainingPersistence(url: url)
+            try store.save(session)
+        }
+        let database = try SQLiteDatabase(url: url)
+        try database.executeScript("DROP TABLE settings; PRAGMA user_version = 1;")
+        let upgraded = try SQLiteTrainingPersistence(url: url)
+        #expect(try upgraded.schemaVersion() == 2)
+        #expect(try upgraded.loadSessions() == [session])
+        try upgraded.saveValue(Data("x".utf8), forKey: "k")
+        #expect(try upgraded.loadValue(forKey: "k") == Data("x".utf8))
+    }
+
+    @Test func storesAndRemovesSmallValues() throws {
+        let store = try SQLiteTrainingPersistence(url: url)
+        #expect(try store.loadValue(forKey: "training.restTimer") == nil)
+        try store.saveValue(Data("a".utf8), forKey: "training.restTimer")
+        try store.saveValue(Data("b".utf8), forKey: "training.restTimer")
+        #expect(try SQLiteTrainingPersistence(url: url).loadValue(forKey: "training.restTimer") == Data("b".utf8))
+        try store.saveValue(nil, forKey: "training.restTimer")
+        #expect(try store.loadValue(forKey: "training.restTimer") == nil)
+    }
+
     @Test func reportsUnreadableRowsWithoutLosingTheRest() throws {
         let good = sampleSession()
         do {

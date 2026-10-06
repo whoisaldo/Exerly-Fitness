@@ -79,8 +79,10 @@ public struct PerformedSet: Sendable, Codable, Hashable, Identifiable {
     /// The first effort: what a standard set records, and the top set of a
     /// drop or myo set.
     public var primary: Effort {
-        get { efforts[0] }
-        set { efforts[0] = newValue }
+        get { efforts.first ?? Effort() }
+        set {
+            if efforts.isEmpty { efforts = [newValue] } else { efforts[0] = newValue }
+        }
     }
 
     public var totalReps: Int { efforts.reduce(0) { $0 + ($1.reps ?? 0) } }
