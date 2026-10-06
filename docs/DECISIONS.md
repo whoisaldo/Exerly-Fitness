@@ -97,3 +97,23 @@ platform health checks don't keep a scale-to-zero database awake.
 **Devbox tooling.** Colima's existing default profile is used for Docker. The
 `docker-compose` CLI plugin was installed with Homebrew. Colima is stopped again
 after container checks.
+
+## 2026-10-06: Sign in with Apple and account lifecycle
+
+- **Verification.** Apple identity tokens are verified on the server against
+  Apple's published keys: RS256 only, Apple as issuer, our bundle ID as audience,
+  unexpired, with nonce = SHA-256(raw nonce). Each nonce is stored for a day, so a
+  captured token can't be replayed.
+- **Linking.** Apple sign-in never attaches to an existing password account by
+  email unless that email was verified. Exerly doesn't verify emails yet, so such
+  people get `link_required` and connect Apple from a signed-in session. This
+  blocks takeover through a pre-registered, unverified address.
+- **Hidden emails.** When Apple hides the email entirely, the account gets
+  `apple-<hash>@users.exerly.invalid`. The legacy tables are keyed by email.
+- **One ownership map.** `lib/ownership.js` drives account deletion and export,
+  and a test fails if any table lacks a rule. Deletion runs in one transaction.
+- **Revocation.** Apple token revocation happens before deletion. It uses a fresh
+  authorization code exchanged at deletion time, so no Apple refresh tokens are
+  stored. It needs a Sign in with Apple key from Ali; see QUESTIONS_FOR_ALI.md.
+- **Sessions.** New sign-in paths always issue protocol 2 sessions: 15-minute
+  access tokens and rotating refresh credentials.

@@ -7,7 +7,7 @@ const { authenticate, adminEmails } = require('../lib/auth');
 const sessions = require('../lib/sessions');
 const { rateLimit } = require('../lib/ratelimit');
 const v = require('../lib/validate');
-const { requireUser } = require('../lib/users');
+const { requireUser, newUserFields } = require('../lib/users');
 const { normalizeTimeZone } = require('../lib/dates');
 
 const router = express.Router();
@@ -44,21 +44,17 @@ router.post(
     if (existing) throw conflict('An account with this email already exists');
 
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await store.insert('users', {
-      name,
-      email,
-      hash,
-      is_admin: adminEmails().includes(email),
-      timezone,
-      unitSystem: req.body.unitSystem === 'imperial' ? 'imperial' : 'metric',
-      profile: {},
-      created_at: new Date(),
-      onboardingCompleted: false,
-      aiCreditsRemaining: 5,
-      aiDailyCreditsUsed: 0,
-      aiLastCreditReset: new Date(),
-      aiDailyResetDate: new Date(),
-    });
+    const user = await store.insert(
+      'users',
+      newUserFields({
+        name,
+        email,
+        hash,
+        isAdmin: adminEmails().includes(email),
+        timezone,
+        unitSystem: req.body.unitSystem,
+      })
+    );
 
     res
       .status(201)
@@ -74,9 +70,10 @@ router.post(
     const password = v.str(req.body.password, 'password', { max: 200, trim: false });
 
     const user = await store.findOne('users', { email });
-    // Hash a throwaway password when the user doesn't exist so the response
-    // time doesn't reveal which emails are registered.
-    if (!user) {
+    // Hash a throwaway password when the user doesn't exist, or signed up with
+    // Apple and has no password, so the response time doesn't reveal which
+    // emails are registered.
+    if (!user?.hash) {
       await bcrypt.compare(password, '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv');
       throw unauthorized('Invalid credentials');
     }
@@ -137,7 +134,7 @@ router.post(
     const newPassword = v.password(req.body.newPassword, 'newPassword');
 
     const user = await requireUser(req.user.email);
-    const ok = await bcrypt.compare(currentPassword, user.hash);
+    const ok = !!user.hash && (await bcrypt.compare(currentPassword, user.hash));
     if (!ok) throw unauthorized('Current password is incorrect');
 
     await store.update(

@@ -40,11 +40,13 @@ function response(user, session, { modern = true } = {}) {
   };
 }
 
-async function createSession(user, req) {
-  return insertSession(user, req, randomUUID());
+// `modern` issues a short access token plus a rotating refresh credential.
+// Installed legacy clients opt in with X-Session-Protocol: 2.
+async function createSession(user, req, { modern } = {}) {
+  return insertSession(user, req, randomUUID(), { modern });
 }
 
-async function insertSession(user, req, id) {
+async function insertSession(user, req, id, { modern } = {}) {
   const now = new Date();
   const session = await store.insert('sessions', {
     account_id: user.id,
@@ -57,7 +59,7 @@ async function insertSession(user, req, id) {
     updated_at: now,
     expires_at: new Date(now.getTime() + 90 * 86400000),
   });
-  return response(user, session, { modern: req.get('X-Session-Protocol') === '2' });
+  return response(user, session, { modern: modern ?? req.get('X-Session-Protocol') === '2' });
 }
 
 async function upgradeSession(user, req) {

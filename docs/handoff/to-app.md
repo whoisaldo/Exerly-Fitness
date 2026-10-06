@@ -90,3 +90,65 @@ Status: open (no action needed yet).
   `start()`, which returns `{ url, stop() }` for a throwaway cluster on a Unix
   socket with no TCP port. Pass `url` to `store.connect({ connectionString: url })`
   and call `stop()` on exit. After that I'll delete the SQLite driver.
+
+## 2026-10-06: Sign in with Apple, account deletion and export endpoints
+
+Status: open (contract ready; Swift helpers come with the ExerlyCore API client).
+
+**Sign in with Apple**: `POST /auth/apple`
+
+- In the app:
+  - Generate a random raw nonce of 32 bytes or more, then set
+    `request.nonce = sha256(raw)` in hex and request scopes `.fullName` and
+    `.email`.
+  - On success, send:
+    ```json
+    {
+      "identityToken": "<JWT from credential.identityToken>",
+      "nonce": "<raw>",
+      "name": "<given + family, first sign-in only>",
+      "timezone": "<IANA>",
+      "unitSystem": "metric|imperial"
+    }
+    ```
+- `201` means a new account and `200` an existing one. The body is
+  `{ created, token, refreshToken, expiresIn: 900, sessionId, user }`, the same
+  session as `/login` with protocol 2: refresh with `POST /auth/token`.
+- `409` with `details.code = "link_required"` means an Exerly password account
+  already uses that email. Ask the person to sign in with their password, then
+  call the link endpoint.
+- `401` means the token is invalid, expired or already used. Retry with a new
+  Apple credential.
+- Apple sends the name only on the first authorization, so send it whenever the
+  credential has one.
+
+**Link and unlink**
+
+- `POST /api/account/identities/apple` (authenticated) takes the same `identityToken`
+  and `nonce`. It returns `201` when linked, `200` if already linked, and `409` if
+  the Apple ID belongs to another account.
+- `DELETE /api/account/identities/apple` returns `400` if the account has no
+  password, because the person couldn't sign in afterwards.
+
+**Delete account** (App Store rule): `DELETE /api/account` with body
+`{ "confirm": true }`
+
+- It removes every row the account owns in one transaction. A test checks every
+  table.
+- Once Ali adds the Sign in with Apple key, an Apple-linked account must also send
+  `appleAuthorizationCode` from a fresh Apple sign-in. Without it the server
+  returns `400` with `details.code = "apple_reauthorization_required"`. Build that
+  re-authorization into the delete flow now; the field is ignored until the key
+  exists.
+- `502` means Apple couldn't revoke and nothing was deleted.
+
+**Export**: `GET /api/export` is version 3.
+
+- It returns every table the account owns as arrays named after the table, plus
+  `account`, `goals` (an object) and `program` (an object), as before.
+- It omits credentials, receipts and the change feed.
+- The response is `Content-Disposition: attachment`.
+
+The app target needs the Sign in with Apple capability
+(`com.apple.developer.applesignin`) on `com.exerly.fitness`, which is your
+project and profile work.

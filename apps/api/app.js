@@ -67,6 +67,7 @@ function createApp({ logger = console } = {}) {
   });
 
   app.use(require('./routes/auth'));
+  app.use(require('./routes/account'));
   app.use(require('./routes/onboarding'));
   app.use(require('./routes/profile'));
   app.use(require('./routes/dashboard'));

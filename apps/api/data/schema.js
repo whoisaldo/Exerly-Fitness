@@ -467,6 +467,26 @@ const collections = {
     indexes: [{ keys: { created_at: -1 } }, { keys: { status: 1 } }],
   },
 
+  // Sign in with Apple and any later external identity. Migration 0002.
+  account_identities: {
+    collection: 'accountidentities',
+    fields: {
+      account_id: t.str,
+      provider: t.str,
+      subject: t.str,
+      email: t.str,
+      created_at: t.date,
+      last_used_at: t.date,
+    },
+    indexes: [{ keys: { provider: 1, subject: 1 }, unique: true }, { keys: { account_id: 1 } }],
+  },
+
+  auth_nonces: {
+    collection: 'authnonces',
+    fields: { nonce_hash: t.str, created_at: t.date },
+    indexes: [{ keys: { nonce_hash: 1 }, unique: true }, { keys: { created_at: 1 } }],
+  },
+
   barcode_cache: {
     collection: 'barcodecaches',
     fields: {

@@ -40,6 +40,26 @@ function serializeUser(user) {
   };
 }
 
+// Fields every new account starts with, whichever way it signs up.
+function newUserFields({ name, email, hash = null, isAdmin = false, timezone, unitSystem }) {
+  const now = new Date();
+  return {
+    name,
+    email,
+    hash,
+    is_admin: isAdmin,
+    timezone,
+    unitSystem: unitSystem === 'imperial' ? 'imperial' : 'metric',
+    profile: {},
+    created_at: now,
+    onboardingCompleted: false,
+    aiCreditsRemaining: 5,
+    aiDailyCreditsUsed: 0,
+    aiLastCreditReset: now,
+    aiDailyResetDate: now,
+  };
+}
+
 async function requireUser(email) {
   const user = await store.findOne('users', { email });
   if (!user) throw notFound('User not found');
@@ -108,6 +128,7 @@ function paginationFor(req, { defaultLimit = 200, maxLimit = 1000 } = {}) {
 }
 
 module.exports = {
+  newUserFields,
   normalizeProfile,
   serializeUser,
   requireUser,
