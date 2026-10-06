@@ -37,6 +37,7 @@ struct TrainingView: View {
     let unit: MassUnit
     let timeZone: TimeZone
     let unreadableCount: Int
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var starting = false
     @State private var browsing = false
 
@@ -51,7 +52,11 @@ struct TrainingView: View {
                             Text("No workout in progress").font(.title2.weight(.semibold))
                             Text("Log a workout at your own pace. Sets are saved as you go, even offline.")
                                 .foregroundStyle(.secondary)
-                            Button("Start workout", systemImage: "plus") { starting = true }
+                            Button { starting = true } label: {
+                                if typeSize.isAccessibilitySize {
+                                    Text("Start workout").fixedSize(horizontal: false, vertical: true)
+                                } else { Label("Start workout", systemImage: "plus") }
+                            }
                                 .buttonStyle(.borderedProminent).controlSize(.large)
                                 .accessibilityIdentifier("training.start")
                         }.padding(.vertical, 8)

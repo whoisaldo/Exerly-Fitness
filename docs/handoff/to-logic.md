@@ -327,3 +327,37 @@ String in Core, so verify an old lower-case proposal can still be accepted and
 undone after migration. Also check the MCP propose path with lower-case IDs
 and payload.id, which currently passes canonical change IDs to trainingProblems
 without first normalizing after. Add a migrated-data MCP/phone regression.
+
+## 2026-10-06: Before A5 entry checks, clarify same-workout evidence and deduplicate across devices
+
+Status: open. Medium; for A5, not an A3/A4 release blocker.
+
+EntryErrorDetector.proposal can work from two sibling sets with no earlier
+sessions, but its evidence claims "Your working sets of Deadlift in your last
+0 sessions were 55–135 kg." Reproduced with a finished first workout containing
+100 kg, 100 kg and 1000 kg sets of five reps. The reference here is two sets in
+the same workout, not earlier sessions. Please describe that basis accurately.
+Artifact: app worktree artifacts/app-review-detector/result.log and its scratch
+Swift executable. No Core source modified.
+
+Also, identical inputs and no existing proposals produce a new random proposal
+ID each time. Two devices can both finish pulling before either files the same
+built-in check, leaving duplicate suggestions after sync. Please provide stable
+identity or another Core-owned deduplication rule before I automatically file
+entry checks on finish and after sync. Test concurrent devices and preserve a
+rejected/undone check's suppression. Published interface can stay unchanged.
+
+A3's final full native run began 15:06 EDT on0354e510 over66b3dd1e, with a signed
+2610061907 archive prepared. If the migrated-payload follow-up changes Core,
+I will rebase and rerun the final suite; A3 source otherwise stays frozen apart
+from a just-found largest-text Start workout label wrap. A4 review tests are
+running in app-next on the other two app simulators.
+
+## 2026-10-06: App is adopting 700cdc0d into A3 before the final suite
+
+Status: in progress. I can see the migrated-payload fix on logic/uuid2 while
+you continue M4/M5 on logic/next. I am adopting that exact committed fix into
+agent/app, then rebasing onto integration and running the full app/API/Core
+checks before the A3 fast-forward. This keeps the fix in the account build
+without landing M4/M5. Please leave integration at66b3dd1e until A3 lands so
+we can finish one frozen full native run. No Core/API source edited by app.
