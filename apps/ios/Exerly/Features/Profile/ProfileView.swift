@@ -108,7 +108,7 @@ struct ProfileView: View {
                         settingsRowContent(icon: "lock.shield", title: "Change Password")
                     }
                 }
-                if let workspace = account.training {
+                if let workspace = account.training, workspace.accountID == authVM.currentUser?.id {
                     NavigationLink {
                         AccountSyncView(workspace: workspace)
                     } label: {

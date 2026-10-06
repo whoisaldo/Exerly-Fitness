@@ -8,6 +8,7 @@ final class AccountWorkspaceTests: XCTestCase {
     private var defaults: UserDefaults!
     private var namespace: String!
     private var credentials: MemoryCredentials!
+    private var api: APIClient!
     private var auth: AuthViewModel!
 
     override func setUp() async throws {
@@ -18,7 +19,7 @@ final class AccountWorkspaceTests: XCTestCase {
         credentials.saveSession(token: SessionBridgeTests.token("account-a"), refreshToken: "fixture-refresh")
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        let api = APIClient(baseURL: "https://fixture.exerly.test", session: URLSession(configuration: configuration),
+        api = APIClient(baseURL: "https://fixture.exerly.test", session: URLSession(configuration: configuration),
                             keychain: credentials, defaults: defaults)
         auth = AuthViewModel(api: api, keychain: credentials, defaults: defaults,
                              automaticallyCheck: false, onSessionInvalidated: {})
@@ -35,8 +36,7 @@ final class AccountWorkspaceTests: XCTestCase {
 
     private func workspace(purge: @escaping @MainActor (String) throws -> Void = { _ in }) -> AppAccountWorkspace {
         let directory = root!
-        return AppAccountWorkspace(defaults: defaults,
-            open: { try TrainingWorkspace(accountID: $0.accountID, root: directory, api: $0) },
+        return AppAccountWorkspace(open: { try TrainingWorkspace(accountID: $0.accountID, root: directory, api: $0) },
             deleteTraining: { try TrainingWorkspace.deleteStorage(accountID: $0, root: directory) },
             purgeLegacy: purge)
     }
@@ -76,7 +76,7 @@ final class AccountWorkspaceTests: XCTestCase {
         XCTAssertEqual(owner.training?.store.activeSession?.name, "Keep me")
         XCTAssertFalse(owner.training?.sync === oldEngine)
         XCTAssertTrue(FileManager.default.fileExists(atPath: training.url.path))
-        XCTAssertTrue(owner.pendingCleanup.isEmpty)
+        XCTAssertTrue(auth.accountsAwaitingLocalCleanup.isEmpty)
     }
 
     func testConfirmedDeleteCleansOnlyThatAccountAndRetriesFailedLocalCleanupAfterRelaunch() async throws {
@@ -100,11 +100,14 @@ final class AccountWorkspaceTests: XCTestCase {
         XCTAssertEqual(auth.authState, .unauthenticated)
         XCTAssertNil(owner.training)
         XCTAssertFalse(FileManager.default.fileExists(atPath: original.url.path))
-        XCTAssertEqual(owner.pendingCleanup, ["account-a"])
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["account-a"])
         XCTAssertNotNil(owner.cleanupError)
         let relaunched = workspace { id in XCTAssertEqual(id, "account-a") }
-        relaunched.retryCleanup()
-        XCTAssertTrue(relaunched.pendingCleanup.isEmpty)
+        let relaunchedAuth = AuthViewModel(api: api, keychain: credentials, defaults: defaults,
+                                           automaticallyCheck: false, onSessionInvalidated: {})
+        XCTAssertEqual(relaunchedAuth.accountsAwaitingLocalCleanup, ["account-a"])
+        await relaunched.retryCleanup(auth: relaunchedAuth)
+        XCTAssertTrue(relaunchedAuth.accountsAwaitingLocalCleanup.isEmpty)
         XCTAssertNil(relaunched.cleanupError)
         XCTAssertEqual(try TrainingWorkspace(accountID: "account-b", root: root).store.activeSession?.name,
                        "Keep other account")
@@ -123,6 +126,40 @@ final class AccountWorkspaceTests: XCTestCase {
         XCTAssertEqual(auth.authState, .authenticated)
         XCTAssertFalse(training.sync === oldEngine)
         XCTAssertTrue(FileManager.default.fileExists(atPath: training.url.path))
-        XCTAssertTrue(owner.pendingCleanup.isEmpty)
+        XCTAssertTrue(auth.accountsAwaitingLocalCleanup.isEmpty)
+    }
+
+    func testDeletionOnAnotherDeviceStopsThisStoreBeforeCleanup() async throws {
+        let owner = workspace()
+        await owner.configure(auth.accountAPI)
+        let training = try XCTUnwrap(owner.training)
+        let engine = try XCTUnwrap(training.sync)
+        try training.store.startSession(name: "Removed elsewhere", bodyweight: nil)
+        StubURLProtocol.handler = { _ in (401, SessionBridgeTests.deletedBody) }
+        await auth.checkAuth(useCached: false)
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["account-a"])
+        await owner.retryCleanup(auth: auth)
+        XCTAssertNil(owner.training)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: training.url.path))
+        XCTAssertTrue(auth.accountsAwaitingLocalCleanup.isEmpty)
+        do { try await engine.sync(); XCTFail("Deleted stores must stay stopped") }
+        catch is CancellationError { }
+    }
+
+    func testWorkspaceExportsUnsyncedTrainingOnlineAndLabelsADeviceOnlyExport() async throws {
+        let owner = workspace()
+        await owner.configure(auth.accountAPI)
+        let training = try XCTUnwrap(owner.training)
+        try training.store.startSession(name: "Not uploaded", bodyweight: nil)
+        let online = try training.export(server: Data(#"{"account":{"name":"Morgan"},"documents":[]}"#.utf8))
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: online) as? [String: Any])
+        XCTAssertEqual((json["account"] as? [String: Any])?["name"] as? String, "Morgan")
+        let document = try XCTUnwrap((json["documents"] as? [[String: Any]])?.first)
+        XCTAssertEqual(document["pending_sync"] as? Bool, true)
+        XCTAssertEqual((document["payload"] as? [String: Any])?["name"] as? String, "Not uploaded")
+        let offline = try XCTUnwrap(JSONSerialization.jsonObject(with: training.export(server: nil)) as? [String: Any])
+        XCTAssertEqual(offline["source"] as? String, "device")
+        XCTAssertNil(offline["account"])
+        XCTAssertNotNil(offline["note"])
     }
 }

@@ -17,6 +17,43 @@ agent/app fast-forwarded to7038d86e, including the prepared A3 UI commit.
    PARITY/RELEASE, rebase and land. Do not claim real Apple authorization until
    exercised on a signed device. TestFlight currently2610061654.
 
+## Active A3 work, 2026-10-06 14:09 EDT
+
+Primary rebased to67c8db44; app commit8b2f4c40 connects the shared session,
+training sync, native Apple sign-in, export and deletion. New recovery/export and
+accessibility fixes are uncommitted. Do not lose them. Latest integration now
+7a97ae34 adds token management; review/rebase before the full final run.
+
+21 hosted tests pass in artifacts/account/recovery-hosted.xcresult: 15 shared
+session tests adopted from the attachment plus six workspace lifecycle/export
+checks. Uses AuthViewModel.accountsAwaitingLocalCleanup as the sole persistent
+queue, waits for Core sync shutdown, purges local training/legacy data, then
+finishLocalCleanup. Root responds at launch and when that queue changes.
+AccountExport.merging now includes unsynced training; the separate offline
+export is explicitly training/suggestions only. Pending legacy food is disclosed
+as excluded and needs a later Core export extension.
+
+Earlier connected checks: API213/Core164/device build passed. Account switching
+passed. Actual sync/export/delete passed normal plus small-dark and large-light
+at largest type; all 10 matrix images inspected. They predate the export changes.
+The first normal run's share-sheet assertion used a hidden UIKit identifier;
+changed to visible Close. Offline test initially forgot offline:true and the
+fixture did not intercept /v1, so its status assertion failed. Both corrected;
+workout relaunch and reconnect server upload already passed. New tests also drop
+the deletion acknowledgement to exercise server-confirmed recovery.
+
+Screenshot review found Welcome's old flame placeholder and clipped largest-text
+buttons. Uncommitted fixes use the exact E/pulse asset and wrapping/min-height
+ActionButtons in a scrolling Welcome. Need inspect fresh light/dark/small/large
+screens and run full regressions after final rebase. No new A3 TestFlight upload.
+
+Fixtures39203/39204/39205 are running OLD code and must be restarted before the
+new offline/deletion tests. Their nodes are app-owned. Old39201/39202 were stopped
+cleanly. All completed UI/hosted sessions can be closed; no current test run.
+Use Primary derived data app-account/originalLarge, account-small/SE and
+account-large/accessibilityLarge. Original app-next keeps only earlier evidence;
+continue source work solely in primary.
+
 ## User corrections that persist
 
 Ali rejected the mint monogram and green UI. Preserve Exerly's original

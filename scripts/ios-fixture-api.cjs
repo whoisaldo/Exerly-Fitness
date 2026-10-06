@@ -1,7 +1,6 @@
 // Isolated simulator fixture: the real application and PostgreSQL adapter with a
 // deterministic external food provider. Never reads development/production env.
 process.env.NODE_ENV = 'test';
-process.env.DB_MODE = 'postgres';
 process.env.JWT_SECRET = 'isolated-ios-fixture-secret';
 process.env.ADMIN_EMAILS = '';
 const express = require('express');
@@ -24,6 +23,7 @@ let disconnect = false;
 let dropSetupAcknowledgement = false;
 let dropPreferencesAcknowledgement = false;
 let dropSessionUpgradeAcknowledgement = false;
+let dropAccountDeleteAcknowledgement = false;
 const sessionUpgradeAttempts = [];
 let measurementRoundTrip = null;
 let weightRoundTrip = null;
@@ -90,6 +90,7 @@ providers.lookupBarcode = async (identity) => ({
       dropSetupAcknowledgement = req.body.dropSetupAcknowledgement === true;
       dropPreferencesAcknowledgement = req.body.dropPreferencesAcknowledgement === true;
       dropSessionUpgradeAcknowledgement = req.body.dropSessionUpgradeAcknowledgement === true;
+      dropAccountDeleteAcknowledgement = req.body.dropAccountDeleteAcknowledgement === true;
       resetRateLimits();
       res.json({ offline, dropSetupAcknowledgement, dropPreferencesAcknowledgement });
     } catch (error) {
@@ -299,7 +300,7 @@ providers.lookupBarcode = async (identity) => ({
   app.use((req, res, next) => {
     if (
       offline &&
-      (req.path.startsWith('/api/') || req.path === '/auth/token' || req.path === '/auth/refresh')
+      (req.path.startsWith('/api/') || req.path.startsWith('/v1/') || req.path.startsWith('/auth/'))
     ) {
       if (disconnect) return req.socket.destroy();
       return res.status(503).json({ message: 'Simulator connection interruption' });
@@ -334,6 +335,21 @@ providers.lookupBarcode = async (identity) => ({
       res.json = (body) => {
         if (res.statusCode < 400) {
           dropSetupAcknowledgement = false;
+          req.socket.destroy();
+          return res;
+        }
+        return json(body);
+      };
+    }
+    if (
+      dropAccountDeleteAcknowledgement &&
+      req.path === '/api/account' &&
+      req.method === 'DELETE'
+    ) {
+      const json = res.json.bind(res);
+      res.json = (body) => {
+        if (res.statusCode < 400) {
+          dropAccountDeleteAcknowledgement = false;
           req.socket.destroy();
           return res;
         }

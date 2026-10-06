@@ -7,43 +7,28 @@ struct FloatingLabelTextField: View {
     var keyboardType: UIKeyboardType = .default
 
     @FocusState private var isFocused: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var isFloating: Bool {
         isFocused || !text.isEmpty
     }
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            Text(label)
-                .font(isFloating ? .exCaption : .exBody)
-                .foregroundStyle(isFocused ? .exPrimary : .exTextMuted)
-                .offset(y: isFloating ? -22 : 0)
-                .animation(.spring(response: 0.3), value: isFloating)
-                .accessibilityHidden(true)
-
-            Group {
-                if isSecure {
-                    SecureField("", text: $text)
-                } else {
-                    TextField("", text: $text)
-                        .keyboardType(keyboardType)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(label).font(.exCaption).foregroundStyle(.exTextSecondary).accessibilityHidden(true)
+                    input
                 }
-            }
-            .font(.exBody)
-            .accessibilityLabel(label)
-            .textInputAutocapitalization(keyboardType == .emailAddress || isSecure ? .never : .words)
-            .autocorrectionDisabled(keyboardType == .emailAddress || isSecure)
-            .foregroundStyle(.exTextPrimary)
-            .focused($isFocused)
-            .offset(y: 4)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    if isFocused {
-                        Spacer()
-                        Button("Done") {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        }
-                    }
+            } else {
+                ZStack(alignment: .leading) {
+                    Text(label)
+                        .font(isFloating ? .exCaption : .exBody)
+                        .foregroundStyle(isFocused ? .exPrimary : .exTextMuted)
+                        .offset(y: isFloating ? -22 : 0)
+                        .animation(.spring(response: 0.3), value: isFloating)
+                        .accessibilityHidden(true)
+                    input.offset(y: 4)
                 }
             }
         }
@@ -59,5 +44,28 @@ struct FloatingLabelTextField: View {
                 )
         )
         .animation(.easeOut(duration: 0.2), value: isFocused)
+    }
+
+    private var input: some View {
+        Group {
+            if isSecure { SecureField("", text: $text) }
+            else { TextField("", text: $text).keyboardType(keyboardType) }
+        }
+        .font(.exBody)
+        .accessibilityLabel(label)
+        .textInputAutocapitalization(keyboardType == .emailAddress || isSecure ? .never : .words)
+        .autocorrectionDisabled(keyboardType == .emailAddress || isSecure)
+        .foregroundStyle(.exTextPrimary)
+        .focused($isFocused)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if isFocused {
+                    Spacer()
+                    Button("Done") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                }
+            }
+        }
     }
 }

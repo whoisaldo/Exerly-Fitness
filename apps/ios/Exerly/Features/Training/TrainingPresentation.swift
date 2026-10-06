@@ -46,6 +46,10 @@ final class TrainingWorkspace: ObservableObject {
         try? await sync?.sync()
     }
 
+    func export(server: Data?) throws -> Data {
+        try AccountExport.merging(server: server, hosts: [store, agent], state: persistence)
+    }
+
     static func deleteStorage(accountID: String, root: URL? = nil) throws {
         _ = try SQLiteTrainingPersistence.defaultURL(accountID: accountID)
         if let root = try root ?? testStorageRoot() {

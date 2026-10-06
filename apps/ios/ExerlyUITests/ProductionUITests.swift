@@ -50,8 +50,14 @@ final class ProductionUITests: XCTestCase {
 
     func testWelcomeCanOpenSignIn() throws {
         let app = launch(resetSession: true)
+        capture(app, "auth-welcome")
+        reveal(app.buttons["I already have an account"], in: app)
+        capture(app, "auth-welcome-actions")
         tap(app.buttons["I already have an account"], in: app)
         XCTAssertTrue(app.secureTextFields["Password"].waitForExistence(timeout: 5))
+        reveal(app.buttons["account.appleAuthorization"], in: app)
+        XCTAssertTrue(app.buttons["account.appleAuthorization"].isEnabled)
+        capture(app, "auth-apple-sign-in")
     }
 
     func testAccountSyncExportAndDeletionAgainstTheServer() async throws {
@@ -86,6 +92,7 @@ final class ProductionUITests: XCTestCase {
         }
         tap(app.buttons["account.delete"], in: app)
         tap(app.buttons["account.confirmDelete"], in: app)
+        try await control(["dropAccountDeleteAcknowledgement": true])
         tap(app.alerts.buttons["Delete account"], in: app)
         XCTAssertTrue(app.buttons["I already have an account"].waitForExistence(timeout: 20))
         capture(app, "account-live-deleted")
@@ -125,7 +132,7 @@ final class ProductionUITests: XCTestCase {
         let person = try await createAccount(prefix: "offline-training")
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
-        try await control(["disconnect": true])
+        try await control(["offline": true, "disconnect": true])
         tap(app.buttons["Train"], in: app)
         tap(app.buttons["training.start"], in: app)
         replace(app.textFields["training.name"], with: "Offline saved workout", in: app)
@@ -135,6 +142,12 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["profile.sync"], in: app)
         XCTAssertTrue(app.staticTexts["Offline. Your workouts are saved on this device."].waitForExistence(timeout: 20))
         capture(app, "account-sync-offline")
+        tap(app.navigationBars.buttons["Profile"], in: app)
+        tap(app.buttons["profile.account"], in: app)
+        tap(app.buttons["account.exportDevice"], in: app)
+        XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 10))
+        capture(app, "account-offline-export")
+        tap(app.buttons["Close"].firstMatch, in: app)
         app.terminate()
         app.launchArguments.removeAll { $0 == "--ui-testing" }
         app.launch()

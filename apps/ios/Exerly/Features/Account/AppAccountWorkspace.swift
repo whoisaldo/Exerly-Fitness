@@ -10,15 +10,13 @@ final class AppAccountWorkspace: ObservableObject {
     @Published private(set) var openingError: String?
     @Published private(set) var isChangingAccount = false
     @Published private(set) var cleanupError: String?
-    private let defaults: UserDefaults
     private let open: @MainActor (AccountAPI) throws -> TrainingWorkspace
     private let deleteTraining: @MainActor (String) throws -> Void
     private let purgeLegacy: @MainActor (String) throws -> Void
     private var generation = UUID()
-    private let cleanupKey = "exerly.confirmedDeletionCleanup"
+    private var isCleaning = false
 
-    init(defaults: UserDefaults = .standard,
-         open: @escaping @MainActor (AccountAPI) throws -> TrainingWorkspace = {
+    init(open: @escaping @MainActor (AccountAPI) throws -> TrainingWorkspace = {
              try TrainingWorkspace(accountID: $0.accountID, api: $0)
          },
          deleteTraining: @escaping @MainActor (String) throws -> Void = {
@@ -27,13 +25,10 @@ final class AppAccountWorkspace: ObservableObject {
          purgeLegacy: @escaping @MainActor (String) throws -> Void = {
              try SyncEngine.shared.purge(accountID: $0)
          }) {
-        self.defaults = defaults
         self.open = open
         self.deleteTraining = deleteTraining
         self.purgeLegacy = purgeLegacy
     }
-
-    var pendingCleanup: [String] { defaults.stringArray(forKey: cleanupKey) ?? [] }
 
     func configure(_ account: AccountAPI?) async {
         guard !isChangingAccount else { return }
@@ -41,10 +36,11 @@ final class AppAccountWorkspace: ObservableObject {
         let request = UUID()
         generation = request
         let previous = training?.sync
-        training = nil
         openingError = nil
         await previous?.shutdown()
-        guard generation == request, !Task.isCancelled, let account else { return }
+        guard generation == request, !Task.isCancelled else { return }
+        training = nil
+        guard let account else { return }
         do { training = try open(account) }
         catch { openingError = "Your saved training could not open. Keep Exerly installed and try again." }
     }
@@ -69,11 +65,9 @@ final class AppAccountWorkspace: ObservableObject {
             try Task.checkCancellation()
             let result = try await auth.deleteAccount(appleAuthorizationCode: authorizationCode)
             if result == .appleReauthorizationRequired { throw ExerlyCore.APIError.appleReauthorizationRequired }
-            // Persist this work before the signed-in UI disappears. Never put a
-            // merely attempted or refused server deletion into this queue.
-            defaults.set(Array(Set(pendingCleanup + [account.accountID])).sorted(), forKey: cleanupKey)
+            // Core persists confirmed deletions before clearing the session.
             training = nil
-            retryCleanup()
+            finishCleanup(auth: auth)
         } catch {
             if auth.accountAPI?.accountID == account.accountID {
                 training?.resumeSync(api: account)
@@ -82,16 +76,27 @@ final class AppAccountWorkspace: ObservableObject {
         }
     }
 
-    func retryCleanup() {
-        var remaining: [String] = []
-        for accountID in pendingCleanup {
+    func retryCleanup(auth: AuthViewModel) async {
+        guard !isChangingAccount, !isCleaning else { return }
+        isCleaning = true
+        defer { isCleaning = false }
+        if let training, auth.accountsAwaitingLocalCleanup.contains(training.accountID) {
+            generation = UUID()
+            await training.sync?.shutdown()
+            self.training = nil
+        }
+        finishCleanup(auth: auth)
+    }
+
+    private func finishCleanup(auth: AuthViewModel) {
+        for accountID in auth.accountsAwaitingLocalCleanup {
             do {
                 try deleteTraining(accountID)
                 try purgeLegacy(accountID)
-            } catch { remaining.append(accountID) }
+                auth.finishLocalCleanup(for: accountID)
+            } catch { /* Core retains this confirmed deletion for the next retry. */ }
         }
-        defaults.set(remaining, forKey: cleanupKey)
-        cleanupError = remaining.isEmpty ? nil :
+        cleanupError = auth.accountsAwaitingLocalCleanup.isEmpty ? nil :
             "Your account was deleted. Some saved data on this device still needs to be removed. Retry cleanup."
     }
 
@@ -108,7 +113,14 @@ final class AppAccountWorkspace: ObservableObject {
             }
             return AccountSignInMethods(appleConnected: values.apple, hasPassword: values.password)
         }
-        return AccountManagementActions(signInMethods: { try await methods() }, connectApple: { payload in
+        func savedTraining() throws -> TrainingWorkspace {
+            try checkAccount()
+            guard let training = self.training, training.accountID == accountID else {
+                throw ExerlyCore.APIError.server(status: 0, message: "Open your saved training before exporting. Try again from the Train tab.")
+            }
+            return training
+        }
+        var actions = AccountManagementActions(signInMethods: { try await methods() }, connectApple: { payload in
             try checkAccount()
             try await auth.linkApple(identityToken: payload.identityToken, rawNonce: payload.rawNonce)
             return try await methods()
@@ -118,10 +130,13 @@ final class AppAccountWorkspace: ObservableObject {
             return try await methods()
         }, exportAccount: {
             try checkAccount()
-            return try await auth.exportAccount()
+            let server = try await auth.exportAccount()
+            return try savedTraining().export(server: server)
         }, deleteAccount: { code in
             try checkAccount()
             try await self.deleteAccount(auth: auth, authorizationCode: code)
         })
+        actions.exportDeviceData = { try savedTraining().export(server: nil) }
+        return actions
     }
 }

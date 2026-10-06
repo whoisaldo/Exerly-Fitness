@@ -60,7 +60,10 @@ struct RootView: View {
         .task(id: "\(authVM.currentUser?.id ?? "")-\(authVM.currentUser?.timezone ?? "UTC")") {
             sync.configure(container: modelContext.container, accountID: authVM.currentUser?.id,
                            timeZone: authVM.currentUser?.timezone)
-            account.retryCleanup()
+            await account.retryCleanup(auth: authVM)
+        }
+        .task(id: authVM.accountsAwaitingLocalCleanup) {
+            await account.retryCleanup(auth: authVM)
         }
         .task(id: "\(authVM.authState)-\(authVM.currentUser?.id ?? "")-\(authVM.sessionID)") {
             await account.configure(authVM.authState == .authenticated ? authVM.accountAPI : nil)
@@ -87,7 +90,7 @@ struct RootView: View {
             if let message = account.cleanupError {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(message).font(.callout)
-                    Button("Retry cleanup") { account.retryCleanup() }
+                    Button("Retry cleanup") { Task { await account.retryCleanup(auth: authVM) } }
                 }.padding().frame(maxWidth: .infinity).background(.regularMaterial)
             }
             if authVM.isOffline && authVM.currentUser != nil {

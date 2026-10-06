@@ -15,6 +15,7 @@ struct AccountManagementActions {
     var disconnectApple: @MainActor () async throws -> AccountSignInMethods
     var exportAccount: @MainActor () async throws -> Data
     var deleteAccount: @MainActor (String?) async throws -> Void
+    var exportDeviceData: (@MainActor () throws -> Data)?
 }
 
 struct AccountManagementView: View {
@@ -79,7 +80,20 @@ struct AccountManagementView: View {
             } header: {
                 Text("Your data")
             } footer: {
-                Text("Export the data saved to your account as a JSON file. Workouts waiting to sync are not included.")
+                Text("A JSON file with your account records and this device’s workouts and suggestions, including unsynced training. Food and other entries waiting to sync are not included.")
+            }
+            if let exportDeviceData = actions.exportDeviceData {
+                Section {
+                    Button("Export saved training", systemImage: "iphone.and.arrow.forward") {
+                        start {
+                            exportFile = try AccountExportFile(data: exportDeviceData(), trainingOnly: true)
+                        }
+                    }
+                    .disabled(busy != nil)
+                    .accessibilityIdentifier("account.exportDevice")
+                } footer: {
+                    Text("Works offline. Includes only training and suggestions saved on this device.")
+                }
             }
             Section {
                 if let methods {
@@ -255,11 +269,11 @@ struct AccountExportFile: Identifiable {
     let id = UUID()
     let url: URL
 
-    init(data: Data, directory: URL = FileManager.default.temporaryDirectory) throws {
+    init(data: Data, directory: URL = FileManager.default.temporaryDirectory, trainingOnly: Bool = false) throws {
         _ = try JSONSerialization.jsonObject(with: data)
         let folder = directory.appendingPathComponent("ExerlyExport-\(id.uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        url = folder.appendingPathComponent("exerly-account.json")
+        url = folder.appendingPathComponent(trainingOnly ? "exerly-training.json" : "exerly-account.json")
         do { try data.write(to: url, options: [.atomic, .completeFileProtection]) }
         catch {
             try? FileManager.default.removeItem(at: folder)
