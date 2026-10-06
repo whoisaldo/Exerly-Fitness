@@ -38,8 +38,10 @@ export function validateGroup(group) {
 }
 
 export function validateTester(tester, email) {
-  if (tester.attributes.email?.toLowerCase() !== email.toLowerCase() || tester.attributes.inviteType !== 'INTERNAL') {
-    throw new Error('Only Ali as an internal tester is permitted');
+  // inviteType is EMAIL or PUBLIC_LINK, not the internal/external distinction.
+  // Call only for a member returned from the validated internal group.
+  if (tester.attributes.email?.toLowerCase() !== email.toLowerCase() || tester.attributes.inviteType !== 'EMAIL') {
+    throw new Error('Only the account holder with an email invitation is permitted');
   }
 }
 
@@ -117,20 +119,15 @@ async function internal(request, app, buildNumber) {
   if (owners.length !== 1) throw new Error('Could not uniquely identify the authorized account holder');
   const email = owners[0].attributes.username;
   if (!email) throw new Error('Account holder email unavailable');
-  // Reuse the account's existing INTERNAL tester. Creating a tester via POST
-  // can invite an external tester, so leave that to the ASC internal-tester UI.
-  const testers = await all(request, `/v1/betaTesters?filter[email]=${encodeURIComponent(email)}&limit=200`);
-  const tester = testers.find(t => t.attributes.inviteType === 'INTERNAL');
-  if (!tester) throw new Error('Add Ali as an internal tester in App Store Connect, then rerun');
-  validateTester(tester, email);
   const groups = await all(request, `/v1/apps/${app.id}/betaGroups?limit=200`);
   let group = groups.find(g => g.attributes.name === groupName);
   if (!group) group = (await request('/v1/betaGroups', 'POST', internalGroupBody(app.id))).data;
   validateGroup(group);
   const members = await all(request, `/v1/betaGroups/${group.id}/betaTesters?limit=200`);
+  // The website's internal-tester picker identifies a team user. A global
+  // email search can return several testers and does not establish that role.
+  if (members.length !== 1) throw new Error('Add only Ali to this internal group in App Store Connect, then rerun');
   for (const member of members) validateTester(member, email);
-  if (!members.some(t => t.id === tester.id)) await request(`/v1/betaGroups/${group.id}/relationships/betaTesters`, 'POST',
-    { data: [{ type: 'betaTesters', id: tester.id }] });
   if (buildNumber) {
     const builds = await all(request, `/v1/builds?filter[app]=${app.id}&filter[version]=${encodeURIComponent(buildNumber)}`);
     if (builds.length !== 1 || builds[0].attributes.processingState !== 'VALID' || builds[0].attributes.expired) {

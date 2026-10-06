@@ -74,7 +74,7 @@ PY
     cmp -s "$PROFILE" "$PROFILE_DEST" || { echo 'Installed profile differs; refusing to overwrite it' >&2; exit 2; }
   fi
   SIGN_ARGS=(CODE_SIGN_STYLE=Manual 'CODE_SIGN_IDENTITY=Apple Distribution' DEVELOPMENT_TEAM=9X79V37Q89
-    "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_UUID" "OTHER_CODE_SIGN_FLAGS=--keychain $KEYCHAIN")
+    "EXERLY_PROVISIONING_PROFILE=$PROFILE_UUID" "OTHER_CODE_SIGN_FLAGS=--keychain $KEYCHAIN")
   python3 - "$OUT/exportOptions.plist" "$PROFILE_UUID" <<'PY'
 import pathlib, plistlib, sys
 pathlib.Path(sys.argv[1]).write_bytes(plistlib.dumps({

@@ -1268,20 +1268,24 @@ final class ProductionUITests: XCTestCase {
         app.launch()
         return app
     }
-    private func dismissPasswordPrompt(in app: XCUIApplication) {
+    @discardableResult
+    private func dismissPasswordPrompt(in app: XCUIApplication) -> Bool {
         // Fresh iOS 26 simulators offer to save the synthetic account password.
         // The app's elements still exist behind that system sheet, but none are
         // hittable. Handle only this prompt, leaving permission dialogs testable.
         let passwordSheet = app.sheets["Save Password?"]
         if passwordSheet.exists && passwordSheet.buttons["Not Now"].exists {
             passwordSheet.buttons["Not Now"].tap()
+            return true
         } else {
             let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
             let passwordPrompt = springboard.alerts.matching(NSPredicate(format: "label CONTAINS %@", "Save Password")).firstMatch
             if passwordPrompt.exists && passwordPrompt.buttons["Not Now"].exists {
                 passwordPrompt.buttons["Not Now"].tap()
+                return true
             }
         }
+        return false
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         dismissPasswordPrompt(in: app)
@@ -1323,6 +1327,12 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(element.exists || element.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(element.isHittable, app.debugDescription)
         element.tap()
+        // A fresh simulator may show the password sheet between the hittability
+        // check and event delivery, swallowing a tab tap. Retry only that known
+        // interruption, and only if the original control is still available.
+        if dismissPasswordPrompt(in: app), element.exists, element.isHittable {
+            element.tap()
+        }
     }
     private func replace(_ field: XCUIElement, with text: String, in app: XCUIApplication) {
         tap(field, in: app)

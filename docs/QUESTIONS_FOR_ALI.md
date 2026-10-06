@@ -43,3 +43,10 @@ This blocks upload only. The app agent continues signed archives, simulator chec
 and implementation. Internal TestFlight is already authorized; no extra release
 approval is requested. Apple's restriction is documented at
 https://developer.apple.com/documentation/appstoreconnectapi/apps.
+
+## 2026-10-06: App Store Connect creation resolved
+
+The app agent unlocked the authorized desktop session and created Exerly through
+Apple's website. App ID 6819776832; iOS, English (US), com.exerly.fitness, SKU
+sideband-exerly-ios. The earlier website-creation blocker is resolved. Internal
+TestFlight preparation continues; no external review or App Review was submitted.

@@ -5,18 +5,19 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Version 1.0, build 2610061518. Signed archive and IPA exported successfully with
+Version 1.0, build 2610061616. Signed archive and IPA exported successfully with
 Xcode 26.2 and the iOS 26.2 SDK. Archive identity, HealthKit entitlement, profile,
 privacy manifest, icon, version and absence of debug fixture hooks passed the
 release validator. No upload or physical-device install has occurred.
 
-- Archive: `apps/ios/build/release/2610061518/Exerly.xcarchive`
-- IPA: `apps/ios/build/release/2610061518/export/Exerly.ipa`
-- Logs: `apps/ios/build/release/2610061518/{archive,export}.log`
+- Archive: `apps/ios/build/release/2610061616/Exerly.xcarchive`
+- IPA: `apps/ios/build/release/2610061616/export/Exerly.ipa`
+- Logs: `apps/ios/build/release/2610061616/{archive,export}.log`
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
 - Team: `9X79V37Q89`. Reused distribution certificate, expires 2027-09-25.
 - Exerly profile: `H5896RXW3D`, expires 2027-09-25. HealthKit enabled.
-- App Store Connect app ID and internal group: pending website record creation.
+- App Store Connect: Exerly, app ID `6819776832`, created through the website.
+- Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`; only Ali, no public link or automatic future builds.
 
 Build and signing outputs are ignored. Keys, certificate material, passwords and
 profiles stay outside the repository. No other app's identifiers or profiles changed.
@@ -45,10 +46,12 @@ Run `internal BUILD_NUMBER` only after Apple reports the build as valid. It chec
 that the existing tester is Ali and internal, and that the group has no public
 link, no other members and no automatic access to future builds.
 
-The [Apple API cannot create the initial app record][apps]. The app agent is
-attempting the website through the existing desktop browser as Ali requested.
-The aldo desktop session was locked at the time of the attempt. This blocks only
-record creation/upload, not local work.
+The [initial app record][apps] and Ali's membership in the internal group were
+created through Apple's website. API checks verify the group and account-holder
+email before assigning a build. Apple's [inviteType][invite] describes email
+versus a public link; internal status comes from the group's isInternalGroup.
+Manual profile selection is scoped to the app target so Swift package resource
+bundles are not given an unsupported provisioning profile.
 
 ## App Store checklist
 
@@ -57,12 +60,12 @@ record creation/upload, not local work.
 | Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit enabled.                                                                                                 |
 | Distribution signing              | Done                  | Existing certificate reused; signed archive and export verified.                                                                                       |
 | App icon                          | Built                 | Original 1024px opaque monogram; inspect installed home-screen appearance.                                                                             |
-| App Store Connect record          | Blocked               | Website creation needs unlocked/signed-in desktop session.                                                                                             |
-| Internal group                    | Pending record        | Create Exerly Internal with only Ali, no public link.                                                                                                  |
-| Internal TestFlight upload        | Pending record        | Upload, poll processing, assign build, verify install.                                                                                                 |
+| App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                             |
+| Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                                                  |
+| Internal TestFlight upload        | Pending upload        | Upload, poll processing, assign build, verify install.                                                                                                 |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | 68 unit tests pass; full UI rerun after iOS 26 password-sheet fix.                                                                                     |
+| Native test suite                 | In progress           | 72 unit tests and 14 native UI journeys pass; 7 cross-client tests opt-in. Rebased rerun pending.                                                                                     |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
@@ -112,10 +115,14 @@ claim full parity, superior food coverage or sub-second launch until measured.
 
 ## Internal test notes for the foundation build
 
-Synthetic accounts only. This build contains the earlier diary, onboarding,
-preferences and progress screens. It is an engineering baseline. The new training
-logger, proposal review, complete nutrients and migration flows are not present.
-Check sign-in, diary portion edits, offline relaunch and local data preservation.
+Synthetic accounts only. This build adds a training logger backed by on-device
+SQLite, workout history, previous-set prefill and persistent rest timers. Training
+sync is not connected yet. The diary, onboarding, preferences and progress flows
+remain available. Check training logging, one-tap completion, finish/history,
+offline relaunch and account separation. Proposal review, complete nutrients and
+migration flows are still under development.
 Report crashes through TestFlight. Do not import personal health data yet.
 
 [apps]: https://developer.apple.com/documentation/appstoreconnectapi/apps
+
+[invite]: https://developer.apple.com/documentation/appstoreconnectapi/betatester/attributes-data.dictionary

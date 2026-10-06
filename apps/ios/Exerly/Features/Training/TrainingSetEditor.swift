@@ -1,7 +1,9 @@
 import SwiftUI
 import ExerlyCore
 
-private struct EffortFields: Identifiable {
+enum TrainingSetInputError: Error { case invalid(String) }
+
+struct EffortFields: Identifiable {
     let id = UUID()
     let original: Effort
     let initialLoad: String
@@ -21,6 +23,32 @@ private struct EffortFields: Identifiable {
         load = initialLoad
         duration = initialDuration
         distance = initialDistance
+    }
+
+    func value(for metric: TrackingMetric, unit: MassUnit) throws -> Effort {
+        var effort = Effort()
+        if metric.tracksReps && !reps.isEmpty {
+            guard let value = TrainingInput.reps(reps) else {
+                throw TrainingSetInputError.invalid("Enter a whole number of reps.")
+            }
+            effort.reps = value
+        }
+        if metric.tracksLoad {
+            effort.load = load == initialLoad ? original.load : try parse(load, label: "weight").map { Mass($0, unit) }
+        }
+        if metric.tracksDuration {
+            effort.duration = duration == initialDuration ? original.duration : try parse(duration, label: "duration")
+        }
+        if metric.tracksDistance {
+            effort.distance = distance == initialDistance ? original.distance : try parse(distance, label: "distance")
+        }
+        return effort
+    }
+
+    private func parse(_ text: String, label: String) throws -> Double? {
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+        guard let value = TrainingInput.number(text) else { throw TrainingSetInputError.invalid("Enter a valid \(label).") }
+        return value
     }
 }
 
@@ -133,36 +161,14 @@ struct TrainingSetEditor: View {
         do {
             var set = original
             set.kind = kind; set.rir = rir; set.side = side
-            set.efforts = try efforts.map { fields in
-                var effort = Effort()
-                if exercise.metric.tracksReps && !fields.reps.isEmpty {
-                    guard let reps = TrainingInput.reps(fields.reps) else { throw InputError.invalid("Enter a whole number of reps.") }
-                    effort.reps = reps
-                }
-                if exercise.metric.tracksLoad {
-                    effort.load = fields.load == fields.initialLoad ? fields.original.load : try parse(fields.load, label: "weight").map { Mass($0, unit) }
-                }
-                if exercise.metric.tracksDuration {
-                    effort.duration = fields.duration == fields.initialDuration ? fields.original.duration : try parse(fields.duration, label: "duration")
-                }
-                if exercise.metric.tracksDistance {
-                    effort.distance = fields.distance == fields.initialDistance ? fields.original.distance : try parse(fields.distance, label: "distance")
-                }
-                return effort
-            }
+            set.efforts = try efforts.map { try $0.value(for: exercise.metric, unit: unit) }
             if set.isCompleted && !set.isLoggable(for: exercise) {
-                throw InputError.invalid("A completed set needs valid values. Reopen the set before clearing them.")
+                throw TrainingSetInputError.invalid("A completed set needs valid values. Reopen the set before clearing them.")
             }
             try onSave(set, propagate)
             dismiss()
-        } catch let InputError.invalid(message) { error = message }
+        } catch let TrainingSetInputError.invalid(message) { error = message }
         catch { self.error = TrainingFormat.error(error) }
     }
 
-    private enum InputError: Error { case invalid(String) }
-    private func parse(_ text: String, label: String) throws -> Double? {
-        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
-        guard let value = TrainingInput.number(text) else { throw InputError.invalid("Enter a valid \(label).") }
-        return value
-    }
 }

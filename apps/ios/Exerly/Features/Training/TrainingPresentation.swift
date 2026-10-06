@@ -1,5 +1,4 @@
 import Foundation
-import CryptoKit
 import ExerlyCore
 
 /// App composition: the account determines which Core store a screen can open.
@@ -15,23 +14,27 @@ final class TrainingWorkspace {
         guard !accountID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AccessError.missingAccount
         }
-        let base = try root ?? Self.storageRoot()
-        let key = SHA256.hash(data: Data(accountID.utf8)).map { String(format: "%02x", $0) }.joined()
-        url = base.appendingPathComponent(key, isDirectory: true).appendingPathComponent("training.sqlite")
+        let canonical = try SQLiteTrainingPersistence.defaultURL(accountID: accountID)
+        if let testRoot = try root ?? Self.testStorageRoot() {
+            url = testRoot.appendingPathComponent(accountID, isDirectory: true)
+                .appendingPathComponent(canonical.lastPathComponent)
+        } else {
+            url = canonical
+        }
         let persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
         unreadableCount = persistence.unreadableRows.count
     }
 
-    private static func storageRoot() throws -> URL {
-        let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                              appropriateFor: nil, create: true)
+    private static func testStorageRoot() throws -> URL? {
         #if DEBUG
         if let id = ProcessInfo.processInfo.environment["EXERLY_TEST_STORE_ID"], UUID(uuidString: id) != nil {
+            let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                  appropriateFor: nil, create: true)
             return base.appendingPathComponent("SimulatorTests/\(id)/Training", isDirectory: true)
         }
         #endif
-        return base.appendingPathComponent("Exerly/Accounts", isDirectory: true)
+        return nil
     }
 }
 

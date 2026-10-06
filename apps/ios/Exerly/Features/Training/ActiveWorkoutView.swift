@@ -13,6 +13,7 @@ struct ActiveWorkoutView: View {
     let store: TrainingStore
     let session: WorkoutSession
     let unit: MassUnit
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var adding = false
     @State private var editing: SetEditorTarget?
     @State private var details = false
@@ -60,6 +61,9 @@ struct ActiveWorkoutView: View {
                     }
                 }
             }
+            if typeSize.isAccessibilitySize, let timer = store.restTimer {
+                Section("Rest") { restControls(timer) }
+            }
             Section {
                 Button("Add exercise", systemImage: "plus") { adding = true }.frame(minHeight: 44)
                     .accessibilityIdentifier("training.addExercise")
@@ -76,9 +80,8 @@ struct ActiveWorkoutView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if let timer = store.restTimer {
-                RestTimerView(timer: timer, extend: { save { try store.extendRest(by: 30) } },
-                              skip: { save { try store.skipRest() } })
+            if !typeSize.isAccessibilitySize, let timer = store.restTimer {
+                restControls(timer)
             }
         }
         .sheet(isPresented: $adding) {
@@ -101,6 +104,11 @@ struct ActiveWorkoutView: View {
     private func save<T>(_ action: () throws -> T) {
         do { _ = try action(); error = nil }
         catch { self.error = TrainingFormat.error(error) }
+    }
+
+    private func restControls(_ timer: RestTimer) -> some View {
+        RestTimerView(timer: timer, extend: { save { try store.extendRest(by: 30) } },
+                      skip: { save { try store.skipRest() } })
     }
 }
 
@@ -138,7 +146,7 @@ struct TrainingSetRow: View {
             .accessibilityLabel("Edit set \(number), \(exercise.name)")
             .accessibilityValue(TrainingFormat.set(set, unit: unit))
             Button(action: complete) {
-                Label(set.isCompleted ? "Completed" : "Complete", systemImage: set.isCompleted ? "checkmark.circle.fill" : "circle")
+                Label(set.isCompleted ? "Done" : "Log set", systemImage: set.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.body.weight(.medium))
                     .labelStyle(.titleAndIcon)
                     .frame(minHeight: 44)

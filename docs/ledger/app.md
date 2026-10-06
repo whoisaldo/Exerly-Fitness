@@ -1,91 +1,84 @@
 # App agent ledger (Astra)
 
-Owned by app; read "Two agents" in docs/AGENT_BRIEF.md after every context reset.
-Done is not met. No row is device-verified and nothing is on TestFlight yet.
+Read the brief, this ledger and to-app.md after every reset. Done is not met.
+No parity row is fully device-verified. No build is on TestFlight yet.
 
 ## Current milestone
 
-2026-10-06: A1 release tooling is implemented; A2 shell/training is under full
-regression. Branch agent/app, rebased on 55935632. Design notes:
-docs/design/002-app-foundation.md and docs/design/003-training-shell.md.
+2026-10-06 A2: native shell and persistent training logger, branch agent/app.
+A1 release tooling and A2 code are committed locally; nothing has landed on
+integration yet. Rebase on a4eeba40 is next, then required full suite/device build.
 
-A2 links ExerlyCore, opens account-specific SQLite stores, adds a native five-tab
-shell, semantic light/dark colors and scalable type. Train supports exercise
-search, muscle filtering, session notes/bodyweight, set types/RIR/continuations,
-one-tap completion, rest, finish/discard and history. Core supplies all training
-calculations and persistence. Rest persistence and summary fixes from 55935632
-are integrated. Training sync and native Apple sign-in remain upcoming.
+The app links ExerlyCore. TrainingWorkspace now uses Core's canonical account
+path so deletion can remove its data; test roots remain isolated. Training supports
+search/muscle filters, session notes/bodyweight, set kinds/RIR/continuations,
+one-tap completion, rest, finish/discard, summary and history. Native five-tab
+navigation and semantic light/dark colors replace the old custom tab bar. The
+largest-text layout puts rest controls inside the list; Done avoids a mid-word
+wrap. Untouched load/duration/distance fields preserve exact saved precision.
 
 ## Next three steps
 
-1. Finish the full native run in artifacts/app-training/full-native.xcresult
-   (.deriveddata/app-training-full, large simulator). Inspect failures rather
-   than assuming green. A separate largest-text run uses small simulator and
-   fixture 39201: small-light-largest.xcresult. Continue light/dark on both sizes.
-2. Finish A2 checks, screenshots, archive, PARITY/RELEASE evidence and landing.
-   Rebase on newer integration commits if needed, resolve append-only inbox
-   conflicts by preserving both contributions, run required checks, ff merge
-   into the integration checkout and push. No app work has landed yet.
-3. A3 Apple account UI and training sync after reading the latest Core contracts.
-   Requests for native auth client methods and atomic rest/session writes are
-   in to-logic.md. Keep implementing while Apple browser authentication waits.
+1. Finish small-dark-final.xcresult and inspect its two screenshots. Other three
+   largest-text variants passed and screenshots were inspected. Commit these
+   fixes, rebase on integration and run API/Core/native suites plus device build.
+2. Archive/upload a new A2 build, verify Apple processing and assign only that
+   build to Exerly Internal · Ali. Update PARITY/RELEASE evidence. Fast-forward
+   integration and push after checks; if it moves, rebase and check again.
+3. A3: wire Core auth/sync into app UI, add SIWA capability/profile, hosted
+   Keychain round trip, deletion/export and sync-status views. Read latest Core
+   README and inbox first. Review latest logic commits and send findings.
 
 ## Evidence
 
-- Sideband repo resolves; origin is https://github.com/sidebandstudio/Exerly-Fitness.git.
-- A1 API 153, native units 68, Core 81 and unsigned device build passed.
-- A1 full UI run found two issues: iOS 26 password-save sheet interrupted tests;
-  helper now dismisses only that prompt. Onboarding target weight replaced 78
-  with 8; Step4Goals now keeps raw input text while editing.
-- A2 targeted small-phone signup/offline regression and training logging,
-  relaunch, finish and prefill both pass against PostgreSQL:
-  artifacts/app-training/training-signup.xcresult (217 s and 59 s).
-- Four app composition/input tests pass, including account isolation and restart:
-  unit-fixed.xcresult. Rest persistence assertions were added after 55935632 and
-  pass in the ongoing full native run. Core and API reruns are core-current.log
-  and api-current.log; inspect results before reporting their counts.
-- A2 device build passed, device.log. New source has no Swift warnings; the
-  pre-existing AppIntents metadata warning remains. Removed three unnecessary
-  try expressions from old unit tests. Later date-control appearance cleanup
-  needs the final device build.
-- Eight small-phone light screenshots exported, all inspected under
-  artifacts/app-training/screenshots. Human-readable copies include
-  training-completed-set.png, training-prefilled-one-tap.png,
-  setup-target-review.png and the diary/offline images. Largest text and dark
-  screenshots are pending. Three date controls forced dark; that is fixed.
-- Fixture scripts/ios-fixture-api.cjs now uses a disposable PostgreSQL cluster
-  from logic's helper. It listens on its assigned port and stops its own cluster
-  at shutdown. Logic may remove SQLite only after the complete native run passes.
+- Origin: https://github.com/sidebandstudio/Exerly-Fitness.git; verified 2026-10-06.
+- A2 API 175, Core 94 pass on base 55935632 (api-current.log/core-current.log).
+- Full native PostgreSQL run passed: 72 hosted unit tests, 14 UI journeys, 7
+  cross-client cases opt-in/skipped. artifacts/app-training/full-native.xcresult.
+  It predates latest cosmetics, precision tests and canonical account path.
+- Targeted SE signup/offline and training/relaunch/history/prefill passed:
+  training-signup.xcresult. Found/fixed old goal-weight entry replacing 78 with 8.
+- Six presentation tests passed in small-light-fixed.xcresult, including untouched
+  precision. New seventh test checks canonical account path; pending rerun.
+- Largest text final checks: large-light-fixed.xcresult, large-dark-final.xcresult,
+  small-light-final.xcresult pass and screenshots inspected. Export directories
+  under artifacts/app-training/{large-light-final,large-dark-final,small-light-final}.
+  small-dark-final.xcresult is running. Initial overlays/wrapped label fixed.
+- A2 unsigned device build passed; later edits need final build. Signed archive
+  and export 1.0 (2610061616) passed, before final button/account-path changes.
+- Release checks: six Python and four Node tests pass. ASC internal inviteType
+  is EMAIL (not INTERNAL); group internal flag and account-holder membership are
+  verified. The API no longer selects ambiguous global email matches.
+- PostgreSQL fixture owns/cleans its disposable cluster. Full native pass is
+  communicated in to-logic.md; logic can remove the SQLite adapter and web CI job.
 
-## Release and external dependencies
+## Release
 
-Signed archive and IPA 1.0 (2610061518) passed release validation before A2:
-apps/ios/build/release/2610061518. No upload. Six Python and four Node release
-checks pass. Reuses the existing distribution certificate, with HealthKit.
-ASC bundle UJ5X8TJKNL; profile H5896RXW3D.
+Created Exerly through Apple's website at 12:27 EDT: app ID 6819776832, iOS,
+English US, com.exerly.fitness, SKU sideband-exerly-ios. Normal desktop unlock
+and Apple passkey sign-in succeeded with user authorization. Never persist
+credentials in docs/logs. No account switching or service settings changed.
 
-Apple requires the first app record on its website. User authorized normal Mac
-unlock; aldo unlocked successfully at 11:36 EDT. Apple sign-in still required.
-The record is still absent as of 12:05 EDT. Requested values: Exerly (fallback
-Exerly Training & Nutrition), iOS, English US, com.exerly.fitness,
-sideband-exerly-ios. Never write credentials into this repository. Apple sign-in
-key for token revocation and production secrets are tracked in QUESTIONS_FOR_ALI.
+Internal group c5ae1d39-0fe4-4bee-af89-0374d9519afe, Exerly Internal · Ali, has
+exactly account-holder Ali. Created and added him through the website; verified
+through API. No public link or automatic future builds. No build uploaded yet.
 
-## Resume exactly
+Existing distribution certificate reused. Bundle UJ5X8TJKNL, HealthKit profile
+H5896RXW3D. Manual profile applies only to the app target, not package resources.
+Archive scripts/asc.mjs and release.sh. Signed archive/IPA 2610061616 available.
+SIWA revocation key and production database secrets remain QUESTIONS_FOR_ALI.
 
-Read the brief, this ledger and to-app.md. Check git status and current test
-processes. Xcode: DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer.
-Use only Exerly App simulators:
+## Resume and processes
 
-- Large: 7189880A-91EC-4555-83E8-A37464802FE6 (iPhone 17 Pro Max, iOS 26.2).
-- Small: 7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B (SE 3, iOS 18.6).
+DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer. Use only app sims:
+- Large 7189880A-91EC-4555-83E8-A37464802FE6, iPhone 17 Pro Max, iOS 26.2.
+- Small 7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B, SE 3, iOS 18.6.
+- Accessibility large 02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19, 17 Pro Max, iOS 26.2.
 
-Use separate derived data directories; parallel-testing-enabled NO. The regular
-native script owns fixture 39001. Wait for a cancelled xcodebuild/script to exit
-before another run uses that port. The current screenshot fixture on 39201 was
-started separately and must be stopped after the matrix. Largest text is enabled
-with TEST_RUNNER_EXERLY_TEST_LARGEST_TYPE=1; independent fixture URL via
-TEST_RUNNER_EXERLY_UI_FIXTURE_URL=http://127.0.0.1:39201 and
-EXERLY_FIXTURE_EXTERNAL=1. Appearance is set with simctl on the target device.
-T3 device access is disabled; use XCTest/simctl and exported image paths.
-Artifacts and desktop screenshots are ignored; never commit private desktop images.
+Full run finished and regular fixture 39001 cleaned. Screenshot fixture processes
+remain on 39201 and 39202; stop only their owned nodes after matrix. Latest run
+small-dark-final uses .deriveddata/app-training-small, fixture 39201. Largest font:
+TEST_RUNNER_EXERLY_TEST_LARGEST_TYPE=1, fixture via
+TEST_RUNNER_EXERLY_UI_FIXTURE_URL=http://127.0.0.1:39201, EXERLY_FIXTURE_EXTERNAL=1.
+T3 device tools disabled; use XCTest/simctl. Artifacts and private desktop images
+are ignored. Do not commit them. Use unique result bundles, no parallel testing.

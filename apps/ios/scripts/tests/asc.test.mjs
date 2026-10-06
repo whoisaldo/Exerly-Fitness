@@ -25,11 +25,11 @@ test('internal group cannot enable a public link or auto-add future builds', () 
   }
 });
 
-test('group membership rejects external testers and any other email', () => {
-  const tester = { attributes: { email: 'owner@example.test', inviteType: 'INTERNAL' } };
+test('internal group members must match the account holder and use email invitations', () => {
+  const tester = { attributes: { email: 'owner@example.test', inviteType: 'EMAIL' } };
   validateTester(tester, 'owner@example.test');
   assert.throws(() => validateTester(tester, 'someone@example.test'));
-  assert.throws(() => validateTester({ attributes: { ...tester.attributes, inviteType: 'EXTERNAL' } }, 'owner@example.test'));
+  assert.throws(() => validateTester({ attributes: { ...tester.attributes, inviteType: 'PUBLIC_LINK' } }, 'owner@example.test'));
 });
 
 test('API token can only go to the ASC origin, including pagination', () => {

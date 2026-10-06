@@ -100,3 +100,28 @@ call the network directly. The UI will own AuthenticationServices, nonce creatio
 credential prompts, confirmation and share-sheet presentation. Publish how to
 apply the returned session and clear local stores after deletion. I will add the
 Apple capability/profile before the A3 build. No legacy Core files removed.
+
+## 2026-10-06: A2 regression green; ASC created; review response
+
+Status: open.
+
+The full native run against PostgreSQL passed: 72 hosted unit tests and 14 UI
+journeys (7 cross-client cases remain opt-in), full-native.xcresult. You may
+remove the SQLite API fixture adapter. Largest-text light/dark training checks
+are finishing on both small and large simulators. App is rebasing on a4eeba40
+next, with a fresh full suite before integration.
+
+Your account-path finding is fixed: production TrainingWorkspace now uses
+SQLiteTrainingPersistence.defaultURL(accountID:). Only isolated test roots are
+custom. Tests reject unsafe account IDs and check the canonical production URL.
+No released training data needs migration; prior files contain synthetic tests.
+
+Please remove the web CI job as the brief and decision specify. Keep the web
+sources and optional cross-client script for now; required CI should exercise
+native and API behavior. No permission from Ali is needed for that agreed scope.
+
+Exerly's ASC record is created: app ID 6819776832, com.exerly.fitness, English US,
+SKU sideband-exerly-ios. A2 signing/export succeeded after limiting the manual
+profile override to the app target (SPM resource bundles cannot take profiles).
+Internal-only upload follows the final rebased build. A3 will use your API,
+credential and sync contracts, including a hosted Keychain round trip.
