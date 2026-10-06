@@ -7,16 +7,15 @@ milestone. Current date 2026-10-06, updated 15:54 EDT.
 ## Current work and next steps
 
 A3 account source is frozen and all final checks pass. Internal build2610061942
-uploaded successfully, Apple processing and Ali-only assignment pending.
-Current live TestFlight remains2610061654. Main agent/app includes exact Logic
+is VALID and IN_BETA_TESTING, assigned only to Ali. The group holds only this
+build. Proof: artifacts/account/a3-internal-release.json. Main agent/app includes exact Logic
 fix700cdc0d above integration66b3dd1e. Only docs changed since the tested source
-ba627bb3. Next fast-forward integration and push, then tell Logic it can land.
+ba627bb3. Integration fast-forwarded to02277a81 and Logic was notified it can land.
+The first push stopped on docs formatting; fixed below before retry.
 
-1. Poll `node apps/ios/scripts/asc.mjs status`. When1942 is VALID, run
-   `node artifacts/account/finalize-internal.mjs 2610061942 artifacts/account/a3-notes.txt`.
-   Helper verifies exact app, Ali-only internal group and English notes. It
-   detaches older group builds only after new IN_BETA_TESTING. Save proof JSON,
-   update RELEASE/PARITY/ledger, tell Ali the build is available.
+1. Commit the final release/docs state, fast-forward integration once more
+   and push agent/app plus integration. Ali was told1942 is available. Logic
+   can land M4/M5; keep checking integration and its inbox.
 2. A4 is in /Users/aldo/Desktop/Exerly-Fitness-app-next, branch agent/app-next,
    remote4e696163. Do not discard. Final small-dark three UI journeys running
    on SE, session74661, artifacts/agents/small-dark-final.{log,xcresult}.
@@ -115,6 +114,7 @@ artifacts/app-review-plates/result.log. Inbox asks best combination and clear
 below-bar outcome including warm-ups. A4 remote4e696163 review requested.
 
 Available contracts on logic/next, not yet integrated:
+
 - b9736776 SQLiteTrainingPersistence.close(); deleteDatabase closes all instances
   for that path. Use close on switch/signout. Reads/writes after close throw.
 - ecccb9fd AccountExport.merging(... pending: try SyncEngine.shared.pendingExportRows()).
@@ -146,7 +146,7 @@ team9X79V37Q89, bundleresourceUJ5X8TJKNL. Record created website12:27 EDT.
 Internal groupc5ae1d39-0fe4-4bee-af89-0374d9519afe Exerly Internal · Ali,
 only Ali, no public link/autofuture. Existing dist certificate expires2027-09-25;
 never create/revoke. ProfileJ5J395Y9AF HealthKit+SIWA. ASCkey4Z7KFJ8DWZ/issuer
-under ~/private_keys. Never expose. Live1654 UUID7bf04912-8c97-4c45-9687-7a81cbb26524.
+under ~/private_keys. Never expose. Live1942 UUID17311f01-34dc-4a20-9171-7343ce4ccf39.
 Production Neon/DO and Apple revocation credentials are existing Ali questions,
 not a reason to stop UI work. External/App Review requires Ali after preparation.
 
@@ -155,6 +155,7 @@ push hooks. Origin sidebandstudio/Exerly-Fitness verified with gh15:48 EDT.
 Commit as Ali Younes, no coauthor/tool attribution.
 
 App sims only, never Logic sims:
+
 - Original Large7189880A-91EC-4555-83E8-A37464802FE6,17ProMax26.2, main
   .deriveddata/app-account, fixture39203. Free after A3 full suite.
 - SE7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B,SE3/iOS18.6, app-next

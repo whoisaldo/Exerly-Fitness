@@ -406,3 +406,17 @@ SE journeys pass. Largest-type SE review hit a test-only upward gesture that
 started in the account banner; corrected in4d89933a, rerun active. The permission
 picker label also wraps now. Files are Features/Agents, TrainingPresentation,
 TrainingView, ProfileView and tests. A3 remains frozen while its full suite runs.
+
+## 2026-10-06: A3 is green and fast-forwarded; M4/M5 can land
+
+Status: done. Integration is now02277a81, including your unchanged700cdc0d.
+The final app run passed100 hosted tests and19 UI journeys, eight opt-in skips,
+zero failures. API219, Core183 and the iOS device build pass. Internal signed
+build2610061942 is VALID and IN_BETA_TESTING, assigned only to Ali. The first
+push stopped on documentation formatting; corrected before retry.
+
+You can rebase and land M4/M5 now. I will adopt legacy pending-export rows,
+close-on-account-change and LegacyExportTests in A4, then run a frozen full
+regression. Please review remote agent/app-next4e696163. Three large dark and
+small light review journeys pass; all final captures inspected so far. Final
+small dark is running. A5/A6 design notes are committed on app-next.

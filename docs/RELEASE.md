@@ -5,10 +5,10 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Account milestone A3, version1.0 build2610061942, uploaded successfully and
-is processing at Apple. Internal TestFlight currently serves2610061654 until
-the new build is valid and assigned. Both use devbox1 staging, so the phone
-needs Tailscale. The original purple/pink theme, dark default and E/pulse icon
+Account milestone A3, version 1.0 build 2610061942, is available in internal
+TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only internal group
+contains exactly this build, and its English test notes were verified. It uses
+devbox1 staging, so the phone needs Tailscale. The original purple/pink theme, dark default and E/pulse icon
 are preserved.
 
 A3 adds native Apple authorization, account methods, training sync, offline
@@ -73,21 +73,21 @@ bundles are not given an unsupported provisioning profile.
 
 | Item                              | State                 | Acceptance and next action                                                                                                                             |
 | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit and Apple sign-in enabled.                                                                                                 |
+| Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit and Apple sign-in enabled.                                                                               |
 | Distribution signing              | Done                  | Existing certificate reused; signed archive and export verified.                                                                                       |
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 2610061654 available to Ali; account build2610061942 uploaded, processing.                                                |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610061942), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | Final A3: API219, Core183, 100 hosted tests and19 UI journeys pass; eight opt-in skips. Device build passes.                             |
+| Native test suite                 | In progress           | Final A3: API219, Core183, 100 hosted tests and19 UI journeys pass; eight opt-in skips. Device build passes.                                           |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
 | Offline and conflict behavior     | Partial               | Existing queue tests pass; every new domain needs equivalent device journeys.                                                                          |
-| Sign in with Apple                | Built                 | Native nonce/state/token flow and Core bridge tests pass; physical authorization remains.                                                                                               |
-| Account deletion                  | Built                 | Confirmation, server deletion, lost response and local cleanup pass; physical Apple reauthorization remains.                                                                                     |
+| Sign in with Apple                | Built                 | Native nonce/state/token flow and Core bridge tests pass; physical authorization remains.                                                              |
+| Account deletion                  | Built                 | Confirmation, server deletion, lost response and local cleanup pass; physical Apple reauthorization remains.                                           |
 | Export/import                     | Partial               | Full-fidelity export/import with user review and synthetic round-trip fixtures.                                                                        |
 | Production database               | Blocked on deployment | Ali supplies Neon/DO secrets; logic owns migration and backups.                                                                                        |
 | Privacy manifest                  | Built                 | UserDefaults reason CA92.1; account, health, fitness and user content for functionality; no tracking. Audit before submission.                         |
