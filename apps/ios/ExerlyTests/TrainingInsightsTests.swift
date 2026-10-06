@@ -155,6 +155,36 @@ final class TrainingInsightsTests: XCTestCase {
         XCTAssertEqual(restored.history.sessions, [saved])
     }
 
+    func testOneInvalidSuggestionDoesNotBlockLaterChecksOrRepeatAutomatically() async throws {
+        let persistence = InMemoryTrainingPersistence()
+        let training = try TrainingStore(persistence: persistence)
+        let agent = try AgentStore(persistence: persistence, hosts: [training])
+        let saved = try finishMistypedWorkout(in: training)
+        let valid = try XCTUnwrap(EntryErrorDetector.proposal(for: saved, history: training.history, existing: [], now: Date()))
+        var invalid = valid
+        invalid.id = UUID()
+        invalid.changes[0].after = .object([:])
+        let sequence = EntryCheckSequence([invalid, valid])
+        let checks = TrainingEntryChecks(training: training, agent: agent, accountID: UUID().uuidString,
+                                        evaluate: { _, _, _ in await sequence.next() })
+        let filed = await checks.refresh()
+        XCTAssertTrue(filed, "Later valid suggestions still need syncing.")
+        XCTAssertEqual(agent.proposals.map(\.id), [valid.id])
+        XCTAssertNotNil(checks.error)
+        XCTAssertFalse(checks.isChecking)
+        XCTAssertEqual(training.history.sessions, [saved])
+        await checks.refresh()
+        let attempts = await sequence.calls
+        XCTAssertEqual(attempts, 1, "A background refresh must not loop on the same invalid proposal.")
+        XCTAssertNotNil(checks.error, "Keep the retry explanation until the person acts.")
+        await sequence.replace(with: [valid])
+        await checks.retry()
+        let retriedAttempts = await sequence.calls
+        XCTAssertEqual(retriedAttempts, 2)
+        XCTAssertNil(checks.error)
+        XCTAssertEqual(agent.proposals.map(\.id), [valid.id])
+    }
+
     func testObservationsUseTheAccountDateAndKeepSparseDataAndEvidenceHonest() async throws {
         let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-01T01:00:00Z"))
         let zone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
@@ -213,6 +243,14 @@ final class TrainingInsightsTests: XCTestCase {
         }
         return try store.finishSession().session
     }
+}
+
+private actor EntryCheckSequence {
+    var proposals: [Proposal]
+    private(set) var calls = 0
+    init(_ proposals: [Proposal]) { self.proposals = proposals }
+    func next() -> [Proposal] { calls += 1; return proposals }
+    func replace(with proposals: [Proposal]) { self.proposals = proposals }
 }
 
 private actor EntryCheckGate {

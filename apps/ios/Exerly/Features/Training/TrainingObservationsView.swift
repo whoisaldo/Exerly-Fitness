@@ -53,7 +53,9 @@ struct TrainingObservationsView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(finding.title).font(.headline)
-                                Text(finding.summary).foregroundStyle(.secondary)
+                                if finding.kind == .stall {
+                                    Text("Review the trend in your saved workouts.").foregroundStyle(.secondary)
+                                } else { Text(finding.summary).foregroundStyle(.secondary) }
                             }.padding(.vertical, 4)
                         }.accessibilityIdentifier("observations.\(finding.kind.rawValue).\(finding.exerciseIDs.map(\.rawValue).joined(separator: "."))")
                     }
@@ -99,7 +101,12 @@ private struct EntryChecksSection: View {
             if checks.isChecking { ProgressView("Checking saved workouts…") }
             if let error = checks.error {
                 Text(error).foregroundStyle(Color.exWarning).accessibilityIdentifier("observations.checkError")
-                Button("Retry entry checks") { Task { await workspace.synchronize() } }
+                Button("Retry entry checks") {
+                    Task {
+                        await checks.retry()
+                        await workspace.synchronize()
+                    }
+                }.disabled(checks.isChecking)
                     .accessibilityIdentifier("observations.retryChecks")
             }
             NavigationLink {
@@ -122,7 +129,9 @@ private struct TrainingObservationDetailView: View {
         List {
             Section {
                 Text(finding.title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                Text(finding.summary)
+                // Core's current stall summary says "hasn't moved" even for
+                // a decline. Its title and numerical evidence remain accurate.
+                if finding.kind != .stall { Text(finding.summary) }
                 Text("An observation from your log. It does not establish a cause or change your plan.")
                     .foregroundStyle(.secondary)
             }

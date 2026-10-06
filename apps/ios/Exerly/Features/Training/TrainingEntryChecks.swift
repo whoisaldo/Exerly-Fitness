@@ -80,21 +80,31 @@ final class TrainingEntryChecks: ObservableObject {
                 return await refresh()
             }
             var filed = false
+            var failed = false
             for proposal in proposals where agent.proposal(proposal.id) == nil {
-                try agent.file(proposal)
-                filed = true
+                do {
+                    try agent.file(proposal)
+                    filed = true
+                } catch { failed = true }
             }
             completedInput = input
-            error = nil
+            error = failed ? "Some entry-check suggestions could not be saved. Your workouts are saved. You can retry." : nil
             return filed
         } catch {
             guard current == generation else { return false }
             finish()
             if !Task.isCancelled, !(error is CancellationError), !stopped, isEnabled {
+                completedInput = input
                 self.error = "Entry checks could not finish. Your workouts are saved. Try again."
             }
             return false
         }
+    }
+
+    @discardableResult
+    func retry() async -> Bool {
+        completedInput = nil
+        return await refresh()
     }
 
     func stop() {

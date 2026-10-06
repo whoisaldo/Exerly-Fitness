@@ -5,15 +5,16 @@ struct ExerciseLogView: View {
     let store: TrainingStore
     let exerciseID: ExerciseID
     let unit: MassUnit
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         List {
             if let exercise = store.library.exercise(exerciseID) {
                 if let stats = store.history.statistics(of: exerciseID) {
                     Section("All saved working sets") {
-                        LabeledContent("Sets", value: String(stats.totalSets))
+                        metric("Sets", value: String(stats.totalSets))
                         if let estimate = stats.estimatedOneRepMax {
-                            LabeledContent("Best estimated 1RM", value: TrainingFormat.mass(estimate, unit: unit))
+                            metric("Best estimated 1RM", value: TrainingFormat.mass(estimate, unit: unit))
                         } else { Text("Estimated 1RM is unavailable for these sets.").foregroundStyle(.secondary) }
                         if !stats.isVolumeComplete {
                             Text("Bodyweight was missing from some sets. Volume is incomplete.").foregroundStyle(.secondary)
@@ -58,5 +59,15 @@ struct ExerciseLogView: View {
         .navigationTitle(store.library.exercise(exerciseID)?.name ?? "Exercise log")
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden).background(Color.exBackground)
+    }
+
+    @ViewBuilder
+    private func metric(_ title: String, value: String) -> some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                Text(value).foregroundStyle(.secondary).monospacedDigit()
+            }
+        } else { LabeledContent(title, value: value) }
     }
 }
