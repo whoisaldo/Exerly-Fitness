@@ -43,8 +43,8 @@ Continue A5, A6 and the rest of parity. Do not stop at a milestone.
 - `artifacts/account/full-a3-canonical.xcresult`:100 hosted +19 UI pass,
   eight opt-in skips, zero failures. Completed15:47 EDT. API219/Core183/device
   pass in canonical-{api,core,device}.log. Lint/format/typecheck/SwiftLint pass
-  in canonical-* logs. Existing warnings only. Six Node/seven Python release
-  checks pass in final-release-* logs; release scripts unchanged since.
+  in `canonical-*` logs. Existing warnings only. Six Node/seven Python release
+  checks pass in `final-release-*` logs; release scripts unchanged since.
 - Four final largest-type account variants pass, two journeys each. All36
   screenshots inspected in account/{small-light-final,small-dark-final,
   large-light-final,large-dark-final}. Earlier32 recovery +11 normal captures
