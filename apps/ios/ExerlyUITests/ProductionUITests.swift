@@ -417,6 +417,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Train"], in: app)
         tap(app.buttons["program.nextWorkout"], in: app)
         XCTAssertTrue(app.navigationBars["Next workout"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Evidence strength: Pull"].waitForExistence(timeout: 10))
+        capture(app, "program-estimate-summary")
         let estimate = app.staticTexts["Estimated 1RM used"]
         reveal(estimate, in: app)
         XCTAssertTrue(estimate.exists)
