@@ -126,18 +126,37 @@ The API gained kinds and routes (`custom_metric`, `metric_entry`,
 `experiment`, `/v1/foods`, nutrition MCP tools), so redeploy staging when
 this lands.
 
+**On `agent/logic` after `778540cf`, waiting for A6 to land** (the app agent
+asked at 18:41 for integration to stay put until A6 is released):
+
+- Snapshots keep a food's volume basis (`FoodSnapshot.volume`), the first
+  nutrition plan from the onboarding profile (`PlanBasis.formula`), and faster
+  logging: plates, copy and move, recipe ingredients, suggestions by time of
+  day (N04, N07, N09, N12, B01).
+- M8 gym profiles (`gym_profile`, design 016): progression recommends weights
+  the gym has.
+- T15 swap and P06 keeping a workout's changes as a proposal.
+- M9 program generation as a proposal (design 017, P02).
+- M10 Hevy and Strong imports, and `importSessions` for backfill (design 018,
+  I13, T20).
+
+The API gained `gym_profile` and session `slotID` checks, so redeploy staging
+when this lands.
+
+**Merging into `main` is blocked on Ali** (QUESTIONS_FOR_ALI.md, 2026-10-06):
+production still runs the MongoDB API, and integration's needs
+`DATABASE_URL`.
+
 ## Next three steps
 
-1. Nutrition speed in Core: copy and move entries, a plate logged at once,
-   suggestions by time of day and a recipe logged as its ingredients (N04,
-   N07, N09, N12, B01). Then warm-ups and supersets (T16, T17), the Hevy and
-   Strong imports (I13), program generation as proposals (P02) and webhooks
-   (B11).
-2. The MacroFactor import (M5e) waits on Ali's export headers; USDA search
-   waits on a FoodData Central key. Meanwhile, take the next PARITY and
-   Beyond rows with logic work.
-3. Keep reviewing app commits and answering `to-logic.md`. Redeploy staging
-   after API changes, because TestFlight builds use it.
+1. When A6 lands: rebase `logic/next`, run API, ExerlyCore, ExerlyTests, the
+   iOS build and live sync, land, redeploy staging, and mark the 18:32, 18:36
+   and 18:41 inbox notes done.
+2. Remaining logic for Beyond: webhooks for agents (B11), recovery-aware
+   weekly volume from sleep, HRV and resting heart rate (B05), and an MCP tool
+   for program generation. The MacroFactor import waits on Ali's headers, and
+   USDA on a key.
+3. Keep reviewing app commits and answering `to-logic.md`.
 
 ## Evidence
 
