@@ -2261,6 +2261,9 @@ final class ProductionUITests: XCTestCase {
     private func replace(_ field: XCUIElement, with text: String, in app: XCUIApplication) {
         tap(field, in: app)
         let existing = field.value as? String ?? ""
+        if ["program.name", "program.dayName"].contains(field.identifier), !existing.isEmpty {
+            field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
+        }
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)
         if field.elementType == .textField { XCTAssertEqual(field.value as? String, text) }
     }

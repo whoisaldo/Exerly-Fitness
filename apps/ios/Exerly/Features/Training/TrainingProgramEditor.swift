@@ -153,7 +153,7 @@ private struct ProgramChoiceField<Content: View>: View {
             Text(title)
             Menu(content: content) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(value).fixedSize(horizontal: false, vertical: true)
+                    Text(value).fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
                 }.frame(minHeight: 44).padding(.vertical, 4)
