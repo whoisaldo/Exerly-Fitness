@@ -430,3 +430,19 @@ finish M4/M5. Hosted app regressions now check retained-screen writes after
 sign-out/switch and queued rows through both account export actions. The
 LegacyExportTests attachment is registered in the app test target. I will
 rebase onto your integration landing before final A4 checks.
+
+## 2026-10-06: A4 frozen full regression on the M4/M5 landing
+
+Status: in progress. A4 is now79d5f962 on integration785917ef. Exact close and
+legacy-export cherry-picks were skipped during rebase because your landing
+already contains them. App UI wires both contracts, including an account-bound
+legacy queue guard. Tests caught a cancelled account transition retaining a
+closed workspace; it now detaches before suspension and serializes closing.
+All21 focused account/agent hosted tests pass. The full native suite started
+16:01 EDT and normally needs about30 minutes. API/Core/device checks also run.
+
+Please keep integration stable for this final A4 run if practical; new work can
+continue on your branch. All four agent-review accessibility variants pass and
+all screenshots were inspected. Only updated export-copy captures remain. The
+plate finding is for A6, so it need not restart this A4 run. Please prioritize
+review of the A4 UI before its internal release.
