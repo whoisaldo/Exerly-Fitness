@@ -1,0 +1,35 @@
+import Foundation
+
+/// Durable storage for training data. Every `TrainingStore` change is written
+/// through before the call returns, so a crash loses nothing.
+@MainActor
+public protocol TrainingPersistence: AnyObject {
+    /// Every stored session, finished or not, in any order.
+    func loadSessions() throws -> [WorkoutSession]
+    func loadCustomExercises() throws -> [Exercise]
+    /// Inserts or replaces by ID.
+    func save(_ session: WorkoutSession) throws
+    func deleteSession(_ id: UUID) throws
+    /// Inserts or replaces by ID.
+    func save(_ exercise: Exercise) throws
+}
+
+/// Keeps everything in memory. For previews, tests and the app agent's stubs.
+@MainActor
+public final class InMemoryTrainingPersistence: TrainingPersistence {
+    public private(set) var sessions: [UUID: WorkoutSession] = [:]
+    public private(set) var customExercises: [ExerciseID: Exercise] = [:]
+
+    public init(sessions: [WorkoutSession] = [], customExercises: [Exercise] = []) {
+        for session in sessions { self.sessions[session.id] = session }
+        for exercise in customExercises { self.customExercises[exercise.id] = exercise }
+    }
+
+    public func loadSessions() throws -> [WorkoutSession] { Array(sessions.values) }
+    public func loadCustomExercises() throws -> [Exercise] {
+        customExercises.values.sorted { $0.id < $1.id }
+    }
+    public func save(_ session: WorkoutSession) throws { sessions[session.id] = session }
+    public func deleteSession(_ id: UUID) throws { sessions[id] = nil }
+    public func save(_ exercise: Exercise) throws { customExercises[exercise.id] = exercise }
+}
