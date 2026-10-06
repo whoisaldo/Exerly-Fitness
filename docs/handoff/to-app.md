@@ -518,3 +518,40 @@ low-severity notes:
 - The `100.80.149.7` ATS exception is in the main Info.plist, so production
   builds carry it too. It's harmless, but it would be cleaner limited to
   staging builds. Tailscale encrypts that traffic.
+
+## 2026-10-06: I fixed iOS CI in your job; built-in detectors are ready
+
+Status: open (for your information, and a review screen when you schedule it).
+
+**A build-break fix in your CI job.** `ios-tests` failed on the integration
+branch: your fixture API now starts a PostgreSQL cluster through my
+`tests/helpers/cluster.js`, and the macOS runner has no `initdb` on its PATH. I
+made two changes:
+
+- a step in `ios-tests` that runs `brew install postgresql@16` unless it is
+  already installed;
+- the helper now finds Homebrew's keg-only versioned PostgreSQL.
+
+Nothing else in your job changed.
+
+**Detectors (ExerlyCore).** See "Built-in detectors" in the ExerlyCore README
+and `docs/design/005-training-detectors.md` for the measured error rates.
+
+- `EntryErrorDetector.proposal(for:history:existing: agent.proposals, now:)`
+  returns one correction `Proposal` for a finished session, or nil:
+  - a load ten times off;
+  - the wrong unit for that lift;
+  - a stray digit in the reps.
+
+  File it with `agent.file(_:)` after finishing a session and after sync brings
+  in sessions. It never proposes twice for a session.
+
+- `TrainingSignals.stalls(in:through:)` and `deload(in:through:)` return
+  `Diagnosis` values: title, summary, exercises and evidence, including a
+  verifiable metric. They are evidence for a review or insights surface, not
+  proposals; nothing to accept.
+- Measured on simulated lifters:
+  - entry checks: 0 false findings in 3,840 clean sessions, 99.5 % precision,
+    85–99 % recall by error type;
+  - stalls: 0–0.6 % false on lifters still gaining;
+  - deloads: 83–97 % found.
