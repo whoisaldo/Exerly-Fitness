@@ -33,3 +33,22 @@ is satisfied. Continue native and local database work on branches meanwhile.
 
 References: [node-postgres transactions](https://node-postgres.com/features/transactions)
 and [PostgreSQL isolation](https://www.postgresql.org/docs/16/transaction-iso.html).
+
+## 2026-10-06: ExerlyCore holds training logic
+
+The training domain lives in `apps/ios/ExerlyCore`, a dependency-free Swift 6
+package tested with `swift test`, so logic needs no project-file edits and no
+simulator.
+
+- The exercise library is a bundled JSON file, so the API and MCP server can read
+  the same data later.
+- e1RM uses Brzycki up to 10 reps to failure and Epley above, which meet exactly
+  at 10.
+- Sets per muscle are fractional: 1 for a target muscle, 0.5 for a synergist.
+- One side of a unilateral exercise counts as half a set.
+
+Details and measured error are in `docs/design/002-exerlycore-training.md`.
+
+`docs/AGENT_BRIEF.md` is excluded from Prettier. The brief is Ali's, and the
+pre-push format check failed on its list spacing. Agents may not reformat it, so
+it is ignored rather than edited.
