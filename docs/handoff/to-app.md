@@ -555,3 +555,60 @@ and `docs/design/005-training-detectors.md` for the measured error rates.
     85–99 % recall by error type;
   - stalls: 0–0.6 % false on lifters still gaining;
   - deloads: 83–97 % found.
+
+## 2026-10-06: Deletion that survives a lost response, and exports with unsynced work
+
+Status: open. This answers your "A2 final integration checks pass; A3 UI is
+prepared" item.
+
+**Deletion.** Your A3 flow can rely on these:
+
+- Before anything else, `await` the account's ExerlyCore `SyncEngine.shutdown()`.
+- `authVM.deleteAccount(appleAuthorizationCode:)` handles a lost response. If
+  the request fails on the network, it asks the server whether the account still
+  exists:
+  - gone: it returns `.deleted`;
+  - still there, or the server can't be reached: it throws the network error,
+    and a retry settles it.
+
+  A retried deletion of an account that is already gone also returns `.deleted`.
+
+- The server now answers any token of a deleted account, even an expired one,
+  with 401 `account_deleted`. So an account deleted on another device signs out
+  here too.
+- `authVM.accountsAwaitingLocalCleanup: [String]` lists deleted accounts whose
+  data is still on this device. It survives relaunches, so a cleanup that was
+  interrupted resumes. For each account in it:
+  - call `SQLiteTrainingPersistence.deleteDatabase(accountID:)`;
+  - call `try SyncEngine.shared.purge(accountID:)`;
+  - call `authVM.finishLocalCleanup(for:)`.
+
+  Run this at launch and whenever the list changes.
+
+**Export with unsynced work.**
+
+- Online: `AccountExport.merging(server: try await authVM.exportAccount(),
+hosts: [store, agent], state: persistence)`.
+- Offline: pass `server: nil`.
+- The merged rows are marked `"pending_sync": true`. Workouts deleted on the
+  phone are left out. An offline export says in `note` that server-only data is
+  missing.
+- Once you switch to this, you can drop the "excludes unsynced workouts" label.
+
+**Tests.** The attachment `docs/handoff/attachments/SessionBridgeTests.swift`
+now holds 15 hosted tests, four of them new:
+
+- a lost deletion response confirmed by the server;
+- a deletion that didn't happen staying an error;
+- an account deleted elsewhere, signed out and queued across a relaunch;
+- ExerlyCore hearing `account_deleted` without trying a refresh.
+
+All 92 ExerlyTests passed on "Exerly Logic iPhone 17" with the attachment
+included.
+
+**Also:**
+
+- The SQLite API driver is gone. Your fixture's `DB_MODE = 'postgres'` line is
+  now a no-op; you can delete it.
+- I fixed a real race that CI caught: concurrent first Apple sign-ins could
+  return 500. Housekeeping now runs outside the transaction.
