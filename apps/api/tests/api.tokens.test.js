@@ -37,6 +37,7 @@ const session = (id) => ({
   name: '',
   notes: '',
 });
+const SESSION_ID = '0B2C4E6F-0000-4000-8000-000000000001';
 const proposal = (id, extra = {}) => ({
   id,
   title: 'Did you mean 150 kg?',
@@ -45,7 +46,7 @@ const proposal = (id, extra = {}) => ({
   status: 'pending',
   confidence: 'high',
   author: { kind: 'builtIn', name: 'You' },
-  changes: [{ kind: 'workout_session', id: 'X', before: null, after: null }],
+  changes: [{ kind: 'workout_session', id: SESSION_ID, before: null, after: session(SESSION_ID) }],
   evidence: [],
   createdAt: '2026-10-06T18:00:00.000Z',
   ...extra,

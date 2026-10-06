@@ -17,6 +17,26 @@ const DATA_KINDS = ['workout_session', 'custom_exercise'];
 const EVIDENCE_LEVELS = ['humanRCT', 'observational', 'mechanism', 'anecdote', 'personalData'];
 const WEEKDAYS = { sunday: 1, monday: 2 };
 
+/** The bundled library plus the account's custom exercises. */
+async function accountLibrary(account) {
+  const rows = await store.find('documents', {
+    account_id: account.id,
+    kind: 'custom_exercise',
+    deleted_at: null,
+  });
+  return ExerciseLibrary.withCustom(rows.map((row) => row.payload));
+}
+
+/**
+ * Problems with a training document an agent wants written, checked as
+ * ExerlyCore would check it before applying it.
+ */
+function trainingProblems(kind, id, payload, library) {
+  if (kind === 'workout_session') return sessionProblems(payload, id, library);
+  if (kind === 'custom_exercise') return customExerciseProblems(payload, id);
+  return [`${kind} is not a training document`];
+}
+
 /** An account's training data, loaded once per request. */
 async function workspace(account) {
   const rows = await store.find('documents', {
@@ -357,10 +377,7 @@ async function propose(ws, pat, input) {
     if (before === null && after === null)
       throw badRequest(`changes[${i}] deletes ${kind} ${id}, which doesn't exist`);
     if (after !== null) {
-      const problems =
-        kind === 'workout_session'
-          ? sessionProblems(after, id, ws.library)
-          : customExerciseProblems(after, id);
+      const problems = trainingProblems(kind, id, after, ws.library);
       if (problems.length)
         throw badRequest(
           `changes[${i}] is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`
@@ -414,6 +431,9 @@ async function propose(ws, pat, input) {
 }
 
 module.exports = {
+  accountLibrary,
+  trainingProblems,
+  DATA_KINDS,
   workspace,
   profile,
   listWorkouts,

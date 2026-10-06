@@ -5,21 +5,23 @@ const { randomUUID } = require('node:crypto');
 const store = require('../data');
 const sync = require('./sync');
 const { badRequest } = require('./errors');
+const { proposalProblems, auditEventProblems } = require('./documentSchemas');
 
-const PROPOSAL_STATUSES = new Set(['pending', 'accepted', 'rejected', 'undone', 'stale']);
+// Each kind's check returns a list of problems. Training documents from the
+// person's own devices get a light check; agent documents must match what
+// ExerlyCore decodes, because a device can't apply what it can't read.
+// Token writes of training documents are checked in full (routes/documents.js).
 const KINDS = {
-  workout_session: (p) => typeof p.startedAt === 'string' && Array.isArray(p.exercises),
-  custom_exercise: (p) => typeof p.name === 'string' && typeof p.metric === 'string',
-  proposal: (p) =>
-    typeof p.title === 'string' &&
-    typeof p.falsifier === 'string' &&
-    p.falsifier.trim() !== '' &&
-    Array.isArray(p.changes) &&
-    p.changes.length > 0 &&
-    PROPOSAL_STATUSES.has(p.status) &&
-    !!p.author &&
-    typeof p.author.name === 'string',
-  audit_event: (p) => typeof p.action === 'string' && typeof p.at === 'string' && !!p.actor,
+  workout_session: (p) =>
+    typeof p.startedAt === 'string' && Array.isArray(p.exercises)
+      ? []
+      : ['a session needs startedAt and exercises'],
+  custom_exercise: (p) =>
+    typeof p.name === 'string' && typeof p.metric === 'string'
+      ? []
+      : ['an exercise needs a name and a metric'],
+  proposal: proposalProblems,
+  audit_event: auditEventProblems,
 };
 // Kinds that can be created but never changed or deleted.
 const APPEND_ONLY = new Set(['audit_event']);
@@ -46,7 +48,10 @@ function readPayload(kind, id, payload) {
     throw badRequest('payload must be an object');
   }
   if (payload.id !== id) throw badRequest('payload.id must match the document ID');
-  if (!KINDS[kind](payload)) throw badRequest(`payload is not a valid ${kind}`);
+  const problems = KINDS[kind](payload);
+  if (problems.length) {
+    throw badRequest(`payload is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`);
+  }
   return payload;
 }
 

@@ -13,6 +13,7 @@ const { authenticate } = require('../lib/auth');
 const { canonicalJSON } = require('../lib/mutations');
 const v = require('../lib/validate');
 const docs = require('../lib/documents');
+const { accountLibrary, trainingProblems, DATA_KINDS } = require('../lib/agentTools');
 
 const router = express.Router();
 router.use(authenticate);
@@ -25,21 +26,43 @@ function readBase(value) {
 const canWrite = (pat) => pat.scopes.includes('write');
 const canPropose = (pat) => canWrite(pat) || pat.scopes.includes('propose');
 
+function checkTraining(kind, id, payload, library, where) {
+  const problems = trainingProblems(kind, id, payload, library);
+  if (problems.length) {
+    throw badRequest(`${where} is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`);
+  }
+}
+
 /**
  * What a personal access token may write. Tokens never decide proposals or
  * write audit events: the person decides, and the server keeps the log.
+ * Training documents, written or proposed, must be ones ExerlyCore can apply.
  * Returns the payload to store, with a proposal's author set to the token.
  */
-function tokenWrite(pat, kind, base, existing, payload) {
+/** Whether a token may write this kind at all, checked before the payload. */
+function tokenMayWrite(pat, kind) {
   if (kind === 'audit_event') throw forbidden('Audit events are written by the server');
+  if (kind === 'proposal' && !canPropose(pat)) throw forbidden('This token cannot file proposals');
+  if (kind !== 'proposal' && !canWrite(pat))
+    throw forbidden('This token cannot change data; file a proposal instead');
+}
+
+async function tokenWrite(account, pat, kind, base, existing, payload) {
   if (kind === 'proposal') {
-    if (!canPropose(pat)) throw forbidden('This token cannot file proposals');
     if (existing || base !== 0)
       throw forbidden('Tokens can file new proposals; only you can decide them');
     if (payload.status !== 'pending') throw forbidden('A token can only file pending proposals');
+    const library = await accountLibrary(account);
+    payload.changes.forEach((change, i) => {
+      if (!DATA_KINDS.includes(change.kind))
+        throw badRequest(`changes[${i}].kind must be ${DATA_KINDS.join(' or ')}`);
+      if (change.after != null) {
+        checkTraining(change.kind, change.id, change.after, library, `changes[${i}].after`);
+      }
+    });
     return { ...payload, author: docs.tokenActor(pat) };
   }
-  if (!canWrite(pat)) throw forbidden('This token cannot change data; file a proposal instead');
+  checkTraining(kind, payload.id, payload, await accountLibrary(account), 'payload');
   return payload;
 }
 
@@ -62,9 +85,10 @@ router.put(
     const kind = docs.readKind(req.params.kind);
     const id = docs.readID(req.params.id);
     const base = readBase(req.body?.base_revision);
+    if (req.pat) tokenMayWrite(req.pat, kind);
     let payload = docs.readPayload(kind, id, req.body?.payload);
     const existing = await docs.current(req.account, kind, id);
-    if (req.pat) payload = tokenWrite(req.pat, kind, base, existing, payload);
+    if (req.pat) payload = await tokenWrite(req.account, req.pat, kind, base, existing, payload);
     if (docs.APPEND_ONLY.has(kind) && existing) {
       if (
         base === existing.revision &&

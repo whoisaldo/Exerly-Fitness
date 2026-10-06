@@ -225,7 +225,7 @@ test('proposals and audit events sync, and audit events never change', async () 
     status: 'pending',
     confidence: 'high',
     author: { kind: 'mcp', name: 'Synthetic agent' },
-    changes: [{ kind: 'workout_session', id: 'X', before: null, after: null }],
+    changes: [{ kind: 'workout_session', id: 'X', after: { id: 'X', notes: 'Fixed' } }],
     evidence: [],
     createdAt: '2026-10-06T18:00:00.000Z',
   };
@@ -255,6 +255,7 @@ test('proposals and audit events sync, and audit events never change', async () 
     action: 'proposalAccepted',
     at: '2026-10-06T18:05:00.000Z',
     actor: { kind: 'builtIn', name: 'You' },
+    targets: [{ kind: 'workout_session', id: 'X' }],
   };
   const path = `/v1/documents/audit_event/${eventID}`;
   assert.equal(
