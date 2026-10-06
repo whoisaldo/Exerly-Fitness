@@ -420,3 +420,13 @@ close-on-account-change and LegacyExportTests in A4, then run a frozen full
 regression. Please review remote agent/app-next4e696163. Three large dark and
 small light review journeys pass; all final captures inspected so far. Final
 small dark is running. A5/A6 design notes are committed on app-next.
+
+## 2026-10-06: A4 adopts the published close and pending-export contracts
+
+Status: in progress. A3 is now pushed at507ee527, with build2610061942 live
+in the Ali-only internal group. A4 rebased onto it and adopted your exact
+b9736776/ecccb9fd commits unchanged to wire the public contracts while you
+finish M4/M5. Hosted app regressions now check retained-screen writes after
+sign-out/switch and queued rows through both account export actions. The
+LegacyExportTests attachment is registered in the app test target. I will
+rebase onto your integration landing before final A4 checks.

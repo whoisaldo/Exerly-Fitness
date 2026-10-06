@@ -36,7 +36,7 @@ final class TrainingWorkspace: ObservableObject {
     }
 
     func resumeSync(api: AccountAPI) {
-        guard api.accountID == accountID else { return }
+        guard api.accountID == accountID, !persistence.isClosed else { return }
         sync = ExerlyCore.SyncEngine(hosts: [store, agent], state: persistence, api: api)
     }
 
@@ -46,8 +46,13 @@ final class TrainingWorkspace: ObservableObject {
         try? await sync?.sync()
     }
 
-    func export(server: Data?) throws -> Data {
-        try AccountExport.merging(server: server, hosts: [store, agent], state: persistence)
+    func close() async {
+        await sync?.shutdown()
+        persistence.close()
+    }
+
+    func export(server: Data?, pending: [AccountExport.PendingRow] = []) throws -> Data {
+        try AccountExport.merging(server: server, hosts: [store, agent], state: persistence, pending: pending)
     }
 
     static func deleteStorage(accountID: String, root: URL? = nil) throws {

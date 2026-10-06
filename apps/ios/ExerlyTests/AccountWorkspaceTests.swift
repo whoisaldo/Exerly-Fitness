@@ -34,11 +34,12 @@ final class AccountWorkspaceTests: XCTestCase {
         try? FileManager.default.removeItem(at: root)
     }
 
-    private func workspace(purge: @escaping @MainActor (String) throws -> Void = { _ in }) -> AppAccountWorkspace {
+    private func workspace(pending: @escaping @MainActor (String) throws -> [AccountExport.PendingRow] = { _ in [] },
+                           purge: @escaping @MainActor (String) throws -> Void = { _ in }) -> AppAccountWorkspace {
         let directory = root!
         return AppAccountWorkspace(open: { try TrainingWorkspace(accountID: $0.accountID, root: directory, api: $0) },
             deleteTraining: { try TrainingWorkspace.deleteStorage(accountID: $0, root: directory) },
-            purgeLegacy: purge)
+            purgeLegacy: purge, pendingLegacy: pending)
     }
 
     func testSignOutQuiescesSyncAndKeepsTrainingForTheSameAccount() async throws {
@@ -55,12 +56,63 @@ final class AccountWorkspaceTests: XCTestCase {
         await owner.signOut(auth: auth)
         await fulfillment(of: [revoked], timeout: 2)
         XCTAssertNil(owner.training)
+        XCTAssertThrowsError(try training.store.updateActiveSession { $0.notes = "A stale screen tried to save" })
         XCTAssertEqual(auth.authState, .unauthenticated)
         do { try await originalEngine.sync(); XCTFail("A stopped engine must not run") }
         catch is CancellationError { }
         let restored = try TrainingWorkspace(accountID: "account-a", root: root)
         XCTAssertEqual(restored.store.activeSession?.name, "Saved locally")
         XCTAssertNil(try TrainingWorkspace(accountID: "account-b", root: root).store.activeSession)
+    }
+
+    func testReconfiguringAwayClosesAStoreStillHeldByAScreen() async throws {
+        let owner = workspace()
+        await owner.configure(auth.accountAPI)
+        let retained = try XCTUnwrap(owner.training)
+        try retained.store.startSession(name: "Saved before switch", bodyweight: nil)
+        await owner.configure(nil)
+        XCTAssertThrowsError(try retained.store.updateActiveSession { $0.notes = "Late edit" })
+        let reopened = try TrainingWorkspace(accountID: "account-a", root: root)
+        XCTAssertEqual(reopened.store.activeSession?.notes, "")
+    }
+
+    func testCancelledAccountTransitionCanReopenTheSameAccount() async throws {
+        let owner = workspace()
+        await owner.configure(auth.accountAPI)
+        let original = try XCTUnwrap(owner.training)
+        try original.store.startSession(name: "Keep through transition", bodyweight: nil)
+        let transition = Task { @MainActor in await owner.configure(nil) }
+        transition.cancel()
+        await transition.value
+        await owner.configure(auth.accountAPI)
+        let reopened = try XCTUnwrap(owner.training)
+        try reopened.store.updateActiveSession { $0.notes = "Still editable" }
+        XCTAssertEqual(reopened.store.activeSession?.name, "Keep through transition")
+        XCTAssertEqual(reopened.store.activeSession?.notes, "Still editable")
+        XCTAssertThrowsError(try original.store.updateActiveSession { $0.notes = "Late edit" })
+    }
+
+    func testAccountActionsIncludePendingEntriesInOnlineAndOfflineExports() async throws {
+        let food = Data(#"{"client_id":"local-food","name":"Saved offline","calories":120}"#.utf8)
+        let owner = workspace(pending: { accountID in
+            XCTAssertEqual(accountID, "account-a")
+            return [AccountExport.PendingRow(table: "food", clientID: "local-food", serverID: nil, row: food)]
+        })
+        await owner.configure(auth.accountAPI)
+        StubURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/export")
+            return (200, Data(#"{"documents":[],"food":[]}"#.utf8))
+        }
+        let actions = owner.actions(auth: auth, accountID: "account-a")
+        let online = try await actions.exportAccount()
+        let offline = try XCTUnwrap(actions.exportDeviceData)()
+        for data in [online, offline] {
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let rows = try XCTUnwrap(json["food"] as? [[String: Any]])
+            XCTAssertEqual(rows.count, 1)
+            XCTAssertEqual(rows.first?["name"] as? String, "Saved offline")
+            XCTAssertEqual(rows.first?["pending_sync"] as? Bool, true)
+        }
     }
 
     func testFailedDeleteKeepsTheSessionAndStartsAFreshSyncEngine() async throws {

@@ -45,3 +45,11 @@ light/dark small/large variants. Upload an internal build after the full checks.
 
 Entry-error detection and training signals follow this review foundation. Do not
 expose a detector without the evidence and decision path working end to end.
+
+A4 also adopts Core's explicit database close and pending legacy export rows.
+Account changes detach and close the old workspace after its sync stops, even
+if SwiftUI cancels a transition. Exports include queued legacy changes only
+for the configured account. The offline action says saved device data and
+explains that server-only records are absent. Tests prove retained screens
+cannot write after sign-out, a cancelled transition can reopen safely, and
+queued rows reach both export actions.

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        E60000000000000000000001 /* LegacyExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60000000000000000000002; };
         EB83E4B93032858D58F6DB10 /* AgentConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A283ACAEA1575AB18FE087C; };
         44739B74FA5CA1164C871DA2 /* AgentConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA9D36441A0250A099199C; };
         C8E2ECE71B51A8DA0E1B03ED /* AgentConnectionsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF2CA0B808D305F6EE01BF1; };
@@ -111,6 +112,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        E60000000000000000000002 /* LegacyExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/LegacyExportTests.swift; sourceTree = SOURCE_ROOT; };
         6A283ACAEA1575AB18FE087C /* AgentConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AgentConnectionTests.swift; sourceTree = SOURCE_ROOT; };
         3FBA9D36441A0250A099199C /* AgentConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentConnectionsView.swift; sourceTree = SOURCE_ROOT; };
         6CF2CA0B808D305F6EE01BF1 /* AgentConnectionsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentConnectionsModel.swift; sourceTree = SOURCE_ROOT; };
@@ -509,6 +511,7 @@
                 E50000000000000000000002 /* AppAccountWorkspace.swift */,
                 E40000000000000000000006 /* AccountPresentationTests.swift */,
                 E50000000000000000000008 /* AccountWorkspaceTests.swift */,
+                E60000000000000000000002 /* LegacyExportTests.swift */,
                 E50000000000000000000006 /* SessionBridgeTests.swift */,
                 E40000000000000000000004 /* AccountManagementView.swift */,
                 E40000000000000000000002 /* AppleAuthorizationButton.swift */,
@@ -748,7 +751,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

@@ -13,7 +13,9 @@ final class AppAccountWorkspace: ObservableObject {
     private let open: @MainActor (AccountAPI) throws -> TrainingWorkspace
     private let deleteTraining: @MainActor (String) throws -> Void
     private let purgeLegacy: @MainActor (String) throws -> Void
+    private let pendingLegacy: @MainActor (String) throws -> [AccountExport.PendingRow]
     private var generation = UUID()
+    private var closing: (id: UUID, task: Task<Void, Never>)?
     private var isCleaning = false
 
     init(open: @escaping @MainActor (AccountAPI) throws -> TrainingWorkspace = {
@@ -24,10 +26,15 @@ final class AppAccountWorkspace: ObservableObject {
          },
          purgeLegacy: @escaping @MainActor (String) throws -> Void = {
              try SyncEngine.shared.purge(accountID: $0)
+         },
+         pendingLegacy: @escaping @MainActor (String) throws -> [AccountExport.PendingRow] = { accountID in
+             guard SyncEngine.shared.isConfigured(for: accountID) else { throw ExerlyCore.APIError.accountChanged }
+             return try SyncEngine.shared.pendingExportRows()
          }) {
         self.open = open
         self.deleteTraining = deleteTraining
         self.purgeLegacy = purgeLegacy
+        self.pendingLegacy = pendingLegacy
     }
 
     func configure(_ account: AccountAPI?) async {
@@ -35,11 +42,9 @@ final class AppAccountWorkspace: ObservableObject {
         if let account, training?.accountID == account.accountID { return }
         let request = UUID()
         generation = request
-        let previous = training?.sync
         openingError = nil
-        await previous?.shutdown()
+        await closeTraining()
         guard generation == request, !Task.isCancelled else { return }
-        training = nil
         guard let account else { return }
         do { training = try open(account) }
         catch { openingError = "Your saved training could not open. Keep Exerly installed and try again." }
@@ -49,8 +54,7 @@ final class AppAccountWorkspace: ObservableObject {
         guard !isChangingAccount else { return }
         isChangingAccount = true
         generation = UUID()
-        await training?.sync?.shutdown()
-        training = nil
+        await closeTraining()
         auth.logout()
         isChangingAccount = false
     }
@@ -66,12 +70,14 @@ final class AppAccountWorkspace: ObservableObject {
             let result = try await auth.deleteAccount(appleAuthorizationCode: authorizationCode)
             if result == .appleReauthorizationRequired { throw ExerlyCore.APIError.appleReauthorizationRequired }
             // Core persists confirmed deletions before clearing the session.
-            training = nil
+            await closeTraining()
             finishCleanup(auth: auth)
         } catch {
             if auth.accountAPI?.accountID == account.accountID {
                 training?.resumeSync(api: account)
-            } else { training = nil }
+            } else {
+                await closeTraining()
+            }
             throw error
         }
     }
@@ -82,10 +88,25 @@ final class AppAccountWorkspace: ObservableObject {
         defer { isCleaning = false }
         if let training, auth.accountsAwaitingLocalCleanup.contains(training.accountID) {
             generation = UUID()
-            await training.sync?.shutdown()
-            self.training = nil
+            await closeTraining()
         }
         finishCleanup(auth: auth)
+    }
+
+    private func closeTraining() async {
+        // Detach before suspension. A cancelled transition must not leave a
+        // closed workspace looking reusable to the next account request.
+        let previous = training
+        training = nil
+        let previousClose = closing?.task
+        let id = UUID()
+        let task = Task { @MainActor in
+            await previousClose?.value
+            await previous?.close()
+        }
+        closing = (id, task)
+        await task.value
+        if closing?.id == id { closing = nil }
     }
 
     private func finishCleanup(auth: AuthViewModel) {
@@ -131,12 +152,12 @@ final class AppAccountWorkspace: ObservableObject {
         }, exportAccount: {
             try checkAccount()
             let server = try await auth.exportAccount()
-            return try savedTraining().export(server: server)
+            return try savedTraining().export(server: server, pending: self.pendingLegacy(accountID))
         }, deleteAccount: { code in
             try checkAccount()
             try await self.deleteAccount(auth: auth, authorizationCode: code)
         })
-        actions.exportDeviceData = { try savedTraining().export(server: nil) }
+        actions.exportDeviceData = { try savedTraining().export(server: nil, pending: self.pendingLegacy(accountID)) }
         return actions
     }
 }
