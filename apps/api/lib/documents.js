@@ -20,7 +20,8 @@ const KINDS = {
     typeof p.name === 'string' && typeof p.metric === 'string'
       ? []
       : ['an exercise needs a name and a metric'],
-  food: (p) =>
+  // Not "food": the legacy food log already uses that kind in sync_changes.
+  saved_food: (p) =>
     typeof p.name === 'string' && p.per100g && typeof p.per100g === 'object'
       ? []
       : ['a food needs a name and per100g nutrients'],
@@ -81,9 +82,9 @@ const withID = (value) => mapKey(value, 'id', canonicalID);
 
 /**
  * The payload with its own ID and every document ID it refers to in canonical
- * form: a proposal's changes, the documents in them and its evidence, and an
- * audit event's targets and proposal. Migration 0006 applies the same rule to
- * stored payloads.
+ * form: a proposal's changes, the documents in them and its evidence, an audit
+ * event's targets and proposal, a session's program and an entry's food.
+ * Migration 0006 applies the same rule to the kinds stored before it.
  */
 function canonicalPayload(kind, payload) {
   let document = withID(payload);
@@ -101,6 +102,10 @@ function canonicalPayload(kind, payload) {
   } else if (kind === 'audit_event') {
     document = mapKey(document, 'targets', mapEach(withID));
     document = mapKey(document, 'proposalID', canonicalID);
+  } else if (kind === 'workout_session') {
+    document = mapKey(document, 'program', (ref) => mapKey(ref, 'programID', canonicalID));
+  } else if (kind === 'food_entry') {
+    document = mapKey(document, 'food', (ref) => mapKey(ref, 'foodID', canonicalID));
   }
   return document;
 }

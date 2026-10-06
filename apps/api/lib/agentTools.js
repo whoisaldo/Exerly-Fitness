@@ -352,7 +352,9 @@ function listPrograms(ws) {
 
 /** The next workout of a program, with each exercise's recommendation. */
 function nextWorkout(ws, { program_id: programID } = {}) {
-  const program = programID ? ws.programs.find((p) => p.id === programID) : activeProgram(ws);
+  const program = programID
+    ? ws.programs.find((p) => p.id === docs.canonicalID(programID))
+    : activeProgram(ws);
   if (!program) throw notFound(programID ? 'No program has that ID' : 'No program is active');
   const position = progression.nextPosition(program, ws.history.sessions);
   const summary = { id: program.id, name: program.name, progress: programProgress(ws, program) };

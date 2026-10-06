@@ -36,7 +36,9 @@ enum Foods {
         #expect(summary.totals[.calcium].map { close($0, 120 * 2.44) } == true)
         let shares = summary.energyShares
         #expect(close(shares.values.reduce(0, +), 1))
-        #expect(nutrition.entries(on: monday).first?.quantity == 2 && nutrition.entries(on: monday).first?.grams == 80)
+        // Entries logged at the same moment are ordered by ID, so find the oats.
+        let oats = nutrition.entries(on: monday).first { $0.food.name == Foods.oats.name }
+        #expect(oats?.quantity == 2 && oats?.grams == 80)
 
         let iron = nutrition.contributors(of: .iron, on: monday)
         #expect(iron.map(\.name) == ["Rolled oats", "Chicken breast"])

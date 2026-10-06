@@ -393,6 +393,10 @@ test('programs: the active one, its next workout and recommendations, and propos
   assert.equal(listed.programs[0].days[1].rest, true);
 
   const next = await call(reader, 'next_workout');
+  const byLowercaseID = await call(reader, 'next_workout', {
+    program_id: program.id.toLowerCase(),
+  });
+  assert.equal(byLowercaseID.program?.id, program.id, JSON.stringify(byLowercaseID));
   assert.equal(next.day, 'A');
   assert.equal(next.cycle, 1);
   assert.equal(next.deload, false);

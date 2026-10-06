@@ -508,7 +508,7 @@ test('nutrition documents sync like training ones', async () => {
   const entryID = randomUUID().toUpperCase();
   const documents = [
     [
-      'food',
+      'saved_food',
       'F1',
       { id: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 }, servings: [] },
     ],
@@ -557,6 +557,62 @@ test('nutrition documents sync like training ones', async () => {
   const changes = (await api.get('/v1/changes?after=0', { token })).body.changes;
   assert.deepEqual(
     changes.map((c) => c.kind),
-    ['food', 'food_entry', 'nutrition_day', 'weight_entry']
+    ['saved_food', 'food_entry', 'nutrition_day', 'weight_entry']
+  );
+});
+
+test("a session's program and an entry's food are stored in canonical form", async () => {
+  const { token } = await signUp(api);
+  const program = randomUUID();
+  const food = randomUUID();
+  const workout = sessionID();
+  const entry = sessionID();
+  await put(
+    token,
+    workout,
+    { ...session(workout), program: { programID: program, cycle: 0, dayID: 'A' } },
+    0
+  );
+  const logged = await api.put(
+    `/v1/documents/food_entry/${entry}`,
+    {
+      payload: {
+        id: entry,
+        date: '2026-10-05',
+        meal: 'Breakfast',
+        loggedAt: '2026-10-05T08:00:00.000Z',
+        grams: 40,
+        food: { foodID: food, name: 'Oats', source: 'custom', per100g: { energy: 380 } },
+      },
+      base_revision: 0,
+    },
+    { token, headers: key() }
+  );
+  assert.equal(logged.status, 201, JSON.stringify(logged.body));
+  const read = async (kind, id) =>
+    (await api.get(`/v1/documents/${kind}/${id}`, { token })).body.payload;
+  assert.equal((await read('workout_session', workout)).program.programID, program.toUpperCase());
+  assert.equal((await read('food_entry', entry)).food.foodID, food.toUpperCase());
+});
+
+test('legacy food logs and saved foods stay in their own feeds', async () => {
+  const { token } = await signUp(api);
+  await api.post('/api/food', { name: 'Logged oats', calories: 300 }, { token });
+  const food = { id: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 }, servings: [] };
+  const saved = await api.put(
+    '/v1/documents/saved_food/F1',
+    { payload: food, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const documents = (await api.get('/v1/changes?after=0', { token })).body.changes;
+  assert.deepEqual(
+    documents.map((c) => c.kind),
+    ['saved_food']
+  );
+  const legacy = (await api.get('/api/sync?after=0', { token })).body.changes;
+  assert.deepEqual(
+    legacy.filter((c) => c.kind === 'food').map((c) => c.payload.name),
+    ['Logged oats']
   );
 });

@@ -30,7 +30,8 @@ synced documents and pure functions, and the app's screens use only ExerlyCore.
     K, water).
   - Each has a unit and, where public, an adult reference value: US FDA daily
     values, with NIH ODS values where the FDA gives none.
-- **`food`**: a custom food or a recipe.
+- **`saved_food`**: a custom food or a recipe. Not `food`, which the legacy food log
+  already uses in the change table.
   - Name, brand, nutrients per 100 g, serving sizes as gram weights, barcode
     and source (custom, recipe, USDA, Open Food Facts, FatSecret).
   - A recipe also has its ingredients and its yield.

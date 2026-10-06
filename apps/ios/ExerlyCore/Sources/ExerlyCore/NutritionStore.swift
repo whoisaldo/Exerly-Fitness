@@ -21,7 +21,7 @@ public final class NutritionStore {
     /// Oldest first.
     public private(set) var weights: [WeightEntry] = []
 
-    static let foodKind = "food"
+    static let foodKind = "saved_food"
     static let entryKind = "food_entry"
     static let dayKind = "nutrition_day"
     static let weightKind = "weight_entry"
