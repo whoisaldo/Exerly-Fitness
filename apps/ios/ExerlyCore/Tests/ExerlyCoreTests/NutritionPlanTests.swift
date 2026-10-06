@@ -40,6 +40,23 @@ import Testing
         #expect(gain.targets[1].energy == 2720)
     }
 
+    @Test func aFirstPlanFromOnboardingStartsFromTheFormulaWithAWideError() throws {
+        // 10 × 80 + 6.25 × 180 − 5 × 30 + 5 = 1780 kcal at rest, × 1.55 = 2759 kcal.
+        let profile = BodyProfile(sex: .male, age: 30, height: 180, weight: .kg(80), activity: .moderate)
+        let start = try PlanBasis.formula(profile)
+        #expect(start == PlanBasis(expenditure: 2759, expenditureError: 414, trendWeight: 80))
+        var female = profile
+        female.sex = .female
+        #expect(try PlanBasis.formula(female).expenditure == ((1780 - 166) * 1.55).rounded())
+        // Targets the new diary can show as soon as setup ends: 2759 − 440 kcal.
+        let first = try plan(NutritionGoal(.lose, weeklyRate: 0.005)).computed(from: start)
+        #expect(first.validationErrors.isEmpty && first.targets[1].energy == 2319)
+        #expect(BodyProfile.Activity(rawValue: "very_active") == .veryActive)
+        let child = BodyProfile(sex: .unspecified, age: 9, height: 40, weight: .lb(20), activity: .light)
+        #expect(invalid { _ = try PlanBasis.formula(child) }
+            == ["Age must be 13 to 100", "Height must be 100 to 250 cm", "Weight must be 25 to 400 kg"])
+    }
+
     @Test func weekdayBudgetsSumToTheWeekAndAFastingDayHasNone() throws {
         let weekends = try plan(NutritionGoal(.lose, weeklyRate: 0.005), weights: [1.2, 1, 1, 1, 1, 1, 1.2]).computed(from: basis)
         #expect(weekends.weeklyEnergy == 14420)

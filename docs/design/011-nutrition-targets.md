@@ -55,6 +55,23 @@ never rewrites history.
   than a day has, the plan reports it as invalid, with the reason, instead of
   quietly breaking a floor.
 
+## The first plan, at onboarding
+
+With no logs or weigh-ins yet, `PlanBasis.formula(BodyProfile)` estimates
+expenditure as Mifflin–St Jeor resting energy times an activity factor (1.2
+sedentary to 1.9 very active). Its trend weight is the weight entered at setup.
+
+- **Uncertainty.** The standard deviation is 15 % of the estimate. In
+  validation studies, Mifflin–St Jeor comes within 10 % of measured resting
+  energy for most adults, and self-reported activity adds error on top. 15 %
+  is a deliberately wide assumption, not a measurement.
+- **Why it matters little.** The first plan's basis is the energy balance's
+  prior, and its error is the prior's width. A wide prior lets logged intake
+  and weigh-ins take over within the first weeks.
+- **What the app does.** It saves
+  `NutritionPlan(startDate:goal:...).computed(from: .formula(profile))`, so
+  the screens do no calorie or macro arithmetic.
+
 ## Check-ins (built-in proposals)
 
 `NutritionCheckIn.proposal(...)` runs on the plan's check-in day, once a week.

@@ -533,6 +533,9 @@ dieters reach their goal.
   - `computed(from: PlanBasis)` fills the seven `DailyTargets` from
     expenditure and trend weight, or throws `.invalid(messages)`: a day under
     1,200 kcal without `allowBelowFloor`, or macros that don't fit.
+  - For the first plan, at onboarding, `PlanBasis.formula(BodyProfile)`
+    estimates expenditure from sex, age, height, weight and activity, with a
+    wide error. It throws `.invalid` for an age, height or weight out of range.
 - `NutritionStore` hosts plans: `plans`, `plan(on:)`, `targets(on:)` and
   `savePlan(_:timeZone:)`, which refuses a start in the past or an edit to a
   version in force.

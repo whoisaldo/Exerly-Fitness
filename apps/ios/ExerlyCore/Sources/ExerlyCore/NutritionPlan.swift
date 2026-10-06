@@ -128,6 +128,71 @@ public struct PlanBasis: Sendable, Codable, Hashable {
     }
 }
 
+/// What onboarding asks, to estimate expenditure before there is any data.
+public struct BodyProfile: Sendable, Codable, Hashable {
+    public enum Sex: String, Sendable, Codable, Hashable, CaseIterable {
+        case male, female, unspecified
+    }
+
+    /// The raw values are the onboarding wizard's.
+    public enum Activity: String, Sendable, Codable, Hashable, CaseIterable {
+        case sedentary, light, moderate, active, veryActive = "very_active"
+
+        /// The physical activity level that multiplies resting energy.
+        public var factor: Double {
+            switch self {
+            case .sedentary: 1.2
+            case .light: 1.375
+            case .moderate: 1.55
+            case .active: 1.725
+            case .veryActive: 1.9
+            }
+        }
+    }
+
+    public var sex: Sex
+    public var age: Int
+    /// In centimetres.
+    public var height: Double
+    public var weight: Mass
+    public var activity: Activity
+
+    public init(sex: Sex, age: Int, height: Double, weight: Mass, activity: Activity) {
+        self.sex = sex
+        self.age = age
+        self.height = height
+        self.weight = weight
+        self.activity = activity
+    }
+
+    public var problems: [String] {
+        var problems: [String] = []
+        if !(13...100).contains(age) { problems.append("Age must be 13 to 100") }
+        if !(height.isFinite && (100...250).contains(height)) { problems.append("Height must be 100 to 250 cm") }
+        if !(weight.kilograms.isFinite && (25...400).contains(weight.kilograms)) { problems.append("Weight must be 25 to 400 kg") }
+        return problems
+    }
+}
+
+extension PlanBasis {
+    /// A first plan's basis from the profile: Mifflin–St Jeor resting energy
+    /// times the activity factor, with a standard deviation of 15 %. As the
+    /// first plan's basis it is the energy balance's prior, so logged intake
+    /// and weigh-ins take over within weeks. See docs/design/011.
+    public static func formula(_ profile: BodyProfile) throws -> PlanBasis {
+        guard profile.problems.isEmpty else { throw NutritionStore.StoreError.invalid(profile.problems) }
+        let offset: Double = switch profile.sex {
+        case .male: 5
+        case .female: -161
+        case .unspecified: -78
+        }
+        let kilograms = profile.weight.kilograms
+        let resting = 10 * kilograms + 6.25 * profile.height - 5 * Double(profile.age) + offset
+        let expenditure = (resting * profile.activity.factor).rounded()
+        return PlanBasis(expenditure: expenditure, expenditureError: (0.15 * expenditure).rounded(), trendWeight: kilograms)
+    }
+}
+
 /// One version of the person's nutrition plan, synced as a `nutrition_plan`
 /// document. A version never changes once in force: a new goal or an accepted
 /// check-in adds a version with a later `startDate`, so past days keep the
