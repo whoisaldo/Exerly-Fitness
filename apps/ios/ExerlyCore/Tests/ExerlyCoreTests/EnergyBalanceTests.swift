@@ -131,7 +131,7 @@ import Testing
     /// simulator's randomness. A drop means a regression.
     @Test func meetsTheRecordedRatesOnSimulatedPeople() {
         let bounds: [(weighIns: Double, mean: Double, p90: Double, trend: Double)] = [
-            (0.9, 105, 210, 0.28), (0.5, 110, 220, 0.30), (0.2, 130, 260, 0.40),
+            (0.9, 90, 185, 0.26), (0.5, 95, 195, 0.28), (0.2, 115, 240, 0.36),
         ]
         for bound in bounds {
             let score = Self.score(Self.people(weighIns: bound.weighIns))
@@ -163,11 +163,17 @@ import Testing
     }
 
     @Test func aSteadyLossAtAKnownIntakeRevealsTheDeficit() throws {
-        // 0.5 kg a week down at 2000 kcal: 550 kcal a day under expenditure.
-        let estimates = EnergyBalance.estimate(days(84, intake: 2000, weight: { 90 - Double($0) * 0.5 / 7 }))
+        // 2000 kcal a day against 2550 at the start, with expenditure falling
+        // 22 kcal a day for each kilogram lost, as people's does.
+        var weights = [90.0], expenditure = [2550.0]
+        for _ in 1..<84 {
+            weights.append(weights.last! + (2000 - expenditure.last!) / 7700)
+            expenditure.append(2550 + 22 * (weights.last! - 90))
+        }
+        let estimates = EnergyBalance.estimate(days(84, intake: 2000, weight: { weights[$0] }))
         let last = try #require(estimates.last)
-        #expect(abs(last.expenditure - 2550) < 40)
-        #expect(abs(last.trend - (90 - 83 * 0.5 / 7)) < 0.1)
+        #expect(abs(last.expenditure - expenditure[83]) < 40)
+        #expect(abs(last.trend - weights[83]) < 0.1)
     }
 
     @Test func sparseWeighInsStillGiveADailyTrendAndUnloggedDaysWidenTheBand() throws {

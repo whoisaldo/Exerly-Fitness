@@ -59,7 +59,9 @@ Each day:
 
 - `W` moves by intake minus `E`, divided by the energy density (7,700 kcal/kg
   by default, with uncertainty);
-- `E` drifts as a slow random walk;
+- `E` drifts as a slow random walk, and moves 22 kcal a day for each kilogram
+  of `W` gained or lost (Hall et al., 2011), so a diet's falling expenditure is
+  expected, not discovered weeks late;
 - the scale shows `W` plus noise.
 
 Behaviour:
@@ -108,9 +110,14 @@ from day 28. The truth is expenditure in logged units.
 
 | Weigh-ins              | Expenditure error, mean (90th %) | Trend error | ±2 SD band covers the truth | Legacy expenditure | Legacy trend |
 | ---------------------- | -------------------------------- | ----------- | --------------------------- | ------------------ | ------------ |
-| Daily (90 %)           | 90 kcal (185)                    | 0.22 kg     | 95 %                        | 94 kcal (196)      | 0.33 kg      |
-| Every other day (50 %) | 96 kcal (186)                    | 0.24 kg     | 96 %                        | 111 kcal (244)     | 0.54 kg      |
-| About weekly (20 %)    | 114 kcal (228)                   | 0.32 kg     | 95 %                        | 154 kcal (288)     | 1.03 kg      |
+| Daily (90 %)           | 74 kcal (153)                    | 0.21 kg     | 98 %                        | 94 kcal (196)      | 0.33 kg      |
+| Every other day (50 %) | 80 kcal (161)                    | 0.22 kg     | 98 %                        | 111 kcal (244)     | 0.54 kg      |
+| About weekly (20 %)    | 97 kcal (201)                    | 0.30 kg     | 96 %                        | 154 kcal (288)     | 1.03 kg      |
+
+These are with the weight coupling, added in M5c. Without it, the mean
+expenditure error was 90, 96 and 114 kcal. In M5c's closed-loop simulation the
+random walk alone read 77 kcal high at check-ins for a 0.5 % weekly loss, and
+171 kcal high at 1 %, because it lagged the diet's falling expenditure.
 
 - Daily intake noise limits any estimator to about 75–90 kcal at a 28-day
   horizon, so with daily weigh-ins the gain over the legacy method is small.

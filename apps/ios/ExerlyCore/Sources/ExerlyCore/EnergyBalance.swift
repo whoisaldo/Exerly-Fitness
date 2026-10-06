@@ -19,6 +19,9 @@ public enum EnergyBalance {
         public var energyDensity = 7700.0
         /// Daily drift of expenditure, in kcal.
         public var expenditureDrift = 15.0
+        /// How much expenditure changes per kilogram of tissue gained or lost,
+        /// in kcal a day (Hall et al., 2011).
+        public var expenditurePerKilogram = 22.0
         /// Daily unexplained change in weight, in kg.
         public var weightDrift = 0.01
         /// Water and gut swings, in kg, and how much of today's carries to tomorrow.
@@ -83,7 +86,11 @@ public enum EnergyBalance {
         let start = prior ?? (31 * firstWeight, 600)
         var x = Vector(firstWeight, start.mean, 0)
         var P = Matrix.diagonal(p.water * p.water, start.error * start.error, p.water * p.water)
-        let F = Matrix([[1, -1 / p.energyDensity, 0], [0, 1, 0], [0, 0, p.waterPersistence]])
+        // Expenditure follows weight: each day it moves by `expenditurePerKilogram`
+        // times the day's tissue change, (intake − E) / density.
+        let coupling = p.expenditurePerKilogram / p.energyDensity
+        let F = Matrix([[1, -1 / p.energyDensity, 0], [0, 1 - coupling, 0], [0, 0, p.waterPersistence]])
+        let intakeEffect = Vector(1 / p.energyDensity, coupling, 0)
         let waterNoise = p.water * p.water * (1 - p.waterPersistence * p.waterPersistence)
 
         var filtered: [(x: Vector, P: Matrix)] = []
@@ -93,19 +100,19 @@ public enum EnergyBalance {
             if index > 0 {
                 // Predict across the previous day's intake.
                 let previous = series[index - 1]
-                var input = Vector(0, 0, 0)
+                let intake: Double
                 var intakeVariance = 0.0
-                if let intake = previous.intake {
-                    input = Vector(intake / p.energyDensity, 0, 0)
-                    recentIntake = Array((recentIntake + [intake]).suffix(7))
+                if let logged = previous.intake {
+                    intake = logged
+                    recentIntake = Array((recentIntake + [logged]).suffix(7))
                 } else {
-                    let assumed = mean(recentIntake) ?? x.e
-                    input = Vector(assumed / p.energyDensity, 0, 0)
-                    intakeVariance = pow(p.unloggedIntake / p.energyDensity, 2)
+                    intake = mean(recentIntake) ?? x.e
+                    intakeVariance = p.unloggedIntake * p.unloggedIntake
                 }
-                x = F * x + input
-                P = F * P * F.transposed + Matrix.diagonal(p.weightDrift * p.weightDrift + intakeVariance,
-                                                           p.expenditureDrift * p.expenditureDrift, waterNoise)
+                x = F * x + intakeEffect * intake
+                P = F * P * F.transposed
+                    + Matrix.diagonal(p.weightDrift * p.weightDrift, p.expenditureDrift * p.expenditureDrift, waterNoise)
+                    + intakeEffect.outer(intakeEffect) * intakeVariance
             }
             predicted.append((x, P))
             if let reading = mean(day.weights) {
