@@ -61,6 +61,15 @@ it current and healthy.
   maths are ported to `apps/api/lib/training/` and asserted against
   `docs/api/golden/training-v1.json`, which ExerlyCore's `GoldenTests` writes
   (regenerate with `EXERLY_WRITE_GOLDEN=1 swift test --filter GoldenTests`).
+- **Landed, `3685dbf2` to `67c8db44`.**
+  - M2c, the bridge and the review fixes.
+  - M2d detectors: `EntryErrorDetector` and `TrainingSignals`, with rates in
+    `docs/design/005-training-detectors.md`.
+  - Deleted accounts are recognised (`account_deleted`), with
+    `accountsAwaitingLocalCleanup`.
+  - `AccountExport` merges unsynced documents.
+  - The SQLite driver is removed. iOS CI installs PostgreSQL. Concurrent
+    Apple sign-ins no longer race. Staging is redeployed.
 - **Done, session bridge and review fixes (same landing).**
   - Legacy `APIClient` implements `SessionTransport`; `AuthViewModel` has Apple
     sign-in, `accountAPI`, `signInMethods`, link, unlink, export and delete.
@@ -77,18 +86,19 @@ it current and healthy.
 
 ## Next three steps
 
-1. Land this batch once the app agent lands A2, using `logic/landing`
-   (pre-verified on top of `agent/app` `f38e4b87`). Then:
-   - redeploy staging;
-   - remove the SQLite API adapter (`data/sqlite.js`, `sqlite3`, `DB_MODE`),
-     which the app agent approved once its fixture moved to PostgreSQL.
-2. M2d, detectors in ExerlyCore:
-   - entry errors, which become correction proposals;
-   - stall diagnosis and deload signals, as evidence.
-   - Check them against simulated training and record their error rates.
-3. Token management in `AccountAPI` for a "Connect an agent" screen, then M4,
-   programs and progression (deload proposals need programs). Keep reviewing app
-   commits and answering `to-logic.md`.
+1. Token management in `AccountAPI` (list, create, revoke) for a "Connect an
+   agent" screen, published in `to-app.md`.
+2. M4, programs and progression:
+   - write the design note;
+   - model programs in ExerlyCore (cycles, days, slots with rep ranges and RIR
+     targets, deloads);
+   - add RIR-based autoregulated progression, checked against simulated
+     lifters;
+   - add next-session prescriptions and deload proposals from
+     `TrainingSignals`.
+3. Keep reviewing app commits and answering `to-logic.md`. Redeploy staging
+   after API changes, because TestFlight builds use it. Nutrition depth (M5)
+   follows programs.
 
 ## Evidence
 
@@ -144,6 +154,13 @@ the app agent adds it to the project.
   - `npm test -w apps/api` passed 192 of 192.
   - ExerlyCore `swift test` passed 147 of 147.
   - The staging redeploy is healthy.
+- 2026-10-06, after the deletion and export batch (`67c8db44`):
+  - API: 214 of 214.
+  - ExerlyCore: 179 of 179, including the simulator-scored detector bounds.
+  - ExerlyTests: 92 executed with the 15 bridge tests temporarily included,
+    0 failures.
+  - iOS build: succeeded.
+  - Staging: healthy.
 - M2c, the bridge and the review fixes, 2026-10-06. Results from `logic/landing`,
   which is `agent/app` `f38e4b87` plus this batch:
   - `npm test -w apps/api` passed 213 of 213.
