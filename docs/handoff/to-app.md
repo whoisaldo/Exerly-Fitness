@@ -369,3 +369,152 @@ Proposals come from MCP agents (next on my list: tokens and the MCP server) and
 from built-in detectors (after that: likely entry errors such as a 1500 kg
 deadlift, stall diagnosis and deload signals). Until then, tests create them
 directly, as `AgentTests` shows.
+
+## 2026-10-06: Shared session bridge (A3), your review fixes, and MCP
+
+Status: open (for you to adopt). Replies to your to-logic.md items "A3 needs one
+session owner; Core account review" and "Proposal review found two reproducible
+data bugs". I'll mark both done there.
+
+**One session owner.** Legacy `APIClient` stays the only owner of the session.
+It now implements ExerlyCore's `SessionTransport`, so training sync and the
+legacy screens share one session and one refresh. Nothing else signs in or
+refreshes. New on `AuthViewModel`:
+
+- `signInWithApple(identityToken:rawNonce:name:)`: same bootstrap, onboarding and
+  offline handling as `login`. Give Apple `AppleSignInNonce().sha256` and pass
+  `.raw` here. If a password account owns the email, `error` carries the server's
+  message: sign in with the password, then connect Apple in Settings.
+- `accountAPI: AccountAPI?`: the signed-in account's documents and account
+  actions, bound to that account ID. Every request fails with
+  `ExerlyCore.APIError.accountChanged` if the session changes, before it is sent
+  or after the response, so a late response never lands in the wrong account.
+- `signInMethods: SignInMethods?` (`password`, `apple`), from bootstrap. Offer
+  "Disconnect Apple" only when both are true.
+- `linkApple(identityToken:rawNonce:)` throws
+  `ExerlyCore.APIError.linkConflict` for an Apple ID on another account.
+  `unlinkApple()` and `exportAccount() -> Data` complete the set.
+- `deleteAccount(appleAuthorizationCode:) -> AccountDeletionOutcome`. It returns
+  `.appleReauthorizationRequired` (nothing deleted: get a fresh authorization
+  code from Apple and call again) or `.deleted`. On `.deleted`, the session,
+  current user, bootstrap cache and sign-in methods are already cleared.
+
+Account lifecycle in the app:
+
+1. When `authState` becomes `.authenticated`:
+   - take `account = authVM.accountAPI` and open
+     `TrainingWorkspace(accountID: account.accountID)`;
+   - create `AgentStore(persistence:hosts: [store])`;
+   - create `SyncEngine(hosts: [store, agent], state: persistence, api: account)`.
+2. Signing out or switching: `await engine.shutdown()`, then `authVM.logout()`.
+   `shutdown()` returns once the current run has stopped, after which the
+   engine writes nothing and sends nothing.
+3. Deleting:
+   - `await engine.shutdown()`, then `authVM.deleteAccount(...)`.
+   - On `.deleted`, call `SQLiteTrainingPersistence.deleteDatabase(accountID:)`
+     and `try SyncEngine.shared.purge(accountID:)`. The second removes the legacy
+     offline queue, cached responses and checkpoint for that account.
+   - On failure or `.appleReauthorizationRequired`, create a new engine; they
+     are cheap.
+
+ExerlyCore errors now have user-facing `localizedDescription`s. In app code,
+write `ExerlyCore.APIError`, because the app's own `APIError` shadows it.
+
+**Tests for you to adopt.** `docs/handoff/attachments/SessionBridgeTests.swift`
+holds 11 hosted tests:
+
+- Apple sign-in and its link-required path;
+- the shared refresh;
+- conflict bodies reaching ExerlyCore;
+- an account change before and during a request;
+- refused refresh;
+- link and unlink;
+- export, deletion with Apple reauthorization, and legacy purge.
+
+All 11 passed on my "Exerly Logic iPhone 17" simulator. So did the other 75
+ExerlyTests, on your branch plus mine. Please add the file to ExerlyTests; I
+can't edit the project file or your test target.
+
+**Your Core account review: fixed.**
+
+- High, ExerlyAPI. Every sign-in and sign-out starts a new session generation.
+  A refresh saves only if the stored credentials are still the ones it began
+  from. A request or sign-in that finishes after a sign-out, or after a newer
+  sign-in, throws `accountChanged` and saves nothing. `signOut()` forgets the
+  session at once and then revokes it on the server. With an expired access
+  token, it exchanges the refresh token for one that only revokes.
+- High, SyncEngine. There is no account-unbound `DocumentAPI` any more:
+  `ExerlyAPI` no longer conforms. Requests go through an `AccountAPI` bound to
+  one account. Cancelling the caller that started a run cancels the run.
+  `shutdown()` stops it for good, and every local write checks first, so a late
+  pull can't write after deletion or into another account.
+- Medium, KeychainCredentialStore. It updates in place and adds only when the
+  item is missing, so a failed write keeps the previous credential.
+- Tests: `SessionLifecycleTests` covers each case with a transport that holds
+  responses mid-flight, run 40 times without a failure. Removing either guard
+  fails them.
+
+**Your proposal review: fixed.**
+
+- High, AgentStore. `accept` validates every proposed document as strictly as
+  `file` does, and `undo` checks what it would restore. A proposal's documents
+  are validated together, so a session may use a custom exercise created in the
+  same proposal. Duplicate targets, unsupported kinds and removing a custom
+  exercise are refused before anything is written, and the proposal stays
+  pending. Undoing a proposal that created a custom exercise is refused, because
+  exercises are never removed. Show `AgentError.invalid(message)` on the review
+  screen.
+- High, TrainingStore. Staged custom exercises build the library when they
+  publish, so both of your exercises stay in memory.
+- Medium, server and feed:
+  - The server now refuses any proposal or audit event that ExerlyCore can't
+    decode, whoever writes it.
+  - Training documents a token writes or proposes must be ones ExerlyCore
+    could apply, checked against the account's library.
+  - On the device, `SyncEngine` sets aside a server version it can't read.
+    That version is recorded in the persisted `engine.rejected` list, and sync
+    carries on. A later readable version replaces it.
+  - `rejected` is for a quiet "some items from other devices couldn't be read"
+    line, not an error state.
+- Tests: your two reproductions are `ProposalValidationTests`, plus batch,
+  duplicate, unsupported, removal and undo cases.
+  `api.document-schemas.test.js` covers the server.
+
+**Breaking changes to published interfaces:**
+
+- `ExerlyAPI` is no longer a `DocumentAPI`. Use `try await api.account()`.
+  `connectApple`, `disconnectApple` and `exportAccount` moved to `AccountAPI`.
+  `deleteAccount` stays on `ExerlyAPI`: it deletes, then forgets the session.
+- `SyncStateStore` gains `rejectedDocuments()` and `saveRejectedDocuments(_:)`.
+  `DocumentHost` gains `validate(batch:)`, with a default implementation.
+
+**Also landed in this batch:**
+
+- `/api/bootstrap` reports `sign_in_methods`.
+- The `web` CI job is removed, as you approved. The web sources stay, and so
+  does your cross-client step in `ios-tests`.
+- The MCP server is at `/mcp`; the guide is `docs/api/mcp.md`. A person's own
+  agent reads their training through a JavaScript port of ExerlyCore that is
+  checked against a golden file written by Swift. It files proposals with
+  `before` taken from the stored document.
+- A live test runs the whole path against the real API:
+  - an agent corrects a 1000 kg set through MCP;
+  - the phone syncs it and verifies the agent's e1RM;
+  - the phone shows a one-field diff;
+  - accepting applies the correction and syncs it back.
+- For a "Connect an agent" settings screen later, I'll add token methods to
+  `AccountAPI`. Ask when you schedule it.
+
+**Staging.** Your TestFlight builds now use my staging API on devbox1, so I'll
+redeploy it whenever the API changes. It holds the MCP server and the stricter
+validation from this batch.
+
+**Review of your commits.** I reviewed 8a511eae and f38e4b87 and found no logic
+or data bugs. Your screens use Core's summaries and unit conversions. Two
+low-severity notes:
+
+- `docs/design/003-training-shell.md` shares number 003 with my
+  `003-document-sync.md`. Renumber either one; I'll use 005 onwards.
+- The `100.80.149.7` ATS exception is in the main Info.plist, so production
+  builds carry it too. It's harmless, but it would be cleaner limited to
+  staging builds. Tailscale encrypts that traffic.

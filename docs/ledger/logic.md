@@ -43,7 +43,9 @@ now.
 - **Keychain verification** needs the app agent's hosted tests.
 
 **Staging.** Running on devbox1 at `http://100.80.149.7:39110` (`37bc7710`).
-Redeploy with `apps/api/deploy/staging/install.sh` after API changes.
+Redeploy with `apps/api/deploy/staging/install.sh` after API changes. Internal
+TestFlight builds now use it by default (the app agent's `release.sh`), so keep
+it current and healthy.
 
 **M2: agent core.** In progress (`docs/design/004-agent-core.md`).
 
@@ -54,22 +56,39 @@ Redeploy with `apps/api/deploy/staging/install.sh` after API changes.
   events, and the OpenAPI file updated.
 - **Also done.** `a4eeba40`: atomic multi-write changes, and Apple link and
   unlink in the client.
+- **Done, M2c (landing with the app's A2).** The MCP server at `/mcp`
+  (`routes/mcp.js`, `lib/agentTools.js`, guide `docs/api/mcp.md`). The training
+  maths are ported to `apps/api/lib/training/` and asserted against
+  `docs/api/golden/training-v1.json`, which ExerlyCore's `GoldenTests` writes
+  (regenerate with `EXERLY_WRITE_GOLDEN=1 swift test --filter GoldenTests`).
+- **Done, session bridge and review fixes (same landing).**
+  - Legacy `APIClient` implements `SessionTransport`; `AuthViewModel` has Apple
+    sign-in, `accountAPI`, `signInMethods`, link, unlink, export and delete.
+    `SyncEngine.shared.purge(accountID:)` clears legacy data.
+  - The app agent's hosted tests for it are in
+    `docs/handoff/attachments/SessionBridgeTests.swift`, waiting for them to add
+    to ExerlyTests.
+  - Session generations in `ExerlyAPI`, and `SyncEngine.shutdown()`.
+  - `AccountAPI` binds requests to an account. The Keychain updates in place.
+  - Proposals are validated at accept and undo, as a batch. Custom exercises
+    publish safely.
+  - Unreadable server documents are set aside (`SyncEngine.rejected`).
+  - The server refuses agent documents ExerlyCore can't decode.
 
 ## Next three steps
 
-1. M2c, the MCP server at `/mcp`:
-   - use the official TypeScript SDK with Streamable HTTP, authenticated by a
-     token;
-   - port the training maths to JavaScript (`apps/api/lib/training/`) and assert
-     it against a golden file generated from Swift
-     (`docs/api/golden/training-v1.json`);
-   - add read tools and a `propose` tool.
+1. Land this batch once the app agent lands A2, using `logic/landing`
+   (pre-verified on top of `agent/app` `f38e4b87`). Then:
+   - redeploy staging;
+   - remove the SQLite API adapter (`data/sqlite.js`, `sqlite3`, `DB_MODE`),
+     which the app agent approved once its fixture moved to PostgreSQL.
 2. M2d, detectors in ExerlyCore:
    - entry errors, which become correction proposals;
    - stall diagnosis and deload signals, as evidence.
-     Check them against simulated training and record their error rates.
-3. Then M4, programs and progression; deload proposals need programs. Keep
-   reviewing app commits and answering `to-logic.md`.
+   - Check them against simulated training and record their error rates.
+3. Token management in `AccountAPI` for a "Connect an agent" screen, then M4,
+   programs and progression (deload proposals need programs). Keep reviewing app
+   commits and answering `to-logic.md`.
 
 ## Evidence
 
@@ -125,6 +144,19 @@ the app agent adds it to the project.
   - `npm test -w apps/api` passed 192 of 192.
   - ExerlyCore `swift test` passed 147 of 147.
   - The staging redeploy is healthy.
+- M2c, the bridge and the review fixes, 2026-10-06. Results from `logic/landing`,
+  which is `agent/app` `f38e4b87` plus this batch:
+  - `npm test -w apps/api` passed 213 of 213.
+  - ExerlyCore `swift test` passed 164 of 164.
+  - `live-sync.sh` passed 2 of 2. One of them is MCP to phone: an agent's
+    correction, verified, diffed, accepted and synced back through the real API.
+  - `scripts/ios.sh build` succeeded.
+  - ExerlyTests on "Exerly Logic iPhone 17": 88 executed with the bridge tests
+    temporarily included, 0 failures. The 1 skip is the app agent's private
+    TestFlight smoke check.
+  - Mutation checks: removing the session-generation guard, the sync shutdown
+    guard, or a JS rule (Brzycki constant, record ties, week start, local date,
+    search order) fails the matching tests.
 
 ## Risks and external dependencies
 
