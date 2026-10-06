@@ -23,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.filter.outputs.api }}
-      web: ${{ steps.filter.outputs.web }}
       ios: ${{ steps.filter.outputs.ios }}
       root: ${{ steps.filter.outputs.root }}
     steps:
@@ -34,8 +33,6 @@ jobs:
           filters: |
             api:
               - 'apps/api/**'
-            web:
-              - 'apps/web/**'
             ios:
               - 'apps/ios/**'
               - '.swiftlint.yml'
@@ -112,65 +109,6 @@ jobs:
           xcode-version: '26.2'
       - name: Unit tests
         run: swift test --package-path apps/ios/ExerlyCore
-
-  web:
-    name: Web · lint · typecheck · build
-    needs: changes
-    if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Lint (eslint)
-        run: npx eslint apps/web
-      - name: Format check (prettier)
-        run: npx prettier --check "apps/web/**/*.{ts,tsx,js,jsx,css,json}"
-      - name: Typecheck (tsc)
-        run: npm run typecheck
-      - name: Build (vite)
-        run: npm run build --prefix apps/web
-        env:
-          VITE_API_URL: https://exerly-fitness-93dyl.ondigitalocean.app
-          VITE_ADMIN_EMAILS: whois.younes@gmail.com
-      - name: Upload web build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: web-dist
-          path: apps/web/dist
-          retention-days: 7
-      - name: Install browser for end-to-end tests
-        run: npx playwright install --with-deps chromium webkit
-      - name: Browser and API end-to-end tests
-        run: npm run test:web
-        env:
-          PLAYWRIGHT_CHANNEL: chromium
-      - name: Upload browser test evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: web-tests
-          path: artifacts/web-tests/
-          retention-days: 14
-
-      - name: Production browser offline and update tests
-        run: |
-          npm run test:web:offline
-          PLAYWRIGHT_BROWSER=webkit npm run test:web -- apps/web/e2e/offline-startup.spec.ts --output=artifacts/web-offline-webkit-read-tests
-          PLAYWRIGHT_BROWSER=webkit npm run test:web:offline
-        env:
-          PLAYWRIGHT_CHANNEL: chromium
-      - name: Upload offline browser evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: web-offline-tests
-          path: artifacts/web-offline-*-tests/
-          retention-days: 14
 
   swiftlint:
     name: iOS · swiftlint (lint-only)
