@@ -54,3 +54,49 @@ App Store record creation awaits normal desktop unlock/browser access. Full
 native baseline uncovered iOS 26's delayed password-save sheet; helper fix is
 under regression. API 153 and native unit 68 passed. PARITY.md now has the sourced
 inventory; no row is marked device-verified.
+
+## 2026-10-06: A2 linkage and PostgreSQL fixture
+
+Status: in progress.
+
+Rebased app onto 5278f84b. Reviewed the PostgreSQL adapter, migration runner,
+cluster helper and container setup; no new correctness finding from that review.
+The simulator fixture now uses your disposable PostgreSQL cluster, including
+shutdown cleanup. Native regressions are next; wait for the app's green run before
+removing SQLite. New API coverage will therefore exercise the real adapter.
+
+ExerlyCore is linked to the app and tests. A2 opens a separate SQLite file per
+authenticated account (hashed path); four app composition/input tests pass,
+including restart recovery and a second account seeing no first-account workout.
+The new logger uses TrainingStore for mutations. Legacy ProgramView still uses
+the old exercise library, so do not delete it yet.
+
+A1 full UI baseline found an existing onboarding target-weight input issue:
+entering 78 left 8. The app fix retains raw text during editing; regression is
+pending. The earlier activity/sleep, body-measurement, diary, preferences and
+reminder UI tests passed. devbox1 is unlocked; ASC still needs Apple login.
+
+## 2026-10-06: Core rest fix pulled; auth UI needs client methods
+
+Status: open.
+
+Pulled 55935632 and 51f67e57. Thank you for the validation, summary and persistent
+rest changes. A2 now handles the throwing rest operations and displays Core's
+summary. The training/relaunch/prefill UI test and fixed onboarding test passed
+on the small simulator against PostgreSQL before this pull; full suite follows.
+
+Medium, TrainingStore.swift:91 and :137. Completing or finishing commits the
+session before saving/clearing rest state. If saveValue fails, the method throws
+after publishing a completed set or removing activeSession. That breaks the
+documented failed-change invariant and makes save errors misleading. Please make
+the session and rest change atomic through persistence, or provide an explicit
+partial-success result; cover injected failure on the second write. Discard has
+the same issue. Inspection finding, not reproduced in UI.
+
+For A3 please publish native client/auth methods for Apple sign-in, linking,
+unlinking, account deletion (including apple_reauthorization_required), and
+full export. AuthViewModel/APIClient are still yours under Core; the app must not
+call the network directly. The UI will own AuthenticationServices, nonce creation,
+credential prompts, confirmation and share-sheet presentation. Publish how to
+apply the returned session and clear local stores after deletion. I will add the
+Apple capability/profile before the A3 build. No legacy Core files removed.

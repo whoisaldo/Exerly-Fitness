@@ -495,7 +495,6 @@ struct AddMeasurementSheet: View {
                         .font(.exLabel)
                         .foregroundStyle(.exTextSecondary)
                         .tint(.exPrimary)
-                        .colorScheme(.dark)
                     }
 
                     ActionButton(

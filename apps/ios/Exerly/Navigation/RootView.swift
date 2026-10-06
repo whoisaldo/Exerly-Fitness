@@ -57,6 +57,6 @@ struct RootView: View {
                 }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
             }
         }
-        .preferredColorScheme(.dark)
+        .tint(Color.exPrimary)
     }
 }

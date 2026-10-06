@@ -2,7 +2,7 @@ import XCTest
 
 @MainActor
 final class ProductionUITests: XCTestCase {
-    private var fixtureURL = "http://127.0.0.1:39001"
+    private var fixtureURL = ProcessInfo.processInfo.environment["EXERLY_UI_FIXTURE_URL"] ?? "http://127.0.0.1:39001"
 
     // Let async test bodies finish or throw before XCTest starts the next test.
     // Aborting at an assertion can leave their fixture requests running.
@@ -19,6 +19,59 @@ final class ProductionUITests: XCTestCase {
         let app = launch(resetSession: true)
         tap(app.buttons["I already have an account"], in: app)
         XCTAssertTrue(app.secureTextFields["Password"].waitForExistence(timeout: 5))
+    }
+
+    func testTrainingSessionSurvivesRelaunchAndPrefillsTheNextWorkout() async throws {
+        try await control([:])
+        let email = "training-\(UUID().uuidString.lowercased())@exerly.test"
+        let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
+        let token = try XCTUnwrap(signup["token"] as? String)
+        _ = try await request("POST", "/api/onboarding/complete", body: [
+            "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
+            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
+        ], token: token)
+        let app = launch(resetSession: true)
+        tap(app.buttons["I already have an account"], in: app)
+        replace(app.textFields["Email"], with: email, in: app)
+        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Log In"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.start"], in: app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["training.addExercise"], in: app)
+        let search = app.searchFields.firstMatch
+        tap(search, in: app)
+        search.typeText("barbell bench press")
+        tap(app.buttons["Add Barbell Bench Press"], in: app)
+        tap(app.buttons["Edit set 1, Barbell Bench Press"], in: app)
+        replace(app.textFields["training.load.0"], with: "40.5", in: app)
+        replace(app.textFields["training.reps.0"], with: "8", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.saveSet"], in: app)
+        tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.buttons["Reopen set 1, Barbell Bench Press"].exists)
+        capture(app, "training-completed-set")
+
+        app.terminate(); app.launchArguments.removeAll { $0 == "--ui-testing" }; app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.buttons["Reopen set 1, Barbell Bench Press"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["40.5 kg × 8 reps"].exists)
+        tap(app.buttons["training.finish"], in: app)
+        tap(app.buttons["Save workout"], in: app)
+        XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 10))
+        tap(app.buttons["training.start"], in: app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["training.addExercise"], in: app)
+        tap(app.searchFields.firstMatch, in: app)
+        app.searchFields.firstMatch.typeText("barbell bench press")
+        tap(app.buttons["Add Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.staticTexts["Previous: 40.5 kg × 8 reps"].exists)
+        tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.buttons["Reopen set 1, Barbell Bench Press"].exists)
+        capture(app, "training-prefilled-one-tap")
     }
 
     func testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits() async throws {
@@ -1206,6 +1259,9 @@ final class ProductionUITests: XCTestCase {
     private func launch(resetSession: Bool, legacyToken: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = resetSession ? ["--ui-testing"] : []
+        if ProcessInfo.processInfo.environment["EXERLY_TEST_LARGEST_TYPE"] == "1" {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
         app.launchEnvironment["EXERLY_API_BASE_URL"] = fixtureURL
         app.launchEnvironment["EXERLY_TEST_STORE_ID"] = UUID().uuidString
         app.launchEnvironment["EXERLY_TEST_LEGACY_TOKEN"] = legacyToken
@@ -1246,7 +1302,7 @@ final class ProductionUITests: XCTestCase {
             dismissPasswordPrompt(in: app)
             let home = app.buttons["Home"]
             if visibleFrame(element) && element.isHittable && home.exists,
-               ["Home", "Library", "Progress", "Profile"].contains(element.label),
+               ["Home", "Train", "Library", "Progress", "Profile"].contains(element.label),
                abs(element.frame.midY - home.frame.midY) < 2 { return }
             let lowerEdge = visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30
             let bar = app.navigationBars.allElementsBoundByIndex.last ?? app.navigationBars.firstMatch

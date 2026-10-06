@@ -1008,7 +1008,7 @@ final class ProductionTests: XCTestCase {
             if request.httpMethod == "PUT" {
                 XCTAssertEqual(request.url?.path, "/api/weight/day")
                 let key = try XCTUnwrap(request.value(forHTTPHeaderField: "Idempotency-Key"))
-                let data = try Self.requestBody(request)
+                let data = Self.requestBody(request)
                 writes.append((key, data))
                 if let receipt = receipts[key] { return (200, receipt) }
                 let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -1231,7 +1231,7 @@ final class ProductionTests: XCTestCase {
             if disconnected { throw URLError(.notConnectedToInternet) }
             if request.url?.path == "/api/water", request.httpMethod == "POST" {
                 let id = request.value(forHTTPHeaderField: "Idempotency-Key")!
-                let data = try Self.requestBody(request)
+                let data = Self.requestBody(request)
                 writes.append((id, data))
                 if let receipt = receipts[id] { return (200, receipt) }
                 let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -1305,7 +1305,7 @@ final class ProductionTests: XCTestCase {
         var writes: [(String, Data)] = []
         StubURLProtocol.handler = { request in
             if request.httpMethod == "PUT" {
-                let data = try Self.requestBody(request)
+                let data = Self.requestBody(request)
                 writes.append((request.value(forHTTPHeaderField: "Idempotency-Key")!, data))
                 let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
                 if writes.count == 1 { throw URLError(.networkConnectionLost) }

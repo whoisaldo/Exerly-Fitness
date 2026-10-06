@@ -1,37 +1,34 @@
 import SwiftUI
-
-// MARK: - Design Tokens
+import UIKit
 
 extension Color {
-    // Brand
-    static let exPrimary = Color(hex: "8b5cf6")
-    static let exSecondary = Color(hex: "a855f7")
-    static let exAccent = Color(hex: "ec4899")
+    static let exPrimary = adaptive(0x176344, 0x82D6B6)
+    static let exSecondary = adaptive(0x265F72, 0x9CCFE1)
+    static let exAccent = adaptive(0x855B22, 0xE5BF7A)
+    static let exBackground = adaptive(0xF5F6F3, 0x0B1519)
+    static let exSurface1 = adaptive(0xFFFFFF, 0x112026)
+    static let exSurface2 = adaptive(0xEEF1EC, 0x192B31)
+    static let exSurface3 = adaptive(0xE3E9E1, 0x253940)
+    static let exTextPrimary = adaptive(0x162924, 0xEDF4EF)
+    static let exTextSecondary = adaptive(0x4C635A, 0xACBFB7)
+    static let exTextMuted = adaptive(0x5B6C64, 0x94AAA0)
+    static let exSuccess = adaptive(0x176344, 0x82D6B6)
+    static let exWarning = adaptive(0x86541C, 0xE9C07E)
+    static let exError = adaptive(0xAE2834, 0xFF9A9F)
+    static let exInfo = adaptive(0x265F83, 0x99CCEC)
+    static let exBorder = adaptive(0xCFD9D0, 0x344C43)
+    static let exBorderFocused = exPrimary
+    static let exGlassBg = exSurface1
+    static let exGlassBorder = exBorder
 
-    // Surfaces
-    static let exBackground = Color(hex: "0a0a0f")
-    static let exSurface1 = Color(hex: "101016")
-    static let exSurface2 = Color(hex: "15151d")
-    static let exSurface3 = Color(hex: "1b1b24")
-
-    // Text
-    static let exTextPrimary = Color(hex: "f7f8fa")
-    static let exTextSecondary = Color(hex: "9aa3b5")
-    static let exTextMuted = Color(hex: "626c80")
-
-    // Status
-    static let exSuccess = Color(hex: "22c55e")
-    static let exWarning = Color(hex: "f59e0b")
-    static let exError = Color(hex: "ef4444")
-    static let exInfo = Color(hex: "3b82f6")
-
-    // Borders
-    static let exBorder = Color.white.opacity(0.08)
-    static let exBorderFocused = Color(hex: "8b5cf6").opacity(0.5)
-
-    // Cards (names kept from the old glass system; now solid surfaces + hairlines)
-    static let exGlassBg = Color(hex: "15151d")
-    static let exGlassBorder = Color.white.opacity(0.08)
+    private static func adaptive(_ light: UInt32, _ dark: UInt32) -> Color {
+        Color(uiColor: UIColor { traits in
+            let rgb = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: CGFloat((rgb >> 16) & 255) / 255,
+                           green: CGFloat((rgb >> 8) & 255) / 255,
+                           blue: CGFloat(rgb & 255) / 255, alpha: 1)
+        })
+    }
 }
 
 // MARK: - ShapeStyle Convenience
@@ -87,19 +84,19 @@ extension Color {
 
 extension LinearGradient {
     static let exPrimaryGradient = LinearGradient(
-        colors: [Color(hex: "8b5cf6"), Color(hex: "7c4ff0")],
+        colors: [Color(hex: "176344"), Color(hex: "176344")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let exAccentGradient = LinearGradient(
-        colors: [Color(hex: "a78bfa"), Color(hex: "8b5cf6")],
+        colors: [Color(hex: "265F72"), Color(hex: "265F72")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let exSurfaceGradient = LinearGradient(
-        colors: [Color(hex: "101016"), Color(hex: "0a0a0f")],
+        colors: [.exSurface1, .exBackground],
         startPoint: .top,
         endPoint: .bottom
     )

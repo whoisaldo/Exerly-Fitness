@@ -2,6 +2,9 @@ import SwiftUI
 
 struct Step4Goals: View {
     @ObservedObject var state: OnboardingState
+    @State private var targetWeightText = ""
+    @State private var inputError: String?
+    @FocusState private var editingWeight: Bool
 
     var body: some View {
         ScrollView {
@@ -36,10 +39,26 @@ struct Step4Goals: View {
 
                 Spacer(minLength: 24)
 
-                ActionButton(title: "Continue") { state.nextStep() }
+                if let inputError { Text(inputError).foregroundStyle(Color.exError) }
+                ActionButton(title: "Continue") {
+                    if state.nutritionGoal != "maintain" {
+                        guard let value = UserEnteredNumber.parse(targetWeightText) else {
+                            inputError = "Enter a valid target weight."
+                            return
+                        }
+                        state.targetWeightKg = state.useMetric ? value : value * 0.45359237
+                    }
+                    inputError = nil
+                    state.nextStep()
+                }
             }
             .padding(24)
             .padding(.top, 16)
+        }
+        .onAppear { refreshWeightText() }
+        .onChange(of: state.useMetric) { _, _ in refreshWeightText() }
+        .onChange(of: state.targetWeightKg) { _, _ in
+            if !editingWeight { refreshWeightText() }
         }
     }
 
@@ -63,16 +82,24 @@ struct Step4Goals: View {
             GlassCard {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Target weight, \(state.useMetric ? "kg" : "lb")").font(.headline)
-                    TextField("Target weight", value: Binding(
-                        get: { state.useMetric ? state.targetWeightKg : state.targetWeightKg / 0.45359237 },
-                        set: { state.targetWeightKg = state.useMetric ? $0 : $0 * 0.45359237 }
-                    ), format: .number.precision(.fractionLength(0...2)))
+                    TextField("Target weight", text: $targetWeightText)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .focused($editingWeight)
                         .frame(minHeight: 44).accessibilityLabel("Target weight")
+                        .onChange(of: targetWeightText) { _, text in
+                            if let value = UserEnteredNumber.parse(text) {
+                                state.targetWeightKg = state.useMetric ? value : value * 0.45359237
+                            }
+                        }
                     Text("Your initial targets will be shown for review. You can adjust your goal in Program.")
                         .font(.callout).foregroundStyle(.exTextSecondary)
                 }
             }
         }
+    }
+
+    private func refreshWeightText() {
+        let value = state.useMetric ? state.targetWeightKg : state.targetWeightKg / 0.45359237
+        targetWeightText = value.formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 }

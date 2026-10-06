@@ -1,7 +1,7 @@
-// Isolated simulator fixture: the real application and SQLite adapter with a
+// Isolated simulator fixture: the real application and PostgreSQL adapter with a
 // deterministic external food provider. Never reads development/production env.
 process.env.NODE_ENV = 'test';
-process.env.DB_MODE = 'local';
+process.env.DB_MODE = 'postgres';
 process.env.JWT_SECRET = 'isolated-ios-fixture-secret';
 process.env.ADMIN_EMAILS = '';
 const express = require('express');
@@ -10,6 +10,15 @@ const store = require('../apps/api/data');
 const providers = require('../apps/api/lib/foodProviders');
 const { createApp } = require('../apps/api/app');
 const { reset: resetRateLimits } = require('../apps/api/lib/ratelimit');
+const { start: startCluster } = require('../apps/api/tests/helpers/cluster');
+let cluster;
+const stopCluster = () => {
+  if (!cluster) return;
+  const owned = cluster;
+  cluster = undefined;
+  owned.stop();
+};
+process.once('exit', stopCluster);
 let offline = false;
 let disconnect = false;
 let dropSetupAcknowledgement = false;
@@ -45,7 +54,8 @@ providers.lookupBarcode = async (identity) => ({
   ),
 });
 (async () => {
-  await store.connect({ file: ':memory:' });
+  cluster = startCluster();
+  await store.connect({ connectionString: cluster.url });
   const app = express();
   app.use('/__test', express.json());
   app.post('/__test/control', async (req, res, next) => {
@@ -351,11 +361,17 @@ providers.lookupBarcode = async (identity) => ({
   const server = app.listen(Number(process.env.EXERLY_FIXTURE_PORT || 39001), '0.0.0.0', () => {
     console.log(`Isolated simulator API listening on ${server.address().port}`);
   });
-  const shutdown = () =>
+  const shutdown = () => {
     server.close(async () => {
-      await store.disconnect();
-      process.exit(0);
+      try {
+        await store.disconnect();
+      } finally {
+        stopCluster();
+        process.exit(0);
+      }
     });
+    server.closeAllConnections();
+  };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 })().catch((error) => {

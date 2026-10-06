@@ -171,7 +171,6 @@ struct FoodDetailView: View {
             .font(.exLabel)
             .foregroundStyle(.exTextSecondary)
             .tint(.exPrimary)
-            .colorScheme(.dark)
         }
     }
 

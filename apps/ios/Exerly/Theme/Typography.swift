@@ -3,21 +3,21 @@ import SwiftUI
 // MARK: - Typography Scale
 
 extension Font {
-    static let exDisplay = Font.system(size: 48, weight: .bold, design: .rounded)
-    static let exH1 = Font.system(size: 32, weight: .bold, design: .rounded)
-    static let exH2 = Font.system(size: 24, weight: .semibold, design: .rounded)
-    static let exH3 = Font.system(size: 20, weight: .semibold, design: .rounded)
-    static let exBody = Font.system(size: 16, weight: .regular, design: .rounded)
-    static let exBodyMedium = Font.system(size: 16, weight: .medium, design: .rounded)
-    static let exLabel = Font.system(size: 14, weight: .medium, design: .rounded)
-    static let exCaption = Font.system(size: 12, weight: .regular, design: .rounded)
-    static let exSmall = Font.system(size: 11, weight: .regular, design: .rounded)
+    static let exDisplay = Font.system(.largeTitle, design: .default, weight: .bold)
+    static let exH1 = Font.system(.largeTitle, design: .default, weight: .bold)
+    static let exH2 = Font.system(.title2, design: .default, weight: .semibold)
+    static let exH3 = Font.system(.title3, design: .default, weight: .semibold)
+    static let exBody = Font.system(.body, design: .default, weight: .regular)
+    static let exBodyMedium = Font.system(.body, design: .default, weight: .medium)
+    static let exLabel = Font.system(.subheadline, design: .default, weight: .medium)
+    static let exCaption = Font.system(.caption, design: .default, weight: .regular)
+    static let exSmall = Font.system(.caption2, design: .default, weight: .regular)
 
     // Mono for stats/numbers
-    static let exStat = Font.system(size: 32, weight: .bold, design: .monospaced)
-    static let exStatMedium = Font.system(size: 24, weight: .semibold, design: .monospaced)
-    static let exStatSmall = Font.system(size: 16, weight: .medium, design: .monospaced)
-    static let exMono = Font.system(size: 14, weight: .regular, design: .monospaced)
+    static let exStat = Font.system(.largeTitle, design: .monospaced, weight: .bold)
+    static let exStatMedium = Font.system(.title2, design: .monospaced, weight: .semibold)
+    static let exStatSmall = Font.system(.body, design: .monospaced, weight: .medium)
+    static let exMono = Font.system(.subheadline, design: .monospaced, weight: .regular)
 }
 
 // MARK: - Text Style Modifier

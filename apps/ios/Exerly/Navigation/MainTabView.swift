@@ -1,83 +1,54 @@
 import SwiftUI
+import ExerlyCore
 
 enum MainTab: Int, CaseIterable {
-    case home, library, fab, progress, profile
+    case home, training, library, progress, profile
 
     var icon: String {
         switch self {
-        case .home: return "house.fill"
-        case .library: return "book.fill"
-        case .fab: return "plus"
-        case .progress: return "chart.line.uptrend.xyaxis"
-        case .profile: return "person.fill"
+        case .home: "house"
+        case .training: "dumbbell"
+        case .library: "book"
+        case .progress: "chart.line.uptrend.xyaxis"
+        case .profile: "person.crop.circle"
         }
     }
 
     var label: String {
         switch self {
-        case .home: return "Home"
-        case .library: return "Library"
-        case .fab: return ""
-        case .progress: return "Progress"
-        case .profile: return "Profile"
+        case .home: "Home"
+        case .training: "Train"
+        case .library: "Library"
+        case .progress: "Progress"
+        case .profile: "Profile"
         }
     }
 }
 
 struct MainTabView: View {
     @EnvironmentObject private var sync: SyncEngine
+    @EnvironmentObject private var auth: AuthViewModel
     @State private var selectedTab: MainTab = .home
-    @State private var showFABMenu = false
-    @State private var showLogActivity = false
-    @State private var showLogFood = false
-    @State private var showLogSleep = false
-    @State private var homeRefreshToken = 0
 
     var body: some View {
-        tabContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                CustomTabBar(
-                    selectedTab: $selectedTab,
-                    showFABMenu: $showFABMenu
-                )
+        TabView(selection: $selectedTab) {
+            NavigationStack { HomeView(refreshToken: 0, initialDate: sync.today) }
+                .tabItem { Label(MainTab.home.label, systemImage: MainTab.home.icon) }.tag(MainTab.home)
+            NavigationStack {
+                if let account = auth.currentUser?.id {
+                    TrainingHostView(accountID: account,
+                                     unit: auth.currentUser?.unitSystem == "imperial" ? .pounds : .kilograms,
+                                     timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+                }
             }
-            .background(Color.exBackground)
-            .overlay { fabOverlay }
-            .sheet(isPresented: $showLogActivity, onDismiss: refreshHome) { LogActivityView(initialDate: sync.today) }
-            .sheet(isPresented: $showLogFood, onDismiss: refreshHome) { LogFoodView(initialDate: sync.today) }
-            .sheet(isPresented: $showLogSleep, onDismiss: refreshHome) { LogSleepView(initialDate: sync.today) }
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        switch selectedTab {
-        case .home:
-            NavigationStack { HomeView(refreshToken: homeRefreshToken, initialDate: sync.today) }
-        case .library:
+            .tabItem { Label(MainTab.training.label, systemImage: MainTab.training.icon) }.tag(MainTab.training)
             NavigationStack { FoodLibraryView() }
-        case .fab:
-            EmptyView()
-        case .progress:
+                .tabItem { Label(MainTab.library.label, systemImage: MainTab.library.icon) }.tag(MainTab.library)
             NavigationStack { ProgressView_(initialDate: sync.today) }
-        case .profile:
+                .tabItem { Label(MainTab.progress.label, systemImage: MainTab.progress.icon) }.tag(MainTab.progress)
             NavigationStack { ProfileView() }
+                .tabItem { Label(MainTab.profile.label, systemImage: MainTab.profile.icon) }.tag(MainTab.profile)
         }
-    }
-
-    private func refreshHome() {
-        homeRefreshToken += 1
-    }
-
-    @ViewBuilder
-    private var fabOverlay: some View {
-        if showFABMenu {
-            FABMenuOverlay(
-                onLogActivity: { showFABMenu = false; showLogActivity = true },
-                onLogFood: { showFABMenu = false; showLogFood = true },
-                onLogSleep: { showFABMenu = false; showLogSleep = true },
-                onDismiss: { showFABMenu = false }
-            )
-        }
+        .tint(Color.exPrimary)
     }
 }

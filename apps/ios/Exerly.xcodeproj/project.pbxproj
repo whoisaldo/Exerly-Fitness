@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2B6F531BC1D8FC2035C04; };
+        8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B345BC97A55F08A3888B7E; };
+        C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19ABFEE6B9699ED88D168606; };
+        D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 197BDBF6142E2E0747117C81; };
+        F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7429876DBAB79E4AFF6411C; };
+        E20000000000000000000001 /* ExerlyCore in Frameworks */ = {isa = PBXBuildFile; productRef = E20000000000000000000002 /* ExerlyCore */; };
+        E20000000000000000000003 /* ExerlyCore in Test Frameworks */ = {isa = PBXBuildFile; productRef = E20000000000000000000002 /* ExerlyCore */; };
+        E20000000000000000000004 /* TrainingPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000005; };
 		E10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* PrivacyInfo.xcprivacy */; };
 		C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */; };
 		011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */; };
@@ -17,7 +25,6 @@
 		090F353EBA5463A7D8C833E4 /* Features/Welcome/WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE56724F6A27B1526FF91AF /* Features/Welcome/WelcomeView.swift */; };
 		0965E75A6ACBC768840B0291 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F4332E01185D898C4AF96654 /* Assets.xcassets */; };
 		0B86B118DCE41A3081A4BF34 /* Components/GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A13925BF048FB7DFE2A07C /* Components/GlassCard.swift */; };
-		10B1B66554C7527CE9A6C11D /* Navigation/FABMenuOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */; };
 		14A35F444B9D292D6866FD00 /* Features/Home/HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCCC3942EB1A138CC384579 /* Features/Home/HomeView.swift */; };
 		150D18E96FDAE78D736202FA /* Features/Onboarding/Steps/Step1Name.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B5CEA92C611B0263C51A76 /* Features/Onboarding/Steps/Step1Name.swift */; };
 		2683AC3C1DF8B691EBB36F67 /* Core/Auth/KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE204208CF7583133FF2F41 /* Core/Auth/KeychainService.swift */; };
@@ -48,7 +55,6 @@
 		805D2815B535322F18C940FD /* Core/Auth/AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CBD55885BB5018BAE023B7D /* Core/Auth/AuthViewModel.swift */; };
 		828822D350834FD5235AE326 /* Features/Progress/AchievementsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B20F5D973CA0B659035673E /* Features/Progress/AchievementsTab.swift */; };
 		88A8A19B5836F9F67480D8F7 /* Features/Home/HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F593CE01A203AFDE4DF045 /* Features/Home/HomeViewModel.swift */; };
-		9AEA98CAA76582ECE86506AD /* Navigation/CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */; };
 		9F585C1413DCFC8870BD62CF /* Core/Network/APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F47ECDB7E4B5F3FEEF66916 /* Core/Network/APIModels.swift */; };
 		A06848D4FA879A6A4E79C636 /* Features/FoodLibrary/FoodLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32F2BDB3BF7F253A2A63D2AC /* Features/FoodLibrary/FoodLibraryView.swift */; };
 		A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D294BE7AC438C5DDD9DBBC62 /* Components/CalorieRing.swift */; };
@@ -90,6 +96,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/WorkoutHistoryView.swift; sourceTree = SOURCE_ROOT; };
+        05B345BC97A55F08A3888B7E /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingView.swift; sourceTree = SOURCE_ROOT; };
+        19ABFEE6B9699ED88D168606 /* TrainingSetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingSetEditor.swift; sourceTree = SOURCE_ROOT; };
+        197BDBF6142E2E0747117C81 /* TrainingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingPresentation.swift; sourceTree = SOURCE_ROOT; };
+        E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ActiveWorkoutView.swift; sourceTree = SOURCE_ROOT; };
+        E20000000000000000000005 /* TrainingPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/TrainingPresentationTests.swift; sourceTree = SOURCE_ROOT; };
 		E10000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E10000000000000000000003 /* Exerly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Exerly.entitlements; sourceTree = "<group>"; };
 		7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
@@ -103,7 +115,6 @@
 		269AAAD9DD12DFE876814335 /* Theme/Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		302E6CD6D833180DF4A6B6DF /* Features/Onboarding/Steps/Step0Welcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Step0Welcome.swift; sourceTree = "<group>"; };
 		30FA694E08C8D528A3B9CED3 /* Features/Onboarding/Steps/Step4Goals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Step4Goals.swift; sourceTree = "<group>"; };
-		3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		32F2BDB3BF7F253A2A63D2AC /* Features/FoodLibrary/FoodLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodLibraryView.swift; sourceTree = "<group>"; };
 		33E4A6D39208DBE8B6F66EED /* Features/CreateFood/CreateFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFoodView.swift; sourceTree = "<group>"; };
 		38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialService.swift; sourceTree = "<group>"; };
@@ -124,7 +135,6 @@
 		6B20F5D973CA0B659035673E /* Features/Progress/AchievementsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsTab.swift; sourceTree = "<group>"; };
 		6B57B03678DF5E35DF78F5DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABMenuOverlay.swift; sourceTree = "<group>"; };
 
 		84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
 		8A28468EB84B00A331DBB5C9 /* Core/Services/ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
@@ -182,10 +192,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                E20000000000000000000001 /* ExerlyCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3824914A82F455387C55860F /* ExerlyTests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		3824914A82F455387C55860F /* ExerlyTests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (E20000000000000000000003,); runOnlyForDeploymentPostprocessing = 0; };
 		ED37F0A05CB99B035ED7C53C /* ExerlyUITests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
@@ -441,8 +452,6 @@
 			isa = PBXGroup;
 			children = (
 				47057BA9619E14677AF4B3CD /* Navigation/AuthRouter.swift */,
-				3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */,
-				7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */,
 				6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */,
 				F0C93AFC5E60B76831F10378 /* Navigation/RootView.swift */,
 			);
@@ -452,6 +461,12 @@
 		BBBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
+                D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */,
+                05B345BC97A55F08A3888B7E /* TrainingView.swift */,
+                19ABFEE6B9699ED88D168606 /* TrainingSetEditor.swift */,
+                197BDBF6142E2E0747117C81 /* TrainingPresentation.swift */,
+                E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */,
+                E20000000000000000000005 /* TrainingPresentationTests.swift */,
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
 				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
 				378A3EBCD0EE468791534C6F,
@@ -535,12 +550,13 @@
 			);
 			dependencies = (
 			);
+			packageProductDependencies = (E20000000000000000000002 /* ExerlyCore */,);
 			name = Exerly;
 			productName = Exerly;
 			productReference = EEEEEEEEEEEEEEEEEEEEEEEE /* Exerly.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A0E6FA1923445D8867717BE7 /* ExerlyTests */ = { isa = PBXNativeTarget; buildConfigurationList = 987ACB7A1F516B9955C89452; buildPhases = (236AF237E7B5966EB1668889,3824914A82F455387C55860F,); buildRules = (); dependencies = (444ACBCDF6D269B7B01A11AC,); name = ExerlyTests; productName = ExerlyTests; productReference = 2F585D34A78C73A3CD1EDF06; productType = "com.apple.product-type.bundle.unit-test"; };
+		A0E6FA1923445D8867717BE7 /* ExerlyTests */ = { isa = PBXNativeTarget; buildConfigurationList = 987ACB7A1F516B9955C89452; buildPhases = (236AF237E7B5966EB1668889,3824914A82F455387C55860F,); buildRules = (); dependencies = (444ACBCDF6D269B7B01A11AC,); packageProductDependencies = (E20000000000000000000002,); name = ExerlyTests; productName = ExerlyTests; productReference = 2F585D34A78C73A3CD1EDF06; productType = "com.apple.product-type.bundle.unit-test"; };
 		30D174250A13000CCCB5A9A1 /* ExerlyUITests */ = { isa = PBXNativeTarget; buildConfigurationList = 938052C86D8238B2307BB2E1; buildPhases = (B3EBD2453DCEFACEA20751A5,ED37F0A05CB99B035ED7C53C,); buildRules = (); dependencies = (4F9BBD54638BBBA531CD0335,); name = ExerlyUITests; productName = ExerlyUITests; productReference = B1BFF9D732518F4174D0EB25; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
 
@@ -569,6 +585,7 @@
 			);
 			mainGroup = BBBBBBBBBBBBBBBBBBBBBBBB;
 			productRefGroup = CCCCCCCCCCCCCCCCCCCCCCCC /* Products */;
+			packageReferences = (E20000000000000000000006 /* XCLocalSwiftPackageReference ExerlyCore */,);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -596,6 +613,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */,
+                8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */,
+                C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */,
+                D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */,
+                F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */,
 				016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */,
 				A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */,
 				5C6B7743D73F3AED57034C19 /* Components/ConfettiView.swift in Sources */,
@@ -663,8 +685,6 @@
 				AE768DB5321B52A4A6140B24 /* Features/Social/SocialView.swift in Sources */,
 				090F353EBA5463A7D8C833E4 /* Features/Welcome/WelcomeView.swift in Sources */,
 				07FA0CE1569838FE41BC137D /* Navigation/AuthRouter.swift in Sources */,
-				9AEA98CAA76582ECE86506AD /* Navigation/CustomTabBar.swift in Sources */,
-				10B1B66554C7527CE9A6C11D /* Navigation/FABMenuOverlay.swift in Sources */,
 				45753D8549822D5F17F1FF8B /* Navigation/MainTabView.swift in Sources */,
 				2DB3B8BDB97A2646D9A14C74 /* Navigation/RootView.swift in Sources */,
 				0398AD8177D2F7C6E7F392A9 /* Theme/AnimatedOrbBackground.swift in Sources */,
@@ -674,9 +694,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCLocalSwiftPackageReference section */
+        E20000000000000000000006 /* XCLocalSwiftPackageReference ExerlyCore */ = {isa = XCLocalSwiftPackageReference; relativePath = ExerlyCore; };
+/* End XCLocalSwiftPackageReference section */
+/* Begin XCSwiftPackageProductDependency section */
+        E20000000000000000000002 /* ExerlyCore */ = {isa = XCSwiftPackageProductDependency; productName = ExerlyCore; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		111111111111111111111111 /* Debug */ = {

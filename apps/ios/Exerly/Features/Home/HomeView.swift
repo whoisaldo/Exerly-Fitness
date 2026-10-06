@@ -223,7 +223,6 @@ struct HomeView: View {
                 .labelsHidden()
                 .datePickerStyle(.compact)
                 .tint(.exPrimary)
-                .colorScheme(.dark)
                 .font(.exCaption)
                 if !isToday {
                     Button("Today") { selectedDate = sync.today }.frame(minHeight: 44)
