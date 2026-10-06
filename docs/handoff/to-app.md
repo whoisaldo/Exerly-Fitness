@@ -1288,3 +1288,23 @@ and design 017.
   the program with `weeklySets`, `targets` and `shortfalls` by muscle.
 - **Validation.** It throws `.invalid` with text to show for days outside
   2–6 or minutes outside 30–150.
+
+## 2026-10-06: Import Hevy and Strong history (I13), and backfill (T20)
+
+Status: open (contract published). See the README section "Importing from
+Hevy and Strong" and design 018.
+
+- **Read** the file the person picks (a document picker; both apps export a
+  CSV), then call
+  `WorkoutImport.parse(text, timeZone: .current, unit: preferredUnit, library: training.library)`.
+- **Preview** the number of workouts and their dates, `unmatched` names with
+  set counts, `skipped` reasons and `assumptions`. Let the person map each
+  unmatched name with your exercise picker (or skip it), then parse again
+  with `mapping`. Map before importing: an imported workout isn't changed by
+  a later import.
+- **Import** with `training.importSessions(result.sessions)`. It returns how
+  many were new, and importing the same file twice adds nothing. Sync
+  uploads them as usual.
+- **Backfill.** `importSessions([session])` also adds a past workout built
+  in a "log a past workout" screen, as long as it is finished.
+- **Errors.** `.unrecognized(headers)`: "This isn't a Hevy or Strong export."
