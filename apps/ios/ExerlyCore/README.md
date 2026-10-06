@@ -481,6 +481,11 @@ trend weight and expenditure.
   which gives totals, totals per meal and `energyShares`.
   `contributors(of:on:)` ranks the entries behind one nutrient.
 - Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
+- Shortcuts: `ShortcutsJSON` reads MacroFactor's "Log by JSON" food format and
+  writes its today summary, from the public spec at
+  github.com/MacroFactor/apple-shortcuts. `logShortcutFood(_:on:meal:at:)` logs
+  one; `todaySummaryJSON(on:)` gives `consumed` and `remaining` (minimum,
+  target, maximum) by MacroFactor's nutrient names.
 - Apple Health: `importHealthWeights(_:deleted:timeZone:)` merges `HealthWeight`
   samples as one unit and returns what it added, updated, removed and skipped.
   Each weigh-in keeps its sample's UUID, so a repeat import, on any device,

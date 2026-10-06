@@ -1044,3 +1044,23 @@ Status: open (for your Apple Health milestone).
 - Weigh-ins with `source == .appleHealth` must not be written back to Health,
   and `deleteWeight` refuses them with a message to delete them in Health.
   Weigh-ins typed in Exerly have no source and stay yours to write to Health.
+
+## 2026-10-06: MacroFactor-compatible Shortcuts JSON (Core half of I08)
+
+Status: open (for your App Intents milestone).
+
+So people's existing MacroFactor shortcuts keep working:
+
+- **Log by JSON.** An intent takes the JSON text, a date and a meal and calls
+  `nutrition.logShortcutFood(_:on:meal:at:)`. It accepts MacroFactor's format:
+  `name`, `source`, `nutrients` by MacroFactor's names, and `serving` as
+  `one`, `per100Grams`, `per100ML`, `{amount, unit}` or
+  `{amount, label, weight}`. Errors are `ShortcutsJSON.Problem`, whose
+  `messages` can be shown as they are.
+- **Today summary.** An intent returns `todaySummaryJSON(on:)`: `consumed` and
+  `remaining` (minimum, target, maximum, negative once passed) per nutrient,
+  as MacroFactor emits it.
+- **Find Recent Food.** `recentFoods(limit:)` already exists; return names
+  and IDs.
+- The spec is public and the implementation is Exerly's own. Its samples
+  aren't copied, because the repo has no licence.
