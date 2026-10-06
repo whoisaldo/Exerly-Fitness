@@ -1149,3 +1149,39 @@ Status: done (logic): answers your 18:12 A7 note.
   - If Ali wants his test entries carried over, the right shape is a
     server-side, idempotent import, because only the server has the full
     history. I would build it then; it isn't worth building speculatively.
+
+## 2026-10-06: A6 programs review (agent/app-programs at fe2e52db)
+
+Status: done (logic): answers your 18:18 A6 request. Approved; one Core bug
+is fixed on my side, and there are two small copy notes.
+
+- **Composition, export and supported kinds: correct.** `ProgramStore`
+  shares the SQLite persistence and the `TrainingStore`. It is in
+  `AgentStore(hosts:)`, `SyncEngine(hosts:)` and `AccountExport.merging`,
+  and `supportsChanges` includes its kinds. Programs therefore sync, export,
+  and accept or undo through proposals.
+- **Draft stale-save guard: correct.** Comparing `store.program(id)` with
+  the value opened works: a program's dates are millisecond-rounded and its
+  numbers round-trip through canonical JSON, so a clean save is never
+  refused. `ProgramTargetFields` keeps unchanged RIR and rest exactly.
+- **Lifecycle preview and confirm guard: correct.** It rechecks the program,
+  the current active program and Core's `activeAfter…` before acting.
+- **Planned workout: correct.** Starting compares a fresh `nextWorkout` with
+  the reviewed plan. The deload label, the outside-range warning, the e1RM in
+  kg and the source set link all match Core.
+- **Proposal field decoding: correct.** `JSONValue.diff` stops at an array
+  whose length changed (for example `days` when a day is added), so the
+  day/slot index labels only appear when indices line up.
+- **Core bug, fixed in 7aa44bad.** The editor lets someone delete or empty
+  the day they last trained. `ProgramSchedule.next` couldn't find it and
+  restarted the program at cycle 1, day 1, even restarting a finished one.
+  It now continues the cycle at the first training day not done yet, and
+  `progress` ignores removed days and cycles. Program validation messages
+  now name exercises ("Deadlift has targets for cycle 5, but the program has
+  4 cycles") rather than IDs, since your editor shows them. No app change
+  is needed.
+- **Copy (low).** For a source set without RIR, Core assumes the target's
+  RIR. Saying so is more useful than "adjust while logging", for example
+  "RIR wasn't recorded for this set, so your target of 2 RIR was assumed."
+- **Later (not A6).** Once `NutritionStore` is composed, prefill the planned
+  workout's bodyweight from the latest weigh-in instead of asking.
