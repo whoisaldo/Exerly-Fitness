@@ -178,4 +178,31 @@ import Testing
         #expect(EntryErrorDetector.findings(in: three, history: TrainingHistory(sessions: [three], library: .bundled))
             .first?.confidence == .medium)
     }
+
+    @Test func theEvidenceSaysWhichSetsTheBandCameFrom() throws {
+        let first = Fixture.session([("barbell-bench-press", [set(5, .kg(100)), set(5, .kg(100)), set(5, .kg(1000))])])
+        let alone = try #require(try EntryErrorDetector.proposal(for: first, history: TrainingHistory(sessions: [first], library: .bundled),
+                                                                  existing: [], now: Self.monday))
+        #expect(alone.evidence[0].claim.hasPrefix("Your other working sets of "))
+        #expect(alone.evidence[0].claim.contains(" in this workout were 55–135 kg."))
+        // One earlier session is too few to count, so the band still comes from this workout alone.
+        let earlier = Fixture.session(days: -7, [("barbell-bench-press", [set(5, .kg(100)), set(5, .kg(100))])])
+        let second = try #require(try EntryErrorDetector.proposal(
+            for: first, history: TrainingHistory(sessions: [earlier, first], library: .bundled), existing: [], now: Self.monday))
+        #expect(second.evidence[0].claim.hasPrefix("Your other working sets of "))
+        let (log, today) = history([set(5, .kg(105)), set(5, .kg(1050)), set(8, .kg(85))])
+        let later = try #require(try EntryErrorDetector.proposal(for: today, history: log, existing: [], now: Self.monday))
+        #expect(later.evidence[0].claim.contains(" in this workout and your last 4 sessions were "))
+    }
+
+    @Test func aSessionsCheckHasTheSameIDOnEveryDevice() throws {
+        let (log, today) = history([set(5, .kg(105)), set(5, .kg(1050)), set(8, .kg(85))])
+        let one = try #require(try EntryErrorDetector.proposal(for: today, history: log, existing: [], now: Self.monday))
+        let again = try #require(try EntryErrorDetector.proposal(for: today, history: log, existing: [],
+                                                                  now: Self.monday.addingTimeInterval(60)))
+        #expect(one.id == again.id)
+        #expect(one.id == EntryErrorDetector.proposalID(for: today.id))
+        #expect(one.id != EntryErrorDetector.proposalID(for: UUID()))
+        #expect(Array(one.id.uuidString)[14] == "5", "A name-based UUID")
+    }
 }

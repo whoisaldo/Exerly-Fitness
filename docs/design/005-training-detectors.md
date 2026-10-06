@@ -32,12 +32,16 @@ Each flag becomes a `Proposal` from the built-in author with:
 - confidence from how cleanly the correction lands;
 - a falsifier such as "You really lifted 1000 kg."
 
-There is at most one proposal per session. It is never made for an exercise
-with fewer than three earlier sessions.
+There is at most one proposal per session. Its ID is a name-based UUID from
+the session's, so devices that check the same session before syncing file the
+same proposal. Sync keeps one, and a decision made on any device wins over a
+pending copy, so a rejected check stays rejected.
 
 **How a set is judged.** The reference is the exercise's working sets in its last
 eight earlier sessions (it needs three), plus the session's other working sets.
-That lets a first session with three consistent sets be judged too. It is
+With fewer than three earlier sessions, only the session's other working sets
+count, which lets a first session with three consistent sets be judged too;
+the evidence then says the band came from this workout. The reference is
 summarised robustly:
 
 - the lower median load;

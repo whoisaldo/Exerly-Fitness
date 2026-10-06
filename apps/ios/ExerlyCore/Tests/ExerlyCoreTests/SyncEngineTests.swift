@@ -440,4 +440,64 @@ final class Device {
         #expect(phone.training.history.sessions == [session])
         #expect(phone.agent.auditLog.last?.targets == [DataRef(kind: "workout_session", id: sessionID)])
     }
+
+    /// Logs a finished first bench workout and syncs it.
+    func logTypo(on device: AgentDevice) async throws {
+        try device.training.startSession(name: "First", bodyweight: nil)
+        let bench = try device.training.addExercise("barbell-bench-press")
+        for (index, kilograms) in [100.0, 100, 1000].enumerated() {
+            let id = try index == 0 ? device.training.activeSession!.exercises[0].sets[0].id : device.training.addSet(to: bench)
+            var set = device.training.activeSession!.set(id)!.set
+            set.primary = Effort(reps: 5, load: .kg(kilograms))
+            try device.training.updateSet(set, in: bench)
+            try device.training.completeSet(id)
+        }
+        try device.training.finishSession()
+        try await device.engine.sync()
+    }
+
+    /// Runs the entry check on the device's only workout and files what it finds.
+    func fileEntryCheck(on device: AgentDevice, minutes: Double) throws {
+        let session = try #require(device.training.history.sessions.first)
+        let proposal = try #require(try EntryErrorDetector.proposal(for: session, history: device.training.history,
+                                                                   existing: device.agent.proposals,
+                                                                   now: Fixture.instant(minutes: minutes)))
+        try device.agent.file(proposal)
+    }
+
+    @Test func anEntryCheckFiledOnTwoDevicesBeforeSyncingIsOneProposal() async throws {
+        let server = FakeDocumentServer()
+        let phone = try AgentDevice(server: server)
+        let tablet = try AgentDevice(server: server)
+        try await logTypo(on: phone)
+        try await tablet.engine.sync()
+
+        try fileEntryCheck(on: phone, minutes: 40)
+        try fileEntryCheck(on: tablet, minutes: 41)
+        try await phone.engine.sync()
+        try await tablet.engine.sync()
+        try await phone.engine.sync()
+        #expect(phone.agent.proposals.count == 1)
+        #expect(phone.agent.proposals == tablet.agent.proposals)
+    }
+
+    @Test func aRejectedEntryCheckStaysRejectedWhenAnotherDeviceFilesIt() async throws {
+        let server = FakeDocumentServer()
+        let phone = try AgentDevice(server: server)
+        let tablet = try AgentDevice(server: server)
+        try await logTypo(on: phone)
+        try await tablet.engine.sync()
+
+        try fileEntryCheck(on: phone, minutes: 40)
+        let id = try #require(phone.agent.proposals.first).id
+        try phone.agent.reject(id)
+        try await phone.engine.sync()
+        // The tablet hasn't seen the proposal, so it files the same check.
+        try fileEntryCheck(on: tablet, minutes: 41)
+        try await tablet.engine.sync()
+        try await phone.engine.sync()
+        #expect(tablet.agent.proposals.map(\.status) == [.rejected])
+        #expect(phone.agent.proposals.map(\.status) == [.rejected])
+        #expect(phone.training.history.sessions[0].exercises[0].sets[2].primary.load == .kg(1000))
+    }
 }

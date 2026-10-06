@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Finds likely typing mistakes in a finished session and proposes the fix:
@@ -5,10 +6,12 @@ import Foundation
 /// stray digit in the reps. See docs/design/005-training-detectors.md, which
 /// records the measured precision and recall.
 ///
-/// A set is only judged against the same exercise's earlier sessions, and only
-/// when there are at least `minimumHistory` of them. A correction is proposed
-/// only when it lands inside the typical band, so a genuine personal record
-/// or a light technique day isn't mistaken for a typo.
+/// A set is judged against the same exercise's working sets in at least
+/// `minimumHistory` earlier sessions and the session's other working sets, or,
+/// before there is that much history, against at least two other working sets
+/// in the same session. A correction is proposed only when it lands inside the
+/// typical band, so a genuine personal record or a light technique day isn't
+/// mistaken for a typo.
 public enum EntryErrorDetector {
     public static let author = AgentIdentity(kind: .builtIn, name: "Exerly entry check")
     public static let minimumHistory = 3
@@ -34,6 +37,8 @@ public enum EntryErrorDetector {
         public var typicalLoad: ClosedRange<Double>
         /// Reps this load allows at the person's recent strength, for a reps finding.
         public var typicalReps: Int?
+        /// Earlier sessions the typical band came from; 0 when it came only from
+        /// the session's other working sets.
         public var earlierSessions: Int
         public var confidence: Confidence
     }
@@ -74,7 +79,8 @@ public enum EntryErrorDetector {
             for set in working {
                 let siblings = working.filter { $0.id != set.id }.map { ($0, session.bodyweight) }
                 guard earlierSets.count >= minimumHistory || siblings.count >= 2,
-                      let reference = reference(earlierSets + siblings, exercise: exercise, earlierSessions: sessionIDs.count),
+                      let reference = reference(earlierSets + siblings, exercise: exercise,
+                                                earlierSessions: earlierSets.isEmpty ? 0 : recent.count),
                       let finding = check(set, exercise: exercise, bodyweight: session.bodyweight, reference: reference)
                 else { continue }
                 findings.append(finding)
@@ -103,7 +109,9 @@ public enum EntryErrorDetector {
 
     /// One proposal correcting every finding in the session, or nil. Never
     /// proposes again for a session this detector already proposed on, whatever
-    /// the person decided.
+    /// the person decided. Its ID comes from the session's, so devices that
+    /// check the same session before syncing file the same proposal, and sync
+    /// keeps one, along with any decision made on it.
     public static func proposal(for session: WorkoutSession, history: TrainingHistory, existing: [Proposal],
                                 now: Date) throws -> Proposal? {
         guard session.isFinished else { return nil }
@@ -123,12 +131,15 @@ public enum EntryErrorDetector {
         let evidence = found.map { finding -> Evidence in
             let name = library.exercise(finding.exerciseID)?.name ?? finding.exerciseID.rawValue
             let band = "\(format(finding.typicalLoad.lowerBound))–\(format(finding.typicalLoad.upperBound)) kg"
+            let sets = finding.earlierSessions == 0
+                ? "other working sets of \(name) in this workout"
+                : "working sets of \(name) in this workout and your last \(finding.earlierSessions) sessions"
             let claim: String = switch finding.kind {
             case .loadDigit, .unitSwap:
-                "Your working sets of \(name) in your last \(min(finding.earlierSessions, window)) sessions were \(band). "
+                "Your \(sets) were \(band). "
                     + "\(describe(finding.logged)) is far outside that; \(describe(finding.corrected)) is inside it."
             case .repsDigit:
-                "At your recent strength, \(describe(finding.logged)) allows about \(finding.typicalReps ?? 0) reps of \(name). "
+                "At the strength your \(sets) show, \(describe(finding.logged)) allows about \(finding.typicalReps ?? 0) reps. "
                     + "\(finding.logged.reps ?? 0) would be far beyond that; \(finding.corrected.reps ?? 0) is not."
             }
             return Evidence(claim: claim, level: .personalData,
@@ -146,12 +157,24 @@ public enum EntryErrorDetector {
         let falsifier = found.count == 1
             ? "You really did \(describe(found[0].logged, withReps: true))."
             : "The sets are right as logged."
-        return Proposal(createdAt: now.roundedToMilliseconds, author: author, title: title,
+        return Proposal(id: proposalID(for: session.id), createdAt: now.roundedToMilliseconds, author: author, title: title,
                         summary: "A quick check of \(session.name.isEmpty ? "this workout" : session.name) found numbers that look like typing slips.",
                         changes: [try ProposedChange(kind: "workout_session", id: sessionID, before: session, after: corrected)],
                         evidence: evidence,
                         confidence: found.map(\.confidence).contains(.medium) ? .medium : .high,
                         falsifier: falsifier)
+    }
+
+    static let namespace = UUID(uuidString: "9DDD2C9C-1E91-46F7-800A-D974DD0D0F29")!
+
+    /// A name-based (version 5) UUID from this detector's namespace and the session's ID.
+    static func proposalID(for session: UUID) -> UUID {
+        var data = withUnsafeBytes(of: namespace.uuid) { Data($0) }
+        data.append(Data(session.uuidString.utf8))
+        var bytes = Array(Insecure.SHA1.hash(data: data).prefix(16))
+        bytes[6] = bytes[6] & 0x0F | 0x50
+        bytes[8] = bytes[8] & 0x3F | 0x80
+        return bytes.withUnsafeBytes { UUID(uuid: $0.loadUnaligned(as: uuid_t.self)) }
     }
 
     // MARK: Checks
