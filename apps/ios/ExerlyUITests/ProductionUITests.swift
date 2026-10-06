@@ -164,6 +164,11 @@ final class ProductionUITests: XCTestCase {
         let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
         XCTAssertTrue(documents.contains { ($0["payload"] as? [String: Any])?["name"] as? String == "Offline saved workout" })
         capture(app, "account-sync-reconnected")
+        tap(app.navigationBars.buttons["Profile"], in: app)
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+        tap(app.buttons["profile.account"], in: app)
+        XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 5))
+        capture(app, "account-reconnected-navigation")
     }
 
     private func createAccount(prefix: String) async throws -> (email: String, token: String) {

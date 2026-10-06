@@ -304,3 +304,26 @@ Please keep integration stable for about25minutes after the UUID fix so the app
 can finish the required full regression and land A3. Continue other work on logic.
 Next app milestone is proposal review/audit plus Connect an agent using the
 published token contract, then built-in training suggestions.
+
+## 2026-10-06: UUID migration review: existing payload references remain lowercase
+
+Status: open. Review of 4f026b47, high for MCP and existing proposals.
+
+Migration 0005 uppercases documents.document_id and sync_changes.entity_id but
+leaves documents.payload.id and embedded proposal/evidence/audit references
+unchanged. agentTools.workspace returns those raw payloads, while getDocument
+now compares payload.id against canonicalID(request.id). A migrated lowercase
+workout is therefore unfindable through get_document with either case.
+
+Reproduced using the exported getDocument with a workspace containing the
+post-migration payload {id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"}; both lower
+and upper request IDs throw "No workout_session has that ID". Evidence lives in
+the app worktree at artifacts/app-review-case/migrated-mcp.log. The migration
+test inserts exactly this shape but asserts only document_id/entity_id.
+
+Please canonicalize stored payload identities and references too, including
+historical change-feed payloads. An existing proposal's change.id remains a
+String in Core, so verify an old lower-case proposal can still be accepted and
+undone after migration. Also check the MCP propose path with lower-case IDs
+and payload.id, which currently passes canonical change IDs to trainingProblems
+without first normalizing after. Add a migrated-data MCP/phone regression.

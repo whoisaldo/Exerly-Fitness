@@ -24,27 +24,30 @@ struct RootView: View {
     }
 
     private var accountContent: some View {
-        Group {
-            switch authVM.authState {
-            case .loading:
-                LoadingStateView(message: "Starting Exerly...")
-            case .connectionFailed:
-                VStack(spacing: 16) {
-                    Text("Connection unavailable").font(.title2)
-                    Text(authVM.error ?? "Your session is saved. Try connecting again.")
-                        .multilineTextAlignment(.center)
-                    Button("Try again") { Task { await authVM.checkAuth() } }
-                        .buttonStyle(.borderedProminent)
-                    Button("Sign out") { Task { await account.signOut(auth: authVM) } }
-                }.padding()
-            case .unauthenticated:
-                AuthRouter()
-            case .onboarding:
-                OnboardingWizard().id(authVM.currentUser?.id)
-            case .authenticated:
-                if sync.isConfigured(for: authVM.currentUser?.id) {
-                    MainTabView().id(authVM.currentUser?.id)
-                } else { LoadingStateView(message: "Opening saved entries…") }
+        VStack(spacing: 0) {
+            accountNotices
+            Group {
+                switch authVM.authState {
+                case .loading:
+                    LoadingStateView(message: "Starting Exerly...")
+                case .connectionFailed:
+                    VStack(spacing: 16) {
+                        Text("Connection unavailable").font(.title2)
+                        Text(authVM.error ?? "Your session is saved. Try connecting again.")
+                            .multilineTextAlignment(.center)
+                        Button("Try again") { Task { await authVM.checkAuth() } }
+                            .buttonStyle(.borderedProminent)
+                        Button("Sign out") { Task { await account.signOut(auth: authVM) } }
+                    }.padding()
+                case .unauthenticated:
+                    AuthRouter()
+                case .onboarding:
+                    OnboardingWizard().id(authVM.currentUser?.id)
+                case .authenticated:
+                    if sync.isConfigured(for: authVM.currentUser?.id) {
+                        MainTabView().id(authVM.currentUser?.id)
+                    } else { LoadingStateView(message: "Opening saved entries…") }
+                }
             }
         }
         .animation(.easeOut(duration: 0.3), value: authVM.authState == .authenticated)
@@ -86,20 +89,22 @@ struct RootView: View {
                 Task { await NotificationService.shared.refresh(accountID: authVM.authState == .authenticated ? authVM.currentUser?.id : nil) }
             }
         }
-        .safeAreaInset(edge: .top) {
-            if let message = account.cleanupError {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(message).font(.callout)
-                    Button("Retry cleanup") { Task { await account.retryCleanup(auth: authVM) } }
-                }.padding().frame(maxWidth: .infinity).background(.regularMaterial)
-            }
-            if authVM.isOffline && authVM.currentUser != nil {
-                HStack {
-                    Image(systemName: "clock.arrow.circlepath")
-                    Text("Showing saved account details.").font(.caption)
-                    Button("Retry") { Task { await authVM.checkAuth() } }
-                }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
-            }
+    }
+
+    @ViewBuilder
+    private var accountNotices: some View {
+        if let message = account.cleanupError {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(message).font(.callout)
+                Button("Retry cleanup") { Task { await account.retryCleanup(auth: authVM) } }
+            }.padding().frame(maxWidth: .infinity).background(.regularMaterial)
+        }
+        if authVM.isOffline && authVM.currentUser != nil {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                Text("Showing saved account details.").font(.caption)
+                Button("Retry") { Task { await authVM.checkAuth() } }
+            }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
         }
     }
 }
