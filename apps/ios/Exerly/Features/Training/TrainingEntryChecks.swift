@@ -131,14 +131,9 @@ final class TrainingEntryChecks: ObservableObject {
     }
 
     nonisolated private static func detect(history: TrainingHistory, existing: [Proposal], now: Date) async throws -> [Proposal] {
-        var proposals: [Proposal] = []
-        for session in history.sessions {
-            try Task.checkCancellation()
-            if let proposal = try EntryErrorDetector.proposal(for: session, history: history,
-                                                              existing: existing, now: now) {
-                proposals.append(proposal)
-            }
-        }
+        try Task.checkCancellation()
+        let proposals = try EntryErrorDetector.proposals(in: history, existing: existing, now: now)
+        try Task.checkCancellation()
         return proposals
     }
 }

@@ -6,37 +6,39 @@ milestone. Current date 2026-10-06, updated 15:54 EDT.
 
 ## Current work and next steps
 
-2026-10-06 17:19 EDT. Done is not met. A4 is live internally as build
-2610062038, VALID and IN_BETA_TESTING, English notes verified, only Ali and only
-this build assigned. Upload succeeded 17:11. Build UUID
-c637f92f-fd07-4296-9545-60ea744fed2c. Finalizer result is
-artifacts/agents/a4-internal-release.json. A3 1942 is detached; never upload
-obsolete A4 2005.
+2026-10-06 17:25 EDT. Done is not met. A4 is live as internal 2610062038, VALID and
+IN_BETA_TESTING, Ali-only group, only assigned build, notes verified. A4 landed
+and pushed as afcbf030. Logic then landed its batch through 707c815b; A5 is
+rebased onto it. This includes M5c, corrected falling/flat summaries, program
+lifecycle previews and the recent entry-check batch API.
 
-Final A4 suite full-a4-canonical passed at 17:09, 112 hosted + 22 UI tests,
-eight optional skips, zero failures. Core 220, API 226 and device build pass.
-All four largest-type review/export variants and all captures inspected.
-Source bd6225eb on integration 69fac1e4. Landing A4 now after docs update.
+Primary agent/app contains A5. Filing-loop regression failed on three assertions
+before the fix; all ten insights passed afterward in filing-loop-green. New
+old-workout regression failed before using Core's recent batch API. Now uses
+EntryErrorDetector.proposals and explicit retry. One invalid proposal no longer
+blocks later ones or repeats automatically. Core summary is visible again.
 
-A5 remains in primary agent/app. Small-dark and large-light passed 23 hosted
-and three UI journeys each. Latest large-dark targeted UI2/UI3 runs on original
-large simulator, session 43394, fixture39203. Small-light UI1 from scroll and
-UI2 from off-final pass. Need updated UI3 captures after changes, inspect every
-final named capture, then full suite/device and internal release.
+Final focused runs are active: small-light-canonical/session9381, 11 insights
+and UI3, fixture39206; large-light-canonical/session19439, UI3, fixture39207.
+Need final dark UI3 on both sizes after Core wording change, then inspect all
+final captures. Existing normal UI1/2/3 and all20 images passed/inspected.
+Largest UI1/2 pass across small-light-scroll/off-final, small-dark, large-light,
+large-dark-scroll/final. UI1 captures inspected on both dark sizes and SElight;
+SElight off-final4 inspected; smalldark8 entry captures inspected. Large light
+entry captures still need inspection. Ignore superseded observation images.
 
-Logic published fixes 0b3126ea (falling-lift wording), e09b7ac6 (program lifecycle
-preview) and 5fe8a435 (recent entry checks). Adopt into the appropriate milestone.
-A5 medium review: continue filing later proposals after one fails, retain visible
-error and explicit retry. Update tests before releasing. Logic still holds
-integration until A4 lands; inform it when merged.
+Starting final full native suite on OriginalLarge7189, fresh fixture39208,
+artifacts/insights/full-a5-canonical. Core/API/device checks run alongside it.
+Keep primary source frozen during the full suite. New A6 development is in
+Exerly-Fitness-app-programs only. Logic asked to hold integration707c815b.
 
-A6 isolated worktree Exerly-Fitness-app-programs, branch agent/app-programs,
-f74a3d9b. ProgramStore composition and six real-store draft/plan tests pass.
-New TrainingProgramEditor.swift is uncommitted and unregistered; next wire list,
-lifecycle confirmations using Core preview, next-workout review/start and UI tests.
-No network or domain maths in screens. Preserve original purple/pink theme.
+A6 branch agent/app-programs: f74a3d9b composition/draft,463579f9 exact adopted
+lifecycle preview. Six hosted tests passed; new editor compiles for device.
+Uncommitted editor and Programs list; list registration and next-workout preview
+remain, then real UI journeys, program proposal review, four AX variants and
+full release gates. Rebase A6 onto finished A5 before its final suite.
 
-Continue A5, A6 and the rest of parity. Do not stop at a milestone.
+Continue A5, A6 and all remaining parity. Never stop at a milestone.
 
 ## A3 final evidence and release
 

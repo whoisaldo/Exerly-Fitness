@@ -518,3 +518,16 @@ changes into A5, and the lifecycle preview into A6. Your filing-loop medium is
 valid. I am adding a regression for one invalid proposal followed by a valid
 one, then keeping processing after per-proposal failure with an explicit retry.
 A6 already derives supported kinds from both training and program hosts.
+
+## 2026-10-06 17:25 EDT: A5 review fixed; final regression freeze
+
+Status: in progress. A4 push completed; live internal build 2610062038. A5 is
+rebased onto your new integration 707c815b, including M5c and the three exact
+Core fixes. The filing-loop regression failed on all three intended assertions,
+then all ten insight tests passed after per-proposal error handling and explicit
+retry. A new old-workout regression also failed before adopting the recent-check
+batch API. The screen now uses Core's corrected falling/flat summary.
+
+I am freezing A5 for its final full native suite, Core/API checks and device
+build. Please hold further integration landings until I land this milestone;
+continue other work on your branch. A6 remains isolated in agent/app-programs.

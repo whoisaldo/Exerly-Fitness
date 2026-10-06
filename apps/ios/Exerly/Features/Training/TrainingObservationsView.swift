@@ -53,9 +53,7 @@ struct TrainingObservationsView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(finding.title).font(.headline)
-                                if finding.kind == .stall {
-                                    Text("Review the trend in your saved workouts.").foregroundStyle(.secondary)
-                                } else { Text(finding.summary).foregroundStyle(.secondary) }
+                                Text(finding.summary).foregroundStyle(.secondary)
                             }.padding(.vertical, 4)
                         }.accessibilityIdentifier("observations.\(finding.kind.rawValue).\(finding.exerciseIDs.map(\.rawValue).joined(separator: "."))")
                     }
@@ -115,7 +113,7 @@ private struct EntryChecksSection: View {
                 .accessibilityIdentifier("observations.suggestions")
         } header: { Text("Optional checks") }
         footer: {
-            Text("Check finished workouts for likely typing mistakes on this device, including offline. Suggested corrections wait for your approval. Turning this off keeps existing suggestions and decisions. No data is sent to an AI service. This setting applies to this account on this device.")
+            Text("Check workouts finished in the last \(EntryErrorDetector.recentDays) days for likely typing mistakes on this device, including offline. Suggested corrections wait for your approval. Turning this off keeps existing suggestions and decisions. No data is sent to an AI service. This setting applies to this account on this device.")
         }
     }
 }
@@ -129,9 +127,7 @@ private struct TrainingObservationDetailView: View {
         List {
             Section {
                 Text(finding.title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                // Core's current stall summary says "hasn't moved" even for
-                // a decline. Its title and numerical evidence remain accurate.
-                if finding.kind != .stall { Text(finding.summary) }
+                Text(finding.summary)
                 Text("An observation from your log. It does not establish a cause or change your plan.")
                     .foregroundStyle(.secondary)
             }

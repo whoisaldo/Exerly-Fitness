@@ -21,6 +21,25 @@ final class TrainingInsightsTests: XCTestCase {
         await workspace.close()
     }
 
+    func testFirstUseDoesNotSuggestCorrectionsForOldWorkouts() async throws {
+        let persistence = InMemoryTrainingPersistence()
+        let training = try TrainingStore(persistence: persistence)
+        let agent = try AgentStore(persistence: persistence, hosts: [training])
+        var saved = try finishMistypedWorkout(in: training)
+        let start = Date().addingTimeInterval(-Double(EntryErrorDetector.recentDays + 2) * 86400)
+        saved.startedAt = start
+        saved.endedAt = start.addingTimeInterval(1800)
+        for index in saved.exercises[0].sets.indices {
+            saved.exercises[0].sets[index].completedAt = start.addingTimeInterval(60)
+        }
+        try training.saveSession(saved)
+        let checks = TrainingEntryChecks(training: training, agent: agent, accountID: UUID().uuidString)
+        await checks.refresh()
+        XCTAssertTrue(agent.proposals.isEmpty)
+        XCTAssertEqual(training.history.sessions, [saved])
+        XCTAssertNil(checks.error)
+    }
+
     func testRejectedEntryCheckStaysRejectedAfterOpeningTheAccountAgain() async throws {
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
