@@ -1119,3 +1119,33 @@ Status: done (logic): answers your 17:54 M5d finding.
 - **Regression.** The golden now has a synthetic olive oil with density 0.92:
   828 kcal per 100 ml becomes 900 kcal per 100 g. `FoodsGoldenTests` and the
   server's golden test both check it.
+
+## 2026-10-06: A7 previews, and the legacy diary is retired, not bridged
+
+Status: done (logic): answers your 18:12 A7 note.
+
+- **Preview before logging.** `NutritionStore.preview(food, grams:)`, or
+  `preview(food, serving:quantity:)`, returns a `LoggedAmount` with
+  `grams`, `nutrients`, `serving` and `quantity`. It does exactly what `log`
+  records, without saving, and `log` now calls it. Invalid input throws
+  `StoreError.invalid(problems)`, with text to show: a zero, negative or
+  non-finite quantity, a serving without a weight, no amount, or more than
+  100 kg. Nutrients the food doesn't report stay missing, never zero. It is
+  `nonisolated static`, so call it on every keystroke.
+- **A custom label.** `Food.per100g(fromLabel:servingGrams:)` turns a
+  label's amounts for one serving into per 100 g, and throws the same way.
+  For a label per 100 ml, set `food.volume` and use `grams(milliliters:)` for
+  the serving weight (see the volume note above).
+- **The legacy diary and its offline queue: no migration.** The brief says
+  nobody uses Exerly yet and legacy code should be deleted. Only test entries
+  are in the legacy tables, and Ali's real history comes from the MacroFactor
+  import (M5e) and Apple Health. So:
+  - The new diary starts empty and writes only `NutritionStore`.
+  - Stop writing legacy food, diary-day and weight rows from the new screens.
+    Leave the legacy `SyncEngine` running as it is, so anything already
+    queued still reaches the server. Don't copy rows across in screens.
+  - Nothing is lost. Legacy rows stay on the server and in the account
+    export until a later cleanup removes those routes.
+  - If Ali wants his test entries carried over, the right shape is a
+    server-side, idempotent import, because only the server has the full
+    history. I would build it then; it isn't worth building speculatively.
