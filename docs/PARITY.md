@@ -127,8 +127,8 @@ same values to VoiceOver. Completeness is separate from nutrient intake.
 | P06 | Apply live changes to program [MF program help][workouts-index], [Export]                     | Missing | Explicit choice for current session versus future cycles; show changed targets and retain old sessions.         | Parity                                    | None     |
 | P07 | RIR autoregulated progression [MF overload][overload]                                         | Missing | Tested pure functions propose reps/load; explain inputs, rounding, stalls and unavailable equipment.            | Parity                                    | None     |
 | P08 | Assessment, expanded rep ranges and weight matching [Export], [MF equipment][equipment]       | Missing | Exercise-specific controls affect recommendations predictably; old data unchanged.                              | Parity; exact controls export-derived     | None     |
-| A01 | Estimated 1/3/10 RM [MF exercise overview][exercise-stats]                                    | Missing | Metric/window selector, low-rep constraints, estimate label and link to source set.                             | B: transparent formula/error              | None     |
-| A02 | Volume, best set, load, reps, duration, sets [MF exercise overview][exercise-stats], [Export] | Missing | Total/best-set volume, heaviest load, total/best reps/duration and set counts match reference fixtures.         | Parity                                    | None     |
+| A01 | Estimated 1/3/10 RM [MF exercise overview][exercise-stats]                                    | Partial | Metric/window selector, low-rep constraints, estimate label and link to source set.                             | B: transparent formula/error              | A5: best estimated 1RM links to saved working sets and source workouts; 3/10RM selector pending |
+| A02 | Volume, best set, load, reps, duration, sets [MF exercise overview][exercise-stats], [Export] | Partial | Total/best-set volume, heaviest load, total/best reps/duration and set counts match reference fixtures.         | Parity                                    | A5: exercise-log best 1RM and raw completed sets; complete metric/window comparison pending |
 | A03 | Muscle sets and volume [MF muscles][muscles], [Export]                                        | Missing | All 22 export muscle groups; per-session and time series; direct/indirect contribution documented.              | B: fractional accounting with assumptions | None     |
 | A04 | Training dashboard and records [MF workouts dashboard][workouts-dashboard]                    | Missing | Compare cycles, recent records, session volume/duration; customize displayed metrics.                           | Parity                                    | None     |
 | A05 | Training frequency/calendar and levels [MF workouts dashboard][workouts-dashboard]            | Missing | Calendar and workload history; explain derived performance levels without motivational scoring.                 | Parity                                    | None     |
@@ -168,8 +168,8 @@ Their parity rows remain required. Unmeasured coverage or speed is not a shipped
 | B03 | Cold launch to logging [brief][brief]                                           | Missing | <1 s on supported physical phone with local account, measured p50/p95 over 20 cold launches; document device/OS.                     | Measured speed            | None                                                                                                            |
 | B04 | Local intelligence and AI off [brief][brief]                                    | Missing | Scanning/text use local capabilities when available; cloud is explicit opt-in; every action retains manual path.                     | Privacy/cost              | None                                                                                                            |
 | B05 | Recovery-aware training [brief][brief]                                          | Missing | Explain sleep/HRV/RHR window and missingness; core calculates suggestion; user accepts a session diff.                               | Evidence with limitations | None                                                                                                            |
-| B06 | Propose/review/accept/undo/audit [brief][brief]                                 | Partial | Program, target, meal, swap and deload proposals show diff, evidence, confidence, falsifier; safe undo after later edits.            | Agent foundation          | A4: workout/exercise diff, evidence, offline decisions, undo and audit pass; other domains follow               |
-| B07 | Weekly review, stalls and deloads [brief][brief]                                | Missing | <=3 ranked suggestions with source logs, data window, uncertainty and disconfirming conditions; no medical claims.                   | Structured agent work     | None                                                                                                            |
+| B06 | Propose/review/accept/undo/audit [brief][brief]                                 | Partial | Program, target, meal, swap and deload proposals show diff, evidence, confidence, falsifier; safe undo after later edits.            | Agent foundation          | A5: recent entry-error proposals, Off/manual path, source evidence and offline decisions; programs/meal UI follows |
+| B07 | Weekly review, stalls and deloads [brief][brief]                                | Partial | <=3 ranked suggestions with source logs, data window, uncertainty and disconfirming conditions; no medical claims.                   | Structured agent work     | A5: stall/deload observations with source logs, uncertainty and missing-data labels; ranked weekly review pending |
 | B08 | n=1 experiments [brief][brief]                                                  | Missing | Preselect baseline/test windows and metrics; freeze protocol; track adherence/confounders and results without causal overclaim.      | Optimizer tools           | None                                                                                                            |
 | B09 | Custom metrics, tags and correlations [brief][brief]                            | Missing | Typed metrics/tags, export, time-aligned plots, sample size/missingness/confounding and no causal wording.                           | Optimizer tools           | None                                                                                                            |
 | B10 | Food coverage and accuracy [brief][brief]; competitor [MF nutrition][nutrition] | Missing | Licensed FDC/OFF/FatSecret sources displayed; consented corrections; published representative benchmark with regional misses/errors. | No claim until measured   | None                                                                                                            |
@@ -299,3 +299,29 @@ Proposal decisions currently support workout and custom-exercise records.
 Programs remain inspectable only in A4; A5 adds an explicit unsupported-record
 message, and A6 wires program storage. Export includes queued legacy records
 and deletion overlays. Physical Apple authorization remains unverified.
+
+### A5 entry checks and training evidence, 2026-10-06
+
+Final source2b258b8a, based on integration707c815b. Signed build2610062144
+is VALID and IN_BETA_TESTING, only Ali and only this build assigned, with English
+notes verified. The full native
+suite in `artifacts/insights/full-a5-final.xcresult` passed123 hosted tests and
+25 UI journeys; eight optional tests skipped, zero failures. Core233/API226 and
+final device build pass in `canonical-{core,api}.log` and `final-device.log`.
+The release archive passes signing, profile, entitlements, privacy, icon and
+endpoint validation. Physical installation/Apple authorization remain unverified.
+
+Eleven insight hosted tests cover account preference isolation, cancellation,
+rejection persistence, recent-only detection and continued filing after a bad
+proposal. Real-server journeys finish a suspicious workout and reject its
+suggestion offline, verify the explicit Off/manual path after relaunch, and
+open observations through exercise logs to source workouts. Deleting the source
+records changes evidence to unavailable. No observation silently changes a log.
+
+Small/large and light/dark at largest text passed the entry, sparse-history and
+corrected metric-label journeys. All36 entry/sparse and32 metric captures were
+inspected, along with20 normal captures. The metric stacks retain their full
+height after source deletion. Result bundles and images are under
+`artifacts/insights`; final metric bundles end in `-metrics`. No physical-device,
+VoiceOver or full parity certification is claimed. Ranked weekly review, program
+proposals and nutrition proposals remain separate milestones.

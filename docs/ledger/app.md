@@ -2,49 +2,58 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-06, updated 17:42 EDT.
+milestone. Current date 2026-10-06, updated 18:29 EDT.
 
 ## Current work and next steps
 
-2026-10-06 17:42 EDT. Done is not met. Continue without ending at a milestone.
-A4 is live as internal 2610062038, VALID and IN_BETA_TESTING, Ali-only group,
-only assigned build, notes verified. A4 landed and pushed as afcbf030. Logic
-then landed through 707c815b. Primary agent/app A5 is rebased onto it and
-2db38d83 is pushed. Integration is held at 707c815b for A5 final gates.
+2026-10-06 18:29 EDT. Done is not met. Continue without ending at a milestone.
+A5 is released as internal2610062144, VALID/IN_BETA_TESTING. Only Ali and only
+this build are assigned; English test notes verified. Build ID
+cb3c7545-8736-4518-8415-0f6b424235f9. Verification:
+artifacts/insights/a5-internal-release.json.2038 was retained until2144 was ready
+and is now detached. Never upload obsolete2128.
 
-A5 adds recent entry checks, observations, exercise source logs, account-scoped
-Off control and reviewable corrections. Logic review fixes adopted: per-proposal
-filing errors do not block later checks or repeat, explicit retry, Core's 14-day
-batch detector, corrected falling/flat summaries. Eleven insight hosted tests
-pass, including two regressions that failed before their fixes. Core233/API226
-and device pass on 2db38d83; Core/API unchanged by the following layout fix.
+A5 source2b258b8a is based on integration707c815b. Full-a5-final completed18:22:
+123 hosted tests and25 UI journeys pass,8 optional skips, zero failures.
+Core233/API226/device pass. Eleven insight hosted tests include the two actual
+red/green regressions. All36 entry/sparse and32 metric largest-type captures,
+plus20 normal captures, inspected. Signed2144 archive/IPA validation and upload
+pass. PARITY/RELEASE updated. No physical install/Apple authorization claimed.
 
-Visual audit found ellipsized metric labels on large iOS26 light after deleting
-source workouts. Evidence and metric stacks now keep their full vertical size.
-small-light-metrics and large-light-metrics UI3 pass; all16 captures inspected,
-including full unavailable-metric labels. small-dark-metrics/session84537 and
-large-dark-metrics/session18106 are running; inspect their eight images each.
-All36 entry-check/sparse largest-type captures and20 normal captures inspected.
-Prior full-a5-canonical was intentionally interrupted and is NOT final evidence.
-Signed archive/IPA 2610062128 is obsolete. NEVER upload it.
+Check integration contains agent/app after this evidence commit; ff land/push
+if needed, then tell Logic its integration hold is released and the milestone
+can merge into main. No new A5 source edits are needed.
 
-Commit the layout fix, then run full-a5-final native suite on OriginalLarge7189,
-fixture39208, plus device. Make a NEW archive after this fix, upload only when
-all gates pass, finalize Ali-only internal release with helper/notes in
-artifacts/insights, update PARITY/RELEASE, ff land and push integration.
-A4 2038 stays live until replacement is IN_BETA_TESTING.
+A6 worktree Exerly-Fitness-app-programs, branch agent/app-programs,fe2e52db is
+pushed for Logic review. Programs, lifecycle, builder, planned workouts, source
+links and readable proposals implemented. iOS26 compact confirmation popover
+was replaced by a full-width scrollable sheet with always-visible Cancel.
+Sourcefdb7b865 then moves the plan heading before optional bodyweight, and
+fe2e52db captures that heading. Freeze production source while final AX runs.
 
-A6 is isolated at Exerly-Fitness-app-programs, branch agent/app-programs,
-f74a3d9b composition/draft +463579f9 exact adopted lifecycle Core preview.
-Six hosted tests pass. Uncommitted builder, Programs list/detail/lifecycle,
-planned-workout preview, Training entry points, project registration and real
-UI builder journey. Builder saved/reopened offline but next-workout sheet did
-not appear. Stopped failing builder-ready run; it is not passing UI evidence.
-Moved presentation from virtualized list section to stable TrainingView.
-builder-preview-fix/session53170 is running on ProgramsSE45D463AE, fixture39209.
-Next: fix any runtime failures, inspect program captures, readable program
-proposal diffs, lifecycle and proposal journeys, four AX variants, full gates.
-Rebase A6 onto finished A5 before final suite; do not land before A5.
+A6 nine hosted program tests and device build pass. Normal builder/lifecycle/
+proposal journeys pass;31 normal captures inspected. Largest-type lifecycle
+passes small light190s, small dark193s and large dark208s; large-light203s.
+Large-dark7 sheet captures inspected. Small-light proposal288s and small-dark
+proposal299s pass; small-light6 captures inspected. Old small builder failures
+were only the virtual second preview title; fdb fixes the test and improves the
+first-screen layout. A6 ledger/logs list current final runs. Complete image
+review, Logic review fixes, rebase onto current integration, full suites/device,
+archive/internal release and ff land before ending that milestone.
+
+A7 isolated worktree Exerly-Fitness-app-nutrition, branch agent/app-nutrition,
+based340cb895. Design015 and NutritionPresentationTests precede implementation.
+Both initial composition regressions failed as intended, then passed after
+NutritionStore joined workspace sync/agent/export/supported kinds. The expanded
+account composition suite now passes12 tests, including account separation,
+closed-workspace writes and account deletion. Source/tests/project/ledger are
+uncommitted. Its own app-owned SE39B20FBF-F0A2-4FD3-917D-A7A807851B02 and
+DerivedData a7-unit avoid interfering with A6 UI. Rebase on finished A6 later.
+
+A7 pure serving/basis-preview and legacy diary migration contracts are requested
+in Logic inbox18:12. M5d volume-to-grams finding awaits a response. Do not add
+calculation or migration code to views. Begin manual gram/custom-food drafts
+and unknown-nutrient presentation using Core. Logic owns all API/Core files.
 
 ## A3 final evidence and release
 
