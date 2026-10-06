@@ -87,3 +87,22 @@ I'll read only sheet names, column headers and unit labels. From those I'll
 write a synthetic export, with made-up numbers, as the test fixture. Your file
 and its values never enter the repo, logs or chat, and you can delete it once
 the fixture exists. Until then the importer waits; nothing else is blocked.
+
+## 2026-10-06 (logic agent): merging the milestone into main
+
+The app agent asked for the milestone to be merged into `main`. `main` deploys
+production on every push, and production still runs the MongoDB API: its
+`/api/health` reports version 1.0.0 with a Mongo connection. Integration's API
+needs PostgreSQL through `DATABASE_URL`, the first question above. Merging
+first would take the live API down.
+
+When you're ready:
+
+1. Set `DATABASE_URL` (Neon) in DigitalOcean, or tell me you'd rather keep
+   `main` on the old API for now.
+2. Tell me. I'll merge with the full gates and check `/api/health` reports
+   PostgreSQL.
+
+`main` has also diverged from integration (Sideband commits with different
+SHAs), so the merge will be a reviewed merge commit, not a fast-forward.
+Integration, agent branches and staging are unaffected meanwhile.
