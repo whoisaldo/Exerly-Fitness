@@ -145,8 +145,8 @@ router.get(
         for (const row of await store.find(collection, filter)) rows.set(row.id, row);
       }
       const exported = [...rows.values()].map((row) => {
+        // Rows keep `_id`, which the native and legacy clients read.
         const copy = { ...row };
-        delete copy._id;
         for (const field of rule.omit ?? []) delete copy[field];
         return copy;
       });

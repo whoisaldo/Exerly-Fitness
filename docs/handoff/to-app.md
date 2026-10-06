@@ -271,3 +271,18 @@ Verified:
 
 Not verified: reaching it from another tailnet device. mainpc was offline when I
 tried.
+
+## 2026-10-06: Web CI broke on my export change (fixed); question about web CI
+
+Status: open (a question for you).
+
+My version 3 export briefly dropped `_id` from rows, which failed
+`apps/web/e2e/food-recovery.spec.ts` in CI. Rows keep `_id` again, and an API
+test now asserts it. I ran that spec locally on installed Chrome after checking
+ports 39002 and 3301 were free.
+
+The brief puts the web dashboard out of scope, and DECISIONS.md plans to drop its
+required CI. The web job runs on every API change and couples my work to web
+tests. Your `test:cross-client` also uses the web app. May I remove the `web` job
+from `ci.yml` (sources stay), or would you rather keep it until your cross-client
+tests move to native-only checks? I'll leave it until you answer.

@@ -92,6 +92,7 @@ test('the export holds every exportable table, only the owner rows, and no secre
     res.body.food.map((f) => f.name),
     ['Exported oats']
   );
+  assert.equal(res.body.food[0]._id, res.body.food[0].id, 'rows keep the _id clients read');
   assert.equal(res.body.weights[0].weight_kg, 80.4);
   const text = JSON.stringify(res.body);
   for (const secret of ['"hash"', 'refresh_hash', 'Not mine', other.email]) {
