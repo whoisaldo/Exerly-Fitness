@@ -38,6 +38,14 @@ public enum OneRepMax {
         r <= 10 ? oneRepMax * (37 - r) / 36 : oneRepMax / (1 + r / 30)
     }
 
+    /// Reps to failure a load allows at an e1RM: the inverse of `estimate`.
+    /// At least 1; loads under about 40 % of the e1RM give 30 or more.
+    public static func repsToFailure(load: Double, oneRepMax: Double) -> Double {
+        guard load > 0, oneRepMax > 0 else { return 30 }
+        let brzycki = 37 - 36 * load / oneRepMax
+        return brzycki <= 10 ? max(1, brzycki) : (oneRepMax / load - 1) * 30
+    }
+
     public static func confidence(repsToFailure r: Double) -> Confidence {
         r <= 5 ? .high : r <= 10 ? .moderate : .low
     }

@@ -200,7 +200,7 @@ public enum EntryErrorDetector {
         // A stray digit in the reps: far beyond what this load allows anyone at
         // this person's strength, and normal with one digit dropped.
         guard let reps = effort.reps, reps >= 15, let oneRepMax = reference.oneRepMax else { return nil }
-        let allowed = Int(min(30, repsToFailure(load: load, oneRepMax: oneRepMax * 1.15)).rounded(.down))
+        let allowed = Int(min(30, OneRepMax.repsToFailure(load: load, oneRepMax: oneRepMax * 1.15)).rounded(.down))
         guard reps >= max(2 * allowed, allowed + 12) else { return nil }
         let digits = String(reps).compactMap(\.wholeNumberValue)
         let candidates = Set(digits.indices.map { index in
@@ -210,12 +210,6 @@ public enum EntryErrorDetector {
         var fixed = effort
         fixed.reps = best
         return finding(.repsDigit, fixed, reps: allowed, candidates.count == 1 ? confidence : .medium)
-    }
-
-    /// Reps to failure a load allows at a given e1RM: the inverse of the e1RM formula.
-    static func repsToFailure(load: Double, oneRepMax: Double) -> Double {
-        let brzycki = 37 - 36 * load / oneRepMax
-        return brzycki <= 10 ? max(1, brzycki) : (oneRepMax / load - 1) * 30
     }
 
     private static func format(_ kilograms: Double) -> String {

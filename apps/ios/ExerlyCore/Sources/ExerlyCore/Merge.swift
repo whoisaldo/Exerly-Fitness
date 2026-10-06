@@ -16,6 +16,7 @@ public enum Merge {
         merged.timeZoneID = value(base?.timeZoneID, local.timeZoneID, remote.timeZoneID)
         merged.notes = value(base?.notes, local.notes, remote.notes)
         merged.bodyweight = value(base?.bodyweight, local.bodyweight, remote.bodyweight)
+        merged.program = value(base?.program, local.program, remote.program)
         merged.exercises = list(base?.exercises, local.exercises, remote.exercises, merge: exercise)
         return merged
     }

@@ -73,6 +73,24 @@ public final class TrainingStore {
         return session
     }
 
+    /// Starts a session from a plan: each exercise with its planned sets
+    /// prefilled and not yet completed, linked to the program day.
+    @discardableResult
+    public func startSession(from plan: WorkoutPlan, bodyweight: Mass?, timeZone: TimeZone = .current) throws -> WorkoutSession {
+        guard activeSession == nil else { throw StoreError.sessionInProgress }
+        let exercises = plan.exercises.map { planned in
+            PerformedExercise(exerciseID: planned.exerciseID,
+                              sets: planned.recommendation.sets.map { PerformedSet(kind: $0.kind, efforts: [$0.effort], rir: $0.rir) },
+                              notes: planned.notes, supersetID: planned.supersetID, restOverride: planned.target.rest)
+        }
+        let session = WorkoutSession(name: plan.name, startedAt: now(), timeZone: timeZone, bodyweight: bodyweight,
+                                     exercises: exercises, program: plan.program)
+        try validated(session)
+        try persistence.save(session)
+        activeSession = session
+        return session
+    }
+
     /// Adds an exercise prefilled from its last performance.
     @discardableResult
     public func addExercise(_ exerciseID: ExerciseID, at index: Int? = nil) throws -> UUID {

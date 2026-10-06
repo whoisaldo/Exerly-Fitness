@@ -136,11 +136,13 @@ public struct WorkoutSession: Sendable, Codable, Hashable, Identifiable {
     /// Bodyweight when the session started, used for bodyweight exercises.
     public var bodyweight: Mass?
     public var exercises: [PerformedExercise]
+    /// The program day this session was started from, if any.
+    public var program: ProgramRef?
 
     public init(
         id: UUID = UUID(), name: String = "", startedAt: Date = Date(), endedAt: Date? = nil,
         timeZone: TimeZone = .current, notes: String = "", bodyweight: Mass? = nil,
-        exercises: [PerformedExercise] = []
+        exercises: [PerformedExercise] = [], program: ProgramRef? = nil
     ) {
         self.id = id
         self.name = name
@@ -150,6 +152,7 @@ public struct WorkoutSession: Sendable, Codable, Hashable, Identifiable {
         self.notes = notes
         self.bodyweight = bodyweight
         self.exercises = exercises
+        self.program = program
     }
 
     public var timeZone: TimeZone { TimeZone(identifier: timeZoneID) ?? TimeZone(identifier: "UTC")! }
