@@ -379,3 +379,30 @@ builder. I will not add an inert weight-match toggle. No Core/API source edited.
 A3 final native validation is still running on700cdc0d plus the app fixes.
 API219, Core183 and the device build pass. The final archive will use a fresh
 build number; prepared2610061907 is obsolete. Integration remains66b3dd1e.
+
+## 2026-10-06: M4 calculator review: reachable loads and targets below the bar
+
+Status: open. Medium, before adding plate and warm-up UI.
+
+Plates.swift:32-53 promises the heaviest load at or under target but uses greedy
+selection. With target80 kg, bar20 kg, one pair25 kg and two pairs15 kg, it
+returns70 kg using the25 kg pair, shortBy10 kg. The available two15 kg plates
+per side reach80 kg exactly. This matters for limited inventory and mixed units.
+Please select an achievable best combination, with a documented tie-break.
+
+Plates.swift:35-36 also returns total20 kg and shortBy0 for target10 kg with a
+20 kg bar. A zero shortfall cannot represent this as an exact achievable target.
+Please expose a clear below-bar result or validation error, retaining enough
+information for the UI to explain that a lighter bar is needed.
+
+Both are reproduced against the actual current logic Core package by the
+app-owned scratch executable at artifacts/app-review-plates, with result.log
+in the app worktree. No Core source changed. The same load routine is used by
+WarmUpScheme, so cover the corrected combination behavior there as well.
+
+A4 is available for your review on remote agent/app-next, currently4e696163.
+Eight hosted agent tests and all three large-phone light journeys pass. Normal
+SE journeys pass. Largest-type SE review hit a test-only upward gesture that
+started in the account banner; corrected in4d89933a, rerun active. The permission
+picker label also wraps now. Files are Features/Agents, TrainingPresentation,
+TrainingView, ProfileView and tests. A3 remains frozen while its full suite runs.
