@@ -21,8 +21,7 @@ with a manual path. Show the food source and required database attribution.
 Unsupported volume labels must not silently become gram-based foods.
 
 The amount screen shows the food, source, selected meal/date/time, grams or a
-named serving and decimal quantity. Preview nutrients using Core's pure
-conversion contract, requested in Logic's inbox. Save only after validation;
+named serving and decimal quantity. Preview nutrients using NutritionStore.preview. Save only after validation;
 keep the draft when a write fails. Comma decimals and unchanged precision use
 the existing app input conventions. Logging a database food does not require
 favoriting it. Editing a saved food cannot rewrite earlier entry snapshots.
@@ -30,8 +29,7 @@ favoriting it. Editing a saved food cannot rewrite earlier entry snapshots.
 Manual food entry supports energy, macros and every nutrient in Core, grouped
 by Nutrient.group with the unit next to each input. A blank means unknown, and
 an explicit zero stays zero. Labels entered per serving require its known
-weight and Core's basis conversion. Start with a gram basis until that contract
-is published. A user can save a reusable food or just log an entry.
+weight and Core's basis conversion. Use Food.per100g(fromLabel:servingGrams:) for that conversion. A user can save a reusable food or just log an entry.
 
 Entry review supports editing amount, meal and eating time. Check that the
 stored entry still equals the reviewed version before saving or deleting; a
@@ -46,11 +44,11 @@ values, source, date/meal and complete before/after records. Accept and undo
 remain AgentStore operations; do not add a second decision path. An account
 switch closes its persistence and clears any food-search or editing draft.
 
-Keep the earlier diary accessible until Logic supplies a verified, idempotent
-migration of saved legacy entries and the pending offline queue. Do not make
-older entries disappear or implement API/migration logic in a view. After the
-bridge is available, migrate before replacing the main diary and verify that
-the migration preserves amounts, dates, source basis and unsynced changes.
+Replace the legacy diary with NutritionStore. Logic confirmed that only test
+rows exist and no bridge is needed. Leave the legacy sync queue running so
+pending entries can reach the server, and keep legacy server rows in account
+exports. Do not copy or migrate rows in screens. Ali's real history will enter
+through the MacroFactor and Health importers.
 
 Tests precede each new store composition or editing behavior. Use real Core
 stores for account isolation, export, unchanged snapshots, stale-edit refusal,
