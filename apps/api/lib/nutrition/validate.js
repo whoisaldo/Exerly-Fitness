@@ -89,6 +89,18 @@ function amountsProblems(per100g, where) {
   });
 }
 
+function volumeProblems(volume, where) {
+  if (absent(volume)) return [];
+  return isObject(volume) &&
+    isNumber(volume.density) &&
+    volume.density > 0.3 &&
+    volume.density < 3 &&
+    typeof volume.assumed === 'boolean' &&
+    (absent(volume.note) || isString(volume.note))
+    ? []
+    : [`${where} needs a density between 0.3 and 3 g/ml and whether it is assumed`];
+}
+
 function snapshotProblems(food, where) {
   if (!isObject(food)) return [`${where} must be an object`];
   const problems = [];
@@ -97,7 +109,11 @@ function snapshotProblems(food, where) {
   if (!absent(food.brand) && !isString(food.brand)) problems.push(`${where}.brand must be text`);
   if (!FOOD_SOURCES.includes(food.source))
     problems.push(`${where}.source must be one of ${FOOD_SOURCES.join(', ')}`);
-  return [...problems, ...amountsProblems(food.per100g, `${where}.per100g`)];
+  return [
+    ...problems,
+    ...amountsProblems(food.per100g, `${where}.per100g`),
+    ...volumeProblems(food.volume, `${where}.volume`),
+  ];
 }
 
 function servingProblems(serving, where) {
@@ -147,20 +163,7 @@ function foodProblems(food, id) {
     problems.push('archivedAt must be an ISO 8601 instant');
   if (!absent(food.yieldGrams) && !(isNumber(food.yieldGrams) && food.yieldGrams > 0))
     problems.push('the yield must be positive');
-  if (
-    !absent(food.volume) &&
-    !(
-      isObject(food.volume) &&
-      isNumber(food.volume.density) &&
-      food.volume.density > 0.3 &&
-      food.volume.density < 3 &&
-      typeof food.volume.assumed === 'boolean' &&
-      (absent(food.volume.note) || isString(food.volume.note))
-    )
-  )
-    problems.push(
-      'the volume basis needs a density between 0.3 and 3 g/ml and whether it is assumed'
-    );
+  problems.push(...volumeProblems(food.volume, 'volume'));
   if (!absent(food.ingredients)) {
     if (!Array.isArray(food.ingredients)) problems.push('ingredients must be an array');
     else

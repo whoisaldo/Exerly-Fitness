@@ -476,7 +476,8 @@ trend weight and expenditure.
   - `saved_food`: a `Food` (custom, recipe or database), with nutrients per
     100 g, servings as gram weights, a barcode and a favourite flag;
   - `food_entry`: a `FoodEntry` on a `LocalDate` and meal, which keeps a
-    `FoodSnapshot` so editing the food later doesn't rewrite the log;
+    `FoodSnapshot` so editing the food later doesn't rewrite the log. The
+    snapshot keeps a volume-labelled food's `volume` basis too;
   - `nutrition_day`: a `NutritionDay` with a `DayStatus` (unlogged, partial,
     complete or fasting) and notes;
   - `weight_entry`: a `WeightEntry`, with optional body fat.

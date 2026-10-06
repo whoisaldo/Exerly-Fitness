@@ -53,6 +53,34 @@ import Testing
             #expect(try ExerlyJSON.decoder.decode(Food.self, from: ExerlyJSON.canonical(food)) == food)
         }
     }
+
+    @MainActor
+    @Test func aLoggedOilKeepsItsVolumeBasisAfterReopeningInRecipesAndInTheExport() throws {
+        let golden = try ExerlyJSON.decoder.decode(Golden.self, from: Data(contentsOf: Self.url))
+        let oil = try #require(golden.foods.compactMap { $0 }.last)
+        let persistence = InMemoryTrainingPersistence()
+        let nutrition = try NutritionStore(persistence: persistence, now: { Fixture.instant() })
+        // Logged straight from search, with no saved food to look up later.
+        let entry = try nutrition.log(oil, serving: oil.servings[0], on: LocalDate("2026-10-05")!, meal: "Dinner")
+        #expect(entry.food.volume == oil.volume && entry.grams == 13.8)
+        let dressing = Food.recipe(name: "Dressing", ingredients: [RecipeIngredient(food: oil.snapshot, grams: 30)])
+        try nutrition.saveFood(dressing)
+        var thick = entry
+        thick.food.volume?.density = 11
+        #expect(throws: NutritionStore.StoreError.invalid(["the density must be between 0.3 and 3 g/ml"])) {
+            try nutrition.saveEntry(thick)
+        }
+
+        let reopened = try NutritionStore(persistence: persistence)
+        #expect(reopened.entries.map(\.food.volume) == [oil.volume])
+        #expect(reopened.food(dressing.id)?.ingredients?.first?.food.volume == oil.volume)
+        let export = try AccountExport.merging(server: nil, hosts: [reopened], state: persistence, now: Fixture.instant())
+        let json = try #require(try JSONSerialization.jsonObject(with: export) as? [String: Any])
+        let documents = try #require(json["documents"] as? [[String: Any]])
+        let logged = try #require(documents.first { $0["kind"] as? String == "food_entry" }?["payload"] as? [String: Any])
+        let volume = (logged["food"] as? [String: Any])?["volume"] as? [String: Any]
+        #expect(volume?["density"] as? Double == 0.92 && volume?["note"] as? String == "Typical for oils")
+    }
 }
 
 @Suite struct FoodDatabaseAPITests {

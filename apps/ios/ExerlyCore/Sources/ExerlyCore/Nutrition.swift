@@ -23,6 +23,9 @@ public struct FoodSnapshot: Sendable, Codable, Hashable {
     public var brand: String?
     public var source: FoodSource
     public var per100g: NutrientAmounts
+    /// The food's volume basis, so a label per 100 ml and its assumed density
+    /// stay with the history.
+    public var volume: VolumeBasis?
 }
 
 public struct RecipeIngredient: Sendable, Codable, Hashable {
@@ -48,6 +51,10 @@ public struct VolumeBasis: Sendable, Codable, Hashable {
         self.density = density
         self.assumed = assumed
         self.note = note
+    }
+
+    var problems: [String] {
+        density.isFinite && density > 0.3 && density < 3 ? [] : ["the density must be between 0.3 and 3 g/ml"]
     }
 }
 
@@ -119,7 +126,7 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
     }
 
     public var snapshot: FoodSnapshot {
-        FoodSnapshot(foodID: id, name: name, brand: brand, source: source, per100g: per100g)
+        FoodSnapshot(foodID: id, name: name, brand: brand, source: source, per100g: per100g, volume: volume)
     }
 
     var problems: [String] {
@@ -133,9 +140,7 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
         if (ingredients ?? []).contains(where: { !($0.grams.isFinite && $0.grams > 0) }) {
             problems.append("each ingredient needs a positive weight")
         }
-        if let volume, !(volume.density.isFinite && volume.density > 0.3 && volume.density < 3) {
-            problems.append("the density must be between 0.3 and 3 g/ml")
-        }
+        problems += volume?.problems ?? []
         return problems
     }
 }
@@ -168,7 +173,7 @@ public struct FoodEntry: Sendable, Codable, Hashable, Identifiable {
     public var nutrients: NutrientAmounts { food.per100g.scaled(by: grams / 100) }
 
     var problems: [String] {
-        var problems = food.per100g.problems
+        var problems = food.per100g.problems + (food.volume?.problems ?? [])
         if !(grams.isFinite && grams > 0 && grams <= 100_000) { problems.append("the amount must be a positive weight") }
         if meal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || meal.count > 40 {
             problems.append("the meal needs a name up to 40 characters")

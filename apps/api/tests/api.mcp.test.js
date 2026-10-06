@@ -638,5 +638,33 @@ test('a write token saves a valid food and is refused a broken one', async () =>
     { token: writer, headers: key() }
   );
   assert.equal(dense.status, 400);
-  assert.match(dense.body.error ?? dense.body.message, /volume basis needs a density/);
+  assert.match(dense.body.error ?? dense.body.message, /volume needs a density/);
+  const entryID = '7C1A6E2B-0000-4000-8000-000000000001';
+  const entry = (density) => ({
+    id: entryID,
+    date: '2026-10-06',
+    meal: 'Dinner',
+    loggedAt: '2026-10-06T18:00:00.000Z',
+    grams: 13.8,
+    food: {
+      foodID: 'off:3000000000013',
+      name: 'Synthetic olive oil',
+      source: 'openFoodFacts',
+      per100g: { energy: 900, fat: 100 },
+      volume: { density, assumed: true, note: 'Typical for oils' },
+    },
+  });
+  const heavy = await api.put(
+    `/v1/documents/food_entry/${entryID}`,
+    { base_revision: 0, payload: entry(11.3) },
+    { token: writer, headers: key() }
+  );
+  assert.equal(heavy.status, 400);
+  assert.match(heavy.body.error ?? heavy.body.message, /food\.volume needs a density/);
+  const poured = await api.put(
+    `/v1/documents/food_entry/${entryID}`,
+    { base_revision: 0, payload: entry(0.92) },
+    { token: writer, headers: key() }
+  );
+  assert.equal(poured.status, 201, JSON.stringify(poured.body));
 });
