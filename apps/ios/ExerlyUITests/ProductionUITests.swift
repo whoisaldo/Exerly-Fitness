@@ -171,6 +171,185 @@ final class ProductionUITests: XCTestCase {
         capture(app, "account-reconnected-navigation")
     }
 
+    func testEntryCheckAfterManualFinishCanBeRejectedOfflineWithoutReturning() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "entry-check")
+        let session = try await seedTrainingWorkout(name: "Entry check workout", loads: [100, 100, 100],
+                                                   finished: false, token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.navigationBars["Entry check workout"].waitForExistence(timeout: 20))
+        try await control(["offline": true])
+        tap(app.buttons["Edit set 3, Deadlift"], in: app)
+        replace(app.textFields["training.load.0"], with: "1000", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.saveSet"], in: app)
+        tap(app.buttons["training.finish"], in: app)
+        tap(app.buttons["Save workout"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "suggestions.proposal.")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        let rowID = row.identifier
+        capture(app, "entry-check-inbox")
+        tap(row, in: app)
+        reveal(app.staticTexts["Before: 1000 kg"], in: app)
+        XCTAssertTrue(app.staticTexts["Before: 1000 kg"].exists)
+        reveal(app.staticTexts["After: 100 kg"], in: app)
+        XCTAssertTrue(app.staticTexts["After: 100 kg"].exists)
+        capture(app, "entry-check-diff")
+        let basis = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "other working sets of Deadlift in this workout")).firstMatch
+        reveal(basis, in: app)
+        XCTAssertTrue(basis.exists)
+        capture(app, "entry-check-evidence")
+        tap(app.buttons["evidence.workout.\(session)"], in: app)
+        reveal(app.staticTexts["1000 kg × 5 reps"], in: app)
+        XCTAssertTrue(app.staticTexts["1000 kg × 5 reps"].exists)
+        capture(app, "entry-check-original-workout")
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        tap(app.buttons["suggestions.reject"], in: app)
+        XCTAssertFalse(app.buttons["suggestions.accept"].exists)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        let empty = app.staticTexts["No suggestions to review"]
+        reveal(empty, in: app)
+        XCTAssertTrue(empty.exists)
+        tap(app.buttons[rowID], in: app)
+        let status = app.staticTexts["suggestions.status"]
+        reveal(status, in: app)
+        XCTAssertTrue(status.label.contains("Rejected"))
+        capture(app, "entry-check-rejected-relaunch")
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        let saved = try await request("GET", "/v1/documents/workout_session/\(session)", token: person.token)
+        let exercises = try XCTUnwrap((saved["payload"] as? [String: Any])?["exercises"] as? [[String: Any]])
+        let sets = try XCTUnwrap(exercises.first?["sets"] as? [[String: Any]])
+        let efforts = try XCTUnwrap(sets.last?["efforts"] as? [[String: Any]])
+        XCTAssertEqual((efforts.first?["load"] as? [String: Any])?["value"] as? Double, 1000)
+    }
+
+    func testEntryChecksOffKeepsManualFinishAndPersistsAcrossRelaunch() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "checks-off")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["observations.open"], in: app)
+        reveal(app.staticTexts["observations.empty"], in: app)
+        XCTAssertTrue(app.staticTexts["observations.empty"].exists)
+        capture(app, "observations-sparse")
+        let toggle = app.switches["observations.entryChecks"]
+        reveal(toggle, in: app)
+        // iOS 18 exposes the label and switch as one wide accessibility row.
+        // Tap the actual switch at its trailing edge.
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+        capture(app, "entry-checks-off")
+        _ = try await seedTrainingWorkout(name: "Manual with checks off", loads: [100, 100, 1000],
+                                          finished: false, token: person.token)
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.navigationBars["Manual with checks off"].waitForExistence(timeout: 20))
+        try await control(["offline": true])
+        tap(app.buttons["training.finish"], in: app)
+        tap(app.buttons["Save workout"], in: app)
+        tap(app.buttons["observations.open"], in: app)
+        tap(app.buttons["observations.suggestions"], in: app)
+        XCTAssertTrue(app.staticTexts["No suggestions to review"].waitForExistence(timeout: 10))
+        capture(app, "entry-checks-off-manual-saved")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["observations.open"], in: app)
+        reveal(toggle, in: app)
+        XCTAssertEqual(toggle.value as? String, "0")
+        capture(app, "entry-checks-off-relaunch")
+        try await control([:])
+    }
+
+    func testTrainingObservationsLinkToLogsAndShowMissingSourceData() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "observations")
+        var sessions: [String] = []
+        for days in [30, 24, 18, 13, 6, 2] {
+            sessions.append(try await seedTrainingWorkout(name: "Evidence workout \(days)", loads: [days < 10 ? 85 : 100],
+                                                          daysAgo: days, exercises: ["deadlift", "barbell-bench-press"], token: person.token))
+        }
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["observations.open"], in: app)
+        let stall = app.buttons["observations.stall.deadlift"]
+        reveal(stall, in: app)
+        XCTAssertTrue(stall.waitForExistence(timeout: 20))
+        capture(app, "observations-findings")
+        let deload = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "observations.deload.")).firstMatch
+        tap(deload, in: app)
+        capture(app, "observations-deload")
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        revealAbove(stall, in: app)
+        tap(stall, in: app)
+        let caveat = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "RIR not recorded")).firstMatch
+        reveal(caveat, in: app)
+        XCTAssertTrue(caveat.exists)
+        capture(app, "observations-stall-evidence")
+        tap(app.buttons["evidence.exercise.deadlift"], in: app)
+        reveal(app.staticTexts["RIR not recorded"].firstMatch, in: app)
+        XCTAssertTrue(app.staticTexts["Bodyweight not recorded"].firstMatch.exists)
+        capture(app, "observations-exercise-log")
+        tap(app.buttons["exerciseLog.workout.\(sessions.last!)"], in: app)
+        XCTAssertTrue(app.navigationBars["Evidence workout 2"].waitForExistence(timeout: 10))
+        capture(app, "observations-source-workout")
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        for id in sessions {
+            _ = try await request("DELETE", "/v1/documents/workout_session/\(id)", body: ["base_revision": 1], token: person.token)
+        }
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.staticTexts["No working sets saved"].waitForExistence(timeout: 10))
+        capture(app, "observations-missing-logs")
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        let unavailable = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Cannot verify from saved data")).firstMatch
+        reveal(unavailable, in: app)
+        XCTAssertTrue(unavailable.exists)
+        capture(app, "observations-unverifiable-evidence")
+    }
+
+    private func seedTrainingWorkout(name: String, loads: [Double], finished: Bool = true, daysAgo: Int = 0,
+                                     exercises: [String] = ["deadlift"], token: String) async throws -> String {
+        let id = UUID().uuidString
+        let date = Date().addingTimeInterval(Double(-daysAgo * 86400) - 3600)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var payload: [String: Any] = [
+            "id": id, "name": name, "notes": "", "startedAt": formatter.string(from: date), "timeZoneID": "America/New_York",
+            "exercises": exercises.map { exercise -> [String: Any] in
+                ["id": UUID().uuidString, "exerciseID": exercise, "notes": "", "sets": loads.enumerated().map { index, load -> [String: Any] in
+                    ["id": UUID().uuidString, "kind": "standard", "completedAt": formatter.string(from: date.addingTimeInterval(Double(60 + index * 120))),
+                     "efforts": [["reps": 5, "load": ["unit": "kg", "value": load]]]]
+                }]
+            }
+        ]
+        if finished { payload["endedAt"] = formatter.string(from: date.addingTimeInterval(1800)) }
+        _ = try await request("PUT", "/v1/documents/workout_session/\(id)", body: ["base_revision": 0, "payload": payload], token: token)
+        return id
+    }
+
     func testAgentSuggestionReviewOfflineAcceptanceUndoRejectionAndAudit() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "agent-review")

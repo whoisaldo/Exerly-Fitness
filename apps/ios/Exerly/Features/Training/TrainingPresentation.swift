@@ -10,6 +10,7 @@ final class TrainingWorkspace: ObservableObject {
     let url: URL
     let store: TrainingStore
     let agent: AgentStore
+    let entryChecks: TrainingEntryChecks
     private let persistence: SQLiteTrainingPersistence
     @Published private(set) var sync: ExerlyCore.SyncEngine?
     let unreadableCount: Int
@@ -31,6 +32,7 @@ final class TrainingWorkspace: ObservableObject {
         persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
         agent = try AgentStore(persistence: persistence, hosts: [store])
+        entryChecks = TrainingEntryChecks(training: store, agent: agent, accountID: accountID)
         unreadableCount = persistence.unreadableRows.count
         if let api { resumeSync(api: api) }
     }
@@ -43,16 +45,25 @@ final class TrainingWorkspace: ObservableObject {
     func synchronize() async {
         // Core exposes the durable state to the UI; cancellation is expected at
         // account changes and when the scene moves to the background.
+        guard !persistence.isClosed, !Task.isCancelled else { return }
+        await entryChecks.refresh()
         try? await sync?.sync()
+        guard !persistence.isClosed, !Task.isCancelled else { return }
+        if await entryChecks.refresh() { try? await sync?.sync() }
     }
 
     func close() async {
+        entryChecks.stop()
         await sync?.shutdown()
         persistence.close()
     }
 
     func export(server: Data?, pending: [AccountExport.PendingRow] = []) throws -> Data {
         try AccountExport.merging(server: server, hosts: [store, agent], state: persistence, pending: pending)
+    }
+
+    func supportsChanges(in proposal: Proposal) -> Bool {
+        proposal.changes.allSatisfy { store.documentKinds.contains($0.kind) }
     }
 
     static func deleteStorage(accountID: String, root: URL? = nil) throws {
@@ -63,6 +74,7 @@ final class TrainingWorkspace: ObservableObject {
                 try FileManager.default.removeItem(at: directory)
             }
         } else { try SQLiteTrainingPersistence.deleteDatabase(accountID: accountID) }
+        TrainingEntryChecks.removePreference(accountID: accountID)
     }
 
     private static func testStorageRoot() throws -> URL? {

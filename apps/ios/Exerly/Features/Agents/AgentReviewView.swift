@@ -105,15 +105,25 @@ struct ProposalDetailView: View {
                                 .id("decision-error")
                         }
                         if proposal.status == .pending {
-                            Button("Accept suggestion", systemImage: "checkmark") { decide(.accept) }
-                                .accessibilityIdentifier("suggestions.accept")
+                            if workspace.supportsChanges(in: proposal) {
+                                Button("Accept suggestion", systemImage: "checkmark") { decide(.accept) }
+                                    .accessibilityIdentifier("suggestions.accept")
+                            } else {
+                                Text("This build cannot apply all the records in this suggestion. You can inspect its changes and evidence, or reject it.")
+                                    .foregroundStyle(.secondary).accessibilityIdentifier("suggestions.unsupported")
+                            }
                             Button("Reject suggestion", systemImage: "xmark") { decide(.reject) }
                                 .accessibilityIdentifier("suggestions.reject")
                         } else if proposal.status == .accepted {
-                            Button("Undo suggestion", systemImage: "arrow.uturn.backward") { decide(.undo) }
-                                .accessibilityIdentifier("suggestions.undo")
-                            Text("Undo is available while the affected records still match this suggestion.")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            if workspace.supportsChanges(in: proposal) {
+                                Button("Undo suggestion", systemImage: "arrow.uturn.backward") { decide(.undo) }
+                                    .accessibilityIdentifier("suggestions.undo")
+                                Text("Undo is available while the affected records still match this suggestion.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else {
+                                Text("Undo requires an app version that supports every record in this suggestion.")
+                                    .foregroundStyle(.secondary).accessibilityIdentifier("suggestions.unsupported")
+                            }
                         } else if proposal.status == .stale {
                             Text("Your data changed after this suggestion was made. It can no longer be applied.")
                                 .foregroundStyle(.secondary)
@@ -233,7 +243,7 @@ struct ProposalEvidenceView: View {
         let display = MetricPresentation(metric: metric, history: store.history, unit: unit)
         return VStack(alignment: .leading, spacing: 6) {
             Text(display.title).font(.subheadline.weight(.semibold))
-            Text("Agent reported: \(display.claimed)")
+            Text("Reported value: \(display.claimed)")
             if let actual = display.actual { Text("From saved data: \(actual)") }
             switch display.status {
             case .verified:
@@ -259,6 +269,12 @@ private struct AgentDataLink: View {
             NavigationLink {
                 WorkoutDetailView(store: store, sessionID: id, unit: unit)
             } label: { Label("\(session.name) · \(TrainingFormat.date(session))", systemImage: "dumbbell") }
+                .accessibilityIdentifier("evidence.workout.\(id.uuidString)")
+        } else if reference.kind == "exercise", let exercise = store.library.exercise(ExerciseID(reference.id)) {
+            NavigationLink {
+                ExerciseLogView(store: store, exerciseID: exercise.id, unit: unit)
+            } label: { Label("Logged sets · \(exercise.name)", systemImage: "list.bullet.rectangle") }
+                .accessibilityIdentifier("evidence.exercise.\(exercise.id.rawValue)")
         } else {
             Text("Referenced \(TrainingFormat.words(reference.kind).lowercased()) is unavailable on this device.")
                 .font(.footnote).foregroundStyle(.secondary)

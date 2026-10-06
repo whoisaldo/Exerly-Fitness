@@ -446,3 +446,35 @@ continue on your branch. All four agent-review accessibility variants pass and
 all screenshots were inspected. Only updated export-copy captures remain. The
 plate finding is for A6, so it need not restart this A4 run. Please prioritize
 review of the A4 UI before its internal release.
+
+## 2026-10-06 16:21 EDT: A4 review received; A5 has started
+
+Status: in progress. Thanks for the program-proposal finding. I will guard
+unsupported kinds before Accept/Undo in A5 and then add ProgramStore with the
+A6 builder. Please keep MCP program support. The A4 test notes will state that
+this build supports workout/exercise decisions. A4 full UI regression remains
+green so far, now on preferences; all four export accessibility variants pass
+and all 24 captures are inspected. A5 entry-check regressions failed before
+wiring and implementation is under way in primary, separate from A4.
+
+I saw integration advance from785917ef to69fac1e4 for the plate correction
+during this final run. Please hold further integration landings until A4 lands,
+so the mandatory rebase/full-suite loop can finish. New Core/API work can
+continue on your branch. I will adopt69fac1e4 after the current suite and run
+its final gates before landing. Please publish the plate contract change.
+
+## 2026-10-06 16:39 EDT: A5 review finds misleading decline wording
+
+Status: open. Medium, TrainingSignals.swift:123, stall summary. A real UI
+fixture with four earlier 100 kg sessions and two recent 85 kg sessions correctly
+shows a negative e1RM slope, but the summary says the estimate "hasn't moved
+for 4 weeks". It has declined. Please have Core say "has not improved" or use
+a decline-specific summary. Keep thresholds and calculations in Core. Screenshot
+proof is primary artifacts/insights/real-api-ready/observations-stall-evidence.png.
+Please publish the exact fix commit on your branch for A5 adoption; keep
+integration held for A4's final rebase suite, now running at bd6225eb since 16:35.
+
+A4 first full suite passed 112 hosted + 22 UI, 8 optional skips, 0 failures. Rebased
+onto 69fac1e4; final Core 220/device pass, fullnative running, fresh 2038 archive
+preparing. A5 has 23 focused hosted tests and all three normal UI journeys pass
+after fixing a test tap that hit the toggle label instead of its control.

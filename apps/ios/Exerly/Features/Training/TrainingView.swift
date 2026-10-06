@@ -71,6 +71,11 @@ struct TrainingView: View {
                                     Text("Suggestions").fixedSize(horizontal: false, vertical: true)
                                 } else { Label("Suggestions", systemImage: "tray") }
                             }.accessibilityIdentifier("suggestions.open")
+                            NavigationLink {
+                                TrainingObservationsView(workspace: workspace, unit: unit, timeZone: timeZone)
+                            } label: {
+                                Text("Observations").fixedSize(horizontal: false, vertical: true)
+                            }.accessibilityIdentifier("observations.open")
                         }
                     }
                     Section {

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E44FA7F87F9617606E66ECF; };
+        E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAD7DC52A9FFDB47C2DF6B7; };
+        86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = C745E4F12E1C1CC27ED04506; };
+        507A4C17BF35AB31025AF79B /* TrainingInsightsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 182FC2ED87CFD005403C330A; };
         E60000000000000000000001 /* LegacyExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60000000000000000000002; };
         EB83E4B93032858D58F6DB10 /* AgentConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A283ACAEA1575AB18FE087C; };
         44739B74FA5CA1164C871DA2 /* AgentConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA9D36441A0250A099199C; };
@@ -112,6 +116,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ExerciseLogView.swift; sourceTree = SOURCE_ROOT; };
+        2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingObservationsView.swift; sourceTree = SOURCE_ROOT; };
+        C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingEntryChecks.swift; sourceTree = SOURCE_ROOT; };
+        182FC2ED87CFD005403C330A /* TrainingInsightsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/TrainingInsightsTests.swift; sourceTree = SOURCE_ROOT; };
         E60000000000000000000002 /* LegacyExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/LegacyExportTests.swift; sourceTree = SOURCE_ROOT; };
         6A283ACAEA1575AB18FE087C /* AgentConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AgentConnectionTests.swift; sourceTree = SOURCE_ROOT; };
         3FBA9D36441A0250A099199C /* AgentConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentConnectionsView.swift; sourceTree = SOURCE_ROOT; };
@@ -493,6 +501,10 @@
 		BBBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
+                0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */,
+                2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */,
+                C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */,
+                182FC2ED87CFD005403C330A /* TrainingInsightsTests.swift */,
                 6A283ACAEA1575AB18FE087C /* AgentConnectionTests.swift */,
                 3FBA9D36441A0250A099199C /* AgentConnectionsView.swift */,
                 6CF2CA0B808D305F6EE01BF1 /* AgentConnectionsModel.swift */,
@@ -661,6 +673,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */,
+                E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */,
+                86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */,
                 44739B74FA5CA1164C871DA2 /* AgentConnectionsView.swift in Sources */,
                 C8E2ECE71B51A8DA0E1B03ED /* AgentConnectionsModel.swift in Sources */,
                 ABACE5D630A6F3175C8A0812 /* AgentReviewView.swift in Sources */,
@@ -751,7 +766,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
