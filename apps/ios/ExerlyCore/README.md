@@ -384,13 +384,15 @@ measured is in `docs/design/005-training-detectors.md`.
 
   `proposal(for:history:existing:now:)` turns them into one `Proposal` from
   `EntryErrorDetector.author`, ready for `agent.file(_:)`. It never proposes
-  twice for a session, whatever the person decided. Run it after finishing a
-  session and after sync brings in sessions.
+  twice for a session, whatever the person decided. Its ID comes from the
+  session's, so two devices file one proposal. After finishing a session and
+  after sync, call `proposals(in:existing:now:)`, which checks the workouts
+  finished in the last `recentDays` (14) and leaves older ones alone.
 - `TrainingSignals` gives evidence, not proposals, as a `Diagnosis` (kind,
   title, summary, exercises, evidence):
   - `stall(of:in:through:)` and `stalls(in:through:)`: an e1RM trend that hasn't
     gained 0.3 % a week over eight weeks, with its slope, sessions, RIR and
-    volume caveats;
+    volume caveats; a clearly falling trend is titled and summarised as a drop;
   - `deload(in:through:)`: several lifts down together over the last ten days.
   - `trend(of:in:through:days:)` exposes the numbers behind both.
 

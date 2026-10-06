@@ -205,4 +205,13 @@ import Testing
         #expect(one.id != EntryErrorDetector.proposalID(for: UUID()))
         #expect(Array(one.id.uuidString)[14] == "5", "A name-based UUID")
     }
+
+    @Test func onlyRecentWorkoutsAreChecked() throws {
+        let (log, today) = history([set(5, .kg(105)), set(5, .kg(1050)), set(8, .kg(85))])
+        let finished = try #require(today.endedAt)
+        #expect(try EntryErrorDetector.proposals(in: log, existing: [], now: finished.addingTimeInterval(86_400)).count == 1)
+        #expect(try EntryErrorDetector.proposals(in: log, existing: [], now: finished.addingTimeInterval(15 * 86_400)).isEmpty)
+        let filed = try EntryErrorDetector.proposals(in: log, existing: [], now: finished)
+        #expect(try EntryErrorDetector.proposals(in: log, existing: filed, now: finished).isEmpty)
+    }
 }

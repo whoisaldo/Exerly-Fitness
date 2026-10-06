@@ -164,6 +164,19 @@ public enum EntryErrorDetector {
                         falsifier: falsifier)
     }
 
+    /// Workouts finished this many days before now are checked.
+    public static let recentDays = 14
+
+    /// Proposals for every workout finished in the last `recentDays` that has
+    /// findings and no earlier proposal from this detector. Older workouts are
+    /// left alone, so turning checks on or syncing a new device doesn't bring
+    /// up fixes for long-past logs, and the work stays small.
+    public static func proposals(in history: TrainingHistory, existing: [Proposal], now: Date) throws -> [Proposal] {
+        let since = now.addingTimeInterval(-Double(recentDays) * 86_400)
+        return try history.sessions.filter { ($0.endedAt ?? .distantPast) >= since }
+            .compactMap { try proposal(for: $0, history: history, existing: existing, now: now) }
+    }
+
     static let namespace = UUID(uuidString: "9DDD2C9C-1E91-46F7-800A-D974DD0D0F29")!
 
     static func proposalID(for session: UUID) -> UUID { UUID(named: session.uuidString, in: namespace) }
