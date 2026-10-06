@@ -27,7 +27,7 @@ const DEFAULT_ORIGINS = [
   'https://exerlyfitness.com',
   'https://www.exerlyfitness.com',
   'https://exerly-fitness-93dyl.ondigitalocean.app',
-  'https://whoisaldo.github.io',
+  'https://sidebandstudio.github.io',
   'http://localhost:8081',
   'http://localhost:19000',
   'http://localhost:19006',

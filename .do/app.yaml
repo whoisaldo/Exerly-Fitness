@@ -3,7 +3,7 @@ services:
   - name: api
     source_dir: apps/api
     github:
-      repo: whoisaldo/Exerly-Fitness
+      repo: sidebandstudio/Exerly-Fitness
       branch: main
       deploy_on_push: true
     run_command: npm start

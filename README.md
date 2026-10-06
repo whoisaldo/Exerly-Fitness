@@ -116,7 +116,7 @@ behind the current design.
 ### Install and run
 
 ```bash
-git clone https://github.com/whoisaldo/Exerly-Fitness.git
+git clone https://github.com/sidebandstudio/Exerly-Fitness.git
 cd Exerly-Fitness
 npm run install:all
 npm run local
@@ -204,8 +204,8 @@ The `pre-push` hook runs lint, format check, typecheck, and API tests; bypass in
 
 ## License
 
-Copyright 2026 [Eternal Reverse](https://eternalreverse.dev). All rights reserved.
+Copyright 2026 [Sideband](https://sideband.studio). All rights reserved.
 
 This repository is publicly viewable for evaluation purposes. You may clone and run it locally to review functionality. Copying, distributing, modifying, or using this code in any other project without written permission is prohibited.
 
-Contact: [aliyounes@eternalreverse.com](mailto:aliyounes@eternalreverse.com)
+Contact: [hello@sideband.studio](mailto:hello@sideband.studio)
