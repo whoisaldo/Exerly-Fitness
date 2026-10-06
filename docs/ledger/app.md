@@ -2,58 +2,78 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-06, updated 18:29 EDT.
+milestone. Current date 2026-10-06, updated 18:44 EDT.
 
 ## Current work and next steps
 
-2026-10-06 18:29 EDT. Done is not met. Continue without ending at a milestone.
-A5 is released as internal2610062144, VALID/IN_BETA_TESTING. Only Ali and only
-this build are assigned; English test notes verified. Build ID
-cb3c7545-8736-4518-8415-0f6b424235f9. Verification:
-artifacts/insights/a5-internal-release.json.2038 was retained until2144 was ready
-and is now detached. Never upload obsolete2128.
+2026-10-06 18:44 EDT. This is A6, agent/app-programs. Done is not met. Continue.
+A5 is live as2610062144, only Ali/only build, VALID/IN_BETA_TESTING. Its final
+123 hosted+25 UI passed,8 skips; Core233/API226/device pass. A5 landed/pushed
+integrationdf84650c. Logic then landed778540cf. Primary's additional handoff
+commit481694ec is pushed on agent/app.2038 detached; neverupload2128.
 
-A5 source2b258b8a is based on integration707c815b. Full-a5-final completed18:22:
-123 hosted tests and25 UI journeys pass,8 optional skips, zero failures.
-Core233/API226/device pass. Eleven insight hosted tests include the two actual
-red/green regressions. All36 entry/sparse and32 metric largest-type captures,
-plus20 normal captures, inspected. Signed2144 archive/IPA validation and upload
-pass. PARITY/RELEASE updated. No physical install/Apple authorization claimed.
+A6 successfully rebased onto integration778540cf, source3c76dc6d. Ledger-only
+conflicts resolved with A5 current evidence, then this A6 state restored. Source
+commits are39fd9d5d composition,b85a8c68 UI,400232e1 full-width confirmations,
+1f2ac0d3 plan heading first,051238ee heading capture,d60fd8c1 explicit assumed
+RIR,3c76dc6d test helper recognizes native tabs instead of symbol labels. Production
+source is frozen. Logic approved A6 and fixed removed-day schedule restart in
+2f1f3844, included here. Integration hold requested again18:41 in Logic inbox.
 
-Check integration contains agent/app after this evidence commit; ff land/push
-if needed, then tell Logic its integration hold is released and the milestone
-can merge into main. No new A5 source edits are needed.
+FINAL GATES ACTIVE, based on3c76dc6d:
+- full-a6-final/session63739 on SE39B20FBF-F0A2-4FD3-917D-A7A807851B02,
+  fixture39211/session93879, DerivedData a6-full. This simulator was used for A7
+  hosted tests but now belongs to this full run; do not run A7 there concurrently.
+- final-core/session14165; final-api/session33312; final-device/session36096.
+  API uses NODE_PATH to primary node_modules. Do not edit Core/API.
+- Push rebased branch with force-with-lease after committing this ledger. Remote
+  lastfe2e52db is ours. A6 archive/release not created yet. Do not reuse A5 builds.
 
-A6 worktree Exerly-Fitness-app-programs, branch agent/app-programs,fe2e52db is
-pushed for Logic review. Programs, lifecycle, builder, planned workouts, source
-links and readable proposals implemented. iOS26 compact confirmation popover
-was replaced by a full-width scrollable sheet with always-visible Cancel.
-Sourcefdb7b865 then moves the plan heading before optional bodyweight, and
-fe2e52db captures that heading. Freeze production source while final AX runs.
+A6 implementation: ProgramStore in sync/agent/export/supported kinds, validated
+stale-safe drafts, builder/lifecycle, planned start/advance and complete program
+proposal diff/original/proposed/source views. All math/selection in Core. Reserved
+weightMatch hidden. iOS26 compact confirmation popover hid Cancel; fixed with
+scrollable full-width sheet and fixed Cancel. Last copy improvement explicitly
+states the target RIR assumed when the source set has none.
 
-A6 nine hosted program tests and device build pass. Normal builder/lifecycle/
-proposal journeys pass;31 normal captures inspected. Largest-type lifecycle
-passes small light190s, small dark193s and large dark208s; large-light203s.
-Large-dark7 sheet captures inspected. Small-light proposal288s and small-dark
-proposal299s pass; small-light6 captures inspected. Old small builder failures
-were only the virtual second preview title; fdb fixes the test and improves the
-first-screen layout. A6 ledger/logs list current final runs. Complete image
-review, Logic review fixes, rebase onto current integration, full suites/device,
-archive/internal release and ff land before ending that milestone.
+Evidence before final rebase:
+- Normal builder209s/lifecycle91s/proposal pass;13 hosted. All31 normal captures
+  inspected including the final proposal server undo verification.
+- Nine ProgramPresentation tests pass including first-workout/no invented load
+  and timed-exercise handling. Device passed340cb895, new final device running.
+- Large-light-sheet: nine hosted+all4 UI pass;29 captures exported, NOT inspected.
+  Includes full builder450s, lifecycle203s, proposal298s, source86s. Compiled before
+  heading moved first; large-light-heading passes90s for that change, not yet
+  exported/inspected. large-light-assumption/session8282 checks latest RIR copy.
+- Large-dark-sheet lifecycle208s, all7 captures inspected.
+- Small-light-sheet lifecycle190s,7 relevant captures exported, NOT inspected.
+  Its builder fails only offscreen second-preview heading; fixed1f2ac0d3.
+- Small-dark-sheet lifecycle193s and proposal299s pass. Relevant13 captures
+  exported, NOT inspected. Its builder has same fixed heading-only failure.
+- Small-light-input proposal288s passes, all6 captures inspected, superseded
+  final run adds a capture of After3 values.
 
-A7 isolated worktree Exerly-Fitness-app-nutrition, branch agent/app-nutrition,
-based340cb895. Design015 and NutritionPresentationTests precede implementation.
-Both initial composition regressions failed as intended, then passed after
-NutritionStore joined workspace sync/agent/export/supported kinds. The expanded
-account composition suite now passes12 tests, including account separation,
-closed-workspace writes and account deletion. Source/tests/project/ledger are
-uncommitted. Its own app-owned SE39B20FBF-F0A2-4FD3-917D-A7A807851B02 and
-DerivedData a7-unit avoid interfering with A6 UI. Rebase on finished A6 later.
+Active AX final runs (compiled before RIR copy wording, so rerun source journey
+for final wording afterward; all unchanged journey results still count):
+- small-light-final/session77882, SE7D2096/39206,a6-fields: source94s and
+  builder600s pass; proposal running. Then latest source copy needs one rerun.
+- large-dark-final/session29713, OriginalLarge7189/39208,a6-original:
+  source87s and builder776s pass; proposal running. Then latest source copy rerun.
+- small-dark-final/session22338, ProgramsSE45D463AE/39209,a6-proposals:
+  source81s pass; builder running. Then latest source copy rerun.
+- large-light-assumption/session8282, LargeAX02A671D3/39207,a6-large:
+  latest copy/source plus new native-tab helper. Finish/export/inspect its4 images.
+No initial stopped runs count as final proof. Once AX images, Logic review,
+full/Core/API/device gates pass, create new signed archive, internal release,
+update PARITY/RELEASE, ff land/push and release Logic's integration hold.
 
-A7 pure serving/basis-preview and legacy diary migration contracts are requested
-in Logic inbox18:12. M5d volume-to-grams finding awaits a response. Do not add
-calculation or migration code to views. Begin manual gram/custom-food drafts
-and unknown-nutrient presentation using Core. Logic owns all API/Core files.
+A7 worktree Exerly-Fitness-app-nutrition, agent/app-nutrition,e6d8ed3d based on
+oldfe2e52db. NutritionStore composition/design015 committed. Two red regressions
+then green;12 account+nutrition hosted tests pass. Own ledger and18:36 volume
+snapshot/starting-target requests. Rebase A7 onto this new A6 lineage before
+continuing against published preview/volume contracts. Legacy diary will retire
+but server/export and pending queue remain; no app migration code. Latest review
+found FoodSnapshot drops VolumeBasis; Logic asked to preserve it before A7.
 
 ## A3 final evidence and release
 

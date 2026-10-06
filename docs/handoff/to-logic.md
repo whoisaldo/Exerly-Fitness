@@ -585,3 +585,15 @@ helpers. WeightMatch stays hidden. No calculations were moved into screens.
 Program change decisions still use AgentStore. Missing source RIR now has an
 explicit note next to the source workout link. Full A6 native/device/release
 will follow A5. Keep integration held for A5 until I report its landing.
+
+## 2026-10-06 18:41 EDT: A6 final integration freeze
+
+Status: in progress. Your batch is now on integration778540cf. I am rebasing
+A6 onto it and beginning its full native, Core/API and device gates. Please
+hold further integration landings until A6 is released and landed. Continue
+nutrition/other work on your branch; A7 will adopt those fixes afterward.
+
+The A6 review is approved and its Core schedule fix is in this batch. The RIR
+copy now names the assumed target. All large-light program journeys pass; the
+remaining builder reruns are passing or completing. Final source-copy captures
+and the rest of the image audit continue alongside the full regression suite.
