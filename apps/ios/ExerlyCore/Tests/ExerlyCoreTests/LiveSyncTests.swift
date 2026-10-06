@@ -29,14 +29,20 @@ struct LiveSyncTests {
         let credentials = InMemoryCredentialStore()
         let persistence: InMemoryTrainingPersistence
         let store: TrainingStore
-        let engine: SyncEngine
+        private(set) var engine: SyncEngine!
 
         init(base: URL) throws {
             let persistence = InMemoryTrainingPersistence()
             self.persistence = persistence
             api = ExerlyAPI(baseURL: base, credentials: credentials)
             store = try TrainingStore(persistence: persistence)
-            engine = SyncEngine(store: store, state: persistence, api: api)
+        }
+
+        /// Signs in, then binds sync to the signed-in account.
+        func signIn(email: String, password: String) async throws -> SignInResult {
+            let result = try await api.signIn(email: email, password: password)
+            engine = SyncEngine(store: store, state: persistence, api: try await api.account())
+            return result
         }
 
         func logSet(reps: Int, kg: Double) throws {
@@ -53,8 +59,8 @@ struct LiveSyncTests {
         let (email, password) = try await signUp()
         let phone = try LiveDevice(base: base)
         let watch = try LiveDevice(base: base)
-        let signedIn = try await phone.api.signIn(email: email, password: password)
-        _ = try await watch.api.signIn(email: email, password: password)
+        let signedIn = try await phone.signIn(email: email, password: password)
+        _ = try await watch.signIn(email: email, password: password)
         #expect(signedIn.account.email == email)
 
         // A custom exercise and a session, logged on the phone.
@@ -100,12 +106,12 @@ struct LiveSyncTests {
         #expect(watch.store.history.sessions.isEmpty)
 
         // The export holds the synced documents; deleting the account ends both sessions.
-        let exported: Data = try await phone.api.exportAccount()
+        let exported: Data = try await phone.api.account().exportAccount()
         let export = try JSONSerialization.jsonObject(with: exported) as? [String: Any]
         let documents = export?["documents"] as? [[String: Any]]
         #expect(documents?.contains { $0["document_id"] as? String == custom.id.rawValue } == true)
         try await phone.api.deleteAccount(appleAuthorizationCode: nil)
         #expect(await !phone.api.isSignedIn)
-        await #expect(throws: APIError.sessionExpired) { _ = try await watch.api.changes(after: 0, limit: 10) }
+        await #expect(throws: APIError.sessionExpired) { _ = try await watch.api.account().changes(after: 0, limit: 10) }
     }
 }

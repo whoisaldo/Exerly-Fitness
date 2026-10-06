@@ -26,8 +26,25 @@ public enum APIError: Error, Equatable {
     case linkConflict
     /// Account deletion needs a fresh Sign in with Apple authorization code.
     case appleReauthorizationRequired
+    /// The session was replaced or removed while the request was in flight,
+    /// or it belongs to another account. Nothing from the response was applied.
+    case accountChanged
     case invalidResponse
     case server(status: Int, message: String)
+}
+
+extension APIError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .notSignedIn, .sessionExpired: "Your session ended. Sign in again; your data on this device is safe."
+        case .linkRequired: "An Exerly account already uses this email. Sign in with your password, then connect Apple in Settings."
+        case .linkConflict: "This Apple ID is already connected to another Exerly account."
+        case .appleReauthorizationRequired: "Sign in with Apple again to confirm."
+        case .accountChanged: "The signed-in account changed, so this request was stopped."
+        case .invalidResponse: "The server sent an unexpected response. Try again."
+        case .server(_, let message): message
+        }
+    }
 }
 
 public struct AccountSummary: Sendable, Hashable {
@@ -63,16 +80,22 @@ public struct ChangePage: Sendable, Hashable {
     public var hasMore: Bool
 }
 
-/// The Exerly API client. Keeps the session fresh: refreshes shortly before
-/// the access token expires and once after a 401. A refresh keeps its
-/// idempotency key in the credential store until the rotated credential is
-/// saved, so a lost response is retried rather than burning the session.
-public actor ExerlyAPI {
+/// The Exerly API client and a standalone owner of the session. Keeps the
+/// session fresh: refreshes shortly before the access token expires and once
+/// after a 401. A refresh keeps its idempotency key in the credential store
+/// until the rotated credential is saved, so a lost response is retried rather
+/// than burning the session.
+///
+/// Signing in or out starts a new session generation. Work begun under an
+/// older generation never saves credentials or returns a response, so a slow
+/// refresh can't resurrect a signed-out session or replace a newer sign-in.
+public actor ExerlyAPI: SessionTransport {
     private let baseURL: URL
     private let transport: HTTPTransport
     private let credentials: CredentialStore
     private let now: @Sendable () -> Date
-    private var refreshing: Task<Credentials, Error>?
+    private var generation = 0
+    private var refreshing: (generation: Int, task: Task<Credentials, Error>)?
 
     public init(baseURL: URL, transport: HTTPTransport = URLSessionTransport(), credentials: CredentialStore,
                 now: @escaping @Sendable () -> Date = Date.init) {
@@ -85,6 +108,12 @@ public actor ExerlyAPI {
     public var isSignedIn: Bool { (try? credentials.load()) != nil }
 
     public var accountID: String? { (try? credentials.load())?.accountID }
+
+    /// The signed-in account's endpoints, bound to that account.
+    public func account() throws -> AccountAPI {
+        guard let id = try credentials.load()?.accountID else { throw APIError.notSignedIn }
+        return AccountAPI(accountID: id, transport: self)
+    }
 
     // MARK: Signing in and out
 
@@ -100,89 +129,76 @@ public actor ExerlyAPI {
         try await startSession(path: "/login", body: ["email": email, "password": password])
     }
 
-    /// Connects Sign in with Apple to the signed-in account. Throws `linkConflict`
-    /// when that Apple ID belongs to another Exerly account.
-    public func connectApple(identityToken: String, rawNonce: String) async throws {
-        let (status, json) = try await authorized("POST", "/api/account/identities/apple",
-                                                  body: ["identityToken": identityToken, "nonce": rawNonce])
-        if status == 409 { throw APIError.linkConflict }
-        guard status == 200 || status == 201 else { throw Self.failure(status, json) }
-    }
-
-    /// Disconnects Sign in with Apple. Refused for an account with no password,
-    /// which could not sign in again.
-    public func disconnectApple() async throws {
-        let (status, json) = try await authorized("DELETE", "/api/account/identities/apple", body: nil)
-        guard status == 200 else { throw Self.failure(status, json) }
-    }
-
-    /// Revokes the session on the server when reachable, and always forgets it locally.
+    /// Forgets the session at once, then revokes it on the server when reachable.
     public func signOut() async throws {
-        if isSignedIn { _ = try? await authorized("POST", "/auth/logout", body: [:]) }
+        let current = try credentials.load()
+        endGeneration()
         try credentials.save(nil)
         try credentials.savePendingRefreshKey(nil)
+        guard let current else { return }
+        var token = current.accessToken
+        if current.accessExpiresAt.timeIntervalSince(now()) <= 30 {
+            // Exchange the refresh token for an access token that only revokes;
+            // its rotated credentials are never stored.
+            let body = try JSONSerialization.data(withJSONObject: ["refreshToken": current.refreshToken])
+            guard let (status, data) = try? await send("POST", "/auth/token", body: body,
+                                                       headers: ["Idempotency-Key": UUID().uuidString], token: nil),
+                  status == 200, let fresh = try? Self.session(from: JSONSerialization.jsonObject(with: data), issuedAt: now())
+            else { return }
+            token = fresh.0.accessToken
+        }
+        _ = try? await send("POST", "/auth/logout", body: Data("{}".utf8), headers: [:], token: token)
     }
 
     /// Deletes the account and everything in it, then forgets the session.
     public func deleteAccount(appleAuthorizationCode: String?) async throws {
-        var body: [String: Any] = ["confirm": true]
-        if let appleAuthorizationCode { body["appleAuthorizationCode"] = appleAuthorizationCode }
-        let (status, json) = try await authorized("DELETE", "/api/account", body: body)
-        guard status == 200 else {
-            if status == 400, Self.code(json) == "apple_reauthorization_required" {
-                throw APIError.appleReauthorizationRequired
-            }
-            throw Self.failure(status, json)
-        }
+        let account = try account()
+        try await account.deleteAccount(appleAuthorizationCode: appleAuthorizationCode)
+        guard accountID == account.accountID else { return }
+        endGeneration()
         try credentials.save(nil)
         try credentials.savePendingRefreshKey(nil)
     }
 
-    /// The full JSON export.
-    public func exportAccount() async throws -> Data {
-        let (status, data) = try await authorizedData("GET", "/api/export", body: nil)
-        guard status == 200 else { throw Self.failure(status, try? JSONSerialization.jsonObject(with: data)) }
-        return data
-    }
+    // MARK: Session transport
 
-    // MARK: Documents
-
-    public func putDocument(kind: String, id: String, payload: Data, baseRevision: Int,
-                            idempotencyKey: String) async throws -> DocumentWriteResult {
-        var body = Data(#"{"base_revision":\#(baseRevision),"payload":"#.utf8)
-        body.append(payload)
-        body.append(Data("}".utf8))
-        let (status, data) = try await authorizedData("PUT", "/v1/documents/\(kind)/\(id)", rawBody: body,
-                                                      headers: ["Idempotency-Key": idempotencyKey])
-        return try Self.writeResult(status, data)
-    }
-
-    public func deleteDocument(kind: String, id: String, baseRevision: Int,
-                               idempotencyKey: String) async throws -> DocumentWriteResult {
-        let (status, data) = try await authorizedData("DELETE", "/v1/documents/\(kind)/\(id)?base_revision=\(baseRevision)",
-                                                      body: nil, headers: ["Idempotency-Key": idempotencyKey])
-        return try Self.writeResult(status, data)
-    }
-
-    public func changes(after cursor: Int, limit: Int = 500) async throws -> ChangePage {
-        let (status, data) = try await authorizedData("GET", "/v1/changes?after=\(cursor)&limit=\(limit)", body: nil)
-        guard status == 200, let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let changes = json["changes"] as? [[String: Any]], let next = json["cursor"] as? Int
-        else { throw Self.failure(status, try? JSONSerialization.jsonObject(with: data)) }
-        return ChangePage(changes: try changes.map(Self.document), cursor: next, hasMore: json["has_more"] as? Bool ?? false)
+    public func send(_ method: String, path: String, body: Data?, headers: [String: String],
+                     as accountID: String) async throws -> (status: Int, data: Data) {
+        let started = generation
+        var current = try await freshCredentials(forceRefresh: false)
+        for attempt in 0..<2 {
+            guard current.accountID == accountID else { throw APIError.accountChanged }
+            let (status, data) = try await send(method, path, body: body, headers: headers, token: current.accessToken)
+            // Nothing from an old session's response may reach the caller.
+            guard generation == started else { throw APIError.accountChanged }
+            if status != 401 { return (status, data) }
+            if attempt == 1 { break }
+            current = try await freshCredentials(forceRefresh: true)
+        }
+        throw APIError.sessionExpired
     }
 
     // MARK: Sessions
 
+    private func endGeneration() {
+        generation += 1
+        refreshing?.task.cancel()
+        refreshing = nil
+    }
+
     private func startSession(path: String, body: [String: Any]) async throws -> SignInResult {
+        endGeneration()
+        let started = generation
         let (status, data) = try await send("POST", path, body: try JSONSerialization.data(withJSONObject: body),
                                             headers: ["X-Session-Protocol": "2"], token: nil)
         let json = try? JSONSerialization.jsonObject(with: data)
         guard status == 200 || status == 201 else {
-            if status == 409, Self.code(json) == "link_required" { throw APIError.linkRequired }
-            throw Self.failure(status, json)
+            if status == 409, Wire.code(json) == "link_required" { throw APIError.linkRequired }
+            throw Wire.failure(status, json)
         }
         let (saved, account) = try Self.session(from: json, issuedAt: now())
+        // A sign-out or a newer sign-in during the request wins.
+        guard generation == started else { throw APIError.accountChanged }
         try credentials.save(saved)
         try credentials.savePendingRefreshKey(nil)
         return SignInResult(created: (json as? [String: Any])?["created"] as? Bool ?? (status == 201), account: account)
@@ -191,25 +207,29 @@ public actor ExerlyAPI {
     private func freshCredentials(forceRefresh: Bool) async throws -> Credentials {
         guard let current = try credentials.load() else { throw APIError.notSignedIn }
         if !forceRefresh && current.accessExpiresAt.timeIntervalSince(now()) > 30 { return current }
-        if let refreshing { return try await refreshing.value }
-        let task = Task { try await self.refresh(current) }
-        refreshing = task
-        defer { refreshing = nil }
+        if let refreshing, refreshing.generation == generation { return try await refreshing.task.value }
+        let started = generation
+        let task = Task { try await self.refresh(current, generation: started) }
+        refreshing = (started, task)
+        defer { if refreshing?.generation == started { refreshing = nil } }
         return try await task.value
     }
 
-    private func refresh(_ current: Credentials) async throws -> Credentials {
+    private func refresh(_ current: Credentials, generation started: Int) async throws -> Credentials {
         let key = try credentials.loadPendingRefreshKey() ?? UUID().uuidString
         try credentials.savePendingRefreshKey(key)
         let body = try JSONSerialization.data(withJSONObject: ["refreshToken": current.refreshToken])
         let (status, data) = try await send("POST", "/auth/token", body: body, headers: ["Idempotency-Key": key], token: nil)
+        // Save nothing unless this is still the session the refresh began from.
+        guard generation == started, try credentials.load() == current else { throw APIError.accountChanged }
         let json = try? JSONSerialization.jsonObject(with: data)
         if status == 401 {
+            endGeneration()
             try credentials.save(nil)
             try credentials.savePendingRefreshKey(nil)
             throw APIError.sessionExpired
         }
-        guard status == 200 else { throw Self.failure(status, json) }
+        guard status == 200 else { throw Wire.failure(status, json) }
         var (rotated, _) = try Self.session(from: json, issuedAt: now())
         rotated.accountID = current.accountID
         try credentials.save(rotated)
@@ -218,31 +238,6 @@ public actor ExerlyAPI {
     }
 
     // MARK: Requests
-
-    private func authorized(_ method: String, _ path: String, body: [String: Any]?) async throws -> (Int, Any?) {
-        let (status, data) = try await authorizedData(method, path, body: body)
-        return (status, try? JSONSerialization.jsonObject(with: data))
-    }
-
-    private func authorizedData(_ method: String, _ path: String, body: [String: Any]?,
-                                headers: [String: String] = [:]) async throws -> (Int, Data) {
-        try await authorizedData(method, path, rawBody: try body.map { try JSONSerialization.data(withJSONObject: $0) },
-                                 headers: headers)
-    }
-
-    private func authorizedData(_ method: String, _ path: String, rawBody: Data?,
-                                headers: [String: String] = [:]) async throws -> (Int, Data) {
-        var token = try await freshCredentials(forceRefresh: false).accessToken
-        for attempt in 0..<2 {
-            let (status, data) = try await send(method, path, body: rawBody, headers: headers, token: token)
-            if status != 401 || attempt == 1 {
-                if status == 401 { throw APIError.sessionExpired }
-                return (status, data)
-            }
-            token = try await freshCredentials(forceRefresh: true).accessToken
-        }
-        throw APIError.sessionExpired
-    }
 
     private func send(_ method: String, _ path: String, body: Data?, headers: [String: String],
                       token: String?) async throws -> (Int, Data) {
@@ -271,36 +266,5 @@ public actor ExerlyAPI {
                                       accessExpiresAt: issuedAt.addingTimeInterval(Double(expiresIn)),
                                       sessionID: sessionID, accountID: id)
         return (credentials, AccountSummary(id: id, email: email, name: user["name"] as? String))
-    }
-
-    private static func document(_ json: [String: Any]) throws -> RemoteDocument {
-        guard let kind = json["kind"] as? String, let id = json["id"] as? String,
-              let revision = json["revision"] as? Int, let deleted = json["deleted"] as? Bool
-        else { throw APIError.invalidResponse }
-        let payload = try (json["payload"] as? [String: Any]).map { try JSONSerialization.data(withJSONObject: $0) }
-        return RemoteDocument(kind: kind, id: id, revision: revision, deleted: deleted, payload: payload,
-                              sequence: json["sequence"] as? Int)
-    }
-
-    private static func writeResult(_ status: Int, _ data: Data) throws -> DocumentWriteResult {
-        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        switch status {
-        case 200, 201:
-            guard let revision = json?["revision"] as? Int else { throw APIError.invalidResponse }
-            return .applied(revision: revision)
-        case 409:
-            let current = (json?["details"] as? [String: Any])?["document"] as? [String: Any]
-            return .conflict(try current.map(document))
-        default:
-            throw failure(status, json)
-        }
-    }
-
-    private static func code(_ json: Any?) -> String? {
-        ((json as? [String: Any])?["details"] as? [String: Any])?["code"] as? String
-    }
-
-    private static func failure(_ status: Int, _ json: Any?) -> APIError {
-        .server(status: status, message: (json as? [String: Any])?["message"] as? String ?? "HTTP \(status)")
     }
 }

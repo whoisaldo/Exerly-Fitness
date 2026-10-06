@@ -2,14 +2,13 @@ import CryptoKit
 import Foundation
 import Observation
 
-/// The document endpoints the sync engine needs. `ExerlyAPI` provides them.
+/// The document endpoints the sync engine needs. `AccountAPI` provides them,
+/// bound to one account.
 public protocol DocumentAPI: Sendable {
     func putDocument(kind: String, id: String, payload: Data, baseRevision: Int, idempotencyKey: String) async throws -> DocumentWriteResult
     func deleteDocument(kind: String, id: String, baseRevision: Int, idempotencyKey: String) async throws -> DocumentWriteResult
     func changes(after cursor: Int, limit: Int) async throws -> ChangePage
 }
-
-extension ExerlyAPI: DocumentAPI {}
 
 /// Keeps a TrainingStore and the server in step. See
 /// docs/design/003-document-sync.md.
@@ -18,6 +17,10 @@ extension ExerlyAPI: DocumentAPI {}
 /// the last version the server acknowledged. Because that is derived rather
 /// than flagged, a crash between saving and syncing can't lose a change.
 /// Conflicts merge three ways and are pushed again.
+///
+/// Before an account is signed out, switched or deleted, call `shutdown()`.
+/// It stops the current run and waits for it, after which the engine writes
+/// nothing locally and sends nothing.
 @MainActor
 @Observable
 public final class SyncEngine {
@@ -37,6 +40,7 @@ public final class SyncEngine {
     @ObservationIgnored private let api: DocumentAPI
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private var running: Task<Void, Error>?
+    @ObservationIgnored private(set) var isShutDown = false
     @ObservationIgnored private var bases: [String: SyncBase] = [:]
 
     private static let maxAttempts = 4
@@ -54,18 +58,21 @@ public final class SyncEngine {
         self.init(hosts: [store], state: state, api: api, now: now)
     }
 
-    /// Pulls, pushes, then pulls again. Overlapping calls share one run.
+    /// Pulls, pushes, then pulls again. Overlapping calls share one run, and
+    /// cancelling the call that started it cancels the run.
     public func sync() async throws {
+        guard !isShutDown else { throw CancellationError() }
         if let running { return try await running.value }
         let task = Task { try await self.run() }
         running = task
         defer { running = nil }
         do {
-            try await task.value
+            try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
             state = .idle
             lastSyncedAt = now()
         } catch {
             switch error {
+            case is CancellationError, APIError.accountChanged: state = .idle
             case APIError.sessionExpired, APIError.notSignedIn: state = .failed("Sign in again to sync.")
             case APIError.server(_, let message): state = .failed(message)
             case APIError.invalidResponse: state = .failed("The server sent an unexpected response.")
@@ -73,6 +80,21 @@ public final class SyncEngine {
             }
             throw error
         }
+    }
+
+    /// Stops syncing for good: cancels the current run and returns once it has
+    /// stopped. Call it before signing out, switching or deleting the account.
+    public func shutdown() async {
+        isShutDown = true
+        guard let running else { return }
+        running.cancel()
+        _ = try? await running.value
+    }
+
+    /// Every local write checks this first. The engine runs on the main actor,
+    /// so nothing can interleave between the check and the write.
+    private func checkActive() throws {
+        if isShutDown || Task.isCancelled { throw CancellationError() }
     }
 
     private var kindOrder: [String] { hosts.flatMap(\.documentKinds) }
@@ -94,6 +116,7 @@ public final class SyncEngine {
         var cursor = try stateStore.syncCursor()
         while true {
             let page = try await api.changes(after: cursor, limit: 500)
+            try checkActive()
             for kind in kindOrder {
                 for change in page.changes where change.kind == kind { try receive(change) }
             }
@@ -105,6 +128,7 @@ public final class SyncEngine {
 
     /// Applies a remote version, merging with unpushed local changes.
     private func receive(_ change: RemoteDocument) throws {
+        try checkActive()
         guard let host = host(for: change.kind) else { return }
         let key = Self.key(change.kind, change.id)
         let base = bases[key]
@@ -178,6 +202,7 @@ public final class SyncEngine {
                                                           idempotencyKey: base.pushKey!)
                 }
             } catch APIError.server(status: 404, _) where current == nil {
+                try checkActive()
                 try stateStore.removeSyncBase(kind: kind, id: id)
                 bases[Self.key(kind, id)] = nil
                 return false
@@ -201,6 +226,7 @@ public final class SyncEngine {
     private static func key(_ kind: String, _ id: String) -> String { "\(kind)/\(id)" }
 
     private func saveBase(_ base: SyncBase) throws {
+        try checkActive()
         try stateStore.saveSyncBase(base)
         bases[Self.key(base.kind, base.id)] = base
     }

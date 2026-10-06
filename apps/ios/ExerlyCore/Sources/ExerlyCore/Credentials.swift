@@ -73,14 +73,22 @@ public struct KeychainCredentialStore: CredentialStore {
         return result as? Data
     }
 
+    /// Updates in place and adds only when missing, so a failed replacement
+    /// keeps the previous credential or pending refresh key.
     private func write(_ account: String, _ data: Data?) throws {
-        let deleted = SecItemDelete(query(account) as CFDictionary)
-        guard deleted == errSecSuccess || deleted == errSecItemNotFound else { throw Failure(status: deleted) }
-        guard let data else { return }
-        var attributes = query(account)
-        attributes[kSecValueData as String] = data
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        let status = SecItemAdd(attributes as CFDictionary, nil)
+        guard let data else {
+            let deleted = SecItemDelete(query(account) as CFDictionary)
+            guard deleted == errSecSuccess || deleted == errSecItemNotFound else { throw Failure(status: deleted) }
+            return
+        }
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        var status = SecItemUpdate(query(account) as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            status = SecItemAdd(query(account).merging(attributes) { _, new in new } as CFDictionary, nil)
+        }
         guard status == errSecSuccess else { throw Failure(status: status) }
     }
 }

@@ -105,7 +105,7 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         }
         let start = self.start
         let api = client(transport, store: store, clock: { start })
-        _ = try await api.changes(after: 0)
+        _ = try await api.account().changes(after: 0)
         #expect(transport.requests.map(\.path) == ["/auth/token", "/v1/changes?after=0&limit=500"])
         #expect(try store.load()?.refreshToken == "refresh-2")
         #expect(try store.loadPendingRefreshKey() == nil)
@@ -127,9 +127,9 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         }
         let start = self.start
         let api = client(transport, store: store, clock: { start })
-        await #expect(throws: Offline.self) { try await api.changes(after: 0) }
+        await #expect(throws: Offline.self) { try await api.account().changes(after: 0) }
         #expect(try store.loadPendingRefreshKey() == keys.first)
-        _ = try await api.changes(after: 0)
+        _ = try await api.account().changes(after: 0)
         #expect(keys.count == 2 && keys[0] == keys[1])
         #expect(try store.loadPendingRefreshKey() == nil)
     }
@@ -155,8 +155,8 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         }
         let start = self.start
         let api = client(transport, store: store, clock: { start })
-        #expect(try await api.changes(after: 0).cursor == 3)
-        await #expect(throws: APIError.sessionExpired) { try await api.changes(after: 3) }
+        #expect(try await api.account().changes(after: 0).cursor == 3)
+        await #expect(throws: APIError.sessionExpired) { try await api.account().changes(after: 3) }
         #expect(try store.load() == nil)
         #expect(await !api.isSignedIn)
     }
@@ -180,13 +180,13 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         }
         let start = self.start
         let api = client(transport, store: store, clock: { start })
-        let result = try await api.putDocument(kind: "workout_session", id: "ABC", payload: Data(#"{"id":"ABC"}"#.utf8),
+        let result = try await api.account().putDocument(kind: "workout_session", id: "ABC", payload: Data(#"{"id":"ABC"}"#.utf8),
                                                baseRevision: 2, idempotencyKey: "key-123456")
         guard case .conflict(let remote?) = result else { Issue.record("expected a conflict"); return }
         #expect(remote.revision == 3)
         let payload = try JSONSerialization.jsonObject(with: try #require(remote.payload)) as? [String: Any]
         #expect(payload?["notes"] as? String == "remote")
-        let deleted = try await api.deleteDocument(kind: "workout_session", id: "ABC", baseRevision: 3, idempotencyKey: "key-654321")
+        let deleted = try await api.account().deleteDocument(kind: "workout_session", id: "ABC", baseRevision: 3, idempotencyKey: "key-654321")
         #expect(deleted == .applied(revision: 4))
     }
 
@@ -204,11 +204,11 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         }
         let start = self.start
         let api = client(transport, store: store, clock: { start })
-        try await api.connectApple(identityToken: "jwt", rawNonce: "raw")
+        try await api.account().connectApple(identityToken: "jwt", rawNonce: "raw")
         conflict = true
-        await #expect(throws: APIError.linkConflict) { try await api.connectApple(identityToken: "jwt", rawNonce: "raw") }
+        await #expect(throws: APIError.linkConflict) { try await api.account().connectApple(identityToken: "jwt", rawNonce: "raw") }
         await #expect(throws: APIError.server(status: 400, message: "Set a password before disconnecting Apple")) {
-            try await api.disconnectApple()
+            try await api.account().disconnectApple()
         }
     }
 

@@ -184,3 +184,26 @@ ExerlyLogo.jpg. The app icon uses that symbol alone so it remains legible at hom
 screen size. Restore purple/pink brand accents and neutral purple-tinted surfaces;
 retain adaptive light/dark colors, Dynamic Type and native controls. The green
 palette introduced in A2 is superseded. No new brand direction is being adopted.
+
+## 2026-10-06: Web CI job removed
+
+The `web` job is gone from `ci.yml`, as the brief allows and both agents agreed
+(to-logic.md, "A2 regression green"). The web sources stay, and so does the
+cross-client step in `ios-tests`, which the app agent owns. Required CI now
+covers the API, ExerlyCore, SwiftLint, the iOS build and tests, and workflow
+lint.
+
+## 2026-10-06: One session owner in the app
+
+The app's legacy `APIClient` stays the only owner of the session: it signs in,
+refreshes and stores credentials. ExerlyCore talks to the server through
+`SessionTransport`, which `APIClient` implements, and `AccountAPI` binds every
+document and account request to one account ID. Two refresh implementations
+sharing rotating tokens would race, and a second session would leave the
+legacy screens signed out. `ExerlyAPI` remains a standalone owner for tests,
+scripts and future targets.
+
+- A sign-in or sign-out starts a new session generation; nothing begun under an
+  older one saves credentials or returns a response.
+- `SyncEngine.shutdown()` stops sync and waits for it before an account is
+  signed out, switched or deleted.

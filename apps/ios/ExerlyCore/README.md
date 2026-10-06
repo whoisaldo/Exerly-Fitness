@@ -194,7 +194,14 @@ launch.
 
 ## Accounts and sync
 
-Wiring in the app:
+One object owns the session: it signs in, refreshes and stores credentials. In
+the Exerly app that is the legacy `APIClient`, which implements
+`SessionTransport`; `AuthViewModel` hands out an `AccountAPI` bound to the
+signed-in account. `ExerlyAPI` is a standalone owner for tests, scripts and
+future targets. Never run two owners against one session: rotating refresh
+tokens would race.
+
+Wiring, with `ExerlyAPI` as the owner:
 
 ```swift
 let api = ExerlyAPI(baseURL: apiURL, credentials: KeychainCredentialStore())
@@ -206,46 +213,73 @@ request.nonce = nonce.sha256
 let result = try await api.signInWithApple(identityToken: token, rawNonce: nonce.raw,
                                            name: fullName, timeZone: .current, unitSystem: nil)
 
-let persistence = try SQLiteTrainingPersistence(url: .defaultURL(accountID: result.account.id))
+let account = try await api.account()   // bound to result.account.id
+let persistence = try SQLiteTrainingPersistence(url: .defaultURL(accountID: account.accountID))
 let store = try TrainingStore(persistence: persistence)
-let sync = SyncEngine(store: store, state: persistence, api: api)
+let sync = SyncEngine(store: store, state: persistence, api: account)
 try await sync.sync()   // at launch, on foreground, after finishing a session, and every few minutes
+
+// Signing out, switching or deleting the account:
+await sync.shutdown()   // returns once nothing more will be written or sent
+try await api.signOut()
 ```
+
+### SessionTransport and AccountAPI
+
+- `SessionTransport.send(_:path:body:headers:as:)` sends one request as an
+  account, refreshing once after a 401. It throws `accountChanged` when the
+  session belongs to someone else, or is replaced or removed while the request
+  is in flight.
+- `AccountAPI(accountID:transport:)` is one account's endpoints:
+  - the document endpoints `SyncEngine` uses (it is a `DocumentAPI`);
+  - `connectApple(identityToken:rawNonce:)` and `disconnectApple()`;
+  - `exportAccount()`, which returns the JSON `Data`;
+  - `deleteAccount(appleAuthorizationCode:)`, which deletes on the server. The
+    session owner then forgets the session.
 
 ### ExerlyAPI
 
-An actor.
+An actor, and a `SessionTransport`.
 
 - `signInWithApple(identityToken:rawNonce:name:timeZone:unitSystem:)` and
   `signIn(email:password:)` return a `SignInResult` with `created` and
   `account` (`id`, `email`, `name`).
-- `connectApple(identityToken:rawNonce:)` and `disconnectApple()`.
-- `signOut()`, `deleteAccount(appleAuthorizationCode:)`, `exportAccount()`,
-  `isSignedIn` and `accountID`.
+- `account()` returns the signed-in account's `AccountAPI`.
+- `signOut()` forgets the session at once, then revokes it on the server when
+  reachable. `deleteAccount(appleAuthorizationCode:)` deletes, then forgets.
+- `isSignedIn` and `accountID`.
 
 It refreshes the 15-minute access token before it expires and once after a 401. A
 refresh's idempotency key stays in the credential store until the rotated
-credential is saved.
+credential is saved. Each sign-in or sign-out starts a new session generation:
+a refresh or request begun under an older one never saves credentials or
+returns its response.
 
-Errors are `APIError`:
+Errors are `APIError`, with user-facing descriptions (`LocalizedError`):
 
 - `sessionExpired`: sign in again.
 - `linkRequired`: a password account owns that email.
 - `linkConflict`: the Apple ID is connected to another account.
 - `appleReauthorizationRequired`: deletion needs a fresh Apple authorization code.
+- `accountChanged`: the account changed during the request; nothing was applied.
 - `server(status:message:)`, `notSignedIn` and `invalidResponse`.
 
 ### Credentials
 
 - `KeychainCredentialStore` keeps the session in the Keychain, readable after first
-  unlock and never migrated to another device.
+  unlock and never migrated to another device. It updates in place, so a failed
+  write keeps the previous credential.
 - `InMemoryCredentialStore` is for previews and tests.
 
 ### SyncEngine
 
 `@MainActor @Observable`.
 
-- `sync()` pulls, pushes, then pulls again. Overlapping calls share one run.
+- `sync()` pulls, pushes, then pulls again. Overlapping calls share one run;
+  cancelling the call that started it cancels the run.
+- `shutdown()` stops it for good and returns once the current run has stopped.
+  After that it writes nothing locally and sends nothing. Call it before signing
+  out, switching or deleting the account.
 - `state` is `idle`, `syncing`, `offline` or `failed(message)`, and
   `lastSyncedAt` records the last success.
 - `SQLiteTrainingPersistence` and `InMemoryTrainingPersistence` both provide the
