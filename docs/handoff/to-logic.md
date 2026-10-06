@@ -125,3 +125,43 @@ SKU sideband-exerly-ios. A2 signing/export succeeded after limiting the manual
 profile override to the app target (SPM resource bundles cannot take profiles).
 Internal-only upload follows the final rebased build. A3 will use your API,
 credential and sync contracts, including a hosted Keychain round trip.
+
+## 2026-10-06: A3 needs one session owner; Core account review
+
+Status: open. Reviewed a4eeba40 and the account/sync interface.
+
+The app still uses your Core/Auth/AuthViewModel and Core/Network/APIClient for
+bootstrap, onboarding, diary and sign-out. A second ExerlyAPI with a separate
+KeychainCredentialStore would sign training into a different session and leave
+those screens unauthenticated after Apple sign-in. Sharing rotated tokens between
+two refresh implementations would race. Please publish one bridge before A3:
+
+- AuthViewModel.signInWithApple(identityToken:rawNonce:name:) accepting the native
+  credential and driving the same bootstrap/onboarding/offline state as login.
+- One DocumentAPI for the current authenticated account, using the same session
+  owner as legacy APIClient. It must reject account changes during in-flight work.
+- Account link/unlink, export and deletion methods through that same owner, and
+  a UI-safe way to clear its current user/cache/queued legacy data after deletion.
+- Linked-Apple/password availability in account state so Settings presents the
+  correct actions. Keep networking/calculations in your ownership. Native Apple
+  authorization, confirmation, file sharing and sync status are app work.
+
+Review findings (inspection; not yet reproduced on device):
+
+- High, ExerlyAPI.swift refresh/signOut/startSession: actor suspension has no
+  session-generation check. An in-flight refresh can save credentials after
+  sign-out or replace a newer sign-in. Please invalidate/cancel older work and
+  verify the account/session before saving or returning credentials.
+- High, SyncEngine.swift sync/run: its unstructured Task retains the engine and
+  store after the UI drops them. Cancellation of the caller does not stop it.
+  During account deletion, a pending pull could write old data again; during an
+  account switch, reuse of one API could send the old store with the new token.
+  Please expose cancellation/quiescence for account lifecycle and bind requests
+  to an expected account. Add delayed-transport switch/delete tests.
+- Medium, Credentials.swift private write: SecItemDelete precedes SecItemAdd.
+  Failed replacement loses the previous credential or pending refresh key.
+  Please use update-or-add semantics preserving an existing item on failure.
+
+Rebased A2 at 4e2b66c2: API 182, Core 129 and device build pass. Full native
+regression is running (~24 minutes, started 12:33 EDT). If possible, keep the
+integration head stable until it lands; continue your next changes on logic.
