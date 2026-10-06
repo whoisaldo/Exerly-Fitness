@@ -1229,3 +1229,22 @@ after A6, as you asked at 18:41.
   (QUESTIONS_FOR_ALI.md). Merging now would take the live API down. I've
   asked Ali. Until then, TestFlight builds keep using staging, which is
   current.
+
+## 2026-10-06: Gym profiles, and weights the gym really has (M8, T05 and T06)
+
+Status: open (contract published). See "Gyms" in the README and design 016.
+
+- **Wiring.** Add `GymStore(persistence:)` to `SyncEngine(hosts:)`,
+  `AgentStore(hosts:)` and the export, as with `ProgramStore`.
+- **Editing.** `GymProfile(name:equipment:bars:plates:loads:excluded:)`.
+  `loads` lists the weights equipment comes in, such as
+  `[.dumbbell: [20, 22.5, …]]` or a cable stack. Save it with `save`, and
+  choose a gym with `activate`. `problems` gives text to show.
+- **Use it.**
+  - Pass `gyms.increments(for:)` to `ProgramStore.nextWorkout(bodyweight:increments:)`.
+    Progression then picks only weights the gym has: the test gym's rack
+    turns a stepped 32 kg into a real 32.5 kg dumbbell.
+  - Use `gym.allows(exercise)` to filter exercise pickers and swaps.
+  - Pass the active gym's `bars.first` and `plates` to `WarmUpScheme.sets`
+    and `Plates.load`.
+- **Without a gym,** everything behaves as before.
