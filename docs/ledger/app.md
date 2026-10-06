@@ -6,47 +6,49 @@ milestone. Current date 2026-10-06, updated 15:54 EDT.
 
 ## Current work and next steps
 
-2026-10-06 16:01 EDT. A3 is live as internal build 2610061942, VALID and
-IN_BETA_TESTING. It landed and pushed at 507ee527. Logic then landed M4/M5 at
-785917ef. A4 is rebased onto that integration, source frozen at 79d5f962.
-Its two exact Core cherry-picks were skipped because the landing includes them.
+2026-10-06 16:43 EDT. Done is not met. A3 remains the live internal release,
+build 2610061942. A4 is frozen in this app-next worktree, branch agent/app-next,
+source bd6225eb after rebasing onto integration 69fac1e4.
 
-A4 remains in /Users/aldo/Desktop/Exerly-Fitness-app-next, branch agent/app-next.
-Primary /Users/aldo/Desktop/Exerly-Fitness-app, branch agent/app, will fast-forward
-to this prepared A4 base and continue A5 while A4 tests run. Do not put A5 changes
-into the frozen app-next worktree or its release.
+The first complete A4 suite passed at 16:33 EDT, 112 hosted + 22 UI tests,
+8 optional skips, zero failures. Evidence is artifacts/agents/full-a4-native.
+Logic landed a plate fix during that run, so the required final suite on the
+rebased source is running again, full-a4-canonical, session 81938, started 16:35.
+Do not interrupt it. Final Core 220, API 226 and device build pass in canonical-
+{core,api,device}.log. Full suite uses Original Large 7189880A and fixture 39203.
 
-1. A4 full native suite runs on Original Large, session 52061,
-   artifacts/agents/full-a4-native.{log,xcresult}, started 16:01 EDT. All 21
-   focused account/agent tests pass after Core rebase, including cancellation
-   and retained-store writes, in account-cancellation-green.xcresult. Core219
-   and device build pass. API final-api-ready.log/session43222 running after
-   npm ci installed dependencies in this worktree. Initial final-api.log and
-   fixture startup failed only for missing Express; they are not evidence.
-2. All four largest-text agent review variants pass and every image has been
-   inspected. New export text needs four variants: export-small-light/session
-   22831 and export-large-dark/session99559 running; then run small-dark and
-   large-light, export and inspect. The account journey has six captures.
-3. When full suite and fast gates pass, create/upload a fresh signed A4 build,
-   use the internal finalization helper copied from main artifacts/account,
-   update PARITY/RELEASE/ledger and fast-forward integration. Logic was asked
-   to hold integration at785917ef for this roughly30-minute run and review A4.
-4. Continue A5 entry checks/observations in primary, design009. Core stable
-   detector identities and evidence correction are now included. Then A6
-   programs, design010. Plate review remains open; omit reserved weightMatch.
-   Do not stop after A4. Done is not met.
+Signed archive and IPA 2610062038 passed validation on this rebased source,
+apps/ios/build/release/2610062038. They are NOT uploaded. Earlier 2005 is now
+obsolete and must not be uploaded. After the final suite passes, upload 2038,
+then run artifacts/agents/finalize-internal.mjs with a4-test-notes.txt. Verify
+VALID, IN_BETA_TESTING, the Ali-only group and notes. Update PARITY/RELEASE and
+fast-forward integration. Logic was asked to hold further integration at69fac1e4.
 
-Current fresh fixtures are app-next source on39203/4/5, sessions62377/76641/27679,
-logs agents/final-fixture-<port>-ready.log. Old verified primary node PIDs
-99139/99140/99141 were stopped after their tests finished. Old39206 remains
-unused and can be restarted when needed. No protected services changed.
+All four largest-text agent review variants pass, and all images are inspected.
+All four updated export variants pass too; all24 captures are inspected in
+artifacts/agents/export-{small,large}-{light,dark}. No new clipping. The A4 review
+found unsupported program proposals; A5 now explains this before Accept/Undo.
+A4 notes disclose that only workout/exercise decisions are supported.
 
-A4 now includes pending legacy export rows in both actions, only when the
-legacy engine matches the signed-in account. Offline wording explains which
-records are absent. Old training workspaces detach before close; closing waits
-for earlier closes and sync shutdown even if SwiftUI cancels a transition.
-Regression tests failed before wiring, and the cancellation test caught a
-closed workspace reused after cancellation. All21 focused tests now pass.
+Primary /Users/aldo/Desktop/Exerly-Fitness-app, branch agent/app, now carries
+A5 at68c7ce44 on this A4 base. Do not put those changes into this release.
+TrainingEntryChecks runs Core in background, preserves manual logging, caches
+completed snapshots, refuses late results after account close or edits, and
+files reviewable proposals. Observations uses Core findings and links to raw
+sets/source workouts, showing missing RIR/bodyweight and unverifiable metrics.
+23 focused hosted tests pass. All three normal UI journeys pass across
+real-api-ready and checks-off-control; the initial toggle failure was a test
+tap on the label, corrected to hit the switch. All20 normal captures inspected.
+A5 largest-type small-light/session18961 and large-dark/session4393 are running
+in primary/artifacts/insights. Then run small-dark and large-light and inspect.
+Logic has a new medium wording finding: declining estimates are described as
+"hasn't moved". Adopt its exact Core correction for A5 when published.
+
+Fixtures: app-next39203/4/5; primary39206/session44454 and39207/session85413.
+Use TEST_RUNNER_EXERLY_UI_FIXTURE_URL for XCTest runner, not SIMCTL_CHILD.
+Only app simulators are used; no protected services changed.
+
+Continue A5, then A6 design010 and the rest of parity. Do not stop at a milestone.
 
 ## A3 final evidence and release
 
