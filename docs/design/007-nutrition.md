@@ -1,6 +1,6 @@
 # M5: nutrition, weight and expenditure
 
-Owner: logic agent. Status: in progress, 2026-10-06.
+Owner: logic agent. Status: M5a and M5b built and measured, 2026-10-06.
 
 ## Problem
 
@@ -88,6 +88,36 @@ Measured:
 - the same scores for the legacy estimator.
 
 The rates are recorded here and enforced by tests.
+
+### Measured (2026-10-06)
+
+The simulation runs 30 people per weigh-in frequency, each for 140 days:
+
+- starting weights of 60 to 105 kg and expenditure of 2,000 to 3,080 kcal;
+- a 500 kcal diet or a 400 kcal surplus between maintenance phases;
+- expenditure falling 22 kcal per kg lost, with adaptive thermogenesis up to
+  5 % and a random drift;
+- autocorrelated water swings of 0.6 kg;
+- true intake varying by 300 kcal a day;
+- logging biased 0.85 to 1.0, with 120 kcal of logging noise and 15 % of days
+  not complete.
+
+Estimates are real-time: each one sees only the data up to its day, weekly
+from day 28. The truth is expenditure in logged units.
+
+| Weigh-ins              | Expenditure error, mean (90th %) | Trend error | ±2 SD band covers the truth | Legacy expenditure | Legacy trend |
+| ---------------------- | -------------------------------- | ----------- | --------------------------- | ------------------ | ------------ |
+| Daily (90 %)           | 90 kcal (185)                    | 0.22 kg     | 95 %                        | 94 kcal (196)      | 0.33 kg      |
+| Every other day (50 %) | 96 kcal (186)                    | 0.24 kg     | 96 %                        | 111 kcal (244)     | 0.54 kg      |
+| About weekly (20 %)    | 114 kcal (228)                   | 0.32 kg     | 95 %                        | 154 kcal (288)     | 1.03 kg      |
+
+- Daily intake noise limits any estimator to about 75–90 kcal at a 28-day
+  horizon, so with daily weigh-ins the gain over the legacy method is small.
+- The gains are in trend weight, in sparse weigh-ins, and in a band that is
+  honest about the uncertainty.
+- Expenditure drift from 8 to 25 kcal a day and water persistence from 0.6 to
+  0.9 changed the mean error by under 5 kcal, so the defaults (15 and 0.8) are
+  not fragile.
 
 ## Targets and coaching
 
