@@ -38,7 +38,7 @@ test('search returns Foods ExerlyCore can save, with attribution, to sessions an
   assert.deepEqual(asked, { query: 'oat bar', limit: 5 });
   assert.deepEqual(
     res.body.foods.map((food) => food.id),
-    ['off:0012345678905', 'off:5000000000017', 'off:76543210']
+    ['off:0012345678905', 'off:5000000000017', 'off:76543210', 'off:3000000000013']
   );
   assert.match(res.body.attribution, /Open Food Facts.*Open Database License/);
 

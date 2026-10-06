@@ -35,6 +35,22 @@ public struct RecipeIngredient: Sendable, Codable, Hashable {
     }
 }
 
+/// How a food labelled per volume converts to grams.
+public struct VolumeBasis: Sendable, Codable, Hashable {
+    /// Grams per millilitre.
+    public var density: Double
+    /// True when the density is typical for the kind of food rather than this product's.
+    public var assumed: Bool
+    /// Where the density came from, to show beside the food.
+    public var note: String?
+
+    public init(density: Double, assumed: Bool, note: String? = nil) {
+        self.density = density
+        self.assumed = assumed
+        self.note = note
+    }
+}
+
 /// A custom food, a recipe, or a database food the person keeps.
 public struct Food: Sendable, Codable, Hashable, Identifiable {
     /// A UUID for custom foods and recipes; "usda:<fdcId>" or "off:<barcode>" for database foods.
@@ -52,6 +68,9 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
     public var favorite: Bool
     public var createdAt: Date
     public var archivedAt: Date?
+    /// For a food labelled per volume: `per100g` and gram servings were
+    /// converted with this density, and `per100ml` gives the label back.
+    public var volume: VolumeBasis?
 
     public init(id: String = UUID().uuidString, name: String, brand: String? = nil, source: FoodSource = .custom,
                 per100g: NutrientAmounts, servings: [Serving] = [], barcode: String? = nil, favorite: Bool = false,
@@ -85,6 +104,12 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
         return weight > 0 ? total.scaled(by: 100 / weight) : NutrientAmounts()
     }
 
+    /// The label's amounts per 100 ml, for a food labelled per volume.
+    public var per100ml: NutrientAmounts? { volume.map { per100g.scaled(by: $0.density) } }
+
+    /// Grams for a volume, for a food labelled per volume.
+    public func grams(milliliters: Double) -> Double? { volume.map { milliliters * $0.density } }
+
     /// Nutrients per 100 g from a label's amounts for one serving of `servingGrams`.
     public static func per100g(fromLabel amounts: NutrientAmounts, servingGrams: Double) throws -> NutrientAmounts {
         var problems = amounts.problems
@@ -107,6 +132,9 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
         if source == .recipe && (ingredients ?? []).isEmpty { problems.append("a recipe needs ingredients") }
         if (ingredients ?? []).contains(where: { !($0.grams.isFinite && $0.grams > 0) }) {
             problems.append("each ingredient needs a positive weight")
+        }
+        if let volume, !(volume.density.isFinite && volume.density > 0.3 && volume.density < 3) {
+            problems.append("the density must be between 0.3 and 3 g/ml")
         }
         return problems
     }

@@ -248,7 +248,10 @@ try await api.signOut()
     Facts and return `DatabaseFoods`: unsaved `Food`s, ready for
     `NutritionStore.saveFood` or `log`, and the attribution to show with them.
     A barcode with no match returns nil. Search on submit, not as the person
-    types.
+    types. A product labelled per 100 ml has a `volume` basis: the density
+    used to convert it to grams, whether it was assumed, and a note to show.
+    `per100ml` gives the label back, and `grams(milliliters:)` converts an
+    amount poured.
 
 ### ExerlyAPI
 

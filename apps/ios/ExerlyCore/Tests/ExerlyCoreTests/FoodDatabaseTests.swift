@@ -33,7 +33,7 @@ import Testing
             }
             #expect(factor == expected, "\(name) is in \(nutrient.unit.rawValue)")
         }
-        #expect(golden.foods.count == 5 && foods.count == 3)
+        #expect(golden.foods.count == 6 && foods.count == 4)
         #expect(foods.allSatisfy { $0.problems.isEmpty && $0.source == .openFoodFacts && $0.id.hasPrefix("off:") })
         let bar = try #require(foods.first)
         #expect(bar.per100g[.energy] == 412)
@@ -42,6 +42,12 @@ import Testing
         #expect(bar.per100g[.alcohol] == nil)
         #expect(bar.servings == [Serving("1 bar (40 g)", grams: 40)])
         #expect(foods[1].per100g[.energy] == 43.021)
+        #expect(bar.volume == nil && foods[1].volume?.density == 1 && foods[1].volume?.assumed == true)
+        // A label per 100 ml, for a liquid lighter than water: the label comes back.
+        let oil = try #require(foods.last)
+        #expect(oil.volume == VolumeBasis(density: 0.92, assumed: true, note: "Typical for oils"))
+        #expect(oil.per100g[.fat] == 100 && abs((oil.per100ml?[.energy] ?? 0) - 828) < 1e-9)
+        #expect(oil.servings == [Serving("1 tbsp (15 ml)", grams: 13.8)] && oil.grams(milliliters: 15) == 13.8)
         // The canonical form round-trips, so a saved database food syncs unchanged.
         for food in foods {
             #expect(try ExerlyJSON.decoder.decode(Food.self, from: ExerlyJSON.canonical(food)) == food)
@@ -72,7 +78,7 @@ import Testing
         }
         let api = try await account(transport)
         let found = try await api.searchFoods("oat bar + nuts", limit: 5)
-        #expect(found.foods.map(\.id) == ["off:0012345678905", "off:5000000000017", "off:76543210"])
+        #expect(found.foods.map(\.id) == ["off:0012345678905", "off:5000000000017", "off:76543210", "off:3000000000013"])
         #expect(found.attribution == attribution)
         #expect(transport.requests.first?.path == "/v1/foods/search?q=oat%20bar%20%2B%20nuts&limit=5")
 

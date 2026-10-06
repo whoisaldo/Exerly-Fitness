@@ -236,6 +236,24 @@
         "fat_100g": "lots",
         "proteins_100g": 25.25
       }
+    },
+    {
+      "code": "3000000000013",
+      "product_name": "Synthetic olive oil",
+      "categories_tags": [
+        "en:fats",
+        "en:vegetable-oils",
+        "en:olive-oils"
+      ],
+      "nutrition_data_per": "100ml",
+      "serving_size": "1 tbsp (15 ml)",
+      "serving_quantity": 15,
+      "serving_quantity_unit": "ml",
+      "nutriments": {
+        "energy-kcal_100g": 828,
+        "fat_100g": 92,
+        "saturated-fat_100g": 13.8
+      }
     }
   ],
   "foods": [
@@ -296,7 +314,12 @@
       ],
       "barcode": "5000000000017",
       "favorite": false,
-      "createdAt": "2026-10-06T12:00:00.000Z"
+      "createdAt": "2026-10-06T12:00:00.000Z",
+      "volume": {
+        "density": 1,
+        "assumed": true,
+        "note": "Water's density, assumed: not known for this product"
+      }
     },
     null,
     null,
@@ -311,6 +334,30 @@
       "barcode": "76543210",
       "favorite": false,
       "createdAt": "2026-10-06T12:00:00.000Z"
+    },
+    {
+      "id": "off:3000000000013",
+      "name": "Synthetic olive oil",
+      "source": "openFoodFacts",
+      "per100g": {
+        "energy": 900,
+        "fat": 100,
+        "saturatedFat": 15
+      },
+      "servings": [
+        {
+          "name": "1 tbsp (15 ml)",
+          "grams": 13.8
+        }
+      ],
+      "barcode": "3000000000013",
+      "favorite": false,
+      "createdAt": "2026-10-06T12:00:00.000Z",
+      "volume": {
+        "density": 0.92,
+        "assumed": true,
+        "note": "Typical for oils"
+      }
     }
   ]
 }

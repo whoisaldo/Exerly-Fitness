@@ -57,6 +57,34 @@ const OFF_NUTRIENTS = {
 
 const KJ_PER_KCAL = 4.184;
 
+// Typical densities in g/ml, for labels and servings given by volume. Open
+// Food Facts rarely records a product's density, so its categories pick one;
+// the first match wins, and anything else is taken as water and says so.
+const DENSITIES = [
+  [/oil/, 0.92, 'Typical for oils'],
+  [/syrup|honey|molasses/, 1.36, 'Typical for syrups and honey'],
+  [/milk|kefir|yogurt-drink|drinkable-yogurt/, 1.03, 'Typical for milk'],
+  [/cream/, 1.0, 'Typical for cream'],
+  [/juice|nectar|smoothie/, 1.04, 'Typical for juices'],
+  [/soda|soft-drink|carbonated|cola|lemonade|energy-drink/, 1.04, 'Typical for soft drinks'],
+  [/spirit|liqueur|vodka|whisk|rum|gin/, 0.95, 'Typical for spirits'],
+  [/beer/, 1.01, 'Typical for beer'],
+  [/wine/, 0.99, 'Typical for wine'],
+  [/soup|broth/, 1.03, 'Typical for soups'],
+];
+
+function density(product) {
+  const categories = (product.categories_tags ?? []).join(' ');
+  for (const [pattern, value, note] of DENSITIES) {
+    if (pattern.test(categories)) return { density: value, assumed: true, note };
+  }
+  return {
+    density: 1,
+    assumed: true,
+    note: "Water's density, assumed: not known for this product",
+  };
+}
+
 function amount(value) {
   if (value == null || value === '') return null;
   const number = Number(value);
@@ -68,8 +96,8 @@ const tidy = (value) => Number(value.toPrecision(6));
 
 /**
  * An Open Food Facts product as an ExerlyCore Food, or null without a name or
- * a barcode. Amounts per 100 ml are taken as per 100 g, and a serving in
- * millilitres as that many grams: close for most drinks, not for oils or syrups.
+ * a barcode. Amounts per 100 ml and servings in millilitres are converted with
+ * a typical density for the product's category, recorded as `volume`.
  * Alcohol is left out, because Open Food Facts gives it as % by volume.
  */
 function fromOpenFoodFacts(product, { now = new Date() } = {}) {
@@ -77,22 +105,29 @@ function fromOpenFoodFacts(product, { now = new Date() } = {}) {
   const code = String(product?.code ?? '').trim();
   if (!name || !/^\d{8,14}$/.test(code)) return null;
   const nutriments = product.nutriments ?? {};
+  // A label per 100 ml, or servings in millilitres, need a density to become
+  // grams. It is recorded as the food's volume basis, so the label can be
+  // recovered and the approximation shown.
+  const perVolume = product.nutrition_data_per === '100ml';
+  const servingUnit = product.serving_quantity_unit ?? 'g';
+  const volume = perVolume || servingUnit === 'ml' ? density(product) : null;
+  const toGrams = perVolume ? 1 / volume.density : 1;
   const per100g = {};
   for (const [key, [nutrient, factor]] of Object.entries(OFF_NUTRIENTS)) {
     const value = amount(nutriments[`${key}_100g`]);
-    if (value != null) per100g[nutrient] = tidy(value * factor);
+    if (value != null) per100g[nutrient] = tidy(value * factor * toGrams);
   }
   if (per100g.energy == null) {
     const kilojoules = amount(nutriments.energy_100g ?? nutriments['energy-kj_100g']);
-    if (kilojoules != null) per100g.energy = tidy(kilojoules / KJ_PER_KCAL);
+    if (kilojoules != null) per100g.energy = tidy((kilojoules / KJ_PER_KCAL) * toGrams);
   }
   const servings = [];
   const serving = amount(product.serving_quantity);
-  if (serving > 0 && ['g', 'ml'].includes(product.serving_quantity_unit ?? 'g')) {
+  if (serving > 0 && ['g', 'ml'].includes(servingUnit)) {
     const label = String(product.serving_size ?? '').trim();
     servings.push({
-      name: label || `${serving} ${product.serving_quantity_unit ?? 'g'}`,
-      grams: tidy(serving),
+      name: label || `${serving} ${servingUnit}`,
+      grams: tidy(servingUnit === 'ml' ? serving * volume.density : serving),
     });
   }
   const brand = String(product.brands ?? '')
@@ -108,6 +143,7 @@ function fromOpenFoodFacts(product, { now = new Date() } = {}) {
     barcode: code,
     favorite: false,
     createdAt: now.toISOString(),
+    ...(volume ? { volume } : {}),
   };
 }
 

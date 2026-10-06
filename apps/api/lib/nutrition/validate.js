@@ -147,6 +147,20 @@ function foodProblems(food, id) {
     problems.push('archivedAt must be an ISO 8601 instant');
   if (!absent(food.yieldGrams) && !(isNumber(food.yieldGrams) && food.yieldGrams > 0))
     problems.push('the yield must be positive');
+  if (
+    !absent(food.volume) &&
+    !(
+      isObject(food.volume) &&
+      isNumber(food.volume.density) &&
+      food.volume.density > 0.3 &&
+      food.volume.density < 3 &&
+      typeof food.volume.assumed === 'boolean' &&
+      (absent(food.volume.note) || isString(food.volume.note))
+    )
+  )
+    problems.push(
+      'the volume basis needs a density between 0.3 and 3 g/ml and whether it is assumed'
+    );
   if (!absent(food.ingredients)) {
     if (!Array.isArray(food.ingredients)) problems.push('ingredients must be an array');
     else

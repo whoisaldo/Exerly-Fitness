@@ -625,4 +625,18 @@ test('a write token saves a valid food and is refused a broken one', async () =>
   );
   assert.equal(broken.status, 400);
   assert.match(broken.body.error ?? broken.body.message, /servings\[0\] needs a name/);
+  const oil = { ...food, id: 'agent-oil', volume: { density: 0.92, assumed: true } };
+  const liquid = await api.put(
+    '/v1/documents/saved_food/agent-oil',
+    { base_revision: 0, payload: oil },
+    { token: writer, headers: key() }
+  );
+  assert.equal(liquid.status, 201, JSON.stringify(liquid.body));
+  const dense = await api.put(
+    '/v1/documents/saved_food/agent-lead',
+    { base_revision: 0, payload: { ...oil, id: 'agent-lead', volume: { density: 11.3 } } },
+    { token: writer, headers: key() }
+  );
+  assert.equal(dense.status, 400);
+  assert.match(dense.body.error ?? dense.body.message, /volume basis needs a density/);
 });

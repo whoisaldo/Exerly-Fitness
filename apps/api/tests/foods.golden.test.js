@@ -66,6 +66,16 @@ const products = [
     product_name: 'Synthetic spread',
     nutriments: { 'energy-kcal_100g': -5, fat_100g: 'lots', proteins_100g: 25.25 },
   },
+  {
+    code: '3000000000013',
+    product_name: 'Synthetic olive oil',
+    categories_tags: ['en:fats', 'en:vegetable-oils', 'en:olive-oils'],
+    nutrition_data_per: '100ml',
+    serving_size: '1 tbsp (15 ml)',
+    serving_quantity: 15,
+    serving_quantity_unit: 'ml',
+    nutriments: { 'energy-kcal_100g': 828, fat_100g: 92, 'saturated-fat_100g': 13.8 },
+  },
 ];
 
 test('Open Food Facts products map to the Foods in the golden file', () => {
@@ -101,7 +111,20 @@ test('nutrients land in ExerlyCore units and bad values are left out', () => {
   assert.deepEqual(bar.servings, [{ name: '1 bar (40 g)', grams: 40 }]);
   assert.equal(drink.per100g.energy, 43.021, 'kJ converted to kcal');
   assert.deepEqual(drink.servings, [{ name: '330 ml', grams: 330 }]);
+  assert.deepEqual(drink.volume, {
+    density: 1,
+    assumed: true,
+    note: "Water's density, assumed: not known for this product",
+  });
+  assert.equal(bar.volume, undefined, 'A label per 100 g needs no density');
   assert.equal(unnamed, null);
   assert.equal(uncoded, null);
   assert.deepEqual(spread.per100g, { protein: 25.25 });
+});
+
+test('a label per 100 ml becomes per 100 g through the density of its category', () => {
+  const oil = fromOpenFoodFacts(products[5], { now });
+  assert.deepEqual(oil.volume, { density: 0.92, assumed: true, note: 'Typical for oils' });
+  assert.deepEqual(oil.per100g, { energy: 900, fat: 100, saturatedFat: 15 });
+  assert.deepEqual(oil.servings, [{ name: '1 tbsp (15 ml)', grams: 13.8 }]);
 });

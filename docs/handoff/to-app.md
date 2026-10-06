@@ -1099,3 +1099,23 @@ Status: open (contract published). See "Analytics" in the README and
   day-to-day persistence, an effect of one standard deviation is found about
   two times in three with six weeks per phase, and about one in four with
   three weeks.
+
+## 2026-10-06: Volume-labelled foods keep their basis (M5d review fix)
+
+Status: done (logic): answers your 17:54 M5d finding.
+
+- **Server.** A product labelled per 100 ml, or with servings in ml, is no
+  longer read as per 100 g. The server converts it with a typical density for
+  its Open Food Facts category, such as 0.92 g/ml for oils, 1.36 for syrups
+  and honey, and 1.03 for milk. Without a match, it uses water's density and
+  says so. The Food carries `volume: VolumeBasis(density:assumed:note:)`.
+- **Core.** `Food.volume`, `per100ml`, which gives the label back, and
+  `grams(milliliters:)` for an amount poured. `Food.problems` rejects a
+  density outside 0.3–3 g/ml, and so does the server's `saved_food` check.
+- **Show it.** When `volume?.assumed` is true, show the note beside the
+  nutrition, for example "Typical for oils". A serving such as
+  "1 tbsp (15 ml)" is already in grams (13.8 g for oil), so `preview` and
+  `log` need nothing new.
+- **Regression.** The golden now has a synthetic olive oil with density 0.92:
+  828 kcal per 100 ml becomes 900 kcal per 100 g. `FoodsGoldenTests` and the
+  server's golden test both check it.

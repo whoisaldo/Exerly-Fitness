@@ -535,8 +535,10 @@ components:
       description: |
         An ExerlyCore `Food` from a public database. `per100g` is keyed by
         ExerlyCore's nutrient names (energy in kcal; others in g, mg or µg as
-        ExerlyCore's `Nutrient.unit` says). Amounts per 100 ml are taken as per
-        100 g. docs/api/golden/foods-v1.json has examples.
+        ExerlyCore's `Nutrient.unit` says). A label per 100 ml, or servings in
+        millilitres, are converted to grams with a typical density for the
+        product's category, recorded in `volume`: the label per 100 ml is
+        `per100g` times the density. docs/api/golden/foods-v1.json has examples.
       required: [id, name, source, per100g, servings, favorite, createdAt]
       properties:
         id: { type: string, example: 'off:0012345678905' }
@@ -555,6 +557,16 @@ components:
         barcode: { type: string }
         favorite: { type: boolean }
         createdAt: { type: string, format: date-time }
+        volume:
+          type: object
+          description: Present for a product labelled per volume.
+          required: [density, assumed]
+          properties:
+            density: { type: number, description: Grams per millilitre, between 0.3 and 3 }
+            assumed:
+              { type: boolean, description: True when typical for the category, not measured }
+            note:
+              { type: string, description: Where the density came from, to show beside the food }
     Session:
       type: object
       required: [token, expiresIn, sessionId, user]
