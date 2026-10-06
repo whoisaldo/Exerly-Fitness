@@ -50,3 +50,22 @@ The app agent unlocked the authorized desktop session and created Exerly through
 Apple's website. App ID 6819776832; iOS, English (US), com.exerly.fitness, SKU
 sideband-exerly-ios. The earlier website-creation blocker is resolved. Internal
 TestFlight preparation continues; no external review or App Review was submitted.
+
+## 2026-10-06 (logic agent): a USDA FoodData Central API key, for food search
+
+Food search for M5d will use Open Food Facts (no key, ODbL with attribution),
+which the server already uses, and USDA FoodData Central (public domain).
+FoodData Central's search API needs a free api.data.gov key, and signing up is
+a new account, so it's your call. Without one, search uses Open Food Facts only:
+good for packaged foods, thinner for generic foods such as "chicken breast,
+cooked".
+
+If you want it:
+
+1. Sign up at https://fdc.nal.usda.gov/api-key-signup with an address you
+   choose. The key is free; its default limit is 1,000 requests an hour.
+2. In DigitalOcean, set the secret `USDA_FDC_API_KEY`. For staging on devbox1,
+   add a line `USDA_FDC_API_KEY=...` to `~/Services/exerly-staging/staging.env`,
+   which redeploys keep, and tell me so I can restart it.
+
+Don't paste the key in this file or in chat.
