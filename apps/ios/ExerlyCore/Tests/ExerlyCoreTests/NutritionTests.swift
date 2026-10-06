@@ -84,6 +84,76 @@ enum Foods {
         #expect(nutrition.recentFoods().map(\.name) == ["Rolled oats", "Chicken breast"])
     }
 
+    @Test func aPlateLogsAllOrNoneAndEntriesCopyAndMove() throws {
+        let nutrition = try store()
+        let plate = try nutrition.log([.init(Foods.oats, serving: Foods.oats.servings[0], quantity: 2), .init(Foods.milk, grams: 244)],
+                                      on: monday, meal: "Breakfast")
+        #expect(plate.map(\.grams) == [80, 244] && nutrition.entries(on: monday).count == 2)
+        #expect(throws: NutritionStore.StoreError.invalid(["Chicken breast: the amount must be a positive weight"])) {
+            try nutrition.log([.init(Foods.oats, grams: 50), .init(Foods.chicken, grams: 0)], on: monday, meal: "Lunch")
+        }
+        #expect(nutrition.entries(on: monday).count == 2, "Nothing from a refused plate is saved")
+
+        let tuesday = monday.adding(days: 1)
+        let copied = try nutrition.copy([plate[0].id], to: tuesday, meal: "Snacks")
+        #expect(copied.count == 1 && copied[0].id != plate[0].id && copied[0].meal == "Snacks" && copied[0].grams == 80)
+        try nutrition.move([plate[1].id], to: tuesday)
+        let moved = try #require(nutrition.entries.first { $0.id == plate[1].id })
+        #expect(moved.date == tuesday && moved.meal == "Breakfast" && moved.loggedAt == plate[1].loggedAt)
+        #expect(throws: NutritionStore.StoreError.notFound) { try nutrition.move([copied[0].id, UUID()], to: monday) }
+        #expect(nutrition.entries(on: tuesday).count == 2, "Nothing moves when one entry is missing")
+        #expect(throws: NutritionStore.StoreError.invalid(["the meal needs a name up to 40 characters"])) {
+            try nutrition.copy(from: tuesday, meal: nil, to: monday, meal: " ")
+        }
+    }
+
+    @Test func aRecipePortionLogsAsItsScaledIngredients() throws {
+        let nutrition = try store()
+        let porridge = Food.recipe(name: "Porridge", ingredients: [RecipeIngredient(food: Foods.oats.snapshot, grams: 80),
+                                                                   RecipeIngredient(food: Foods.milk.snapshot, grams: 300)],
+                                   yieldGrams: 400, servings: [Serving("1 bowl", grams: 200)])
+        let parts = try nutrition.logIngredients(of: porridge, serving: porridge.servings[0], on: monday, meal: "Breakfast")
+        #expect(parts.map(\.food.name) == ["Rolled oats", "Milk"] && parts.map(\.grams) == [40, 150])
+        let whole = try NutritionStore.preview(porridge, grams: 200).nutrients
+        #expect(close(parts.reduce(0) { $0 + ($1.nutrients.energy ?? 0) }, whole.energy))
+        #expect(throws: NutritionStore.StoreError.invalid(["Rolled oats has no ingredients"])) {
+            try nutrition.logIngredients(of: Foods.oats, grams: 100, on: monday, meal: "Breakfast")
+        }
+    }
+
+    @Test func suggestionsAreTheFoodsUsuallyLoggedAroundThisTimeOfDay() throws {
+        let nutrition = try store()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = Fixture.newYork
+        func at(_ day: Int, _ hour: Int, _ minute: Int = 0) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour, minute: minute))!
+        }
+        let today = LocalDate("2026-10-12")!
+        for day in 5...9 { try nutrition.log(Foods.oats, serving: Foods.oats.servings[0], on: LocalDate("2026-10-0\(day)")!, meal: "Breakfast", at: at(day, 8)) }
+        for day in 8...9 { try nutrition.log(Foods.milk, grams: 200, on: LocalDate("2026-10-0\(day)")!, meal: "Breakfast", at: at(day, 8, 30)) }
+        for day in 5...10 { try nutrition.log(Foods.chicken, grams: 150, on: LocalDate("2026-10-\(String(format: "%02d", day))")!, meal: "Lunch", at: at(day, 13)) }
+        // Logged on the 10th for the 9th: when it was eaten is unknown.
+        let late = try nutrition.log(Foods.milk, grams: 100, on: LocalDate("2026-10-09")!, meal: "Breakfast", at: at(10, 7))
+
+        let morning = nutrition.suggestions(at: at(12, 7, 45), timeZone: Fixture.newYork)
+        #expect(morning.map(\.food.name) == ["Rolled oats", "Milk"] && morning.map(\.days) == [5, 2])
+        #expect(morning[0].serving == Foods.oats.servings[0] && morning[0].meal == "Breakfast" && morning[1].grams == 200)
+        #expect(!morning.contains { $0.grams == late.grams })
+        #expect(nutrition.suggestions(at: at(12, 13, 20), timeZone: Fixture.newYork).map(\.food.name) == ["Chicken breast"])
+
+        // A saved food's current nutrients, and nothing already logged today or archived.
+        var richer = Foods.oats
+        richer.per100g[.energy] = 400
+        try nutrition.saveFood(richer)
+        try nutrition.saveFood(Foods.milk)
+        let current = try #require(nutrition.suggestions(at: at(12, 7, 45), timeZone: Fixture.newYork).first)
+        #expect(current.food.per100g.energy == 400)
+        try nutrition.archiveFood(Foods.milk.id)
+        let logged = try nutrition.log(current, on: today)
+        #expect(logged.meal == "Breakfast" && logged.grams == 40 && logged.food.per100g.energy == 400)
+        #expect(nutrition.suggestions(at: at(12, 7, 45), timeZone: Fixture.newYork).isEmpty)
+    }
+
     @Test func invalidEntriesAndWeighInsAreRefused() throws {
         let nutrition = try store()
         #expect(throws: NutritionStore.StoreError.self) { try nutrition.log(Foods.oats, grams: 0, on: monday, meal: "Breakfast") }

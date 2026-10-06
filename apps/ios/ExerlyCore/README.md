@@ -486,6 +486,19 @@ trend weight and expenditure.
 - Logging: `log(_:grams:serving:quantity:on:meal:)`, `saveEntry`,
   `deleteEntry`, `entries(on:)` and `copy(from:meal:to:meal:)` for a meal or a
   whole day. `NutritionStore.defaultMeals` names the usual four.
+- Faster logging. Each call checks everything first, then saves all or
+  nothing:
+  - `log(_ plate: [PlateItem], on:meal:at:)` logs several foods at once. Each
+    problem names its food.
+  - `copy(_ ids:to:meal:)` copies chosen entries as new ones, and
+    `move(_ ids:to:meal:)` moves them, keeping their IDs.
+  - `logIngredients(of:grams:serving:quantity:on:meal:at:)` logs a recipe
+    portion as its ingredients, scaled to the portion.
+  - `suggestions(at:timeZone:days:limit:)` returns `FoodSuggestion`s: foods
+    usually logged within 90 minutes of this time of day over the last 28
+    days, with the amount and meal last used. Foods already logged today
+    and archived foods are left out. `log(_ suggestion:on:meal:at:)` logs one
+    in a single tap.
 - Days: `day(_:)`, `setStatus(_:on:)`, `setNotes(_:on:)`, and `summary(on:)`,
   which gives totals, totals per meal and `energyShares`.
   `contributors(of:on:)` ranks the entries behind one nutrient.

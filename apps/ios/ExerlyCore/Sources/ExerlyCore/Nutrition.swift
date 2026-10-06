@@ -287,6 +287,18 @@ public struct Contributor: Sendable, Hashable {
     public var share: Double
 }
 
+/// A food usually logged around a time of day, with the amount and meal last
+/// used, from `NutritionStore.suggestions(at:timeZone:)`.
+public struct FoodSuggestion: Sendable, Hashable {
+    public var food: FoodSnapshot
+    public var meal: String
+    public var grams: Double
+    public var serving: Serving?
+    public var quantity: Double?
+    /// Days in the window it was logged near this time.
+    public var days: Int
+}
+
 /// An amount of a food as `NutritionStore.log` records it.
 public struct LoggedAmount: Sendable, Hashable {
     public var grams: Double

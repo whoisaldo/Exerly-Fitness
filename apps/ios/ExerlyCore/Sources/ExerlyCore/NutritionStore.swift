@@ -131,16 +131,7 @@ public final class NutritionStore {
     @discardableResult
     public func copy(from source: LocalDate, meal: String? = nil, to target: LocalDate, meal newMeal: String? = nil) throws
         -> [FoodEntry] {
-        let copies = entries(on: source).filter { meal == nil || $0.meal == meal }.map { original in
-            FoodEntry(date: target, meal: newMeal ?? original.meal, loggedAt: now(), food: original.food,
-                      grams: original.grams, serving: original.serving, quantity: original.quantity)
-        }
-        var publish: [() -> Void] = []
-        try persistence.performAtomically {
-            publish = try copies.map { try prepareWrite(kind: Self.entryKind, id: $0.id.uuidString, payload: ExerlyJSON.canonical($0)) }
-        }
-        publish.forEach { $0() }
-        return copies
+        try copy(entries(on: source).filter { meal == nil || $0.meal == meal }.map(\.id), to: target, meal: newMeal)
     }
 
     /// Foods logged most recently first, one row each, for "recent" and quick re-logging.
@@ -152,6 +143,142 @@ public final class NutritionStore {
             if result.count == limit { break }
         }
         return result
+    }
+
+    // MARK: Faster logging
+
+    /// One food of a plate: a weight, or a serving and a quantity.
+    public struct PlateItem: Sendable, Hashable {
+        public var food: Food
+        public var grams: Double?
+        public var serving: Serving?
+        public var quantity: Double?
+
+        public init(_ food: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil) {
+            self.food = food
+            self.grams = grams
+            self.serving = serving
+            self.quantity = quantity
+        }
+    }
+
+    /// Logs several foods to one meal at once, all or none. Each problem names its food.
+    @discardableResult
+    public func log(_ plate: [PlateItem], on date: LocalDate, meal: String, at time: Date? = nil) throws -> [FoodEntry] {
+        let loggedAt = time?.roundedToMilliseconds ?? now()
+        var problems: [String] = []
+        var logged: [FoodEntry] = []
+        for item in plate {
+            do {
+                let amount = try Self.preview(item.food, grams: item.grams, serving: item.serving, quantity: item.quantity)
+                logged.append(FoodEntry(date: date, meal: meal, loggedAt: loggedAt, food: item.food.snapshot, grams: amount.grams,
+                                        serving: amount.serving, quantity: amount.quantity))
+            } catch StoreError.invalid(let messages) {
+                problems += messages.map { "\(item.food.name): \($0)" }
+            }
+        }
+        guard problems.isEmpty else { throw StoreError.invalid(problems) }
+        try saveAll(logged)
+        return logged
+    }
+
+    /// Copies entries to a day as new entries, into `meal` or each into its own.
+    @discardableResult
+    public func copy(_ ids: [UUID], to date: LocalDate, meal: String? = nil) throws -> [FoodEntry] {
+        let copies = try ids.map { id in
+            guard let original = entries.first(where: { $0.id == id }) else { throw StoreError.notFound }
+            return FoodEntry(date: date, meal: meal ?? original.meal, loggedAt: now(), food: original.food,
+                             grams: original.grams, serving: original.serving, quantity: original.quantity)
+        }
+        try saveAll(copies)
+        return copies
+    }
+
+    /// Moves entries to a day, and into `meal` when given. They keep their IDs,
+    /// and when they were logged, so timing leaves out an entry moved off its day.
+    public func move(_ ids: [UUID], to date: LocalDate, meal: String? = nil) throws {
+        let moved = try ids.map { id in
+            guard var entry = entries.first(where: { $0.id == id }) else { throw StoreError.notFound }
+            entry.date = date
+            if let meal { entry.meal = meal }
+            return entry
+        }
+        try saveAll(moved)
+    }
+
+    /// Logs a portion of a recipe as its ingredients, each scaled to the
+    /// portion, so they can be changed one by one. All or none. The entries
+    /// add up to the ingredients' nutrients for that portion.
+    @discardableResult
+    public func logIngredients(of recipe: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil,
+                               on date: LocalDate, meal: String, at time: Date? = nil) throws -> [FoodEntry] {
+        guard let ingredients = recipe.ingredients, !ingredients.isEmpty else {
+            throw StoreError.invalid(["\(recipe.name) has no ingredients"])
+        }
+        let portion = try Self.preview(recipe, grams: grams, serving: serving, quantity: quantity).grams
+        let whole = recipe.yieldGrams ?? ingredients.reduce(0) { $0 + $1.grams }
+        let loggedAt = time?.roundedToMilliseconds ?? now()
+        let parts = ingredients.map {
+            FoodEntry(date: date, meal: meal, loggedAt: loggedAt, food: $0.food, grams: $0.grams * portion / whole)
+        }
+        try saveAll(parts)
+        return parts
+    }
+
+    /// Foods usually logged within 90 minutes of `time`'s time of day over
+    /// the `days` days before it, on the most days first, then the most
+    /// recently. Each comes with the amount and meal last used, so one tap
+    /// logs it. Foods already logged that day, and archived foods, are left
+    /// out. Only entries logged on the day they count for say when a food was
+    /// eaten. A saved food's current nutrients are used.
+    public func suggestions(at time: Date, timeZone: TimeZone, days: Int = 28, limit: Int = 8) -> [FoodSuggestion] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        func minute(_ date: Date) -> Int {
+            let parts = calendar.dateComponents([.hour, .minute], from: date)
+            return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+        }
+        let today = LocalDate(time, in: timeZone), target = minute(time)
+        let skipped = Set(entries(on: today).map(\.food.foodID))
+            .union(foods.filter { $0.archivedAt != nil }.map(\.id))
+        var dates: [String: Set<LocalDate>] = [:]
+        var latest: [String: FoodEntry] = [:]
+        for entry in entries where entry.date >= today.adding(days: -days) && entry.date < today
+            && !skipped.contains(entry.food.foodID) && LocalDate(entry.loggedAt, in: timeZone) == entry.date {
+            let gap = abs(minute(entry.loggedAt) - target)
+            guard min(gap, 24 * 60 - gap) <= 90 else { continue }
+            dates[entry.food.foodID, default: []].insert(entry.date)
+            latest[entry.food.foodID] = entry
+        }
+        let ranked = latest.values.sorted {
+            (dates[$0.food.foodID]!.count, $0.loggedAt, $0.food.foodID) > (dates[$1.food.foodID]!.count, $1.loggedAt, $1.food.foodID)
+        }
+        return ranked.prefix(limit).map { entry in
+            FoodSuggestion(food: food(entry.food.foodID)?.snapshot ?? entry.food, meal: entry.meal, grams: entry.grams,
+                           serving: entry.serving, quantity: entry.quantity, days: dates[entry.food.foodID]!.count)
+        }
+    }
+
+    /// Logs a suggestion with its amount, into its usual meal unless another is given.
+    @discardableResult
+    public func log(_ suggestion: FoodSuggestion, on date: LocalDate, meal: String? = nil, at time: Date? = nil) throws -> FoodEntry {
+        let entry = FoodEntry(date: date, meal: meal ?? suggestion.meal, loggedAt: time?.roundedToMilliseconds ?? now(),
+                              food: suggestion.food, grams: suggestion.grams, serving: suggestion.serving,
+                              quantity: suggestion.quantity)
+        try saveEntry(entry)
+        return entry
+    }
+
+    /// Checks every entry, then saves them together or not at all.
+    private func saveAll(_ batch: [FoodEntry]) throws {
+        var seen = Set<String>()
+        let problems = batch.flatMap(\.problems).filter { seen.insert($0).inserted }
+        guard problems.isEmpty else { throw StoreError.invalid(problems) }
+        var publish: [() -> Void] = []
+        try persistence.performAtomically {
+            publish = try batch.map { try prepareWrite(kind: Self.entryKind, id: $0.id.uuidString, payload: ExerlyJSON.canonical($0)) }
+        }
+        publish.forEach { $0() }
     }
 
     // MARK: Days
