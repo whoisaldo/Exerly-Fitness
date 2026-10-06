@@ -423,7 +423,7 @@ final class ProductionUITests: XCTestCase {
         reveal(estimate, in: app)
         XCTAssertTrue(estimate.exists)
         capture(app, "program-estimate")
-        let caveat = app.staticTexts["RIR was not recorded for this source set. Adjust the suggested load while logging."]
+        let caveat = app.staticTexts["RIR was not recorded for this set. The estimate assumes your target of 2 RIR."]
         reveal(caveat, in: app)
         XCTAssertTrue(caveat.exists)
         capture(app, "program-estimate-caveat")

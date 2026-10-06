@@ -152,7 +152,7 @@ private struct PlannedExerciseSection: View {
             if let basisID = planned.recommendation.basisSetID {
                 if let record = store.history.sets(of: planned.exerciseID).first(where: { $0.set.id == basisID }) {
                     if record.set.rir == nil && record.set.kind != .failure {
-                        Text("RIR was not recorded for this source set. Adjust the suggested load while logging.")
+                        Text("RIR was not recorded for this set. The estimate assumes your target of \(TrainingFormat.number(planned.target.rir)) RIR.")
                             .foregroundStyle(.secondary)
                     }
                     NavigationLink {
