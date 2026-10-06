@@ -65,27 +65,28 @@ An AI coaching assistant (powered by Google Gemini) can generate workout plans, 
 Exerly-Fitness/
 ├── apps/
 │   ├── api/
-│   │   ├── data/       Storage adapter: one interface, Mongo and SQLite drivers
+│   │   ├── data/       Storage adapter: one interface, PostgreSQL driver
 │   │   ├── lib/        Dates, auth, validation, and the nutrition algorithms
 │   │   ├── routes/     One module per resource
-│   │   ├── tests/      Unit tests plus integration tests against SQLite
+│   │   ├── db/         Numbered SQL migrations and the migration runner
+│   │   ├── tests/      Unit tests plus integration tests against PostgreSQL
 │   │   ├── app.js      Express assembly (no database, no listen)
 │   │   └── index.js    Entry point: connect, listen, shut down cleanly
 │   ├── web/        React dashboard (Vite + TypeScript + Tailwind)
-│   └── ios/        Native iOS app (SwiftUI)
+│   └── ios/        Native iOS app (SwiftUI) and ExerlyCore, its logic package
 ├── docs/           Master plan and API reference
 ├── .do/            DigitalOcean deployment spec
 └── package.json    Monorepo workspace root
 ```
 
-The API is written once and runs against either database. `DB_MODE=local` selects
-the SQLite driver (offline development and the test suite); anything else uses
-MongoDB Atlas. Routes talk to `data/` and never to Mongoose or sqlite3 directly,
-which is what keeps a feature from having to be implemented twice.
+The API runs on PostgreSQL. Routes talk to `data/` and never to a driver directly.
+The schema lives in numbered SQL migrations under `apps/api/db/migrations`, which
+the server applies before it listens. A SQLite driver remains only for the
+isolated iOS simulator fixture.
 
 The two pieces worth reading are `lib/nutrition.js`, which holds the trend
 smoothing and expenditure estimation, and `data/schema.js`, which is the single
-definition every collection is built from in both drivers.
+definition the driver and the initial migration agree on.
 
 See [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the roadmap and the reasoning
 behind the current design.
@@ -98,8 +99,8 @@ behind the current design.
 | --------- | ------------------------------------------------------- |
 | iOS       | SwiftUI, HealthKit, AVFoundation, SwiftData             |
 | Web       | React 19, TypeScript, Vite, Tailwind CSS, Framer Motion |
-| API       | Node.js, Express 5, Mongoose, JWT, bcrypt               |
-| Database  | MongoDB Atlas (production), SQLite (local dev + tests)  |
+| API       | Node.js, Express 5, node-postgres, JWT, bcrypt          |
+| Database  | PostgreSQL 16 (Neon in production, Docker self-hosted)  |
 | AI        | Google Gemini 2.0 Flash                                 |
 | Food Data | FatSecret API (primary), Open Food Facts (fallback)     |
 | Hosting   | DigitalOcean App Platform (API), GitHub Pages (web)     |
@@ -136,18 +137,20 @@ Open `apps/ios/Exerly.xcodeproj` in Xcode, select your device or simulator, and 
 ### Testing
 
 ```bash
-npm test                    # algorithms and integration against SQLite
-npm run test:mongo          # the same suite on an isolated MongoDB replica set
-npm run smoke:api           # boot the API and log a day
+npm test                    # API tests on a throwaway PostgreSQL cluster
+npm run smoke:api           # boot the API on PostgreSQL and log a day
+swift test --package-path apps/ios/ExerlyCore   # ExerlyCore logic
 npm run test:web            # browser journeys with an isolated API and web server
 npm run ios:test            # native unit and simulator UI tests
 npm run test:cross-client   # iPhone -> browser -> iPhone on one isolated account
 npm run ios:release-check   # verify the upload toolchain requirement
 ```
 
-Integration tests boot the actual Express app against an in-memory database, so
-they exercise routing, auth, validation, and storage together rather than mocking
-any of it.
+Integration tests boot the actual Express app against PostgreSQL, each test file in
+its own schema, so they exercise routing, auth, validation, and storage together
+rather than mocking any of it. `npm test` needs the PostgreSQL server binaries
+(`initdb`, `pg_ctl`) on the machine; it starts a cluster on a Unix socket and
+removes it afterwards.
 
 Browser tests use installed Chrome by default. For Playwright Chromium, run
 `npx playwright install chromium` and set `PLAYWRIGHT_CHANNEL=chromium`.
@@ -161,10 +164,20 @@ checks, screenshots, unfinished implementation and external release gates.
 
 ### Production
 
-The API auto-deploys to DigitalOcean App Platform on every push to `main`.
-Environment variables (`MONGODB_URI`, `JWT_SECRET`, `ADMIN_EMAILS`,
+The API auto-deploys to DigitalOcean App Platform on every push to `main`, built
+from `apps/api/Dockerfile`.
+Environment variables (`DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAILS`,
 `GEMINI_API_KEY`, and optionally the FatSecret pair) are configured in the DO
 dashboard. See [apps/api/.env.example](apps/api/.env.example) for the full list.
+
+### Self-hosting
+
+```bash
+JWT_SECRET=$(openssl rand -hex 32) POSTGRES_PASSWORD=$(openssl rand -hex 16) docker compose up -d
+```
+
+This runs PostgreSQL 16 and the API on port 8080; set `EXERLY_API_PORT` to change
+it. Backups and migrations are described in [apps/api/db/README.md](apps/api/db/README.md).
 
 ---
 
@@ -173,7 +186,7 @@ dashboard. See [apps/api/.env.example](apps/api/.env.example) for the full list.
 | Command             | What it does                                       |
 | ------------------- | -------------------------------------------------- |
 | `npm run local`     | API + web in local mode (SQLite, no external deps) |
-| `npm run dev`       | API + web in production mode (MongoDB)             |
+| `npm run dev`       | API + web in production mode (PostgreSQL)          |
 | `npm run dev:api`   | API only                                           |
 | `npm run dev:web`   | Web only                                           |
 | `npm run build:web` | Production build of web dashboard                  |

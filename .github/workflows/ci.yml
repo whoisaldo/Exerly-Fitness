@@ -46,6 +46,8 @@ jobs:
               - '.prettierrc.json'
               - '.prettierignore'
               - '.nvmrc'
+              - '.dockerignore'
+              - 'docker-compose.yml'
               - '.github/workflows/**'
               - 'scripts/**'
               - 'playwright.config.cjs'
@@ -56,6 +58,20 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true' }}
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      EXERLY_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
@@ -68,16 +84,34 @@ jobs:
         run: npx eslint apps/api
       - name: Format check (prettier)
         run: npx prettier --check "apps/api/**/*.{js,json}"
-      - name: Unit tests (node:test)
+      - name: Tests on PostgreSQL (node:test)
         run: npm test -w apps/api
-      - name: MongoDB replica-set integration tests
-        run: npm run test:mongo
-      - name: API boot smoke test (SQLite, no external services)
+      - name: API boot smoke test (PostgreSQL, no external services)
         run: bash scripts/smoke-api.sh
         env:
-          DB_MODE: local
+          SMOKE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           JWT_SECRET: ci-smoke-secret
           PORT: '3001'
+      - name: Build the API image
+        run: docker build -f apps/api/Dockerfile -t exerly-api:ci .
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
+        env:
+          JWT_SECRET: ci-only
+          POSTGRES_PASSWORD: ci-only
+
+  exerlycore:
+    name: ExerlyCore · swift test
+    needs: changes
+    if: ${{ needs.changes.outputs.ios == 'true' || needs.changes.outputs.root == 'true' }}
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+      - name: Unit tests
+        run: swift test --package-path apps/ios/ExerlyCore
 
   web:
     name: Web · lint · typecheck · build

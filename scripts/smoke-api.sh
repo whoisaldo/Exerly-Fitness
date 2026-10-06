@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
-# Boot-smoke the API in local mode (SQLite + mock AI — no external services).
-# Starts the server, waits for /ping, asserts /api/health, then shuts it down.
-# Used by CI (.github/workflows/ci.yml) and the local pre-push hook.
+# Boot-smoke the API on PostgreSQL with mock AI and no other external services.
+# Starts the server, waits for /ping, asserts /api/health, runs the daily loop,
+# then shuts it down. Used by CI (.github/workflows/ci.yml).
+#
+# With SMOKE_DATABASE_URL set (CI's service container), it uses that database.
+# Otherwise it starts a throwaway cluster on a Unix socket and removes it.
 set -euo pipefail
 
-PORT="${PORT:-3001}"
-export DB_MODE="${DB_MODE:-local}"
+PORT="${PORT:-39101}"
 export JWT_SECRET="${JWT_SECRET:-ci-smoke-secret}"
 export PORT
+unset DB_MODE
 
 API_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/api" && pwd)"
 BASE="http://127.0.0.1:${PORT}"
 
-# A throwaway database per run, so the smoke test never writes into the repo
-# and never inherits state from a previous run.
-SMOKE_DB="$(mktemp -t exerly-smoke-XXXXXX.db)"
-export SQLITE_FILE="$SMOKE_DB"
+CLUSTER_DIR=""
+if [ -n "${SMOKE_DATABASE_URL:-}" ]; then
+  export DATABASE_URL="$SMOKE_DATABASE_URL"
+else
+  CLUSTER_DIR="$(mktemp -d -t exerly-smoke-pg-XXXXXX)"
+  LC_ALL=C initdb -D "$CLUSTER_DIR/data" -U exerly -A trust -E UTF8 --no-locale >/dev/null
+  LC_ALL=C pg_ctl -D "$CLUSTER_DIR/data" -l "$CLUSTER_DIR/server.log" -w \
+    -o "-k $CLUSTER_DIR -c listen_addresses= -F" start >/dev/null
+  export DATABASE_URL="postgresql://exerly@localhost/postgres?host=$CLUSTER_DIR"
+fi
 
-echo "▶ Starting API (DB_MODE=$DB_MODE) on $BASE ..."
+echo "▶ Starting API (PostgreSQL) on $BASE ..."
 ( cd "$API_DIR" && exec node index.js ) &
 SERVER_PID=$!
 
@@ -26,7 +35,10 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
-  rm -f "$SMOKE_DB"
+  if [ -n "$CLUSTER_DIR" ]; then
+    LC_ALL=C pg_ctl -D "$CLUSTER_DIR/data" -m immediate -w stop >/dev/null 2>&1 || true
+    rm -rf "$CLUSTER_DIR"
+  fi
 }
 trap cleanup EXIT
 
