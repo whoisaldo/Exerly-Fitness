@@ -1,7 +1,8 @@
 # Exerly: brief for the long-running agent
 
-Read this file at the start of every session and after every context reset. Then read
-docs/AGENT_LEDGER.md (create it on the first run) and continue from it.
+Read this file at the start of every session and after every context reset. Two agents
+work on Exerly at once (see **Two agents**): read your own ledger, docs/ledger/logic.md or
+docs/ledger/app.md, and your inbox in docs/handoff/, then continue.
 
 ## Mission
 
@@ -25,6 +26,111 @@ architecture over the safest patch.
 - two consecutive full audits find nothing worth fixing.
 
 Finishing a phase, a long context or a hard problem is never a reason to stop.
+
+## Two agents
+
+Two agents build Exerly at the same time, each on what it does best. Each runs in its own
+T3 Code thread and its own git worktree, which is that thread's working directory.
+
+- **Logic agent: Claude (Opus 5.5).** The code where mistakes compound.
+  - Owns `apps/api/**`: Postgres, migrations, sign-in and sessions, sync, the REST API, the
+    MCP server, tokens, webhooks, food search, exports, docker-compose and backend CI.
+  - Owns `apps/ios/ExerlyCore/**`, a new local Swift package with no UI. It holds:
+    - domain models and on-device persistence;
+    - every calculation (e1RM, volume, progression, readiness, trend weight, expenditure,
+      targets);
+    - the offline sync engine and the API client;
+    - the agent proposal, accept, undo and audit model;
+    - importers (MacroFactor, Apple Health history, Hevy, Strong).
+  - Owns `apps/ios/Exerly/Core/**` until it has moved into ExerlyCore.
+  - Owns `docs/api/` (the OpenAPI spec) and documents ExerlyCore's public interface.
+  - Logic is tested with `swift test` or the package's own scheme.
+- **App agent: Astra (GPT-6-Astra).** The iPhone experience, verified on the simulator.
+  - Owns everything else under `apps/ios/`: Features, Components, Navigation, Theme, the
+    app target and `Exerly.xcodeproj`, App Intents, widgets, Live Activities, the Watch app,
+    and the Apple Health permission and user-interface layer.
+  - Owns ExerlyUITests and ExerlyTests, the release pipeline and TestFlight, and
+    `docs/PARITY.md` and `docs/RELEASE.md`.
+  - Drives the simulator to verify every flow.
+
+**Ownership rules:**
+
+- Only edit files you own. If you need something in the other agent's area, write it in
+  their inbox and keep working on something else.
+- **Only the app agent edits `project.pbxproj`.** That's why logic lives in the ExerlyCore
+  package, which needs no project-file changes. The app agent links ExerlyCore into the
+  app, removes moved `Core` files from the target when the logic agent says they've moved,
+  and the app never calls the network or does domain maths itself. Screens use ExerlyCore's
+  public API only.
+- **Contracts first.** Before building a feature, the logic agent publishes its ExerlyCore
+  interface and any endpoints, with a short usage note, in `docs/handoff/to-app.md`. The app
+  agent can build against a stub of that interface meanwhile. Breaking changes to a
+  published interface go to the other agent's inbox first.
+
+**Shared files:**
+
+- `docs/DECISIONS.md` and `docs/QUESTIONS_FOR_ALI.md` are append-only for both agents.
+- `docs/AGENT_BRIEF.md` is Ali's. Propose changes to it in `docs/QUESTIONS_FOR_ALI.md`.
+
+**Inboxes:**
+
+- `docs/handoff/to-logic.md` (written by the app agent) and `docs/handoff/to-app.md`
+  (written by the logic agent).
+- Each item has a date, a short title, what's needed or what changed, and a status:
+  open, in progress or done.
+- Read your inbox at the start of every milestone. Mark items done; never delete them.
+
+**Integration.**
+
+- The integration branch is `feat/mobile-production-foundations`, checked out in
+  `~/Desktop/Exerly-Fitness`. Nobody edits files in that checkout.
+- To land work:
+  1. Rebase your branch onto the integration branch.
+  2. Run the full suite and the iOS build in your worktree.
+  3. Run `git -C ~/Desktop/Exerly-Fitness merge --ff-only <your-branch>`, then push the
+     integration branch.
+  4. If the fast-forward fails because the other agent landed first, rebase again.
+- Land small pieces, at least daily.
+- At the end of each milestone, the logic agent merges the integration branch into main
+  once the suite and the iOS build are green.
+
+**Review each other.**
+
+- At the start of each milestone, read the other agent's commits since your last review.
+- Write findings in their inbox, with file, line, severity and why.
+- The logic agent looks for logic or data bugs in app code. The app agent looks for
+  anything the logic makes awkward or wrong on the device.
+- Never fix the other agent's code yourself, except a one-line build break, which you
+  must note in their inbox.
+
+**Machine resources.**
+
+- Scratch ports: logic 39100-39199, app 39200-39299. The existing native and cross-client
+  scripts use 39001-39003 and belong to the app agent.
+- Simulators: the logic agent creates and uses only "Exerly Logic" simulators; the app
+  agent uses "Exerly App" ones. Each worktree keeps its own build products.
+- Only the app agent uploads TestFlight builds. The logic agent asks for a build in
+  `to-app.md` when backend or core changes need checking on a device.
+
+**Starting state:** Astra began M1 (the PostgreSQL foundation) before the split. Its plan
+is in `docs/design/001-postgres-foundation.md` and its notes are in `docs/ledger/logic.md`.
+M1 now belongs to the logic agent, which should keep that work where it holds up.
+
+**First milestones:**
+
+- **Logic agent:**
+  1. Create ExerlyCore with the training domain first (exercise library with muscles,
+     joint actions and equipment; sessions, sets, reps, load, RIR and set types; e1RM;
+     volume per muscle) and publish its interface, so the app agent isn't blocked.
+  2. Then M1: Postgres, migrations, sign-in and sync.
+  3. Then the agent core: proposals, audit log, MCP, scoped tokens.
+- **App agent:**
+  1. Create `docs/PARITY.md`.
+  2. Set up the internal TestFlight pipeline.
+  3. Build the new app shell and design system.
+  4. Build the training logging flow on a stub of ExerlyCore, switching to the real one
+     as it lands.
+  5. Upload a TestFlight build to Ali at every milestone.
 
 ## Product principles: agentic-first, done right
 
@@ -315,11 +421,12 @@ confirm.
 ## How to work: survive context resets
 
 - **First session:**
-  - Run every existing test command and the iOS build, and record a baseline.
-  - Create docs/AGENT_LEDGER.md: current milestone, next three steps, risks, and exactly
-    how to resume. Update it after every milestone, so a fresh context can continue from
-    the ledger alone.
-- **Priority order** (re-rank in PARITY.md when evidence says so):
+  - Run the existing test commands for your area and the iOS build, and record a baseline.
+  - Keep your ledger (docs/ledger/logic.md or docs/ledger/app.md): current milestone, next
+    three steps, risks, and exactly how to resume. Update it after every milestone, so a
+    fresh context can continue from the ledger alone.
+- **Priority order** across both agents (each takes the items in its own area; re-rank in
+  PARITY.md when evidence says so):
   1. Backend foundation: Postgres, migrations, auth with Sign in with Apple, sync,
      docker-compose. Minimal but right, because everything else sits on it.
   2. Training core: exercise library with muscles, joint actions and equipment; performed
@@ -361,6 +468,8 @@ confirm.
 
 ## Stopping
 
-Stop only when Done is met, or when every remaining item is blocked on
-QUESTIONS_FOR_ALI.md. End with a summary: what's implemented, tested and on TestFlight;
+Stop only when Done is met, or when every remaining item in your area is blocked on
+QUESTIONS_FOR_ALI.md or on the other agent. If you're blocked on the other agent, review
+their work, improve tests or polish your own area while you wait, and keep checking your
+inbox. End with a summary: what's implemented, tested and on TestFlight;
 build numbers; screenshot paths; and open questions.
