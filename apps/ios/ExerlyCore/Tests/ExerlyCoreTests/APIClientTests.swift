@@ -190,6 +190,28 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         #expect(deleted == .applied(revision: 4))
     }
 
+    @Test func connectsAndDisconnectsApple() async throws {
+        let store = InMemoryCredentialStore()
+        try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600), sessionID: "s", accountID: "a"))
+        var conflict = false
+        let transport = FakeTransport { request in
+            #expect(request.path == "/api/account/identities/apple")
+            if request.method == "POST" {
+                #expect(request.body?["identityToken"] as? String == "jwt" && request.body?["nonce"] as? String == "raw")
+                return conflict ? (409, ["message": "Taken"]) : (201, ["provider": "apple", "connected": true])
+            }
+            return (400, ["message": "Set a password before disconnecting Apple"])
+        }
+        let start = self.start
+        let api = client(transport, store: store, clock: { start })
+        try await api.connectApple(identityToken: "jwt", rawNonce: "raw")
+        conflict = true
+        await #expect(throws: APIError.linkConflict) { try await api.connectApple(identityToken: "jwt", rawNonce: "raw") }
+        await #expect(throws: APIError.server(status: 400, message: "Set a password before disconnecting Apple")) {
+            try await api.disconnectApple()
+        }
+    }
+
     @Test func deletesTheAccountAndForgetsTheSession() async throws {
         let store = InMemoryCredentialStore()
         try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600), sessionID: "s", accountID: "a"))

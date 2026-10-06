@@ -109,8 +109,7 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
         }
     }
 
-    /// Runs several writes as one atomic unit.
-    public func inTransaction(_ body: () throws -> Void) throws {
+    public func performAtomically(_ body: () throws -> Void) throws {
         try database.transaction(body)
     }
 

@@ -89,13 +89,18 @@ public final class TrainingStore {
         try edit { try $0.updateSet(set, in: performedID, propagate: propagate) }
     }
 
-    /// Completes a set and starts the rest timer the policy picks.
+    /// Completes a set and starts the rest timer the policy picks, saving both
+    /// as one unit.
     public func completeSet(_ setID: UUID) throws {
         let date = now()
-        try edit { try $0.completeSet(setID, at: date, library: library) }
-        if let session = activeSession {
-            try setRestTimer(RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library)))
+        let (session, _) = try prepare { try $0.completeSet(setID, at: date, library: library) }
+        let timer = RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library))
+        try persistence.performAtomically {
+            try persistence.save(session)
+            try persistence.saveValue(JSONEncoder().encode(timer), forKey: Self.restTimerKey)
         }
+        activeSession = session
+        restTimer = timer
     }
 
     public func reopenSet(_ setID: UUID) throws { try edit { try $0.reopenSet(setID) } }
@@ -128,24 +133,32 @@ public final class TrainingStore {
         return history.lastPerformance(of: performed.exerciseID)?.sets ?? []
     }
 
+    /// Ends the session, saving it and clearing the rest timer as one unit.
     @discardableResult
     public func finishSession(discardIncompleteSets: Bool = true) throws -> FinishedSession {
         guard var session = activeSession else { throw StoreError.noActiveSession }
         session.finish(at: now(), discardIncompleteSets: discardIncompleteSets)
         try validated(session)
-        try persistence.save(session)
+        try persistence.performAtomically {
+            try persistence.save(session)
+            try persistence.saveValue(nil, forKey: Self.restTimerKey)
+        }
         let records = history.records(in: session)
         history = TrainingHistory(sessions: history.sessions + [session], library: library)
         activeSession = nil
-        try setRestTimer(nil)
+        restTimer = nil
         return FinishedSession(session: session, records: records)
     }
 
+    /// Deletes the session in progress and its rest timer as one unit.
     public func discardSession() throws {
         guard let session = activeSession else { throw StoreError.noActiveSession }
-        try persistence.deleteSession(session.id)
+        try persistence.performAtomically {
+            try persistence.deleteSession(session.id)
+            try persistence.saveValue(nil, forKey: Self.restTimerKey)
+        }
         activeSession = nil
-        try setRestTimer(nil)
+        restTimer = nil
     }
 
     // MARK: Rest
@@ -226,13 +239,17 @@ public final class TrainingStore {
     /// the single-active-session rule: a finished one joins history, and an
     /// unfinished one becomes the active session unless another one is.
     func applyRemote(_ session: WorkoutSession) throws {
-        try persistence.save(session)
+        let endsActive = session.isFinished && activeSession?.id == session.id
+        try persistence.performAtomically {
+            try persistence.save(session)
+            if endsActive { try persistence.saveValue(nil, forKey: Self.restTimerKey) }
+        }
         let others = history.sessions.filter { $0.id != session.id }
         if session.isFinished {
             history = TrainingHistory(sessions: others + [session], library: library)
-            if activeSession?.id == session.id {
+            if endsActive {
                 activeSession = nil
-                try setRestTimer(nil)
+                restTimer = nil
             }
         } else {
             if history.session(session.id) != nil { history = TrainingHistory(sessions: others, library: library) }
@@ -241,10 +258,14 @@ public final class TrainingStore {
     }
 
     func removeRemoteSession(_ id: UUID) throws {
-        try persistence.deleteSession(id)
-        if activeSession?.id == id {
+        let wasActive = activeSession?.id == id
+        try persistence.performAtomically {
+            try persistence.deleteSession(id)
+            if wasActive { try persistence.saveValue(nil, forKey: Self.restTimerKey) }
+        }
+        if wasActive {
             activeSession = nil
-            try setRestTimer(nil)
+            restTimer = nil
         }
         if history.session(id) != nil {
             history = TrainingHistory(sessions: history.sessions.filter { $0.id != id }, library: library)
@@ -263,6 +284,14 @@ public final class TrainingStore {
     /// Applies a change to a copy, validates the result, saves it, and only
     /// then publishes it. A failed change leaves memory and disk untouched.
     private func edit<T>(_ change: (inout WorkoutSession) throws -> T) throws -> T {
+        let (session, result) = try prepare(change)
+        try persistence.save(session)
+        activeSession = session
+        return result
+    }
+
+    /// The changed, validated copy of the active session. Nothing is saved or published.
+    private func prepare<T>(_ change: (inout WorkoutSession) throws -> T) throws -> (WorkoutSession, T) {
         guard let original = activeSession else { throw StoreError.noActiveSession }
         var session = original
         let result: T
@@ -273,9 +302,7 @@ public final class TrainingStore {
         }
         guard session.id == original.id else { throw StoreError.identityChanged }
         try validated(session)
-        try persistence.save(session)
-        activeSession = session
-        return result
+        return (session, result)
     }
 
     private func validated(_ session: WorkoutSession) throws {

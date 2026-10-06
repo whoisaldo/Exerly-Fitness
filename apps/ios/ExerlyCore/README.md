@@ -146,7 +146,11 @@ pound-reps for display.
 `TrainingStore` is `@MainActor @Observable`. Bind screens to `library`, `history`,
 `activeSession`, `restTimer` and `restPolicy`.
 
-Every change is applied to a copy and validated with `validate(library:)`. A
+Every change is applied to a copy and validated with `validate(library:)`.
+A change that writes more than one thing is one unit
+(`TrainingPersistence.performAtomically`): completing a set saves the set and
+its rest timer, and finishing or discarding saves the session and clears the
+timer. A
 whole-session edit may not change the ID. The copy is saved first and published
 only after that, so a failed change leaves memory and disk as they were. The rest
 timer and rest policy are saved too, and come back after relaunch.
@@ -185,6 +189,7 @@ launch.
   - Rows it cannot decode are listed in `unreadableRows` and left untouched.
   - `loadValue(forKey:)` and `saveValue(_:forKey:)` hold small values, such as the
     rest timer and settings.
+  - `performAtomically` runs on one transaction; a nested call uses a savepoint.
 - `InMemoryTrainingPersistence` is for previews and tests.
 
 ## Accounts and sync
@@ -214,6 +219,7 @@ An actor.
 - `signInWithApple(identityToken:rawNonce:name:timeZone:unitSystem:)` and
   `signIn(email:password:)` return a `SignInResult` with `created` and
   `account` (`id`, `email`, `name`).
+- `connectApple(identityToken:rawNonce:)` and `disconnectApple()`.
 - `signOut()`, `deleteAccount(appleAuthorizationCode:)`, `exportAccount()`,
   `isSignedIn` and `accountID`.
 
@@ -225,6 +231,7 @@ Errors are `APIError`:
 
 - `sessionExpired`: sign in again.
 - `linkRequired`: a password account owns that email.
+- `linkConflict`: the Apple ID is connected to another account.
 - `appleReauthorizationRequired`: deletion needs a fresh Apple authorization code.
 - `server(status:message:)`, `notSignedIn` and `invalidResponse`.
 

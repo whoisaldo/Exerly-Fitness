@@ -22,6 +22,8 @@ public enum APIError: Error, Equatable {
     case sessionExpired
     /// An Exerly password account already uses this Apple ID's email.
     case linkRequired
+    /// This Apple ID is already connected to another Exerly account.
+    case linkConflict
     /// Account deletion needs a fresh Sign in with Apple authorization code.
     case appleReauthorizationRequired
     case invalidResponse
@@ -96,6 +98,22 @@ public actor ExerlyAPI {
 
     public func signIn(email: String, password: String) async throws -> SignInResult {
         try await startSession(path: "/login", body: ["email": email, "password": password])
+    }
+
+    /// Connects Sign in with Apple to the signed-in account. Throws `linkConflict`
+    /// when that Apple ID belongs to another Exerly account.
+    public func connectApple(identityToken: String, rawNonce: String) async throws {
+        let (status, json) = try await authorized("POST", "/api/account/identities/apple",
+                                                  body: ["identityToken": identityToken, "nonce": rawNonce])
+        if status == 409 { throw APIError.linkConflict }
+        guard status == 200 || status == 201 else { throw Self.failure(status, json) }
+    }
+
+    /// Disconnects Sign in with Apple. Refused for an account with no password,
+    /// which could not sign in again.
+    public func disconnectApple() async throws {
+        let (status, json) = try await authorized("DELETE", "/api/account/identities/apple", body: nil)
+        guard status == 200 else { throw Self.failure(status, json) }
     }
 
     /// Revokes the session on the server when reachable, and always forgets it locally.

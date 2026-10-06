@@ -134,7 +134,7 @@ import Testing
     @Test func loadsAYearsOfHeavyTrainingQuickly() throws {
         let store = try SQLiteTrainingPersistence(url: url)
         let sets = (0..<25).map { _ in Fixture.set(8, 100, rir: 2) }
-        try store.inTransaction {
+        try store.performAtomically {
             for day in 0..<1_000 {
                 var session = Fixture.session(days: Double(day), [("back-squat", Array(sets[0..<9])),
                                                                   ("barbell-bench-press", Array(sets[9..<17])),

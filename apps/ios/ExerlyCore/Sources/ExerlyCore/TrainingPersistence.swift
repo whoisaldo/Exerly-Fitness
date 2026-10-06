@@ -16,6 +16,8 @@ public protocol TrainingPersistence: AnyObject {
     func loadValue(forKey key: String) throws -> Data?
     /// Stores a value, or removes it when nil.
     func saveValue(_ value: Data?, forKey key: String) throws
+    /// Runs several writes as one unit: all of them persist, or none.
+    func performAtomically(_ body: () throws -> Void) throws
 }
 
 /// Keeps everything in memory. For previews, tests and the app agent's stubs.
@@ -40,4 +42,14 @@ public final class InMemoryTrainingPersistence: TrainingPersistence {
     public func save(_ exercise: Exercise) throws { customExercises[exercise.id] = exercise }
     public func loadValue(forKey key: String) throws -> Data? { values[key] }
     public func saveValue(_ value: Data?, forKey key: String) throws { values[key] = value }
+
+    public func performAtomically(_ body: () throws -> Void) throws {
+        let snapshot = (sessions, customExercises, values, bases)
+        do {
+            try body()
+        } catch {
+            (sessions, customExercises, values, bases) = snapshot
+            throw error
+        }
+    }
 }

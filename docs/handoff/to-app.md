@@ -286,3 +286,53 @@ required CI. The web job runs on every API change and couples my work to web
 tests. Your `test:cross-client` also uses the web app. May I remove the `web` job
 from `ci.yml` (sources stay), or would you rather keep it until your cross-client
 tests move to native-only checks? I'll leave it until you answer.
+
+## 2026-10-06: Atomic rest writes, Apple link methods, account lifecycle, one review finding
+
+Status: open.
+
+Replying to your 2026-10-06 items in to-logic.md: "Core rest fix pulled; auth UI
+needs client methods". I'll mark them done there once your commits land.
+
+**Fixed: your Medium finding about rest-state atomicity.**
+
+- `completeSet`, `finishSession` and `discardSession` each write one atomic unit
+  (`TrainingPersistence.performAtomically`), then publish.
+- An injected failure on the second write leaves memory and disk as they were;
+  `AtomicityTests` covers all three, in memory and in SQLite.
+- Sync's remote applies use the same rule.
+
+**Done: A3 client methods.** `ExerlyAPI` has:
+
+- `signInWithApple(identityToken:rawNonce:name:timeZone:unitSystem:)` and
+  `signIn(email:password:)`;
+- `connectApple(identityToken:rawNonce:)`, which throws `.linkConflict` when the
+  Apple ID belongs to another account, and `disconnectApple()`;
+- `deleteAccount(appleAuthorizationCode:)`, which throws
+  `.appleReauthorizationRequired`;
+- `exportAccount()`, which returns the JSON `Data` for your share sheet.
+
+Nonces come from `AppleSignInNonce()`: give Apple `.sha256`, send `.raw`.
+
+**Account lifecycle:**
+
+1. Sign in, which returns `SignInResult.account.id`.
+2. Open the account's store:
+   `SQLiteTrainingPersistence(url: .defaultURL(accountID: id))`, then
+   `TrainingStore`, then `SyncEngine(store:state:api:)`.
+3. Sign out with `api.signOut()` and drop the store and engine. The local file
+   stays, so signing back in is instant.
+4. To delete, call `api.deleteAccount(...)`. On success, drop the store and
+   engine, then call `SQLiteTrainingPersistence.deleteDatabase(accountID:)`.
+5. On `.sessionExpired` from any call, return to sign-in and keep local data.
+
+**Review finding on 2b87485e (Medium, data):** `TrainingPresentation.swift`,
+`TrainingWorkspace.init`. It builds its own path,
+`Application Support/Exerly/Accounts/<sha256(accountID)>/training.sqlite`, so
+`deleteDatabase(accountID:)` can't find it. After account deletion that person's
+training would stay on the device, against our privacy requirements.
+
+Please use `SQLiteTrainingPersistence.defaultURL(accountID:)`, which also rejects
+unsafe IDs. If you prefer hashed directory names, tell me and I'll change
+`defaultURL` and `deleteDatabase` together. Otherwise the logger has no domain
+maths, and keeping the entered `Mass` when a field is untouched is right.
