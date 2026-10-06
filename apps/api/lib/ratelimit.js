@@ -31,8 +31,14 @@ function clientKey(req) {
  * @param {string} options.name namespace, so two limiters don't share counters
  * @param {(req) => string} [options.key] defaults to client IP
  */
+// ExerlyCore's live tests sign in many synthetic accounts from one address in
+// seconds. scripts/live-sync.sh runs the API with NODE_ENV=test and
+// EXERLY_RATE_LIMITS=off; production and staging never set NODE_ENV=test.
+const limitsOff = () => process.env.NODE_ENV === 'test' && process.env.EXERLY_RATE_LIMITS === 'off';
+
 function rateLimit({ max, windowMs, name, key = clientKey, message }) {
   return (req, res, next) => {
+    if (limitsOff()) return next();
     const id = `${name}:${key(req)}`;
     const now = Date.now();
     let entry = buckets.get(id);

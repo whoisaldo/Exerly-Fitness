@@ -27,7 +27,7 @@ comes from Exerly's tested calculations, the same ones the app shows: quote them
 computing your own. Loads are kilograms and volume is kilogram-reps unless a field says
 otherwise; nutrition is in kcal and grams, weights in kilograms; get_profile says which units the
 person prefers. Trend weight and expenditure come with one standard deviation: report the range. You can't change data directly.
-To suggest a change (fix an entry, adjust a session, add a custom exercise), call propose: the
+To suggest a change (fix an entry, adjust a session, add a custom exercise, log a meal), call propose: the
 person reviews the diff, your evidence and your falsifier in Exerly and decides. Label evidence
 honestly: personalData is n=1, and say when data is short or confounded. No medical claims.`;
 
@@ -228,9 +228,9 @@ function buildServer(account, pat) {
     {
       title: 'Get a document',
       description:
-        'The stored payload of a workout_session or custom_exercise, exactly as Exerly syncs it. Edit this to build the "after" of a proposal.',
+        'The stored payload of a workout, custom exercise, program, food entry or saved food, exactly as Exerly syncs it. Edit this to build the "after" of a proposal.',
       inputSchema: {
-        kind: z.enum(['workout_session', 'custom_exercise', 'program']),
+        kind: z.enum(tools.DATA_KINDS),
         id: z.string(),
       },
       annotations: readOnly,
@@ -248,7 +248,7 @@ function buildServer(account, pat) {
       'propose',
       {
         title: 'Propose a change',
-        description: `Files a change for the person to review in Exerly; nothing changes until they accept. Each change names a document (kind workout_session, custom_exercise or program, and its ID) and the full payload you propose as "after", or null to delete. To edit, read the payload with get_document, change it, and pass the whole document. Exerly fills in "before" from the stored document. Give evidence with an honest level, a confidence, and a falsifier: what would show the proposal is wrong. Cite numbers with a metric so Exerly can verify them.`,
+        description: `Files a change for the person to review in Exerly; nothing changes until they accept. Each change names a document (kind workout_session, custom_exercise, program, food_entry or saved_food, and its ID) and the full payload you propose as "after", or null to delete. To log a meal the person described or photographed, propose new food_entry documents, each with a new UUID, with the date, meal, loggedAt, grams, and the food's name, source and nutrients per 100 g; they confirm it in Exerly. To edit, read the payload with get_document, change it, and pass the whole document. Exerly fills in "before" from the stored document. Give evidence with an honest level, a confidence, and a falsifier: what would show the proposal is wrong. Cite numbers with a metric so Exerly can verify them.`,
         inputSchema: {
           title: z.string().min(1).max(120),
           summary: z.string().max(2000).optional(),
@@ -269,7 +269,7 @@ function buildServer(account, pat) {
           changes: z
             .array(
               z.object({
-                kind: z.enum(['workout_session', 'custom_exercise', 'program']),
+                kind: z.enum(tools.DATA_KINDS),
                 id: z.string(),
                 after: z.record(z.string(), z.unknown()).nullable(),
               })

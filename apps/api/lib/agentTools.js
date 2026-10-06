@@ -14,8 +14,9 @@ const { sessionProblems, customExerciseProblems, programProblems } = require('./
 const progression = require('./training/progression');
 const dates = require('./dates');
 const nutritionTools = require('./nutritionTools');
+const { foodEntryProblems, foodProblems } = require('./nutrition/validate');
 
-const DATA_KINDS = ['workout_session', 'custom_exercise', 'program'];
+const DATA_KINDS = ['workout_session', 'custom_exercise', 'program', 'food_entry', 'saved_food'];
 const EVIDENCE_LEVELS = ['humanRCT', 'observational', 'mechanism', 'anecdote', 'personalData'];
 const WEEKDAYS = { sunday: 1, monday: 2 };
 
@@ -30,14 +31,16 @@ async function accountLibrary(account) {
 }
 
 /**
- * Problems with a training document an agent wants written, checked as
- * ExerlyCore would check it before applying it.
+ * Problems with a document an agent wants written, checked as ExerlyCore
+ * would check it before applying it.
  */
-function trainingProblems(kind, id, payload, library) {
+function agentDocumentProblems(kind, id, payload, library) {
   if (kind === 'workout_session') return sessionProblems(payload, id, library);
   if (kind === 'custom_exercise') return customExerciseProblems(payload, id);
   if (kind === 'program') return programProblems(payload, id, library);
-  return [`${kind} is not a training document`];
+  if (kind === 'food_entry') return foodEntryProblems(payload, id);
+  if (kind === 'saved_food') return foodProblems(payload, id);
+  return [`Agents can't write ${kind} documents`];
 }
 
 /** An account's training data, loaded once per request. */
@@ -410,6 +413,8 @@ function getDocument(ws, { kind, id }) {
     workout_session: ws.sessions,
     custom_exercise: ws.customExercises,
     program: ws.programs,
+    food_entry: ws.nutrition.entries,
+    saved_food: ws.nutrition.foods,
   };
   const payload = documents[kind].find((document) => document.id === docs.canonicalID(id));
   if (!payload) throw notFound(`No ${kind} has that ID`);
@@ -482,7 +487,7 @@ async function propose(ws, pat, input) {
     if (before === null && after === null)
       throw badRequest(`changes[${i}] deletes ${kind} ${id}, which doesn't exist`);
     if (after !== null) {
-      const problems = trainingProblems(kind, id, after, ws.library);
+      const problems = agentDocumentProblems(kind, id, after, ws.library);
       if (problems.length)
         throw badRequest(
           `changes[${i}] is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`
@@ -537,7 +542,7 @@ async function propose(ws, pat, input) {
 
 module.exports = {
   accountLibrary,
-  trainingProblems,
+  agentDocumentProblems,
   DATA_KINDS,
   workspace,
   profile,

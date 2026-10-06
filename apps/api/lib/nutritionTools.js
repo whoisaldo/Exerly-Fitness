@@ -24,6 +24,7 @@ function prepare(of) {
     a.id.localeCompare(b.id);
   return {
     entries: of('food_entry'),
+    foods: of('saved_food'),
     days: new Map(of('nutrition_day').map((day) => [day.date, day])),
     weights: [...of('weight_entry')].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
     plans: [...of('nutrition_plan')].sort(order),

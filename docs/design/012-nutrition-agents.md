@@ -1,6 +1,6 @@
 # M6a: nutrition for agents
 
-Owner: logic agent. Status: read tools built, 2026-10-06.
+Owner: logic agent. Status: read tools and meal proposals built, 2026-10-06.
 
 The MCP server read only training. A person's agent (and Ali's Ascension
 dashboard) needs their nutrition too, with the same numbers the phone shows.
@@ -32,8 +32,15 @@ a billion. A live test has the phone log food and weigh-ins through
 `NutritionStore`, sync them, and read `get_nutrition_summary`. The server's
 trend and expenditure equal the phone's own estimate on every day.
 
-## Next
+## Meal proposals
 
-Proposals for nutrition kinds: an agent logs a described or photographed meal
-as a `food_entry` proposal that the person confirms. The app has to host
-`NutritionStore` in `AgentStore` first.
+An agent can now propose `food_entry` and `saved_food` documents, so a meal
+the person describes or photographs to their agent arrives in Exerly as a
+proposal they confirm. A token with `write` can save foods and entries
+directly. `apps/api/lib/nutrition/validate.js` checks every such document the
+way ExerlyCore decodes it: its nutrient and source lists are ExerlyCore's own,
+checked against the golden file, and it applies `FoodEntry.problems` and
+`Food.problems`. A live test files a meal through MCP, accepts it on the
+phone, and finds the entry on a second device.
+
+The app accepts these once `NutritionStore` is among `AgentStore`'s hosts.

@@ -44,7 +44,7 @@ agent quotes exactly what the app shows.
 ## Proposals
 
 A proposal names each document it changes, by kind (`workout_session`,
-`custom_exercise` or `program`) and ID, and gives the full document it proposes as `after`, or
+`custom_exercise`, `program`, `food_entry` or `saved_food`) and ID, and gives the full document it proposes as `after`, or
 `null` to delete. The server fills in `before` from the stored document and
 refuses an `after` the phone couldn't apply. You add:
 
@@ -56,6 +56,12 @@ refuses an `after` the phone couldn't apply. You add:
   evidence verified or mismatched, and `propose` reports the result back;
 - a confidence (`low`, `medium` or `high`) and a falsifier: what would show the
   proposal is wrong.
+
+To log a meal the person described or photographed, propose a new `food_entry`
+for each food, with a new UUID, the local `date`, a `meal` name, `loggedAt`,
+`grams`, and a `food` with its name, `source` (usually `custom`) and nutrients
+per 100 g in Exerly's names and units (energy in kcal; `get_nutrition_day`
+shows them). Label the estimate honestly, as `anecdote`.
 
 The proposal appears in Exerly with its diff and evidence. Nothing changes until
 you accept it. Accepting applies every change at once, and only if the data is

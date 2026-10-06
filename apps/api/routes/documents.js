@@ -13,7 +13,7 @@ const { authenticate } = require('../lib/auth');
 const { canonicalJSON } = require('../lib/mutations');
 const v = require('../lib/validate');
 const docs = require('../lib/documents');
-const { accountLibrary, trainingProblems, DATA_KINDS } = require('../lib/agentTools');
+const { accountLibrary, agentDocumentProblems, DATA_KINDS } = require('../lib/agentTools');
 
 const router = express.Router();
 router.use(authenticate);
@@ -26,8 +26,8 @@ function readBase(value) {
 const canWrite = (pat) => pat.scopes.includes('write');
 const canPropose = (pat) => canWrite(pat) || pat.scopes.includes('propose');
 
-function checkTraining(kind, id, payload, library, where) {
-  const problems = trainingProblems(kind, id, payload, library);
+function checkAgentDocument(kind, id, payload, library, where) {
+  const problems = agentDocumentProblems(kind, id, payload, library);
   if (problems.length) {
     throw badRequest(`${where} is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`);
   }
@@ -36,7 +36,8 @@ function checkTraining(kind, id, payload, library, where) {
 /**
  * What a personal access token may write. Tokens never decide proposals or
  * write audit events: the person decides, and the server keeps the log.
- * Training documents, written or proposed, must be ones ExerlyCore can apply.
+ * Training and nutrition documents, written or proposed, must be ones
+ * ExerlyCore can apply; agents can't write the other kinds.
  * Returns the payload to store, with a proposal's author set to the token.
  */
 /** Whether a token may write this kind at all, checked before the payload. */
@@ -57,12 +58,12 @@ async function tokenWrite(account, pat, kind, base, existing, payload) {
       if (!DATA_KINDS.includes(change.kind))
         throw badRequest(`changes[${i}].kind must be ${DATA_KINDS.join(' or ')}`);
       if (change.after != null) {
-        checkTraining(change.kind, change.id, change.after, library, `changes[${i}].after`);
+        checkAgentDocument(change.kind, change.id, change.after, library, `changes[${i}].after`);
       }
     });
     return { ...payload, author: docs.tokenActor(pat) };
   }
-  checkTraining(kind, payload.id, payload, await accountLibrary(account), 'payload');
+  checkAgentDocument(kind, payload.id, payload, await accountLibrary(account), 'payload');
   return payload;
 }
 

@@ -346,4 +346,37 @@ struct LiveSyncTests {
             #expect(abs((day["expenditure"] as? Double ?? .nan) - estimate.expenditure) <= 0.5, "\(estimate.date)")
         }
     }
+
+    @Test func anAgentsMealProposalIsAcceptedIntoThePhonesFoodLog() async throws {
+        let (email, password) = try await signUp()
+        let phone = try LiveDevice(base: base)
+        _ = try await phone.signIn(email: email, password: password)
+        let account = try await phone.api.account()
+        let token = try await account.createAccessToken(name: "Synthetic agent", scopes: [.propose]).secret
+        let entryID = UUID()
+        let filed = try await tool("propose", [
+            "title": "Log lunch: chicken and rice", "confidence": "medium",
+            "falsifier": "The plate held a different amount or food.",
+            "evidence": [["claim": "Estimated from the photo you sent", "level": "anecdote"]],
+            "changes": [["kind": "food_entry", "id": entryID.uuidString.lowercased(), "after": [
+                "id": entryID.uuidString.lowercased(), "date": "2026-10-06", "meal": "Lunch",
+                "loggedAt": "2026-10-06T12:30:00.000Z", "grams": 180,
+                "food": ["foodID": "agent:chicken-rice", "name": "Chicken and rice", "source": "custom",
+                         "per100g": ["energy": 160, "protein": 12.5]],
+            ]]],
+        ], token: token)
+        let proposalID = try #require(UUID(uuidString: filed["proposal_id"] as? String ?? ""))
+        try await phone.engine.sync()
+        #expect(phone.agent.proposal(proposalID)?.status == .pending)
+        try phone.agent.accept(proposalID)
+        let logged = try #require(phone.nutrition.entries.first)
+        #expect(logged.id == entryID && logged.grams == 180 && logged.nutrients.energy == 288)
+        try await phone.engine.sync()
+
+        let tablet = try LiveDevice(base: base)
+        _ = try await tablet.signIn(email: email, password: password)
+        try await tablet.engine.sync()
+        #expect(tablet.nutrition.entries == phone.nutrition.entries)
+        #expect(tablet.agent.proposal(proposalID)?.status == .accepted)
+    }
 }

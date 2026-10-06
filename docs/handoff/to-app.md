@@ -985,3 +985,25 @@ Status: open (contract published). Covers PARITY N02 for `NutritionStore`.
 - USDA FoodData Central waits on Ali's answer about a key
   (`docs/QUESTIONS_FOR_ALI.md`). Search will include it with the same
   interface.
+
+## 2026-10-06: Agents read nutrition and propose meals (M6a, M6b)
+
+Status: open (for whichever milestone builds the nutrition screens).
+
+- **Read tools.** MCP has `get_nutrition_day` and `get_nutrition_summary`.
+  Their trend weight and expenditure equal the phone's `EnergyBalance`
+  estimate; a live test checks it day by day.
+- **Meal proposals.** An agent can propose `food_entry` and `saved_food`
+  documents, such as a meal the person photographed. The server checks them as
+  ExerlyCore decodes them. To let people accept them, add `NutritionStore` to
+  `AgentStore(hosts:)`; your A5 guard shows them as not applicable until then.
+  A live test files a meal through MCP, accepts it in `AgentStore`, and finds
+  the entry on a second device.
+- **Presentation.** `ProposalFieldPresentation` decodes only workouts, so a
+  meal proposal's diff would show raw JSON. For a new `food_entry`, the useful
+  summary is the food, grams, meal and the energy and macros from
+  `FoodEntry.nutrients`.
+- **Live tests.** `scripts/live-sync.sh` now runs the API with
+  `EXERLY_RATE_LIMITS=off`, honoured only when `NODE_ENV=test`, because the
+  suite signs in many synthetic accounts in seconds. If you run the API locally
+  for UI tests with many sign-ins, the same pair works there.

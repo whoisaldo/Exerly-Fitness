@@ -21,7 +21,13 @@ import Testing
         var weight, intake: Double?
     }
     struct Case: Encodable { var name: String; var prior: Prior?; var days: [Day]; var estimates: [Estimate] }
-    struct Golden: Encodable { var version = 1; var cases: [Case] }
+    struct Golden: Encodable {
+        var version = 1
+        /// Every nutrient name and food source ExerlyCore decodes, for the API's validators.
+        var nutrients = Nutrient.allCases.map(\.rawValue)
+        var foodSources = FoodSource.allCases.map(\.rawValue)
+        var cases: [Case]
+    }
 
     static func make() -> Golden {
         var cases: [Case] = []

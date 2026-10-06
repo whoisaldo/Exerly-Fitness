@@ -30,7 +30,7 @@ LC_ALL=C pg_ctl -D "$WORK/data" -l "$WORK/postgres.log" -w -o "-k $WORK -c liste
 (
   cd "$ROOT/apps/api"
   DATABASE_URL="postgresql://exerly@localhost/postgres?host=$WORK" JWT_SECRET=live-sync-only \
-    HOST=127.0.0.1 PORT="$PORT" NODE_ENV=test exec node index.js
+    HOST=127.0.0.1 PORT="$PORT" NODE_ENV=test EXERLY_RATE_LIMITS=off exec node index.js
 ) >"$WORK/api.log" 2>&1 &
 API_PID=$!
 

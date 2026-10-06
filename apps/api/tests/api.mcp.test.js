@@ -542,3 +542,87 @@ test('nutrition tools read the log, the targets in force and the energy balance'
   assert.equal(known[0].intake, 1900);
   await client.close();
 });
+
+test('an agent proposes a described meal as food entries the person confirms', async () => {
+  const user = await signUp(api, { timezone: 'UTC' });
+  const client = await connect((await token(user, ['propose'])).token);
+  const entry = (overrides = {}) => {
+    const id = randomUUID();
+    return {
+      kind: 'food_entry',
+      id,
+      after: {
+        id,
+        date: '2026-10-06',
+        meal: 'Lunch',
+        loggedAt: '2026-10-06T12:30:00.000Z',
+        grams: 180,
+        food: {
+          foodID: 'agent:chicken-rice',
+          name: 'Chicken and rice',
+          source: 'custom',
+          per100g: { energy: 160, protein: 12.5, carbohydrate: 18, fat: 3.5 },
+        },
+        ...overrides,
+      },
+    };
+  };
+  const base = {
+    title: 'Log lunch: chicken and rice',
+    confidence: 'medium',
+    falsifier: 'The plate held a different amount or food.',
+    evidence: [{ claim: 'Estimated from the photo you sent', level: 'anecdote' }],
+  };
+  const meal = entry();
+  const filed = await call(client, 'propose', { ...base, changes: [meal] });
+  assert.equal(filed.status, 'pending', JSON.stringify(filed));
+  const proposal = (
+    await api.get(`/v1/documents/proposal/${filed.proposal_id}`, { token: user.token })
+  ).body.payload;
+  assert.equal(proposal.changes[0].kind, 'food_entry');
+  assert.equal(proposal.changes[0].id, meal.id.toUpperCase());
+  assert.equal(proposal.changes[0].after.id, meal.id.toUpperCase());
+  assert.equal(proposal.changes[0].before, null);
+
+  const bad = await client.callTool({
+    name: 'propose',
+    arguments: {
+      ...base,
+      changes: [entry({ grams: 0, food: { ...meal.after.food, per100g: { kilojoules: 670 } } })],
+    },
+  });
+  assert.ok(bad.isError);
+  assert.match(bad.content[0].text, /grams must be a positive weight/);
+  assert.match(bad.content[0].text, /kilojoules is not a nutrient Exerly knows/);
+  await client.close();
+});
+
+test('a write token saves a valid food and is refused a broken one', async () => {
+  const user = await signUp(api);
+  const writer = (await token(user, ['write'])).token;
+  const food = {
+    id: 'agent-granola',
+    name: 'Granola',
+    source: 'custom',
+    per100g: { energy: 450, protein: 10 },
+    servings: [{ name: '1 cup', grams: 110 }],
+    favorite: false,
+    createdAt: '2026-10-06T12:00:00.000Z',
+  };
+  const saved = await api.put(
+    '/v1/documents/saved_food/agent-granola',
+    { base_revision: 0, payload: food },
+    { token: writer, headers: key() }
+  );
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const broken = await api.put(
+    '/v1/documents/saved_food/agent-muesli',
+    {
+      base_revision: 0,
+      payload: { ...food, id: 'agent-muesli', servings: [{ name: '', grams: -1 }] },
+    },
+    { token: writer, headers: key() }
+  );
+  assert.equal(broken.status, 400);
+  assert.match(broken.body.error ?? broken.body.message, /servings\[0\] needs a name/);
+});
