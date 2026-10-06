@@ -5,6 +5,7 @@ struct RootView: View {
     @AppStorage("exerlyAppearance") private var appearance = "dark"
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var sync = SyncEngine.shared
+    @StateObject private var account = AppAccountWorkspace()
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
@@ -34,7 +35,7 @@ struct RootView: View {
                         .multilineTextAlignment(.center)
                     Button("Try again") { Task { await authVM.checkAuth() } }
                         .buttonStyle(.borderedProminent)
-                    Button("Sign out") { authVM.logout() }
+                    Button("Sign out") { Task { await account.signOut(auth: authVM) } }
                 }.padding()
             case .unauthenticated:
                 AuthRouter()
@@ -49,9 +50,28 @@ struct RootView: View {
         .animation(.easeOut(duration: 0.3), value: authVM.authState == .authenticated)
         .environmentObject(authVM)
         .environmentObject(sync)
+        .environmentObject(account)
+        .disabled(account.isChangingAccount)
+        .overlay {
+            if account.isChangingAccount {
+                ProgressView("Updating account…").padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            }
+        }
         .task(id: "\(authVM.currentUser?.id ?? "")-\(authVM.currentUser?.timezone ?? "UTC")") {
             sync.configure(container: modelContext.container, accountID: authVM.currentUser?.id,
                            timeZone: authVM.currentUser?.timezone)
+            account.retryCleanup()
+        }
+        .task(id: "\(authVM.authState)-\(authVM.currentUser?.id ?? "")-\(authVM.sessionID)") {
+            await account.configure(authVM.authState == .authenticated ? authVM.accountAPI : nil)
+        }
+        .task(id: "\(account.training?.identity.uuidString ?? "")-\(scenePhase)") {
+            guard scenePhase == .active, let workspace = account.training else { return }
+            while !Task.isCancelled {
+                await workspace.synchronize()
+                do { try await Task.sleep(for: .seconds(120)) }
+                catch { return }
+            }
         }
         .task(id: "\(authVM.authState)-\(authVM.currentUser?.id ?? "")-\(authVM.currentUser?.preferencesRevision ?? 0)") {
             await NotificationService.shared.refresh(accountID: authVM.authState == .authenticated ? authVM.currentUser?.id : nil)
@@ -64,6 +84,12 @@ struct RootView: View {
             }
         }
         .safeAreaInset(edge: .top) {
+            if let message = account.cleanupError {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message).font(.callout)
+                    Button("Retry cleanup") { account.retryCleanup() }
+                }.padding().frame(maxWidth: .infinity).background(.regularMaterial)
+            }
             if authVM.isOffline && authVM.currentUser != nil {
                 HStack {
                     Image(systemName: "wifi.slash")
@@ -72,7 +98,5 @@ struct RootView: View {
                 }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
             }
         }
-        .tint(Color.exPrimary)
-        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
     }
 }

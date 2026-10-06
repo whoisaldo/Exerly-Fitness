@@ -1,16 +1,23 @@
 import Foundation
 import ExerlyCore
+import Combine
 
 /// App composition: the account determines which Core store a screen can open.
 @MainActor
-final class TrainingWorkspace {
+final class TrainingWorkspace: ObservableObject {
+    let identity = UUID()
+    let accountID: String
     let url: URL
     let store: TrainingStore
+    let agent: AgentStore
+    private let persistence: SQLiteTrainingPersistence
+    @Published private(set) var sync: ExerlyCore.SyncEngine?
     let unreadableCount: Int
 
     enum AccessError: Error { case missingAccount }
 
-    init(accountID: String, root: URL? = nil) throws {
+    init(accountID: String, root: URL? = nil, api: AccountAPI? = nil) throws {
+        self.accountID = accountID
         guard !accountID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AccessError.missingAccount
         }
@@ -21,9 +28,32 @@ final class TrainingWorkspace {
         } else {
             url = canonical
         }
-        let persistence = try SQLiteTrainingPersistence(url: url)
+        persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
+        agent = try AgentStore(persistence: persistence, hosts: [store])
         unreadableCount = persistence.unreadableRows.count
+        if let api { resumeSync(api: api) }
+    }
+
+    func resumeSync(api: AccountAPI) {
+        guard api.accountID == accountID else { return }
+        sync = ExerlyCore.SyncEngine(hosts: [store, agent], state: persistence, api: api)
+    }
+
+    func synchronize() async {
+        // Core exposes the durable state to the UI; cancellation is expected at
+        // account changes and when the scene moves to the background.
+        try? await sync?.sync()
+    }
+
+    static func deleteStorage(accountID: String, root: URL? = nil) throws {
+        _ = try SQLiteTrainingPersistence.defaultURL(accountID: accountID)
+        if let root = try root ?? testStorageRoot() {
+            let directory = root.appendingPathComponent(accountID, isDirectory: true)
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        } else { try SQLiteTrainingPersistence.deleteDatabase(accountID: accountID) }
     }
 
     private static func testStorageRoot() throws -> URL? {

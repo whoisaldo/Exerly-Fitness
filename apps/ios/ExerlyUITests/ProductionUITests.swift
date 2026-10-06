@@ -54,6 +54,124 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(app.secureTextFields["Password"].waitForExistence(timeout: 5))
     }
 
+    func testAccountSyncExportAndDeletionAgainstTheServer() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "account-actions")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.start"], in: app)
+        replace(app.textFields["training.name"], with: "Account sync test", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["Profile"], in: app)
+        capture(app, "account-live-profile")
+        tap(app.buttons["profile.sync"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        capture(app, "account-live-sync")
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertTrue(documents.contains { ($0["payload"] as? [String: Any])?["name"] as? String == "Account sync test" })
+        tap(app.navigationBars.buttons["Profile"], in: app)
+        tap(app.buttons["profile.account"], in: app)
+        XCTAssertTrue(app.staticTexts["Email and password"].waitForExistence(timeout: 10))
+        capture(app, "account-live-settings")
+        tap(app.buttons["account.export"], in: app)
+        XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 15))
+        capture(app, "account-live-export")
+        if app.buttons["Close"].firstMatch.exists { tap(app.buttons["Close"].firstMatch, in: app) }
+        else {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
+        }
+        tap(app.buttons["account.delete"], in: app)
+        tap(app.buttons["account.confirmDelete"], in: app)
+        tap(app.alerts.buttons["Delete account"], in: app)
+        XCTAssertTrue(app.buttons["I already have an account"].waitForExistence(timeout: 20))
+        capture(app, "account-live-deleted")
+        var check = URLRequest(url: URL(string: fixtureURL + "/api/export")!)
+        check.setValue("Bearer \(person.token)", forHTTPHeaderField: "Authorization")
+        let (_, response) = try await URLSession.shared.data(for: check)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 401)
+    }
+
+    func testSwitchingAccountsKeepsEachWorkoutSeparate() async throws {
+        try await control([:])
+        let first = try await createAccount(prefix: "switch-first")
+        let second = try await createAccount(prefix: "switch-second")
+        let app = launch(resetSession: true)
+        signIn(app, email: first.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.start"], in: app)
+        replace(app.textFields["training.name"], with: "First account workout", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.logout"], in: app)
+        signIn(app, email: second.email)
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.buttons["training.start"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.navigationBars["First account workout"].exists)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.logout"], in: app)
+        signIn(app, email: first.email)
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.navigationBars["First account workout"].waitForExistence(timeout: 10))
+        capture(app, "account-switch-restored")
+    }
+
+    func testOfflineWorkoutSurvivesRelaunchAndSyncsWhenReconnected() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "offline-training")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        try await control(["disconnect": true])
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.start"], in: app)
+        replace(app.textFields["training.name"], with: "Offline saved workout", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        XCTAssertTrue(app.staticTexts["Offline. Your workouts are saved on this device."].waitForExistence(timeout: 20))
+        capture(app, "account-sync-offline")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        XCTAssertTrue(app.navigationBars["Offline saved workout"].waitForExistence(timeout: 10))
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        XCTAssertTrue(app.staticTexts["Training synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertTrue(documents.contains { ($0["payload"] as? [String: Any])?["name"] as? String == "Offline saved workout" })
+        capture(app, "account-sync-reconnected")
+    }
+
+    private func createAccount(prefix: String) async throws -> (email: String, token: String) {
+        let email = "\(prefix)-\(UUID().uuidString.prefix(8).lowercased())@exerly.test"
+        let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
+        let token = try XCTUnwrap(signup["token"] as? String)
+        _ = try await request("POST", "/api/onboarding/complete", body: [
+            "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
+            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
+        ], token: token)
+        return (email, token)
+    }
+
+    private func signIn(_ app: XCUIApplication, email: String) {
+        tap(app.buttons["I already have an account"], in: app)
+        replace(app.textFields["Email"], with: email, in: app)
+        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Log In"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        dismissPasswordPrompt(in: app)
+    }
+
     func testTrainingSessionSurvivesRelaunchAndPrefillsTheNextWorkout() async throws {
         try await control([:])
         let email = "training-\(UUID().uuidString.lowercased())@exerly.test"

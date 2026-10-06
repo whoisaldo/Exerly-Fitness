@@ -45,6 +45,10 @@ struct SignupView: View {
                     termsToggle
                     errorMessage
                     signupButton
+                    AppleAuthorizationButton(label: .signUp) { payload in
+                        await authVM.signInWithApple(identityToken: payload.identityToken, rawNonce: payload.rawNonce, name: payload.name)
+                    }
+                    .disabled(!agreedToTerms || authVM.isSubmitting)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 60)
@@ -168,5 +172,6 @@ struct SignupView: View {
         }
         .padding(.leading, 12)
         .padding(.top, 8)
+        .accessibilityLabel("Back")
     }
 }

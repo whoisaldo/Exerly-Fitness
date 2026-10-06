@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AppStorage("unitSystem") private var unitSystem = "metric"
     @AppStorage("exerlyAppearance") private var appearance = "dark"
     @State private var showEditProfile = false
@@ -47,7 +49,8 @@ struct ProfileView: View {
     }
 
     private var statsRow: some View {
-        HStack(spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
             profileStat("Age", value: authVM.currentUser?.age.map(String.init) ?? "Not set")
             profileStat("Weight", value: displayWeight(authVM.currentUser?.weight))
             profileStat("Height", value: displayHeight(authVM.currentUser?.height))
@@ -91,8 +94,27 @@ struct ProfileView: View {
                 .accessibilityIdentifier("profile.appearance")
             }
             settingsGroup("Account") {
-                Button { showChangePassword = true } label: {
-                    settingsRowContent(icon: "lock.shield", title: "Change Password")
+                if let id = authVM.currentUser?.id {
+                    NavigationLink {
+                        AccountManagementView(accountID: id, email: authVM.currentUser?.email ?? "",
+                                              actions: account.actions(auth: authVM, accountID: id))
+                    } label: {
+                        settingsRowContent(icon: "person.badge.key", title: "Account settings")
+                    }
+                    .accessibilityIdentifier("profile.account")
+                }
+                if authVM.signInMethods?.password != false {
+                    Button { showChangePassword = true } label: {
+                        settingsRowContent(icon: "lock.shield", title: "Change Password")
+                    }
+                }
+                if let workspace = account.training {
+                    NavigationLink {
+                        AccountSyncView(workspace: workspace)
+                    } label: {
+                        settingsRowContent(icon: "arrow.triangle.2.circlepath", title: "Sync")
+                    }
+                    .accessibilityIdentifier("profile.sync")
                 }
             }
             settingsGroup("Integrations") {
@@ -142,8 +164,10 @@ struct ProfileView: View {
 
     private var logoutButton: some View {
         ActionButton(title: "Log Out", variant: .ghost) {
-            authVM.logout()
+            Task { await account.signOut(auth: authVM) }
         }
+        .disabled(account.isChangingAccount)
+        .accessibilityIdentifier("profile.logout")
     }
 
     private func displayWeight(_ kilograms: Double?) -> String {

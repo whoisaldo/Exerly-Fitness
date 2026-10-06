@@ -5,32 +5,30 @@ struct TrainingHostView: View {
     let accountID: String
     let unit: MassUnit
     let timeZone: TimeZone
-    @State private var workspace: TrainingWorkspace?
-    @State private var failed = false
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @EnvironmentObject private var auth: AuthViewModel
 
     var body: some View {
         Group {
-            if let workspace {
+            if let workspace = account.training, workspace.accountID == accountID {
                 TrainingView(store: workspace.store, unit: unit, timeZone: timeZone,
                              unreadableCount: workspace.unreadableCount)
-            } else if failed {
+                    .onChange(of: workspace.store.activeSession?.id) { _, _ in
+                        Task { await workspace.synchronize() }
+                    }
+            } else if account.openingError != nil {
                 ContentUnavailableView {
                     Label("Training could not open", systemImage: "externaldrive.badge.exclamationmark")
                 } description: {
                     Text("Your saved data is still on this device. Keep Exerly installed and try again.")
                 } actions: {
-                    Button("Try again", action: open).buttonStyle(.borderedProminent)
+                    Button("Try again") { Task { await account.configure(auth.accountAPI) } }
+                        .buttonStyle(.borderedProminent)
                 }
             } else {
                 ProgressView("Opening training…")
             }
         }
-        .task(id: accountID) { open() }
-    }
-
-    private func open() {
-        do { workspace = try TrainingWorkspace(accountID: accountID); failed = false }
-        catch { workspace = nil; failed = true }
     }
 }
 
@@ -73,7 +71,7 @@ struct TrainingView: View {
                         }
                     }
                     Section {
-                        Label("Training is saved on this device. Cloud backup is coming.", systemImage: "iphone")
+                        Label("Workouts save on this device and sync with your account when connected.", systemImage: "icloud")
                             .font(.footnote).foregroundStyle(.secondary)
                         if unreadableCount > 0 {
                             Label("Some saved entries could not be read. They have been kept for recovery. Contact support before reinstalling.", systemImage: "exclamationmark.triangle")

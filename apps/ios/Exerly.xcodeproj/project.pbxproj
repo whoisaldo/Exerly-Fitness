@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        E50000000000000000000007 /* AccountWorkspaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000008; };
+        E50000000000000000000005 /* SessionBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000006; };
+        E50000000000000000000003 /* AccountSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000004; };
+        E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000002; };
         E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000008; };
         E40000000000000000000005 /* AccountPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000006; };
         E40000000000000000000003 /* AccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000004; };
@@ -101,6 +105,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        E50000000000000000000008 /* AccountWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountWorkspaceTests.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000006 /* SessionBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/SessionBridgeTests.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000004 /* AccountSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountSyncView.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000002 /* AppAccountWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AppAccountWorkspace.swift; sourceTree = SOURCE_ROOT; };
         E40000000000000000000008 /* AccountControlsFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountControlsFixtureView.swift; sourceTree = SOURCE_ROOT; };
         E40000000000000000000006 /* AccountPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         E40000000000000000000004 /* AccountManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountManagementView.swift; sourceTree = SOURCE_ROOT; };
@@ -479,7 +487,11 @@
                 E20000000000000000000005 /* TrainingPresentationTests.swift */,
                 E30000000000000000000002 /* AccountInfrastructureTests.swift */,
                 E40000000000000000000008 /* AccountControlsFixtureView.swift */,
+                E50000000000000000000004 /* AccountSyncView.swift */,
+                E50000000000000000000002 /* AppAccountWorkspace.swift */,
                 E40000000000000000000006 /* AccountPresentationTests.swift */,
+                E50000000000000000000008 /* AccountWorkspaceTests.swift */,
+                E50000000000000000000006 /* SessionBridgeTests.swift */,
                 E40000000000000000000004 /* AccountManagementView.swift */,
                 E40000000000000000000002 /* AppleAuthorizationButton.swift */,
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
@@ -634,6 +646,8 @@
                 D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */,
                 F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */,
                 E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */,
+                E50000000000000000000003 /* AccountSyncView.swift in Sources */,
+                E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */,
                 E40000000000000000000003 /* AccountManagementView.swift in Sources */,
                 E40000000000000000000001 /* AppleAuthorizationButton.swift in Sources */,
 				016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */,
@@ -712,7 +726,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
