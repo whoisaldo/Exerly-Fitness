@@ -1,0 +1,128 @@
+import Foundation
+import Testing
+@testable import ExerlyCore
+
+/// Synthetic foods with round numbers, per 100 g.
+enum Foods {
+    static let oats = Food(id: "4B1D0E4C-0000-4000-8000-000000000001", name: "Rolled oats",
+                           per100g: NutrientAmounts([.energy: 380, .protein: 13, .carbohydrate: 67, .fat: 7, .fiber: 10, .iron: 4]),
+                           servings: [Serving("1/2 cup", grams: 40)], createdAt: Fixture.instant())
+    static let milk = Food(id: "4B1D0E4C-0000-4000-8000-000000000002", name: "Milk", brand: "Synthetic Dairy",
+                           per100g: NutrientAmounts([.energy: 60, .protein: 3.3, .carbohydrate: 4.8, .fat: 3.2, .calcium: 120]),
+                           servings: [Serving("1 cup", grams: 244)], createdAt: Fixture.instant())
+    static let chicken = Food(id: "4B1D0E4C-0000-4000-8000-000000000003", name: "Chicken breast",
+                              per100g: NutrientAmounts([.energy: 165, .protein: 31, .fat: 3.6, .iron: 1]),
+                              createdAt: Fixture.instant())
+}
+
+@MainActor
+@Suite struct NutritionStoreTests {
+    let monday = LocalDate("2026-10-05")!
+
+    func store(_ persistence: InMemoryTrainingPersistence = InMemoryTrainingPersistence()) throws -> NutritionStore {
+        try NutritionStore(persistence: persistence, now: { Fixture.instant() })
+    }
+
+    @Test func loggingByWeightOrServingScalesNutrientsAndSummarisesTheDay() throws {
+        let nutrition = try store()
+        try nutrition.log(Foods.oats, serving: Foods.oats.servings[0], quantity: 2, on: monday, meal: "Breakfast")
+        try nutrition.log(Foods.milk, grams: 244, on: monday, meal: "Breakfast")
+        try nutrition.log(Foods.chicken, grams: 150, on: monday, meal: "Lunch")
+        let summary = nutrition.summary(on: monday)
+        #expect(summary.entries == 3)
+        #expect(close(summary.totals.energy, 380 * 0.8 + 60 * 2.44 + 165 * 1.5))
+        #expect(close(summary.totals[.protein], 13 * 0.8 + 3.3 * 2.44 + 31 * 1.5))
+        #expect(close(summary.byMeal["Lunch"]?[.protein], 46.5))
+        #expect(summary.totals[.calcium].map { close($0, 120 * 2.44) } == true)
+        let shares = summary.energyShares
+        #expect(close(shares.values.reduce(0, +), 1))
+        #expect(nutrition.entries(on: monday).first?.quantity == 2 && nutrition.entries(on: monday).first?.grams == 80)
+
+        let iron = nutrition.contributors(of: .iron, on: monday)
+        #expect(iron.map(\.name) == ["Rolled oats", "Chicken breast"])
+        #expect(close(iron.reduce(0) { $0 + $1.share }, 1))
+    }
+
+    @Test func recipesComputeTheirNutrientsFromIngredientsAndYield() throws {
+        let porridge = Food.recipe(name: "Porridge", ingredients: [RecipeIngredient(food: Foods.oats.snapshot, grams: 80),
+                                                                   RecipeIngredient(food: Foods.milk.snapshot, grams: 300)],
+                                   yieldGrams: 400)
+        #expect(close(porridge.per100g.energy, (380 * 0.8 + 60 * 3) / 4))
+        let nutrition = try store()
+        try nutrition.saveFood(porridge)
+        let entry = try nutrition.log(porridge, grams: 200, on: monday, meal: "Breakfast")
+        #expect(close(entry.nutrients.energy, (380 * 0.8 + 60 * 3) / 2))
+        #expect(throws: NutritionStore.StoreError.self) {
+            try nutrition.saveFood(Food.recipe(name: "Nothing", ingredients: []))
+        }
+    }
+
+    @Test func editingAFoodLeavesItsHistoryAlone() throws {
+        let nutrition = try store()
+        try nutrition.saveFood(Foods.oats)
+        let entry = try nutrition.log(Foods.oats, grams: 100, on: monday, meal: "Breakfast")
+        var changed = Foods.oats
+        changed.per100g[.energy] = 999
+        try nutrition.saveFood(changed)
+        #expect(nutrition.entries(on: monday).first?.nutrients.energy == 380)
+        #expect(nutrition.food(Foods.oats.id)?.per100g.energy == 999)
+        try nutrition.archiveFood(Foods.oats.id)
+        #expect(nutrition.food(Foods.oats.id)?.archivedAt != nil)
+        #expect(nutrition.entries(on: monday).map(\.id) == [entry.id])
+    }
+
+    @Test func aMealCopiesToAnotherDayAsNewEntries() throws {
+        let nutrition = try store()
+        try nutrition.log(Foods.oats, grams: 80, on: monday, meal: "Breakfast")
+        try nutrition.log(Foods.chicken, grams: 150, on: monday, meal: "Lunch")
+        let tuesday = monday.adding(days: 1)
+        let copied = try nutrition.copy(from: monday, meal: "Breakfast", to: tuesday)
+        #expect(copied.count == 1 && copied[0].date == tuesday && copied[0].food.name == "Rolled oats")
+        #expect(nutrition.entries(on: tuesday).map(\.id) == copied.map(\.id))
+        #expect(nutrition.recentFoods().map(\.name) == ["Rolled oats", "Chicken breast"])
+    }
+
+    @Test func invalidEntriesAndWeighInsAreRefused() throws {
+        let nutrition = try store()
+        #expect(throws: NutritionStore.StoreError.self) { try nutrition.log(Foods.oats, grams: 0, on: monday, meal: "Breakfast") }
+        #expect(throws: NutritionStore.StoreError.self) { try nutrition.log(Foods.oats, grams: 10, on: monday, meal: " ") }
+        var bad = Foods.oats
+        bad.per100g[.protein] = -1
+        #expect(throws: NutritionStore.StoreError.invalid(["protein must be a number of 0 or more"])) { try nutrition.saveFood(bad) }
+        #expect(throws: NutritionStore.StoreError.self) { try nutrition.logWeight(.kg(5), timeZone: Fixture.utc) }
+        // 23:30 in New York is the next day in UTC; the weigh-in counts for the local day.
+        let late = try nutrition.logWeight(.lb(180), at: Date(timeIntervalSince1970: 1_791_257_400), timeZone: Fixture.newYork)
+        #expect(late.date == LocalDate("2026-10-05"))
+    }
+
+    @Test func everythingPersistsAndDaysMergeFieldByField() async throws {
+        let persistence = InMemoryTrainingPersistence()
+        let nutrition = try store(persistence)
+        try nutrition.saveFood(Foods.milk)
+        try nutrition.log(Foods.milk, grams: 244, on: monday, meal: "Breakfast")
+        try nutrition.setStatus(.complete, on: monday)
+        try nutrition.logWeight(.kg(80.4), timeZone: Fixture.utc)
+        let reopened = try store(persistence)
+        #expect(reopened.foods == nutrition.foods && reopened.entries == nutrition.entries)
+        #expect(reopened.day(monday).status == .complete && reopened.weights == nutrition.weights)
+
+        // Two devices: one marks the day fasting, the other adds a note.
+        let server = FakeDocumentServer()
+        let phoneStore = InMemoryTrainingPersistence(), tabletStore = InMemoryTrainingPersistence()
+        let phone = try store(phoneStore), tablet = try store(tabletStore)
+        let phoneSync = SyncEngine(hosts: [phone], state: phoneStore, api: server)
+        let tabletSync = SyncEngine(hosts: [tablet], state: tabletStore, api: server)
+        try phone.log(Foods.oats, grams: 40, on: monday, meal: "Breakfast")
+        try phone.setNotes("Travel day", on: monday)
+        try await phoneSync.sync()
+        try await tabletSync.sync()
+        #expect(tablet.entries(on: monday).count == 1 && tablet.day(monday).notes == "Travel day")
+        try phone.setStatus(.partial, on: monday)
+        try tablet.setNotes("Travel day, hotel breakfast", on: monday)
+        try await phoneSync.sync()
+        try await tabletSync.sync()
+        try await phoneSync.sync()
+        #expect(phone.day(monday) == tablet.day(monday))
+        #expect(phone.day(monday).status == .partial && phone.day(monday).notes == "Travel day, hotel breakfast")
+    }
+}

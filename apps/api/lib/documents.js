@@ -20,6 +20,25 @@ const KINDS = {
     typeof p.name === 'string' && typeof p.metric === 'string'
       ? []
       : ['an exercise needs a name and a metric'],
+  food: (p) =>
+    typeof p.name === 'string' && p.per100g && typeof p.per100g === 'object'
+      ? []
+      : ['a food needs a name and per100g nutrients'],
+  food_entry: (p) =>
+    typeof p.date === 'string' &&
+    p.food &&
+    typeof p.food === 'object' &&
+    typeof p.grams === 'number'
+      ? []
+      : ['an entry needs a date, a food and grams'],
+  nutrition_day: (p) =>
+    typeof p.date === 'string' && p.date === p.id && typeof p.status === 'string'
+      ? []
+      : ['a day needs its date as its ID and a status'],
+  weight_entry: (p) =>
+    typeof p.at === 'string' && p.weight && typeof p.weight.value === 'number'
+      ? []
+      : ['a weigh-in needs an instant and a weight'],
   program: (p) =>
     typeof p.name === 'string' && Array.isArray(p.days) ? [] : ['a program needs a name and days'],
   proposal: proposalProblems,

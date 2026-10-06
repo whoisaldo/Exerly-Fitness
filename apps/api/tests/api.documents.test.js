@@ -502,3 +502,61 @@ test('migration 0006 makes stored and feed payloads canonical, as the API writes
   );
   assert.equal(resent.status, 200, JSON.stringify(resent.body));
 });
+
+test('nutrition documents sync like training ones', async () => {
+  const { token } = await signUp(api);
+  const entryID = randomUUID().toUpperCase();
+  const documents = [
+    [
+      'food',
+      'F1',
+      { id: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 }, servings: [] },
+    ],
+    [
+      'food_entry',
+      entryID,
+      {
+        id: entryID,
+        date: '2026-10-05',
+        meal: 'Breakfast',
+        loggedAt: '2026-10-05T08:00:00.000Z',
+        grams: 40,
+        food: { foodID: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 } },
+      },
+    ],
+    [
+      'nutrition_day',
+      '2026-10-05',
+      { id: '2026-10-05', date: '2026-10-05', status: 'complete', notes: '' },
+    ],
+    [
+      'weight_entry',
+      entryID,
+      {
+        id: entryID,
+        at: '2026-10-05T07:00:00.000Z',
+        date: '2026-10-05',
+        weight: { unit: 'kg', value: 80 },
+      },
+    ],
+  ];
+  for (const [kind, id, payload] of documents) {
+    const res = await api.put(
+      `/v1/documents/${kind}/${id}`,
+      { payload, base_revision: 0 },
+      { token, headers: key() }
+    );
+    assert.equal(res.status, 201, `${kind}: ${JSON.stringify(res.body)}`);
+  }
+  const wrongDay = await api.put(
+    '/v1/documents/nutrition_day/2026-10-06',
+    { payload: { id: '2026-10-06', date: '2026-10-05', status: 'complete' }, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(wrongDay.status, 400);
+  const changes = (await api.get('/v1/changes?after=0', { token })).body.changes;
+  assert.deepEqual(
+    changes.map((c) => c.kind),
+    ['food', 'food_entry', 'nutrition_day', 'weight_entry']
+  );
+});
