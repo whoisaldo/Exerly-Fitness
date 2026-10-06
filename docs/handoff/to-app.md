@@ -1248,3 +1248,24 @@ Status: open (contract published). See "Gyms" in the README and design 016.
   - Pass the active gym's `bars.first` and `plates` to `WarmUpScheme.sets`
     and `Plates.load`.
 - **Without a gym,** everything behaves as before.
+
+## 2026-10-06: Swap an exercise, and keep a workout's changes in the program (T15, P06)
+
+Status: open (contract published). See the README's Store and Programs
+sections, and design 006.
+
+- **Swap.** `training.replaceExercise(performedID, with: exerciseID)` swaps
+  an exercise in place, before any of its sets is done. It keeps the
+  position, superset, program slot, notes, rest, and the number and kinds of
+  sets, prefilled from the new exercise's last performance. Once a set is
+  done it throws `StoreError.edit(.alreadyStarted(id))`; offer remove and add
+  instead. Filter the choices with `gym.allows`.
+- **After finishing a planned workout,** call
+  `programs.proposal(applying: finished.session, existing: agent.proposals)`.
+  If it isn't nil, `agent.file` it and offer the review. It reads, for
+  example, "Keep today's changes in Full body? A: Back Squat: 4 sets instead
+  of 3; Dumbbell Bench Press instead of Barbell Bench Press; added Barbell
+  Curl." Accept and undo work as for any proposal, and the field diff shows
+  through your program field labels.
+- **Rules.** Skipped exercises stay, the order is kept, and sets in a deload
+  cycle without its own targets are left alone.
