@@ -2214,9 +2214,11 @@ final class ProductionUITests: XCTestCase {
             // The system can present the sheet after the diary first appears.
             dismissPasswordPrompt(in: app)
             let home = app.buttons["Home"]
-            if visibleFrame(element) && element.isHittable && home.exists,
-               ["Home", "Train", "Library", "Progress", "Profile"].contains(element.label),
-               abs(element.frame.midY - home.frame.midY) < 2 { return }
+            // Identify native tab controls by their container. iOS can expose
+            // the tab's symbol as its element label, which made the old label
+            // allowlist drag the content 48 times before tapping a visible tab.
+            if visibleFrame(element) && element.isHittable,
+               app.tabBars.buttons.allElementsBoundByIndex.contains(where: { $0.frame == element.frame }) { return }
             let lowerEdge = visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30
             let bar = app.navigationBars.allElementsBoundByIndex.last ?? app.navigationBars.firstMatch
             if visibleFrame(element) && element.isHittable && bar.exists,
