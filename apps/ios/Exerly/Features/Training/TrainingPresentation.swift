@@ -10,6 +10,7 @@ final class TrainingWorkspace: ObservableObject {
     let url: URL
     let store: TrainingStore
     let programs: ProgramStore
+    let nutrition: NutritionStore
     let agent: AgentStore
     let entryChecks: TrainingEntryChecks
     private let persistence: SQLiteTrainingPersistence
@@ -33,7 +34,8 @@ final class TrainingWorkspace: ObservableObject {
         persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
         programs = try ProgramStore(persistence: persistence, training: store)
-        agent = try AgentStore(persistence: persistence, hosts: [store, programs])
+        nutrition = try NutritionStore(persistence: persistence)
+        agent = try AgentStore(persistence: persistence, hosts: [store, programs, nutrition])
         entryChecks = TrainingEntryChecks(training: store, agent: agent, accountID: accountID)
         unreadableCount = persistence.unreadableRows.count
         if let api { resumeSync(api: api) }
@@ -41,7 +43,7 @@ final class TrainingWorkspace: ObservableObject {
 
     func resumeSync(api: AccountAPI) {
         guard api.accountID == accountID, !persistence.isClosed else { return }
-        sync = ExerlyCore.SyncEngine(hosts: [store, programs, agent], state: persistence, api: api)
+        sync = ExerlyCore.SyncEngine(hosts: [store, programs, nutrition, agent], state: persistence, api: api)
     }
 
     func synchronize() async {
@@ -61,11 +63,11 @@ final class TrainingWorkspace: ObservableObject {
     }
 
     func export(server: Data?, pending: [AccountExport.PendingRow] = []) throws -> Data {
-        try AccountExport.merging(server: server, hosts: [store, programs, agent], state: persistence, pending: pending)
+        try AccountExport.merging(server: server, hosts: [store, programs, nutrition, agent], state: persistence, pending: pending)
     }
 
     func supportsChanges(in proposal: Proposal) -> Bool {
-        let kinds = store.documentKinds + programs.documentKinds
+        let kinds = store.documentKinds + programs.documentKinds + nutrition.documentKinds
         return proposal.changes.allSatisfy { kinds.contains($0.kind) }
     }
 
