@@ -5,20 +5,40 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 14:28 EDT. A2 is on integration at 84b7de51. A3 source is committed
-on agent/app at 1aad43b8, rebased over integration 7a97ae34. Work in this primary
-worktree; app-next retains earlier evidence only. Done is not met.
+2026-10-06 15:05 EDT. A2 is live in internal TestFlight. Primary agent/app is
+3747a57f over integration 66b3dd1e. A3 remains unreleased. App-next is now active
+A4 work, branch agent/app-next, rebased onto primary with commits 7564a06f and
+acdab159. Do not discard or overwrite it. Done is not met.
 
-1. Resolve the UUID case duplication reported in to-logic.md; only logic edits
-   Core/API. The actual-server reproducer is artifacts/app-review-case. Check
-   integration and the other agent's inbox/commits while doing independent work.
-2. Finish the four largest-text light/dark small/large visual checks. Then
-   rebase, freeze source and run the full native regression, API/Core suites and
-   unsigned device build. The previous full-native.xcresult was deliberately
-   interrupted for the final layout changes and UUID finding; it is NOT a pass.
-3. Archive/upload A3, set internal-group notes/build, update PARITY/RELEASE,
-   fast-forward integration and push. Continue A4 proposal review/audit and
-   Connect an agent, then detectors/programs. Do not stop at a milestone.
+1. Original full A3 regression, artifacts/account/full-a3-current.xcresult,
+   is finishing on the pre-rebase source. It found one test-hook port failure,
+   fixed in 8222e960 and verified by legacy-isolated-port.xcresult. It is not a
+   final pass. Final source also fixes the offline banner covering navigation
+   in iOS18: normal SE A4 review and large A3 offline navigation journeys pass.
+2. Fresh current-source API217/Core182/device build, lint, format, typecheck,
+   six Node and seven Python release checks pass, final-* logs under account.
+   Original UUID duplicate reproducer now passes against a fresh server:
+   app-review-case/uuid-fixed-result.log contains one row for one UUID.
+   A follow-up migrated-payload MCP defect is in to-logic.md. Staging had no
+   pre-migration documents, so it is not an existing internal-account data issue.
+3. Freeze A3, restart the verified app-owned 39203 fixture after its old full
+   run finishes, run full native validation on this final base. Then archive,
+   upload and assign A3, update PARITY/RELEASE, fast-forward integration and push.
+4. A4 real-server review/accept-offline/relaunch/sync/undo/reject/audit passed
+   on SE (offline-navigation-fixed.xcresult). Connection creation/revocation/
+   direct-write cancellation and stale-proposal refusal passed in real-api-first.
+   All 13 relevant agent captures plus both new A3 navigation captures inspected.
+   Eight hosted tests passed before a copy edit; its old-string expectation is
+   now fixed. Largest-text first runs were interrupted after test scrolling
+   failures, not passes. small-light-scroll and large-dark-scroll are running
+   now on the rebased source and fresh API, sessions43792/10785. Large includes
+   all eight hosted tests. Then inspect images, fix findings, run other two
+   variants, complete A4 full checks/release, and continue detectors/programs.
+
+Current fixture nodes use primary source on39204/39205/39206, sessions
+18969/84454/86847. Environment key is EXERLY_FIXTURE_PORT, not PORT. The mistaken
+39001 fixture was stopped. Original39203/session18453 is still the old full-run
+fixture. Only stop verified app-owned PIDs. No protected services changed.
 
 ## Active A3 implementation and evidence
 
