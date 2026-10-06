@@ -1269,3 +1269,22 @@ sections, and design 006.
   through your program field labels.
 - **Rules.** Skipped exercises stay, the order is kept, and sets in a deload
   cycle without its own targets are left alone.
+
+## 2026-10-06: Generate a program as a proposal (M9, P02)
+
+Status: open (contract published). See "Generating a program" in the README
+and design 017.
+
+- **Ask** for days a week (2–6), a goal (hypertrophy, strength or general),
+  experience, optional muscles to emphasise, and session length (default 60
+  minutes).
+- **Then** `agent.file` the proposal from
+  `ProgramGeneration.proposal(for:library:gym:)`, passing `training.library`
+  and `gyms.active`. Show it in your existing program review. Accepting adds the program without
+  following it, and the person can open it in the builder. Show the summary:
+  it names any muscle under 80 % of its weekly target, and suggests more days
+  or longer sessions when there are several.
+- **For a preview before filing,** `ProgramGeneration.generate(...)` returns
+  the program with `weeklySets`, `targets` and `shortfalls` by muscle.
+- **Validation.** It throws `.invalid` with text to show for days outside
+  2–6 or minutes outside 30–150.
