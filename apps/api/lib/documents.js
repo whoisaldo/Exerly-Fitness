@@ -26,6 +26,14 @@ const KINDS = {
 // Kinds that can be created but never changed or deleted.
 const APPEND_ONLY = new Set(['audit_event']);
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A UUID in the uppercase form ExerlyCore writes; other IDs as they are. One
+ * document must never be stored under two IDs that differ only in case.
+ */
+const canonicalID = (value) =>
+  typeof value === 'string' && UUID_RE.test(value) ? value.toUpperCase() : value;
 
 const isKind = (value) => Object.prototype.hasOwnProperty.call(KINDS, value);
 
@@ -40,14 +48,44 @@ function readID(value) {
       'Document IDs are 1 to 128 letters, digits, dots, colons, underscores or hyphens'
     );
   }
-  return value;
+  return canonicalID(value);
+}
+
+/** The payload with every document reference in canonical form. */
+function canonicalReferences(kind, payload) {
+  const refs = (list) =>
+    Array.isArray(list)
+      ? list.map((ref) =>
+          ref && typeof ref === 'object' ? { ...ref, id: canonicalID(ref.id) } : ref
+        )
+      : list;
+  if (kind === 'proposal') {
+    return {
+      ...payload,
+      changes: refs(payload.changes),
+      evidence: Array.isArray(payload.evidence)
+        ? payload.evidence.map((e) =>
+            e && typeof e === 'object' ? { ...e, dataRefs: refs(e.dataRefs) } : e
+          )
+        : payload.evidence,
+    };
+  }
+  if (kind === 'audit_event') {
+    return {
+      ...payload,
+      targets: refs(payload.targets),
+      ...(payload.proposalID ? { proposalID: canonicalID(payload.proposalID) } : {}),
+    };
+  }
+  return payload;
 }
 
 function readPayload(kind, id, payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw badRequest('payload must be an object');
   }
-  if (payload.id !== id) throw badRequest('payload.id must match the document ID');
+  if (canonicalID(payload.id) !== id) throw badRequest('payload.id must match the document ID');
+  payload = canonicalReferences(kind, { ...payload, id });
   const problems = KINDS[kind](payload);
   if (problems.length) {
     throw badRequest(`payload is not a valid ${kind}: ${problems.slice(0, 5).join('; ')}`);
@@ -118,6 +156,7 @@ function tokenActor(pat) {
 
 module.exports = {
   KINDS,
+  canonicalID,
   APPEND_ONLY,
   isKind,
   readKind,

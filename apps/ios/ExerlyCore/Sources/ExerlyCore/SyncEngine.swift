@@ -109,7 +109,23 @@ public final class SyncEngine {
 
     private func run() async throws {
         state = .syncing
-        bases = Dictionary(try stateStore.syncBases().map { (Self.key($0.kind, $0.id), $0) }, uniquingKeysWith: { a, _ in a })
+        let stored = try stateStore.syncBases()
+        bases = Dictionary(stored.map { base in
+            var canonical = base
+            canonical.id = Self.canonical(base.id)
+            return (Self.key(canonical.kind, canonical.id), canonical)
+        }, uniquingKeysWith: { a, b in a.revision >= b.revision ? a : b })
+        // Bases an earlier version saved under a lowercase UUID are folded into one.
+        let stale = stored.filter { $0.id != Self.canonical($0.id) }
+        if !stale.isEmpty {
+            try checkActive()
+            try stateStore.performAtomically {
+                for base in stale {
+                    try stateStore.removeSyncBase(kind: base.kind, id: base.id)
+                    if let folded = bases[Self.key(base.kind, Self.canonical(base.id))] { try stateStore.saveSyncBase(folded) }
+                }
+            }
+        }
         rejected = try stateStore.rejectedDocuments()
         try await pull()
         if try await push() { try await pull() }
@@ -134,8 +150,10 @@ public final class SyncEngine {
     /// Applies a remote version, merging with unpushed local changes. Returns
     /// false when the version can't be read and was set aside.
     @discardableResult
-    private func receive(_ change: RemoteDocument) throws -> Bool {
+    private func receive(_ incoming: RemoteDocument) throws -> Bool {
         try checkActive()
+        var change = incoming
+        change.id = Self.canonical(incoming.id)
         guard let host = host(for: change.kind) else { return true }
         let key = Self.key(change.kind, change.id)
         let base = bases[key]
@@ -249,6 +267,10 @@ public final class SyncEngine {
     // MARK: Bases
 
     private static func key(_ kind: String, _ id: String) -> String { "\(kind)/\(id)" }
+
+    /// A UUID in the uppercase form `UUID.uuidString` gives, and any other ID as
+    /// it is, so one document never syncs under two IDs.
+    nonisolated static func canonical(_ id: String) -> String { UUID(uuidString: id)?.uuidString ?? id }
 
     private func saveBase(_ base: SyncBase) throws {
         try checkActive()

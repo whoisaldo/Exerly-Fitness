@@ -223,3 +223,13 @@ an account that no longer exists gets 401 with code `account_deleted`. Only the
 account's own tokens can learn it, so nothing is revealed to anyone else. A
 client whose deletion response was lost can then tell the deletion happened and
 remove the account's data from the device.
+
+## 2026-10-06: UUID document IDs are uppercase
+
+A document ID that is a UUID has one canonical form, uppercase, which is what
+`UUID.uuidString` gives and what ExerlyCore always wrote. The API stores and
+returns that form for document IDs and for the IDs proposals and audit events
+refer to, and migration 0005 converts existing rows. ExerlyCore's `SyncEngine`
+reads remote IDs and its own saved sync bases in the same form. Before this, a
+lowercase ID written by another client became a second server document when a
+device synced it. Other IDs, such as custom exercise IDs, stay as written.

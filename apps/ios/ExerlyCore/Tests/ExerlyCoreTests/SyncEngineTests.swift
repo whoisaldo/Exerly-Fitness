@@ -3,7 +3,8 @@ import Testing
 @testable import ExerlyCore
 
 /// The document contract of the real API, in memory: revisions, stale-base
-/// conflicts, idempotent replays, tombstones and an ordered change feed.
+/// conflicts, idempotent replays, tombstones, an ordered change feed, and one
+/// document per UUID whatever its letter case.
 final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
     struct Stored { var revision: Int; var payload: Data? }
     private let lock = NSLock()
@@ -14,8 +15,10 @@ final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
     var loseNextResponse = false
     var offline = false
     private(set) var writes = 0
+    /// Every write the server received, including ones refused as conflicts.
+    private(set) var attempts: [(id: String, baseRevision: Int)] = []
 
-    private func key(_ kind: String, _ id: String) -> String { "\(kind)/\(id)" }
+    private func key(_ kind: String, _ id: String) -> String { "\(kind)/\(SyncEngine.canonical(id))" }
 
     func revision(_ kind: String, _ id: String) -> Int? { lock.withLock { documents[key(kind, id)]?.revision } }
 
@@ -31,6 +34,7 @@ final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
         try lock.withLock {
             if offline { throw Offline() }
             if let receipt = receipts[idempotency] { return receipt }
+            attempts.append((id, base))
             let current = documents[key(kind, id)]
             if payload == nil && current == nil { throw APIError.server(status: 404, message: "Document not found") }
             guard base == (current?.revision ?? 0) else {
@@ -351,5 +355,50 @@ final class Device {
         try await relaunched.sync()
         #expect(relaunched.rejected.isEmpty)
         #expect(Set(phone.store.history.sessions.map(\.name)) == ["Legs", "Fixed"])
+    }
+
+    /// The app agent's reproduction: a lowercase UUID on the server must not
+    /// become a second document when a device syncs it.
+    @Test func aLowercaseDocumentIDIsTheSameDocument() async throws {
+        let server = FakeDocumentServer()
+        let upper = UUID()
+        let lower = upper.uuidString.lowercased()
+        let session = WorkoutSession(id: upper, name: "Lowercase", startedAt: Fixture.instant(), endedAt: Fixture.instant(minutes: 30),
+                                     timeZone: Fixture.utc)
+        let json = try #require(String(bytes: try ExerlyJSON.canonical(session), encoding: .utf8))
+        let payload = Data(json.replacingOccurrences(of: upper.uuidString, with: lower).utf8)
+        server.inject(kind: "workout_session", id: lower, payload: payload)
+        let device = try Device(server: server)
+        try await device.engine.sync()
+        #expect(device.store.history.sessions == [session])
+        #expect(server.attempts.isEmpty, "Nothing to push: the device's copy is the server's document")
+
+        // An edit goes back under the canonical ID, with the server's revision as its base.
+        var edited = session
+        edited.notes = "Edited"
+        try device.store.saveSession(edited)
+        try await device.engine.sync()
+        #expect(server.attempts.count == 1)
+        #expect(server.attempts.first?.id == upper.uuidString && server.attempts.first?.baseRevision == 1)
+    }
+
+    /// A device that synced before the fix holds its base under the lowercase
+    /// ID; the base must still count for the uppercase document.
+    @Test func aLowercaseSyncBaseIsFoldedIntoTheCanonicalOne() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        try phone.store.startSession(name: "Legs", bodyweight: .kg(80))
+        try phone.store.finishSession()
+        try await phone.engine.sync()
+        let id = try #require(phone.store.history.sessions.first).id.uuidString
+        var base = try #require(try phone.persistence.syncBases().first { $0.id == id })
+        try phone.persistence.removeSyncBase(kind: base.kind, id: id)
+        base.id = id.lowercased()
+        try phone.persistence.saveSyncBase(base)
+        let attempts = server.attempts.count
+
+        try await phone.engine.sync()
+        #expect(server.attempts.count == attempts, "The folded base matches the local copy, so nothing is pushed")
+        #expect(try phone.persistence.syncBases().map(\.id) == [id])
     }
 }

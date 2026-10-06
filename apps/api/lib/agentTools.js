@@ -305,7 +305,7 @@ function listProposals(ws, { status, limit = 20 } = {}) {
 function getDocument(ws, { kind, id }) {
   if (!DATA_KINDS.includes(kind)) throw badRequest(`kind must be ${DATA_KINDS.join(' or ')}`);
   const payload = (kind === 'workout_session' ? ws.sessions : ws.customExercises).find(
-    (document) => document.id === id
+    (document) => document.id === docs.canonicalID(id)
   );
   if (!payload) throw notFound(`No ${kind} has that ID`);
   return { kind, id, payload };

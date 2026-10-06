@@ -3,6 +3,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { startServer, signUp } = require('./helpers/server');
 
@@ -283,4 +285,125 @@ test('proposals and audit events sync, and audit events never change', async () 
     changes.map((c) => `${c.kind}:${c.revision}`),
     ['proposal:1', 'proposal:2', 'audit_event:1']
   );
+});
+
+test('a UUID document ID is one document whatever its letter case', async () => {
+  const { token, user } = await signUp(api);
+  const upper = randomUUID().toUpperCase();
+  const lower = upper.toLowerCase();
+  const session = (id, notes) => ({
+    id,
+    name: '',
+    notes,
+    startedAt: '2026-10-06T18:00:00.000Z',
+    timeZoneID: 'UTC',
+    exercises: [],
+  });
+  const first = await api.put(
+    `/v1/documents/workout_session/${lower}`,
+    { payload: session(lower, 'first'), base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(first.status, 201, JSON.stringify(first.body));
+  assert.equal(first.body.id, upper);
+  const second = await api.put(
+    `/v1/documents/workout_session/${upper}`,
+    { payload: session(upper, 'second'), base_revision: 1 },
+    { token, headers: key() }
+  );
+  assert.equal(second.status, 200);
+  assert.equal(second.body.revision, 2);
+  const read = await api.get(`/v1/documents/workout_session/${lower}`, { token });
+  assert.equal(read.body.payload.id, upper);
+  assert.equal(read.body.payload.notes, 'second');
+  assert.equal(
+    await api.store.count('documents', { account_id: user._id, kind: 'workout_session' }),
+    1
+  );
+  const feed = (await api.get('/v1/changes?after=0', { token })).body.changes;
+  assert.ok(feed.every((c) => c.id === upper && c.payload.id === upper));
+
+  const proposalID = randomUUID();
+  const filed = await api.put(
+    `/v1/documents/proposal/${proposalID}`,
+    {
+      payload: {
+        id: proposalID,
+        createdAt: '2026-10-06T18:30:00.000Z',
+        author: { kind: 'builtIn', name: 'Exerly' },
+        title: 'Fix',
+        summary: '',
+        changes: [{ kind: 'workout_session', id: lower, after: session(lower, 'x') }],
+        evidence: [
+          {
+            claim: 'c',
+            level: 'anecdote',
+            caveats: [],
+            dataRefs: [{ kind: 'workout_session', id: lower }],
+          },
+        ],
+        confidence: 'low',
+        falsifier: 'f',
+        status: 'pending',
+      },
+      base_revision: 0,
+    },
+    { token, headers: key() }
+  );
+  assert.equal(filed.status, 201, JSON.stringify(filed.body));
+  const stored = (await api.get(`/v1/documents/proposal/${proposalID}`, { token })).body.payload;
+  assert.equal(stored.id, proposalID.toUpperCase());
+  assert.equal(stored.changes[0].id, upper);
+  assert.equal(stored.evidence[0].dataRefs[0].id, upper);
+});
+
+test('the migration uppercases UUID document IDs and refuses to merge twins', async () => {
+  const { user } = await signUp(api);
+  const sql = fs.readFileSync(
+    path.join(__dirname, '../db/migrations/0005_canonical_document_ids.up.sql'),
+    'utf8'
+  );
+  const now = new Date();
+  const insertDocument = (id) =>
+    api.store.insert('documents', {
+      account_id: user._id,
+      kind: 'workout_session',
+      document_id: id,
+      revision: 1,
+      payload: { id },
+      deleted_at: null,
+      created_at: now,
+      updated_at: now,
+    });
+  const insertChange = (kind, id, sequence) =>
+    api.store.insert('sync_changes', {
+      account_id: user._id,
+      sequence,
+      kind,
+      entity_id: id,
+      server_id: id,
+      revision: 1,
+      deleted: false,
+      payload: { payload: { id } },
+      created_at: now,
+    });
+  const lower = randomUUID();
+  const legacy = randomUUID();
+  await insertDocument(lower);
+  await insertChange('workout_session', lower, 1001);
+  await insertChange('water', legacy, 1002);
+
+  await api.store.query(sql);
+  const rows = await api.store.find('documents', { account_id: user._id });
+  assert.deepEqual(
+    rows.map((r) => r.document_id),
+    [lower.toUpperCase()]
+  );
+  const changes = await api.store.find('sync_changes', { account_id: user._id });
+  assert.deepEqual(changes.map((c) => c.entity_id).sort(), [lower.toUpperCase(), legacy].sort());
+
+  const twin = randomUUID();
+  await insertDocument(twin);
+  await insertDocument(twin.toUpperCase());
+  await assert.rejects(api.store.query(sql), /duplicate key|unique/i);
 });

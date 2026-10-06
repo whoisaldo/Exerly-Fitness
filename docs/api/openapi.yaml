@@ -420,6 +420,10 @@ components:
       in: path
       required: true
       schema: { type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$' }
+      description: |
+        A UUID is one document whatever its letter case. The server stores and
+        returns it in uppercase, the form ExerlyCore writes, and does the same
+        for the IDs a proposal or audit event refers to.
 
   responses:
     SignedIn:
