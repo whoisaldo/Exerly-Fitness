@@ -85,6 +85,14 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
         return weight > 0 ? total.scaled(by: 100 / weight) : NutrientAmounts()
     }
 
+    /// Nutrients per 100 g from a label's amounts for one serving of `servingGrams`.
+    public static func per100g(fromLabel amounts: NutrientAmounts, servingGrams: Double) throws -> NutrientAmounts {
+        var problems = amounts.problems
+        if !(servingGrams.isFinite && servingGrams > 0) { problems.append("the label's serving needs a positive weight") }
+        guard problems.isEmpty else { throw NutritionStore.StoreError.invalid(problems) }
+        return amounts.scaled(by: 100 / servingGrams)
+    }
+
     public var snapshot: FoodSnapshot {
         FoodSnapshot(foodID: id, name: name, brand: brand, source: source, per100g: per100g)
     }
@@ -244,4 +252,12 @@ public struct Contributor: Sendable, Hashable {
     public var name: String
     public var amount: Double
     public var share: Double
+}
+
+/// An amount of a food as `NutritionStore.log` records it.
+public struct LoggedAmount: Sendable, Hashable {
+    public var grams: Double
+    public var nutrients: NutrientAmounts
+    public var serving: Serving?
+    public var quantity: Double?
 }

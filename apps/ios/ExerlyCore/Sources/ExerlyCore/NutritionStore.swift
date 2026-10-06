@@ -88,13 +88,31 @@ public final class NutritionStore {
     /// `at` is when it was eaten, for timing; now when nil.
     public func log(_ food: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil,
                     on date: LocalDate, meal: String, at time: Date? = nil) throws -> FoodEntry {
-        let weight = grams ?? (serving.map { $0.grams * (quantity ?? 1) })
-        guard let weight else { throw StoreError.invalid(["give a weight or a serving"]) }
+        let amount = try Self.preview(food, grams: grams, serving: serving, quantity: quantity)
         let entry = FoodEntry(date: date, meal: meal, loggedAt: time?.roundedToMilliseconds ?? now(), food: food.snapshot,
-                              grams: weight,
-                              serving: serving, quantity: serving == nil ? nil : (quantity ?? 1))
+                              grams: amount.grams, serving: amount.serving, quantity: amount.quantity)
         try saveEntry(entry)
         return entry
+    }
+
+    /// What `log` would record for an amount, without saving: the grams and
+    /// the nutrients, by the same conversion and checks. Give a weight, or a
+    /// serving and a quantity (1 when nil). Nutrients the food doesn't report
+    /// stay missing, not zero.
+    public nonisolated static func preview(_ food: Food, grams: Double? = nil, serving: Serving? = nil,
+                                           quantity: Double? = nil) throws -> LoggedAmount {
+        var problems = food.per100g.problems
+        if let serving, !(serving.grams.isFinite && serving.grams > 0) { problems.append("the serving needs a positive weight") }
+        if let quantity, !(quantity.isFinite && quantity > 0) { problems.append("the quantity must be more than 0") }
+        let weight = grams ?? serving.map { $0.grams * (quantity ?? 1) }
+        if let weight {
+            if !(weight.isFinite && weight > 0 && weight <= 100_000) { problems.append("the amount must be a positive weight") }
+        } else {
+            problems.append("give a weight or a serving")
+        }
+        guard problems.isEmpty, let weight else { throw StoreError.invalid(problems) }
+        return LoggedAmount(grams: weight, nutrients: food.per100g.scaled(by: weight / 100), serving: serving,
+                            quantity: serving == nil ? nil : (quantity ?? 1))
     }
 
     public func saveEntry(_ entry: FoodEntry) throws {

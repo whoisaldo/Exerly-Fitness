@@ -85,3 +85,35 @@ import Testing
         #expect(abs(points[0].weight - 79.6) < 1e-9 && points[0].date == monday.adding(days: 7))
     }
 }
+
+@Suite struct LogPreviewTests {
+    let oats = Food(name: "Oats", per100g: NutrientAmounts([.energy: 380, .protein: 13]),
+                    servings: [Serving("1 cup", grams: 80)])
+
+    @Test func aPreviewIsWhatLoggingRecordsWithoutSaving() throws {
+        let amount = try NutritionStore.preview(oats, serving: oats.servings[0], quantity: 1.5)
+        #expect(amount.grams == 120 && amount.quantity == 1.5 && amount.serving == oats.servings[0])
+        #expect(amount.nutrients[.energy] == 456 && amount.nutrients[.protein] == 15.6)
+        #expect(amount.nutrients[.iron] == nil, "Unknown stays unknown, not zero")
+        #expect(try NutritionStore.preview(oats, grams: 50).nutrients[.energy] == 190)
+        #expect(try NutritionStore.preview(oats, serving: oats.servings[0]).quantity == 1)
+    }
+
+    @Test func zeroOrInvalidAmountsAreRefusedWithReasons() {
+        #expect(throws: NutritionStore.StoreError.invalid(["the quantity must be more than 0", "the amount must be a positive weight"])) {
+            try NutritionStore.preview(oats, serving: oats.servings[0], quantity: 0)
+        }
+        #expect(throws: NutritionStore.StoreError.invalid(["give a weight or a serving"])) { try NutritionStore.preview(oats) }
+        #expect(throws: NutritionStore.StoreError.invalid(["the amount must be a positive weight"])) {
+            try NutritionStore.preview(oats, grams: .infinity)
+        }
+    }
+
+    @Test func aLabelServingBecomesPer100g() throws {
+        let label = NutrientAmounts([.energy: 150, .protein: 5])
+        #expect(try Food.per100g(fromLabel: label, servingGrams: 40) == NutrientAmounts([.energy: 375, .protein: 12.5]))
+        #expect(throws: NutritionStore.StoreError.invalid(["the label's serving needs a positive weight"])) {
+            try Food.per100g(fromLabel: label, servingGrams: 0)
+        }
+    }
+}
