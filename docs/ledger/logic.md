@@ -42,23 +42,34 @@ now.
   branch must not merge to `main` before that, or the live API breaks.
 - **Keychain verification** needs the app agent's hosted tests.
 
+**Staging.** Running on devbox1 at `http://100.80.149.7:39110` (`37bc7710`).
+Redeploy with `apps/api/deploy/staging/install.sh` after API changes.
+
+**M2: agent core.** In progress (`docs/design/004-agent-core.md`).
+
+- **Done, `ce3aa2ce`.** ExerlyCore has proposals, accept/undo/stale, the audit
+  log, metric references and `DocumentHost`; proposals and audit events sync, and
+  the server accepts both kinds.
+- **Done, `db6fbecd`.** Personal access tokens with scopes, server-written audit
+  events, and the OpenAPI file updated.
+- **Also done.** `a4eeba40`: atomic multi-write changes, and Apple link and
+  unlink in the client.
+
 ## Next three steps
 
-1. A staging API on devbox1, so the app can sync on a simulator or device
-   before production exists:
-   - deploy a copy under `~/Services/exerly-staging`, with a PostgreSQL cluster
-     under `~/Services`;
-   - add one LaunchAgent, following `~/Services/devbox-recovery/README.md`;
-   - bind to `0.0.0.0` on scratch port 39110, report
-     `http://100.80.149.7:39110`, and register it with the recovery inventory.
-2. M2, the agent core (design note `docs/design/004-agent-core.md`):
-   - proposals with a diff, evidence, confidence and a falsifier;
-   - accept and undo, and an audit log;
-   - scoped personal access tokens (read, write, propose);
-   - the MCP server over the same rules;
-   - first features on training data: stall diagnosis and deload detection.
-3. A JSON Schema for synced documents, shared by the API's validation and the
-   Swift tests, before the MCP server reads documents.
+1. M2c, the MCP server at `/mcp`:
+   - use the official TypeScript SDK with Streamable HTTP, authenticated by a
+     token;
+   - port the training maths to JavaScript (`apps/api/lib/training/`) and assert
+     it against a golden file generated from Swift
+     (`docs/api/golden/training-v1.json`);
+   - add read tools and a `propose` tool.
+2. M2d, detectors in ExerlyCore:
+   - entry errors, which become correction proposals;
+   - stall diagnosis and deload signals, as evidence.
+   Check them against simulated training and record their error rates.
+3. Then M4, programs and progression; deload proposals need programs. Keep
+   reviewing app commits and answering `to-logic.md`.
 
 ## Evidence
 
@@ -109,6 +120,11 @@ the app agent adds it to the project.
     (licence is Ali's decision).
   - GitHub CI for `5278f84b`: the API (PostgreSQL), ExerlyCore, SwiftLint and
     actionlint jobs passed.
+
+- M2, 2026-10-06:
+  - `npm test -w apps/api` passed 192 of 192.
+  - ExerlyCore `swift test` passed 147 of 147.
+  - The staging redeploy is healthy.
 
 ## Risks and external dependencies
 
