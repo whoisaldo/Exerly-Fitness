@@ -37,7 +37,6 @@ struct TrainingView: View {
     let unit: MassUnit
     let timeZone: TimeZone
     let unreadableCount: Int
-    @Environment(\.dynamicTypeSize) private var typeSize
     var workspace: TrainingWorkspace?
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var starting = false

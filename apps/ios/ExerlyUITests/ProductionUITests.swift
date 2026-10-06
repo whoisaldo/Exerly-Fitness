@@ -179,6 +179,8 @@ final class ProductionUITests: XCTestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["Train"], in: app)
+        reveal(app.buttons["training.start"], in: app)
+        capture(app, "agents-training-entry")
         tap(app.buttons["suggestions.open"], in: app)
         let correctionRow = app.buttons["suggestions.proposal.\(correction.proposalID)"]
         reveal(correctionRow, in: app)
