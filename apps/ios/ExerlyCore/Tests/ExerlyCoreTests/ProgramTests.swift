@@ -27,10 +27,10 @@ func fullBody(cycles: Int = 4, deload: DeloadPlacement = .none) -> Program {
         #expect(errors.contains("name is empty"))
         #expect(errors.contains("cycles must be 1 to 52"))
         #expect(errors.contains("color must be #RRGGBB"))
-        #expect(errors.contains("back-squat: the rep range is invalid"))
+        #expect(errors.contains("Back Squat: the rep range is invalid"))
         #expect(errors.contains("not-an-exercise is not a known exercise"))
-        #expect(errors.contains("deadlift: cycle 71 doesn't exist"))
-        #expect(errors.contains("deadlift, cycle 71: target RIR must be 0 to 5"))
+        #expect(errors.contains("Deadlift has targets for cycle 71, but the program has \(bad.cycles) cycles"))
+        #expect(errors.contains("Deadlift, cycle 71: target RIR must be 0 to 5"))
         let rest = Program(name: "Rest only", days: [ProgramDay(name: "Rest")])
         #expect(rest.validationErrors(library: .bundled) == ["a program needs a training day"])
     }
@@ -48,23 +48,44 @@ func fullBody(cycles: Int = 4, deload: DeloadPlacement = .none) -> Program {
         #expect(!Program(name: "One", days: program.days, cycles: 1, deload: .last).isDeload(cycle: 0))
     }
 
+    func history(_ program: Program, _ refs: [(ProgramDay, Int)]) -> TrainingHistory {
+        let sessions = refs.enumerated().map { index, ref in
+            var session = Fixture.session(days: Double(index), [("back-squat", [Fixture.set(5, 100)])])
+            session.program = ProgramRef(programID: program.id, dayID: ref.0.id, cycle: ref.1)
+            return session
+        }
+        return TrainingHistory(sessions: sessions, library: .bundled)
+    }
+
     @Test func theScheduleSkipsRestDaysWrapsCyclesAndEnds() {
         let program = fullBody(cycles: 2)
         let a = program.days[0], b = program.days[2]
-        func history(_ refs: [(ProgramDay, Int)]) -> TrainingHistory {
-            let sessions = refs.enumerated().map { index, ref in
-                var session = Fixture.session(days: Double(index), [("back-squat", [Fixture.set(5, 100)])])
-                session.program = ProgramRef(programID: program.id, dayID: ref.0.id, cycle: ref.1)
-                return session
-            }
-            return TrainingHistory(sessions: sessions, library: .bundled)
-        }
+        func history(_ refs: [(ProgramDay, Int)]) -> TrainingHistory { self.history(program, refs) }
         #expect(ProgramSchedule.next(for: program, in: history([]))?.day == a)
         #expect(ProgramSchedule.next(for: program, in: history([(a, 0)]))?.day == b)
         let wrapped = ProgramSchedule.next(for: program, in: history([(a, 0), (b, 0)]))
         #expect(wrapped?.day == a && wrapped?.cycle == 1)
         #expect(ProgramSchedule.next(for: program, in: history([(a, 0), (b, 0), (a, 1), (b, 1)])) == nil)
         #expect(ProgramSchedule.progress(of: program, in: history([(a, 0), (b, 0), (a, 1)])) == (3, 4))
+    }
+
+    @Test func removingTheLastDayDoneContinuesTheCycleInsteadOfRestarting() {
+        var program = fullBody(cycles: 3)
+        let c = ProgramDay(name: "C", slots: [ProgramSlot(exerciseID: "deadlift", target: SlotTarget(sets: 3, minReps: 5, maxReps: 8, rir: 2))])
+        program.days.append(c)
+        let a = program.days[0], b = program.days[2]
+        let middle = history(program, [(a, 0), (b, 0), (c, 0), (a, 1), (b, 1)])
+        let end = history(program, [(a, 0), (b, 0), (c, 0)])
+        program.days.removeAll { $0.id == b.id }
+        let next = ProgramSchedule.next(for: program, in: middle)
+        #expect(next?.day == c && next?.cycle == 1)
+        #expect(ProgramSchedule.progress(of: program, in: middle) == (3, 6), "b's sessions no longer count")
+        program.days.removeAll { $0.id == c.id }
+        let wrapped = ProgramSchedule.next(for: program, in: end)
+        #expect(wrapped?.day == a && wrapped?.cycle == 1, "Everything left in cycle 1 is done")
+        program.cycles = 1
+        #expect(ProgramSchedule.next(for: program, in: end) == nil)
+        #expect(ProgramSchedule.progress(of: program, in: middle) == (1, 1))
     }
 }
 

@@ -152,10 +152,14 @@ public struct Program: Sendable, Codable, Hashable, Identifiable {
             for slot in day.slots {
                 if !ids.insert(slot.id).inserted { errors.append("an ID is used twice") }
                 if library.exercise(slot.exerciseID) == nil { errors.append("\(slot.exerciseID) is not a known exercise") }
-                errors += slot.target.problems.map { "\(slot.exerciseID): \($0)" }
-                for (cycle, target) in slot.cycleTargets {
-                    if !(0..<cycles).contains(cycle) { errors.append("\(slot.exerciseID): cycle \(cycle + 1) doesn't exist") }
-                    errors += target.problems.map { "\(slot.exerciseID), cycle \(cycle + 1): \($0)" }
+                // Shown to people as they edit, so exercises go by name.
+                let exercise = library.exercise(slot.exerciseID)?.name ?? slot.exerciseID.rawValue
+                errors += slot.target.problems.map { "\(exercise): \($0)" }
+                for (cycle, target) in slot.cycleTargets.sorted(by: { $0.key < $1.key }) {
+                    if !(0..<cycles).contains(cycle) {
+                        errors.append("\(exercise) has targets for cycle \(cycle + 1), but the program has \(cycles) cycles")
+                    }
+                    errors += target.problems.map { "\(exercise), cycle \(cycle + 1): \($0)" }
                 }
             }
         }
@@ -187,15 +191,23 @@ public enum ProgramSchedule {
 
     /// The next training day: the one after the latest session that referenced
     /// this program, wrapping into the next cycle. Nil once the last cycle is done.
+    /// If that day has since been removed or emptied, the cycle continues at
+    /// its first training day not done yet.
     public static func next(for program: Program, in history: TrainingHistory) -> Position? {
         let training = program.trainingDays
         guard !training.isEmpty else { return nil }
-        let last = history.sessions.last { $0.program?.programID == program.id }
-        guard let last, let ref = last.program, let index = training.firstIndex(where: { $0.id == ref.dayID }) else {
+        let refs = history.sessions.compactMap(\.program).filter { $0.programID == program.id }
+        guard let ref = refs.last else {
             return Position(day: training[0], cycle: 0, isDeload: program.isDeload(cycle: 0))
         }
         var cycle = ref.cycle
-        var next = index + 1
+        var next: Int
+        if let index = training.firstIndex(where: { $0.id == ref.dayID }) {
+            next = index + 1
+        } else {
+            let done = Set(refs.filter { $0.cycle == cycle }.map(\.dayID))
+            next = training.firstIndex { !done.contains($0.id) } ?? training.count
+        }
         if next == training.count {
             next = 0
             cycle += 1
@@ -204,11 +216,14 @@ public enum ProgramSchedule {
         return Position(day: training[next], cycle: cycle, isDeload: program.isDeload(cycle: cycle))
     }
 
-    /// Sessions done and planned, for a progress bar.
+    /// Sessions done and planned, for a progress bar. Sessions of days since
+    /// removed from the program, or of cycles it no longer has, don't count.
     public static func progress(of program: Program, in history: TrainingHistory) -> (done: Int, total: Int) {
         let total = program.trainingDays.count * program.cycles
+        let days = Set(program.trainingDays.map(\.id))
         let done = Set(history.sessions.compactMap { session -> String? in
-            guard let ref = session.program, ref.programID == program.id else { return nil }
+            guard let ref = session.program, ref.programID == program.id, days.contains(ref.dayID),
+                  ref.cycle < program.cycles else { return nil }
             return "\(ref.cycle)/\(ref.dayID)"
         }).count
         return (min(done, total), total)
