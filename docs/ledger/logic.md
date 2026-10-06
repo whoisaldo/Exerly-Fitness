@@ -84,7 +84,7 @@ it current and healthy.
   - Unreadable server documents are set aside (`SyncEngine.rejected`).
   - The server refuses agent documents ExerlyCore can't decode.
 
-**UUID identity (landed `4f026b47`; follow-up `700cdc0d` lands inside A3).**
+**UUID identity.** Landed (`4f026b47`, `700cdc0d`).
 
 - UUID document IDs, and the IDs inside payloads (proposal changes and their
   documents, evidence, audit targets, a session's program, an entry's food), are
@@ -94,26 +94,28 @@ it current and healthy.
 - `shell-quote` is pinned to 1.12.0 by an npm override (Dependabot 60). Alerts
   58 to 60 close when integration reaches `main`.
 
-**On `agent/logic`, waiting for A3 to land (the app agent asked for integration
-to stay at `66b3dd1e` until then):**
+**M4 and M5a/M5b.** Landed (`785917ef`), with the app agent's reviews
+answered: `saved_food` (not `food`, which legacy food logs use in
+`sync_changes`), name-based entry-check IDs, `weightMatch` reserved,
+`SQLiteTrainingPersistence.close()`, and `AccountExport.merging(pending:)` for
+the legacy queue. The plate search fix landed in `69fac1e4`.
 
-- M4: programs, scheduling, deloads and RIR progression; MCP `list_programs`
-  and `next_workout`; plates and warm-ups. `weightMatch` is reserved.
-- M5a: nutrient catalog and `NutritionStore`; M5b: `EnergyBalance` (Kalman
-  smoother). The saved-food kind is `saved_food`, because legacy food logs use
-  `food` in `sync_changes`.
-- Entry checks: a name-based proposal ID per workout, and evidence that names
-  its basis.
-- `SQLiteTrainingPersistence.close()`; `deleteDatabase` closes open users.
-- `AccountExport.merging(pending:)` with the legacy queue's
-  `pendingExportRows()`; hosted test in `docs/handoff/attachments/`.
+**M5c: targets and check-ins.** Done on `agent/logic` (`589d5c5b`), waiting
+for A4 to land (the app agent asked for integration to stay stable during its
+final run).
+
+- `NutritionPlan` versions, `NutritionTargets`, `NutritionCheckIn`, the
+  `nutrition_plan` kind on the server, design 011 with the closed-loop
+  simulation. `EnergyBalance` now couples expenditure to weight (`725da15f`).
+- The A4 review is in `to-app.md` (program proposals can't be applied until
+  the app wires `ProgramStore`).
 
 ## Next three steps
 
-1. When A3 lands: rebase `agent/logic` (it sits on `700cdc0d`), run API,
-   ExerlyCore, ExerlyTests, the iOS build and live sync, land, redeploy staging.
-2. M5c: targets, per-weekday distribution and weekly check-in proposals, checked
-   against the simulator; then M5d food search through `AccountAPI`.
+1. When A4 lands: rebase `agent/logic`, run API, ExerlyCore, ExerlyTests, the
+   iOS build and live sync, land, redeploy staging (new `nutrition_plan` kind).
+2. M5d: food search and barcode lookup through `AccountAPI` (USDA FoodData
+   Central and Open Food Facts, with attribution), then recipes and history.
 3. Keep reviewing app commits and answering `to-logic.md`. Redeploy staging
    after API changes, because TestFlight builds use it.
 
@@ -191,6 +193,12 @@ the app agent adds it to the project.
   - Mutation checks: removing the session-generation guard, the sync shutdown
     guard, or a JS rule (Brzycki constant, record ties, week start, local date,
     search order) fails the matching tests.
+
+- 2026-10-06, M5c batch on `agent/logic` (`589d5c5b`):
+  - API: 226 of 226. ExerlyCore: 230 of 230, with the coaching and energy
+    balance simulations inside their bounds.
+  - ExerlyTests: 101 executed, 1 skipped (the app agent's private TestFlight
+    check). iOS build: succeeded. Live sync: 4 of 4, three runs.
 
 ## Risks and external dependencies
 
