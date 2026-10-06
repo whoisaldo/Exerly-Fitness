@@ -136,9 +136,20 @@ private struct NewAgentConnectionView: View {
                             .accessibilityIdentifier("agents.name")
                     }
                     Section("Permissions") {
-                        Picker("Access", selection: $permission) {
-                            ForEach(AgentConnectionsModel.Permission.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }.accessibilityIdentifier("agents.permission")
+                        Menu {
+                            Picker("Access", selection: $permission) {
+                                ForEach(AgentConnectionsModel.Permission.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                            }
+                        } label: {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(permission.rawValue).fixedSize(horizontal: false, vertical: true)
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.up.chevron.down").font(.caption)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .accessibilityLabel("Access, \(permission.rawValue)")
+                        .accessibilityIdentifier("agents.permission")
                         Text(permissionDescription).font(.footnote).foregroundStyle(.secondary)
                     }
                     Section("Expiry") {
