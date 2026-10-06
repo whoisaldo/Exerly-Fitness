@@ -55,6 +55,7 @@ struct LiveSyncTests {
         let credentials = InMemoryCredentialStore()
         let persistence: InMemoryTrainingPersistence
         let store: TrainingStore
+        let programs: ProgramStore
         let agent: AgentStore
         private(set) var engine: SyncEngine!
 
@@ -63,13 +64,14 @@ struct LiveSyncTests {
             self.persistence = persistence
             api = ExerlyAPI(baseURL: base, credentials: credentials)
             store = try TrainingStore(persistence: persistence)
-            agent = try AgentStore(persistence: persistence, hosts: [store])
+            programs = try ProgramStore(persistence: persistence, training: store)
+            agent = try AgentStore(persistence: persistence, hosts: [store, programs])
         }
 
         /// Signs in, then binds sync to the signed-in account.
         func signIn(email: String, password: String) async throws -> SignInResult {
             let result = try await api.signIn(email: email, password: password)
-            engine = SyncEngine(hosts: [store, agent], state: persistence, api: try await api.account())
+            engine = SyncEngine(hosts: [store, programs, agent], state: persistence, api: try await api.account())
             return result
         }
 
@@ -228,5 +230,60 @@ struct LiveSyncTests {
                                           body: ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],
                                           headers: ["Accept": "application/json, text/event-stream"])
         #expect(refused == 401)
+    }
+
+    @Test func theServerPlansTheSameNextWorkoutAsThePhone() async throws {
+        let (email, password) = try await signUp()
+        let phone = try LiveDevice(base: base)
+        _ = try await phone.signIn(email: email, password: password)
+        let program = Program(name: "Live program", days: [
+            ProgramDay(name: "A", slots: [
+                ProgramSlot(exerciseID: "barbell-bench-press", target: SlotTarget(sets: 3, minReps: 6, maxReps: 8, rir: 2, rest: 120)),
+                ProgramSlot(exerciseID: "pull-up", target: SlotTarget(sets: 3, minReps: 6, maxReps: 10, rir: 1)),
+            ]),
+            ProgramDay(name: "B", slots: [ProgramSlot(exerciseID: "back-squat", target: SlotTarget(sets: 2, minReps: 3, maxReps: 5, rir: 2))]),
+        ], cycles: 3, deload: .last)
+        try phone.programs.save(program)
+        try phone.programs.activate(program.id)
+
+        // Follow it for three workouts.
+        let loads: [ExerciseID: (Double, Int)] = ["barbell-bench-press": (90, 8), "pull-up": (10, 9), "back-squat": (140, 5)]
+        for _ in 0..<3 {
+            let plan = try #require(phone.programs.nextWorkout(bodyweight: .kg(80)))
+            let session = try phone.store.startSession(from: plan, bodyweight: .kg(80))
+            for performed in session.exercises {
+                for set in performed.sets {
+                    var done = set
+                    let (load, reps) = loads[performed.exerciseID]!
+                    done.primary = Effort(reps: set.primary.reps ?? reps, load: set.primary.load ?? .kg(load))
+                    try phone.store.updateSet(done, in: performed.id)
+                    try phone.store.completeSet(set.id)
+                }
+            }
+            try phone.store.finishSession()
+        }
+        try await phone.engine.sync()
+
+        let swiftPlan = try #require(phone.programs.nextWorkout(bodyweight: .kg(80)))
+        let account = try await phone.api.account()
+        let token = try await account.createAccessToken(name: "Synthetic agent", scopes: []).secret
+        let server = try await tool("next_workout", [:], token: token)
+        #expect(server["day"] as? String == "B")
+        #expect(server["cycle"] as? Int == 2)
+        let exercises = try #require(server["exercises"] as? [[String: Any]])
+        #expect(exercises.count == swiftPlan.exercises.count)
+        for (planned, json) in zip(swiftPlan.exercises, exercises) {
+            #expect(json["exercise_id"] as? String == planned.exerciseID.rawValue)
+            let recommendation = try #require(json["recommendation"] as? [String: Any])
+            #expect(recommendation["reason"] as? String == planned.recommendation.reason.rawValue)
+            let sets = try #require(recommendation["sets"] as? [[String: Any]])
+            #expect(sets.count == planned.recommendation.sets.count)
+            for (set, json) in zip(planned.recommendation.sets, sets) {
+                #expect(json["reps"] as? Int == set.effort.reps)
+                let load = json["load"] as? [String: Any]
+                #expect(load?["value"] as? Double == set.effort.load?.value)
+                #expect(load?["unit"] as? String == set.effort.load?.unit.rawValue)
+            }
+        }
     }
 }

@@ -82,8 +82,10 @@ test('a read token gets the read tools, with numbers that match ExerlyCore', asy
     'get_document',
     'get_profile',
     'get_workout',
+    'list_programs',
     'list_proposals',
     'list_workouts',
+    'next_workout',
     'search_exercises',
     'verify_metric',
     'weekly_volume',
@@ -345,4 +347,103 @@ test('a workout stored with a lowercase UUID before migration 0005 works through
     [upper, upper, upper, upper]
   );
   await client.close();
+});
+
+function programPayload(overrides = {}) {
+  const slot = (exerciseID, minReps, maxReps) => ({
+    id: randomUUID().toUpperCase(),
+    exerciseID,
+    notes: '',
+    target: { sets: 3, minReps, maxReps, rir: 2, kind: 'standard', rest: 150 },
+    cycleTargets: {},
+    expandRepRange: false,
+    weightMatch: true,
+  });
+  return {
+    id: randomUUID().toUpperCase(),
+    name: 'Synthetic full body',
+    color: '#7C3AED',
+    days: [
+      {
+        id: randomUUID().toUpperCase(),
+        name: 'A',
+        slots: [slot(BENCH, 6, 8), slot('back-squat', 3, 5)],
+      },
+      { id: randomUUID().toUpperCase(), name: 'Rest', slots: [] },
+      { id: randomUUID().toUpperCase(), name: 'B', slots: [slot('pull-up', 6, 10)] },
+    ],
+    cycles: 6,
+    deload: 'last',
+    createdAt: '2026-11-01T12:00:00.000Z',
+    activatedAt: '2026-11-01T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+test('programs: the active one, its next workout and recommendations, and proposing a new one', async () => {
+  const user = await seededUser();
+  const program = programPayload();
+  await put(user, 'program', program);
+  const reader = await connect((await token(user, ['read'])).token);
+
+  const listed = await call(reader, 'list_programs');
+  assert.equal(listed.programs.length, 1);
+  assert.equal(listed.programs[0].active, true);
+  assert.deepEqual(listed.programs[0].progress, { done: 0, total: 12 });
+  assert.equal(listed.programs[0].days[1].rest, true);
+
+  const next = await call(reader, 'next_workout');
+  assert.equal(next.day, 'A');
+  assert.equal(next.cycle, 1);
+  assert.equal(next.deload, false);
+  assert.deepEqual(
+    next.exercises.map((e) => e.exercise_id),
+    [BENCH, 'back-squat']
+  );
+  // The same recommendation the golden-checked port gives for this history.
+  const { ExerciseLibrary } = require('../lib/training/library');
+  const training = require('../lib/training/history');
+  const progression = require('../lib/training/progression');
+  const library = ExerciseLibrary.withCustom(golden.customExercises);
+  const history = new training.TrainingHistory(
+    golden.sessions.filter((s) => s.endedAt),
+    library
+  );
+  const bodyweight = [...history.sessions].reverse().find((s) => s.bodyweight).bodyweight;
+  const expected = progression.recommend(
+    program.days[0].slots[0].target,
+    library.exercise(BENCH),
+    history.sets(BENCH),
+    { bodyweight }
+  );
+  const bench = next.exercises[0].recommendation;
+  assert.equal(bench.reason, expected.reason);
+  assert.equal(bench.sets.length, 3);
+  assert.equal(bench.sets[0].reps, expected.sets[0].effort.reps);
+  assert.equal(bench.sets[0].load.value, expected.sets[0].effort.load.value);
+  assert.equal(bench.e1rm_kg, Math.round(expected.oneRepMax * 100) / 100);
+  await reader.close();
+
+  const agent = await connect((await token(user, ['propose'])).token);
+  const plan = programPayload({ name: 'Upper and lower', activatedAt: undefined });
+  const filed = await call(agent, 'propose', {
+    title: 'An upper/lower split',
+    summary: 'Four days a week.',
+    confidence: 'medium',
+    falsifier: 'You can only train three days.',
+    changes: [{ kind: 'program', id: plan.id, after: plan }],
+  });
+  assert.equal(filed.status, 'pending', JSON.stringify(filed));
+  const broken = programPayload();
+  broken.days[0].slots[0].exerciseID = 'not-an-exercise';
+  broken.cycles = 60;
+  const refused = await call(agent, 'propose', {
+    title: 'Broken',
+    confidence: 'low',
+    falsifier: 'n/a',
+    changes: [{ kind: 'program', id: broken.id, after: broken }],
+  });
+  assert.match(refused.error, /cycles must be 1 to 52/);
+  assert.match(refused.error, /not-an-exercise is not a known exercise/);
+  await agent.close();
 });

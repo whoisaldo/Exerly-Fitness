@@ -14,7 +14,8 @@ import Testing
 
     @Test func theGoldenFileMatchesTheSwiftCalculations() throws {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+        // Compact: the file is large, and a change is read through the tests, not the diff.
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let generated = try encoder.encode(GoldenHistory.make())
         if ProcessInfo.processInfo.environment["EXERLY_WRITE_GOLDEN"] != nil {
             try FileManager.default.createDirectory(at: Self.url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -111,6 +112,20 @@ private struct GoldenHistory: Encodable {
 
     struct SearchJSON: Encodable { var query: String, muscle: String?, results: [String] }
 
+    struct ProgressionJSON: Encodable {
+        var before: String, exercise: String, target: SlotTarget, expandRepRange: Bool, increments: LoadIncrements?
+        var reason: String, sets: [PlannedSet], oneRepMax: Double?, basisSetID: String?, outsideRange: Bool
+    }
+
+    /// One synthetic earlier set and a target, to probe progression's choices.
+    struct GridJSON: Encodable {
+        var exercise: String, increments: LoadIncrements?, load: Mass, reps: Int, rir: Double, target: SlotTarget, expandRepRange: Bool
+        /// Every set is the same; the first stands for them all.
+        var reason: String, first: PlannedSet, count: Int, oneRepMax: Double?, outsideRange: Bool
+    }
+
+    struct DeloadJSON: Encodable { var placement: String, cycles: Int, cycle: Int, target: SlotTarget, deloaded: SlotTarget }
+
     struct Expected: Encodable {
         var sets: [SetJSON]
         var summaries: [SummaryJSON]
@@ -121,6 +136,9 @@ private struct GoldenHistory: Encodable {
         var weeklyVolume: [String: [String: [String: VolumeJSON]]]
         var metrics: [MetricJSON]
         var search: [SearchJSON]
+        var progression: [ProgressionJSON]
+        var progressionGrid: [GridJSON]
+        var deloads: [DeloadJSON]
     }
 
     static func uuid(_ n: Int) -> UUID { UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", n))! }
@@ -237,11 +255,78 @@ private struct GoldenHistory: Encodable {
             SearchJSON(query: query, muscle: muscle?.rawValue, results: library.search(query, muscle: muscle).map(\.id.rawValue))
         }
 
+        let targets: [(ExerciseID, SlotTarget, Bool, LoadIncrements?)] = [
+            ("barbell-bench-press", SlotTarget(sets: 3, minReps: 6, maxReps: 8, rir: 2), false, nil),
+            ("back-squat", SlotTarget(sets: 3, minReps: 3, maxReps: 5, rir: 1, rest: 180), false, nil),
+            ("pull-up", SlotTarget(sets: 3, minReps: 6, maxReps: 10, rir: 2), false, nil),
+            ("dip", SlotTarget(sets: 2, minReps: 8, maxReps: 12, rir: 1), true, nil),
+            ("one-arm-dumbbell-row", SlotTarget(sets: 3, minReps: 8, maxReps: 10, rir: 2), true, nil),
+            ("bulgarian-split-squat", SlotTarget(sets: 2, minReps: 8, maxReps: 8, rir: 2), false,
+             LoadIncrements(kilograms: 4, pounds: 10)),
+            ("custom-golden-zercher-squat", SlotTarget(sets: 3, minReps: 5, maxReps: 7, rir: 3, kind: .failure), false, nil),
+            ("assisted-pull-up", SlotTarget(sets: 3, minReps: 6, maxReps: 8, rir: 2), false, nil),
+            ("plank", SlotTarget(sets: 2, minReps: 1, maxReps: 1, rir: 0), false, nil),
+        ]
+        var progression: [ProgressionJSON] = []
+        for (index, session) in finished.enumerated() where index % 3 == 0 {
+            for (id, target, expand, steps) in targets {
+                guard let exercise = library.exercise(id) else { continue }
+                let plan = Progression.recommend(target, exercise: exercise, history: history, before: session.startedAt,
+                                                 bodyweight: session.bodyweight, increments: steps, expandRepRange: expand)
+                progression.append(ProgressionJSON(before: session.id.uuidString, exercise: id.rawValue, target: target,
+                                                   expandRepRange: expand, increments: steps, reason: plan.reason.rawValue,
+                                                   sets: plan.sets, oneRepMax: plan.oneRepMax,
+                                                   basisSetID: plan.basisSetID?.uuidString, outsideRange: plan.outsideRange))
+            }
+        }
+        var grid: [GridJSON] = []
+        let repRanges = [(3, 5), (4, 5), (5, 7), (6, 9), (8, 12), (10, 15)]
+        let coarse = LoadIncrements(kilograms: 10, pounds: 25)
+        let gridExercises: [(ExerciseID, Double, LoadIncrements?)] = [
+            ("barbell-bench-press", 1, nil), ("dumbbell-bench-press", 0.35, nil), ("machine-chest-press", 0.8, nil),
+            ("machine-chest-press", 0.8, coarse),
+        ]
+        for (gridIndex, (id, scale, steps)) in gridExercises.enumerated() {
+            let exercise = library.exercise(id)!
+            for loadStep in 0..<6 {
+                let load = Mass(((40 + Double(loadStep) * 17.5) * scale / 2.5).rounded() * 2.5, loadStep == 5 ? .pounds : .kilograms)
+                for (low, high) in repRanges {
+                    for rir in [0.0, 1, 2, 3] {
+                        let reps = 3 + (loadStep * 3 + low + Int(rir) + gridIndex) % 10
+                        let record = SetRecord(sessionID: uuid(9_000_000 + grid.count), performedID: uuid(8_000_000), date: LocalDate("2026-10-01")!,
+                                               sessionStart: Date.milliseconds(1_790_000_000_000),
+                                               set: PerformedSet(id: uuid(7_000_000 + grid.count), efforts: [Effort(reps: reps, load: load)], rir: 2,
+                                                                 completedAt: Date.milliseconds(1_790_000_000_000)),
+                                               bodyweight: .kg(80))
+                        let target = SlotTarget(sets: 3, minReps: low, maxReps: high, rir: rir)
+                        for expand in [false, true] {
+                            let plan = Progression.recommendation(target, exercise: exercise, records: [record], bodyweight: .kg(80),
+                                                                  increments: steps ?? .defaults(for: exercise), expandRepRange: expand)
+                            grid.append(GridJSON(exercise: id.rawValue, increments: steps, load: load, reps: reps, rir: 2, target: target,
+                                                 expandRepRange: expand, reason: plan.reason.rawValue, first: plan.sets[0],
+                                                 count: plan.sets.count, oneRepMax: plan.oneRepMax, outsideRange: plan.outsideRange))
+                        }
+                    }
+                }
+            }
+        }
+        let slotTarget = SlotTarget(sets: 5, minReps: 6, maxReps: 8, rir: 4)
+        var deloads: [DeloadJSON] = []
+        for placement in DeloadPlacement.allCases {
+            for (cycles, cycle) in [(1, 0), (4, 0), (4, 3), (4, 1)] {
+                let program = Program(name: "Golden", days: [ProgramDay(name: "A", slots: [ProgramSlot(exerciseID: "deadlift", target: slotTarget)])],
+                                      cycles: cycles, deload: placement, createdAt: Date.milliseconds(0))
+                deloads.append(DeloadJSON(placement: placement.rawValue, cycles: cycles, cycle: cycle, target: slotTarget,
+                                          deloaded: program.target(for: program.days[0].slots[0], cycle: cycle)))
+            }
+        }
+
         return GoldenHistory(
             customExercises: [try JSONValue(encoding: custom)],
             sessions: try sessions.map { try JSONValue(encoding: $0) },
             expected: Expected(sets: sets, summaries: summaries, statistics: statistics, statisticsInRange: inRange,
-                               trends: trends, records: records, weeklyVolume: weekly, metrics: metrics, search: search))
+                               trends: trends, records: records, weeklyVolume: weekly, metrics: metrics, search: search,
+                               progression: progression, progressionGrid: grid, deloads: deloads))
     }
 
     static func volumeJSON(_ muscles: [Muscle: MuscleVolume]) -> [String: VolumeJSON] {

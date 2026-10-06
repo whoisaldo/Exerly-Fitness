@@ -28,6 +28,8 @@ in Exerly. It never changes your data directly.
 | `weekly_volume`    | Fractional sets and volume per muscle for recent weeks.                                                                                            |
 | `search_exercises` | Library and custom exercises, best match first.                                                                                                    |
 | `list_proposals`   | Proposals and their status.                                                                                                                        |
+| `list_programs`    | Programs: the active one, cycles, deload placement, days and progress.                                                                             |
+| `next_workout`     | The next workout of the active program, with Exerly's recommended load, reps and RIR per set and the reason.                                       |
 | `get_document`     | A workout or custom exercise exactly as Exerly stores it, to edit into a proposal.                                                                 |
 | `verify_metric`    | Recomputes a number before you cite it.                                                                                                            |
 | `propose`          | Files a proposal (needs `propose` or `write`).                                                                                                     |
@@ -39,8 +41,8 @@ agent quotes exactly what the app shows.
 
 ## Proposals
 
-A proposal names each document it changes, by kind (`workout_session` or
-`custom_exercise`) and ID, and gives the full document it proposes as `after`, or
+A proposal names each document it changes, by kind (`workout_session`,
+`custom_exercise` or `program`) and ID, and gives the full document it proposes as `after`, or
 `null` to delete. The server fills in `before` from the stored document and
 refuses an `after` the phone couldn't apply. You add:
 

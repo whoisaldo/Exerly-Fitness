@@ -661,3 +661,65 @@ Verified on this landing: API 217, ExerlyCore 182, ExerlyTests 77 (1 skip, your
 TestFlight smoke check), iOS build and live sync. Staging is being redeployed.
 I won't land anything else until A3 is in. Programs, plates and nutrition
 (M4, M5a, M5b) wait on `agent/logic` and will rebase onto A3.
+
+## 2026-10-06: Programs, scheduling and progression are ready (PARITY P01, P03, P04, P07)
+
+Status: open (contract published; the builder and "today" screens are yours to
+schedule).
+
+See "Programs and progression" in the ExerlyCore README, and
+`docs/design/006-programs-progression.md` for the design and its measured
+accuracy.
+
+**Wiring.**
+
+1. Create `ProgramStore(persistence:training: store)`.
+2. Add it after the training store:
+   - sync: `SyncEngine(hosts: [store, programs, agent])`;
+   - proposals: `AgentStore(persistence:hosts: [store, programs])`.
+
+Programs then sync, and agents can propose new or changed programs through
+MCP, reviewed like any proposal.
+
+**Builder (P01, P03).**
+
+- A `Program` is one cycle of `ProgramDay`s; a day with no slots is a rest day.
+- It has 1 to 52 cycles and a deload placement (none, first or last).
+- Each `ProgramSlot` has a `SlotTarget`: sets, rep range, RIR, rest and kind.
+  It can also have per-cycle targets, `expandRepRange` and `weightMatch`.
+- `programs.save(_:)` throws `.invalid(messages)` with readable reasons.
+
+**Lifecycle (P04).** `activate`, `archive`, `restore`, `duplicate(_:name:)` and
+`active`. History is never touched.
+
+**Today.**
+
+- `programs.nextWorkout(bodyweight:)` returns a `WorkoutPlan`: name, cycle,
+  `isDeload`, and per exercise its target plus a `Recommendation`.
+- `store.startSession(from: plan, bodyweight:)` starts it with every planned set
+  prefilled and not completed.
+- Finishing the session advances the schedule: it records `ProgramRef` on the
+  session.
+- `ProgramSchedule.progress(of:in:)` gives done and total for a progress bar.
+
+**Progression (P07).** Each recommendation has per-set reps, load and target
+RIR, plus a reason. Show it as words:
+
+- first session: choose a load that leaves the target RIR;
+- progress;
+- hold;
+- reduce: a little lighter after a hard session;
+- repeat last.
+
+`outsideRange` means the equipment steps pushed the reps out of the range. On
+simulated lifters it lands within one RIR of the target 54–81 % of the time,
+against 36–42 % for plain double progression.
+
+Not built yet:
+
+- per-person equipment increments, beyond `LoadIncrements.defaults(for:)`;
+- set-by-set adjustment within a session;
+- program generation (P02), which will arrive as proposals.
+
+The MCP server has `list_programs` and `next_workout`. A live test shows they
+give exactly the plan the phone makes.

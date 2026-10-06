@@ -179,4 +179,95 @@ function customExerciseProblems(exercise, id) {
   return problems;
 }
 
-module.exports = { sessionProblems, customExerciseProblems, UUID_RE };
+function targetProblems(target, where) {
+  if (!target || typeof target !== 'object') return [`${where} must be an object`];
+  const problems = [];
+  const whole = (v) => Number.isInteger(v);
+  if (!whole(target.sets) || target.sets < 1 || target.sets > 20)
+    problems.push(`${where}: sets must be 1 to 20`);
+  if (
+    !whole(target.minReps) ||
+    !whole(target.maxReps) ||
+    target.minReps < 1 ||
+    target.minReps > 100 ||
+    target.maxReps < target.minReps ||
+    target.maxReps > 100
+  )
+    problems.push(`${where}: the rep range is invalid`);
+  if (!isNumber(target.rir) || target.rir < 0 || target.rir > 5)
+    problems.push(`${where}: target RIR must be 0 to 5`);
+  if (target.rest != null && !(isNumber(target.rest) && target.rest >= 0 && target.rest <= 3600))
+    problems.push(`${where}: rest must be 0 to 3600 seconds`);
+  if (!SET_KINDS.includes(target.kind) || target.kind === 'warmUp')
+    problems.push(`${where}: kind must be standard, drop, myo or failure`);
+  return problems;
+}
+
+/** Problems with a program payload, mirroring ExerlyCore's decoder and Program.validationErrors. */
+function programProblems(program, id, library) {
+  const problems = [];
+  if (!program || typeof program !== 'object') return ['The program must be an object'];
+  if (program.id !== id || !UUID_RE.test(id)) problems.push('id must be the document ID, a UUID');
+  if (typeof program.name !== 'string' || program.name.trim() === '')
+    problems.push('name is empty');
+  if (program.icon != null && typeof program.icon !== 'string')
+    problems.push('icon must be a string');
+  if (program.color != null && !/^#[0-9A-Fa-f]{6}$/.test(program.color))
+    problems.push('color must be #RRGGBB');
+  if (!Number.isInteger(program.cycles) || program.cycles < 1 || program.cycles > 52)
+    problems.push('cycles must be 1 to 52');
+  if (!['none', 'first', 'last'].includes(program.deload))
+    problems.push('deload must be none, first or last');
+  for (const field of ['createdAt', 'activatedAt', 'archivedAt']) {
+    const value = program[field];
+    if ((field === 'createdAt' || value != null) && !isInstant(value))
+      problems.push(`${field} must be an ISO 8601 instant`);
+  }
+  if (!Array.isArray(program.days)) return [...problems, 'days must be an array'];
+  const ids = new Set();
+  const training = program.days.filter((day) => Array.isArray(day?.slots) && day.slots.length > 0);
+  if (training.length === 0) problems.push('a program needs a training day');
+  if (training.length > 14) problems.push('a cycle has at most 14 training days');
+  program.days.forEach((day, d) => {
+    const where = `days[${d}]`;
+    if (
+      !day ||
+      typeof day !== 'object' ||
+      !UUID_RE.test(day.id ?? '') ||
+      typeof day.name !== 'string'
+    )
+      return problems.push(`${where} needs a UUID id, a name and slots`);
+    if (ids.has(day.id.toUpperCase())) problems.push('an ID is used twice');
+    ids.add(day.id.toUpperCase());
+    if (!Array.isArray(day.slots)) return problems.push(`${where}.slots must be an array`);
+    day.slots.forEach((slot, s) => {
+      const at = `${where}.slots[${s}]`;
+      if (!slot || typeof slot !== 'object' || !UUID_RE.test(slot.id ?? ''))
+        return problems.push(`${at} needs a UUID id`);
+      if (ids.has(slot.id.toUpperCase())) problems.push('an ID is used twice');
+      ids.add(slot.id.toUpperCase());
+      if (!library.exercise(slot.exerciseID))
+        problems.push(`${slot.exerciseID} is not a known exercise`);
+      if (typeof slot.notes !== 'string') problems.push(`${at}.notes must be a string`);
+      if (slot.supersetID != null && !UUID_RE.test(slot.supersetID))
+        problems.push(`${at}.supersetID must be a UUID`);
+      if (typeof slot.expandRepRange !== 'boolean' || typeof slot.weightMatch !== 'boolean')
+        problems.push(`${at}: expandRepRange and weightMatch must be true or false`);
+      problems.push(...targetProblems(slot.target, `${slot.exerciseID}`));
+      const cycles = slot.cycleTargets ?? null;
+      if (cycles === null || typeof cycles !== 'object' || Array.isArray(cycles)) {
+        problems.push(`${at}.cycleTargets must be an object keyed by cycle index`);
+        return;
+      }
+      for (const [key, target] of Object.entries(cycles)) {
+        const cycle = Number(key);
+        if (!/^\d+$/.test(key) || cycle >= program.cycles)
+          problems.push(`${slot.exerciseID}: cycle ${cycle + 1} doesn't exist`);
+        problems.push(...targetProblems(target, `${slot.exerciseID}, cycle ${cycle + 1}`));
+      }
+    });
+  });
+  return [...new Set(problems)];
+}
+
+module.exports = { sessionProblems, customExerciseProblems, programProblems, UUID_RE };

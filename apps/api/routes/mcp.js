@@ -156,6 +156,29 @@ function buildServer(account, pat) {
   );
 
   tool(
+    'list_programs',
+    {
+      title: 'List programs',
+      description:
+        "The person's training programs: which is active, cycles, deload placement, days and progress through them.",
+      annotations: readOnly,
+    },
+    (ws) => tools.listPrograms(ws)
+  );
+
+  tool(
+    'next_workout',
+    {
+      title: 'Next workout',
+      description:
+        "The next workout of the active program (or one you name): the day, cycle, whether it is a deload, and for each exercise the target and Exerly's recommended load, reps and RIR per set, with the reason (progress, hold, reduce, first session).",
+      inputSchema: { program_id: z.string().optional() },
+      annotations: readOnly,
+    },
+    (ws, input) => tools.nextWorkout(ws, input)
+  );
+
+  tool(
     'verify_metric',
     {
       title: 'Check a number',
@@ -178,7 +201,7 @@ function buildServer(account, pat) {
       description:
         'The stored payload of a workout_session or custom_exercise, exactly as Exerly syncs it. Edit this to build the "after" of a proposal.',
       inputSchema: {
-        kind: z.enum(['workout_session', 'custom_exercise']),
+        kind: z.enum(['workout_session', 'custom_exercise', 'program']),
         id: z.string(),
       },
       annotations: readOnly,
@@ -196,7 +219,7 @@ function buildServer(account, pat) {
       'propose',
       {
         title: 'Propose a change',
-        description: `Files a change for the person to review in Exerly; nothing changes until they accept. Each change names a document (kind workout_session or custom_exercise, and its ID) and the full payload you propose as "after", or null to delete. To edit, read the payload with get_document, change it, and pass the whole document. Exerly fills in "before" from the stored document. Give evidence with an honest level, a confidence, and a falsifier: what would show the proposal is wrong. Cite numbers with a metric so Exerly can verify them.`,
+        description: `Files a change for the person to review in Exerly; nothing changes until they accept. Each change names a document (kind workout_session, custom_exercise or program, and its ID) and the full payload you propose as "after", or null to delete. To edit, read the payload with get_document, change it, and pass the whole document. Exerly fills in "before" from the stored document. Give evidence with an honest level, a confidence, and a falsifier: what would show the proposal is wrong. Cite numbers with a metric so Exerly can verify them.`,
         inputSchema: {
           title: z.string().min(1).max(120),
           summary: z.string().max(2000).optional(),
@@ -217,7 +240,7 @@ function buildServer(account, pat) {
           changes: z
             .array(
               z.object({
-                kind: z.enum(['workout_session', 'custom_exercise']),
+                kind: z.enum(['workout_session', 'custom_exercise', 'program']),
                 id: z.string(),
                 after: z.record(z.string(), z.unknown()).nullable(),
               })

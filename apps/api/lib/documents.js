@@ -20,6 +20,8 @@ const KINDS = {
     typeof p.name === 'string' && typeof p.metric === 'string'
       ? []
       : ['an exercise needs a name and a metric'],
+  program: (p) =>
+    typeof p.name === 'string' && Array.isArray(p.days) ? [] : ['a program needs a name and days'],
   proposal: proposalProblems,
   audit_event: auditEventProblems,
 };

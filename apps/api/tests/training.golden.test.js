@@ -191,3 +191,74 @@ test('local dates and week starts', () => {
   assert.equal(training.parseLocalDate('2026-02-29'), null);
   assert.equal(training.parseLocalDate('2028-02-29'), '2028-02-29');
 });
+
+test('progression recommends exactly what ExerlyCore does', () => {
+  const progression = require('../lib/training/progression');
+  assert.ok(expected.progression.length > 100);
+  for (const entry of expected.progression) {
+    const session = sessions.find((s) => s.id === entry.before);
+    const exercise = library.exercise(entry.exercise);
+    const records = history
+      .sets(entry.exercise)
+      .filter((r) => r.sessionStart < Date.parse(session.startedAt));
+    const plan = progression.recommend(entry.target, exercise, records, {
+      bodyweight: session.bodyweight ?? null,
+      increments: entry.increments ?? undefined,
+      expandRepRange: entry.expandRepRange,
+    });
+    same({ ...entry, ...plan }, entry, `${entry.exercise} before ${entry.before}`);
+  }
+});
+
+test('deload cycles match ExerlyCore', () => {
+  const progression = require('../lib/training/progression');
+  for (const entry of expected.deloads) {
+    const program = {
+      cycles: entry.cycles,
+      deload: entry.placement,
+      days: [{ id: 'd', slots: [{ target: entry.target }] }],
+    };
+    same(
+      progression.targetFor(program, program.days[0].slots[0], entry.cycle),
+      entry.deloaded,
+      `${entry.placement} ${entry.cycle}/${entry.cycles}`
+    );
+  }
+});
+
+test('progression makes the same choice as ExerlyCore across a grid of loads, ranges and RIR', () => {
+  const progression = require('../lib/training/progression');
+  assert.ok(expected.progressionGrid.length > 800);
+  for (const [i, entry] of expected.progressionGrid.entries()) {
+    const exercise = library.exercise(entry.exercise);
+    const record = {
+      sessionID: `grid-${i}`,
+      sessionStart: 0,
+      bodyweight: { unit: 'kg', value: 80 },
+      set: {
+        id: `set-${i}`,
+        kind: 'standard',
+        rir: entry.rir,
+        efforts: [{ reps: entry.reps, load: entry.load }],
+        completedAt: '2026-10-01T00:00:00.000Z',
+      },
+    };
+    const plan = progression.recommend(entry.target, exercise, [record], {
+      bodyweight: { unit: 'kg', value: 80 },
+      increments: entry.increments ?? undefined,
+      expandRepRange: entry.expandRepRange,
+    });
+    same(
+      {
+        ...entry,
+        reason: plan.reason,
+        first: plan.sets[0],
+        count: plan.sets.length,
+        oneRepMax: plan.oneRepMax,
+        outsideRange: plan.outsideRange,
+      },
+      entry,
+      `grid ${i}`
+    );
+  }
+});

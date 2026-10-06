@@ -10,10 +10,11 @@ const { canonicalJSON } = require('./mutations');
 const { badRequest, forbidden, notFound } = require('./errors');
 const { ExerciseLibrary } = require('./training/library');
 const training = require('./training/history');
-const { sessionProblems, customExerciseProblems } = require('./training/validate');
+const { sessionProblems, customExerciseProblems, programProblems } = require('./training/validate');
+const progression = require('./training/progression');
 const dates = require('./dates');
 
-const DATA_KINDS = ['workout_session', 'custom_exercise'];
+const DATA_KINDS = ['workout_session', 'custom_exercise', 'program'];
 const EVIDENCE_LEVELS = ['humanRCT', 'observational', 'mechanism', 'anecdote', 'personalData'];
 const WEEKDAYS = { sunday: 1, monday: 2 };
 
@@ -34,6 +35,7 @@ async function accountLibrary(account) {
 function trainingProblems(kind, id, payload, library) {
   if (kind === 'workout_session') return sessionProblems(payload, id, library);
   if (kind === 'custom_exercise') return customExerciseProblems(payload, id);
+  if (kind === 'program') return programProblems(payload, id, library);
   return [`${kind} is not a training document`];
 }
 
@@ -52,6 +54,7 @@ async function workspace(account) {
     library,
     sessions,
     customExercises: of('custom_exercise'),
+    programs: of('program'),
     proposals: of('proposal'),
     history: new training.TrainingHistory(
       sessions.filter((s) => s.endedAt),
@@ -302,11 +305,109 @@ function listProposals(ws, { status, limit = 20 } = {}) {
   };
 }
 
+// ---- Programs ----
+
+function activeProgram(ws) {
+  return (
+    ws.programs
+      .filter((p) => p.activatedAt && !p.archivedAt)
+      .sort((a, b) => Date.parse(b.activatedAt) - Date.parse(a.activatedAt))[0] ?? null
+  );
+}
+
+function programProgress(ws, program) {
+  const done = new Set(
+    ws.history.sessions
+      .filter((s) => s.program?.programID === program.id)
+      .map((s) => `${s.program.cycle}/${s.program.dayID}`)
+  ).size;
+  const total = progression.trainingDays(program).length * program.cycles;
+  return { done: Math.min(done, total), total };
+}
+
+function listPrograms(ws) {
+  const active = activeProgram(ws);
+  return {
+    programs: [...ws.programs]
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      .map((program) => ({
+        id: program.id,
+        name: program.name,
+        active: program.id === active?.id,
+        archived: !!program.archivedAt,
+        cycles: program.cycles,
+        deload: program.deload,
+        progress: programProgress(ws, program),
+        days: program.days.map((day) => ({
+          id: day.id,
+          name: day.name,
+          rest: day.slots.length === 0,
+          exercises: day.slots.map(
+            (slot) => ws.library.exercise(slot.exerciseID)?.name ?? slot.exerciseID
+          ),
+        })),
+      })),
+  };
+}
+
+/** The next workout of a program, with each exercise's recommendation. */
+function nextWorkout(ws, { program_id: programID } = {}) {
+  const program = programID ? ws.programs.find((p) => p.id === programID) : activeProgram(ws);
+  if (!program) throw notFound(programID ? 'No program has that ID' : 'No program is active');
+  const position = progression.nextPosition(program, ws.history.sessions);
+  const summary = { id: program.id, name: program.name, progress: programProgress(ws, program) };
+  if (!position) return { program: summary, complete: true };
+  const bodyweight =
+    [...ws.history.sessions].reverse().find((s) => s.bodyweight)?.bodyweight ?? null;
+  return {
+    program: summary,
+    day: position.day.name,
+    cycle: position.cycle + 1,
+    deload: position.isDeload,
+    exercises: position.day.slots.flatMap((slot) => {
+      const exercise = ws.library.exercise(slot.exerciseID);
+      if (!exercise) return [];
+      const target = progression.targetFor(program, slot, position.cycle);
+      const plan = progression.recommend(target, exercise, ws.history.sets(exercise.id), {
+        bodyweight,
+        expandRepRange: slot.expandRepRange,
+      });
+      return [
+        {
+          exercise_id: exercise.id,
+          name: exercise.name,
+          notes: slot.notes,
+          target: {
+            sets: target.sets,
+            reps: `${target.minReps}-${target.maxReps}`,
+            rir: target.rir,
+            rest_s: target.rest ?? null,
+          },
+          recommendation: {
+            reason: plan.reason,
+            e1rm_kg: round(plan.oneRepMax),
+            outside_rep_range: plan.outsideRange,
+            sets: plan.sets.map((s) => ({
+              kind: s.kind,
+              reps: s.effort.reps ?? null,
+              load: mass(s.effort.load),
+              rir: s.rir,
+            })),
+          },
+        },
+      ];
+    }),
+  };
+}
+
 function getDocument(ws, { kind, id }) {
   if (!DATA_KINDS.includes(kind)) throw badRequest(`kind must be ${DATA_KINDS.join(' or ')}`);
-  const payload = (kind === 'workout_session' ? ws.sessions : ws.customExercises).find(
-    (document) => document.id === docs.canonicalID(id)
-  );
+  const documents = {
+    workout_session: ws.sessions,
+    custom_exercise: ws.customExercises,
+    program: ws.programs,
+  };
+  const payload = documents[kind].find((document) => document.id === docs.canonicalID(id));
   if (!payload) throw notFound(`No ${kind} has that ID`);
   return { kind, id, payload };
 }
@@ -442,6 +543,8 @@ module.exports = {
   weeklyVolume,
   searchExercises,
   listProposals,
+  listPrograms,
+  nextWorkout,
   getDocument,
   verifyMetric,
   propose,

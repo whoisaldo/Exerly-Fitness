@@ -387,3 +387,42 @@ measured is in `docs/design/005-training-detectors.md`.
     volume caveats;
   - `deload(in:through:)`: several lifts down together over the last ten days.
   - `trend(of:in:through:days:)` exposes the numbers behind both.
+
+## Programs and progression
+
+`docs/design/006-programs-progression.md` has the design and the measured
+accuracy.
+
+- `Program` is a synced document of kind `program`:
+  - `days` is one cycle of `ProgramDay`s; a day without slots is a rest day;
+  - `cycles` runs 1 to 52, and `deload` is `.none`, `.first` or `.last`;
+  - icon, colour, and created, activated and archived dates.
+
+  `validationErrors(library:)` explains what's wrong. `target(for:cycle:)` gives
+  a slot's target, applying a deload: half the sets and 2 more RIR.
+- `ProgramSlot` holds:
+  - the exercise, notes and a superset group;
+  - a `SlotTarget` (sets, rep range, RIR, rest and set kind);
+  - per-cycle targets;
+  - `expandRepRange` and `weightMatch`.
+- `ProgramStore(persistence:training:)` is a `DocumentHost`. Put it after
+  `TrainingStore` in `SyncEngine(hosts:)` and in `AgentStore(hosts:)`, so agents
+  can propose programs. It offers:
+  - `save`, `activate`, `archive`, `restore` and `duplicate(_:name:)`;
+  - `active`;
+  - `nextWorkout(bodyweight:)`, which returns a `WorkoutPlan` for the active
+    program.
+- `ProgramSchedule.next(for:in:)` finds the next training day from sessions'
+  `ProgramRef`. `progress(of:in:)` counts done and total sessions, and
+  `plan(_:at:history:bodyweight:)` builds a plan.
+- `TrainingStore.startSession(from:bodyweight:)` starts a session with each
+  exercise's planned sets prefilled, not completed, and links it to the program
+  day through `WorkoutSession.program`.
+- `Progression.recommend(_:exercise:history:bodyweight:increments:expandRepRange:)`
+  returns a `Recommendation`:
+  - per-set `PlannedSet`s with reps, load and target RIR;
+  - a `reason`: first session, progress, hold, reduce or repeat last;
+  - the e1RM used, the basis set, and whether the reps went outside the range.
+
+  Show the reason. `LoadIncrements.defaults(for:)` gives equipment steps, which
+  the person can override.
