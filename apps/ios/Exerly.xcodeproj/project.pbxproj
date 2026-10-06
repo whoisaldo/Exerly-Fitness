@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000008; };
+        E40000000000000000000005 /* AccountPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000006; };
+        E40000000000000000000003 /* AccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000004; };
+        E40000000000000000000001 /* AppleAuthorizationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000002; };
         E30000000000000000000001 /* AccountInfrastructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30000000000000000000002; };
         6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2B6F531BC1D8FC2035C04; };
         8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B345BC97A55F08A3888B7E; };
@@ -97,6 +101,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        E40000000000000000000008 /* AccountControlsFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountControlsFixtureView.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000006 /* AccountPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000004 /* AccountManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountManagementView.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000002 /* AppleAuthorizationButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AppleAuthorizationButton.swift; sourceTree = SOURCE_ROOT; };
         E30000000000000000000002 /* AccountInfrastructureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountInfrastructureTests.swift; sourceTree = SOURCE_ROOT; };
         D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/WorkoutHistoryView.swift; sourceTree = SOURCE_ROOT; };
         05B345BC97A55F08A3888B7E /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingView.swift; sourceTree = SOURCE_ROOT; };
@@ -470,6 +478,10 @@
                 E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */,
                 E20000000000000000000005 /* TrainingPresentationTests.swift */,
                 E30000000000000000000002 /* AccountInfrastructureTests.swift */,
+                E40000000000000000000008 /* AccountControlsFixtureView.swift */,
+                E40000000000000000000006 /* AccountPresentationTests.swift */,
+                E40000000000000000000004 /* AccountManagementView.swift */,
+                E40000000000000000000002 /* AppleAuthorizationButton.swift */,
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
 				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
 				378A3EBCD0EE468791534C6F,
@@ -621,6 +633,9 @@
                 C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */,
                 D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */,
                 F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */,
+                E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */,
+                E40000000000000000000003 /* AccountManagementView.swift in Sources */,
+                E40000000000000000000001 /* AppleAuthorizationButton.swift in Sources */,
 				016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */,
 				A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */,
 				5C6B7743D73F3AED57034C19 /* Components/ConfettiView.swift in Sources */,
@@ -697,7 +712,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

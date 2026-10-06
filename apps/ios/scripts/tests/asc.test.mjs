@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, verify } from 'node:crypto';
-import { createToken, internalGroupBody, validateGroup, validateTester, apiURL } from '../asc.mjs';
+import { createToken, internalGroupBody, validateGroup, validateTester, apiURL, requiredCapabilityBodies, supportsRequiredCapabilities } from '../asc.mjs';
 
 test('ASC JWT is a short-lived ES256 token without exposing the private key', () => {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
@@ -37,4 +37,22 @@ test('API token can only go to the ASC origin, including pagination', () => {
   assert.throws(() => apiURL('https://example.test/v1/apps'));
   assert.throws(() => apiURL('//example.test/v1/apps'));
   assert.throws(() => apiURL('http://api.appstoreconnect.apple.com/v1/apps'));
+});
+
+test('provisioning selects only profiles that include native Apple sign-in and HealthKit', () => {
+  const valid = { 'com.apple.developer.healthkit': true, 'com.apple.developer.applesignin': ['Default'] };
+  assert.equal(supportsRequiredCapabilities(valid), true);
+  for (const value of [undefined, [], ['Other'], 'Default']) {
+    assert.equal(supportsRequiredCapabilities({ ...valid, 'com.apple.developer.applesignin': value }), false);
+  }
+  assert.equal(supportsRequiredCapabilities({ ...valid, 'com.apple.developer.healthkit': false }), false);
+});
+
+test('Apple sign-in provisioning configures Exerly as its own primary app', () => {
+  const requests = requiredCapabilityBodies('synthetic-bundle');
+  assert.deepEqual(requests.map(r => r.data.attributes.capabilityType), ['HEALTHKIT', 'APPLE_ID_AUTH']);
+  assert(requests.every(r => r.data.relationships.bundleId.data.id === 'synthetic-bundle'));
+  assert.deepEqual(requests[1].data.attributes.settings, [
+    { key: 'APPLE_ID_AUTH_APP_CONSENT', options: [{ key: 'PRIMARY_APP_CONSENT', enabled: true }] }
+  ]);
 });

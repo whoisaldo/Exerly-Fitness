@@ -10,6 +10,20 @@ struct RootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            if let mode = ProcessInfo.processInfo.environment["EXERLY_TEST_ACCOUNT_CONTROLS"] {
+                AccountControlsFixtureView(mode: mode)
+            } else { accountContent }
+            #else
+            accountContent
+            #endif
+        }
+        .tint(Color.exPrimary)
+        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+    }
+
+    private var accountContent: some View {
+        Group {
             switch authVM.authState {
             case .loading:
                 LoadingStateView(message: "Starting Exerly...")

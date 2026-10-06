@@ -57,6 +57,7 @@ def validate_profile(profile):
     require(entitlements.get("application-identifier") == f"{TEAM}.{BUNDLE}", "Profile is for another app")
     require(entitlements.get("get-task-allow") is False, "Profile allows debugging")
     require(entitlements.get("com.apple.developer.healthkit") is True, "Profile lacks HealthKit")
+    require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Profile lacks Sign in with Apple")
     require(not profile.get("ProvisionedDevices") and not profile.get("ProvisionsAllDevices"),
             "Profile is not for App Store distribution")
     expiry = profile.get("ExpirationDate")
@@ -83,7 +84,7 @@ def main():
     validate_metadata(info, privacy, args.version, args.build, args.internal_staging)
     require((app / "Assets.car").is_file(), "Compiled assets missing")
     binary = subprocess.run(["strings", str(app / "Exerly")], capture_output=True, text=True, check=True).stdout
-    for marker in ["--ui-testing", "EXERLY_TEST_STORE_ID", "EXERLY_TEST_LEGACY_TOKEN"]:
+    for marker in ["--ui-testing", "EXERLY_TEST_STORE_ID", "EXERLY_TEST_LEGACY_TOKEN", "EXERLY_TEST_ACCOUNT_CONTROLS"]:
         require(marker not in binary, f"Debug fixture marker in release binary: {marker}")
     if not args.unsigned:
         validate_profile(read_profile(app / "embedded.mobileprovision"))
@@ -93,6 +94,7 @@ def main():
         entitlements = plistlib.loads(raw)
         require(entitlements.get("application-identifier") == f"{TEAM}.{BUNDLE}", "Signature identity mismatch")
         require(entitlements.get("com.apple.developer.healthkit") is True, "Signed app lacks HealthKit")
+        require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Signed app lacks Sign in with Apple")
         require(not entitlements.get("get-task-allow", False), "Signed app allows debugging")
     print(f"Verified Exerly {args.version} ({args.build}); {'unsigned' if args.unsigned else 'signed'} archive")
 

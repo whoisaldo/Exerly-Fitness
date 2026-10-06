@@ -3,9 +3,11 @@
 // external groups, public links, review submissions, or a new team user.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { sign, X509Certificate } from 'node:crypto';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const origin = 'https://api.appstoreconnect.apple.com';
 const bundle = 'com.exerly.fitness';
@@ -43,6 +45,35 @@ export function validateTester(tester, email) {
   if (tester.attributes.email?.toLowerCase() !== email.toLowerCase() || tester.attributes.inviteType !== 'EMAIL') {
     throw new Error('Only the account holder with an email invitation is permitted');
   }
+}
+
+export function requiredCapabilityBodies(bundleID) {
+  return ['HEALTHKIT', 'APPLE_ID_AUTH'].map(capabilityType => ({ data: {
+    type: 'bundleIdCapabilities',
+    attributes: { capabilityType, ...(capabilityType === 'APPLE_ID_AUTH' ? { settings: [
+      { key: 'APPLE_ID_AUTH_APP_CONSENT', options: [{ key: 'PRIMARY_APP_CONSENT', enabled: true }] }
+    ] } : {}) },
+    relationships: { bundleId: { data: { type: 'bundleIds', id: bundleID } } }
+  } }));
+}
+
+export function supportsRequiredCapabilities(entitlements) {
+  return entitlements?.['com.apple.developer.healthkit'] === true &&
+    Array.isArray(entitlements?.['com.apple.developer.applesignin']) &&
+    entitlements['com.apple.developer.applesignin'].includes('Default');
+}
+
+function profileEntitlements(profileContent) {
+  const dir = mkdtempSync(join(tmpdir(), 'exerly-profile-'));
+  try {
+    const path = join(dir, 'profile.mobileprovision');
+    writeFileSync(path, Buffer.from(profileContent, 'base64'), { mode: 0o600 });
+    const xml = execFileSync('/usr/bin/security', ['cms', '-D', '-i', path],
+      { stdio: ['pipe', 'pipe', 'pipe'] });
+    const script = 'import sys,plistlib,json; p=plistlib.loads(sys.stdin.buffer.read())["Entitlements"]; print(json.dumps({k:p.get(k) for k in ["com.apple.developer.healthkit","com.apple.developer.applesignin"]}))';
+    return JSON.parse(execFileSync('python3', ['-c', script],
+      { input: xml, stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' }));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
 async function client() {
@@ -89,9 +120,9 @@ async function provision(request) {
   if (identifier.attributes.identifier !== bundle) throw new Error('Unexpected bundle identifier');
   const capabilities = await all(request, `/v1/bundleIds/${identifier.id}/bundleIdCapabilities`);
   let capabilityChanged = false;
-  if (!capabilities.some(c => c.attributes.capabilityType === 'HEALTHKIT')) {
-    await request('/v1/bundleIdCapabilities', 'POST', { data: { type: 'bundleIdCapabilities',
-      attributes: { capabilityType: 'HEALTHKIT' }, relationships: { bundleId: { data: { type: 'bundleIds', id: identifier.id } } } } });
+  for (const body of requiredCapabilityBodies(identifier.id)) {
+    if (capabilities.some(c => c.attributes.capabilityType === body.data.attributes.capabilityType)) continue;
+    await request('/v1/bundleIdCapabilities', 'POST', body);
     capabilityChanged = true;
   }
   const profiles = await all(request, `/v1/bundleIds/${identifier.id}/profiles?limit=200`);
@@ -99,18 +130,23 @@ async function provision(request) {
   for (const candidate of profiles.filter(p => p.attributes.profileType === 'IOS_APP_STORE' && p.attributes.profileState === 'ACTIVE'
     && Date.parse(p.attributes.expirationDate) > Date.now() + 86400000 && !capabilityChanged)) {
     const certificates = await all(request, `/v1/profiles/${candidate.id}/certificates`);
-    if (certificates.some(c => c.id === certificateID)) { profile = candidate; break; }
+    if (!certificates.some(c => c.id === certificateID)) continue;
+    const full = candidate.attributes.profileContent ? candidate : (await request(`/v1/profiles/${candidate.id}`)).data;
+    if (supportsRequiredCapabilities(profileEntitlements(full.attributes.profileContent))) { profile = full; break; }
   }
   if (!profile) profile = (await request('/v1/profiles', 'POST', { data: { type: 'profiles',
     attributes: { name: `Exerly App Store ${new Date().toISOString().replace(/[:.]/g, '-')}`, profileType: 'IOS_APP_STORE' },
     relationships: { bundleId: { data: { type: 'bundleIds', id: identifier.id } },
       certificates: { data: [{ type: 'certificates', id: certificateID }] } } } })).data;
   if (!profile.attributes.profileContent) profile = (await request(`/v1/profiles/${profile.id}`)).data;
+  if (!supportsRequiredCapabilities(profileEntitlements(profile.attributes.profileContent))) {
+    throw new Error('The profile must include HealthKit and Sign in with Apple');
+  }
   const output = join(homedir(), 'private_keys/exerly-distribution');
   await mkdir(output, { recursive: true, mode: 0o700 });
   await writeFile(join(output, `${bundle}.mobileprovision`), Buffer.from(profile.attributes.profileContent, 'base64'), { mode: 0o600 });
   console.log(JSON.stringify({ bundle, bundleID: identifier.id, profileID: profile.id,
-    expires: profile.attributes.expirationDate, profileDirectory: output, healthKit: true }));
+    expires: profile.attributes.expirationDate, profileDirectory: output, healthKit: true, signInWithApple: true }));
 }
 
 async function internal(request, app, buildNumber) {

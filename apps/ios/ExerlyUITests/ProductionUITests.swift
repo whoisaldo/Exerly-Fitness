@@ -15,6 +15,39 @@ final class ProductionUITests: XCTestCase {
         }
     }
 
+    func testAccountDeletionRequiresConfirmationAndFailureKeepsTheAccount() throws {
+        let app = launch(resetSession: true, accountControls: "delete-error")
+        XCTAssertTrue(app.staticTexts["morgan@example.test"].waitForExistence(timeout: 10))
+        tap(app.buttons["account.delete"], in: app)
+        tap(app.buttons["account.confirmDelete"], in: app)
+        capture(app, "account-delete-confirmation")
+        tap(app.alerts.buttons["Cancel"], in: app)
+        XCTAssertTrue(app.buttons["account.confirmDelete"].exists)
+        XCTAssertFalse(app.staticTexts["Account deleted"].exists)
+        tap(app.buttons["account.confirmDelete"], in: app)
+        tap(app.alerts.buttons["Delete account"], in: app)
+        let failure = app.staticTexts["Could not reach Exerly. Check your connection and try again."]
+        reveal(failure, in: app)
+        XCTAssertTrue(failure.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["Account deleted"].exists)
+        capture(app, "account-delete-error")
+        for _ in 0..<6 where !app.buttons["account.confirmDelete"].exists { app.swipeDown() }
+        XCTAssertTrue(app.buttons["account.confirmDelete"].isEnabled)
+    }
+
+    func testAppleOnlyAccountCannotDisconnectItsOnlySignInMethod() throws {
+        let app = launch(resetSession: true, accountControls: "apple-only")
+        XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 10))
+        let disconnect = app.buttons["account.disconnectApple"]
+        for _ in 0..<10 where !disconnect.exists { app.swipeUp() }
+        XCTAssertTrue(disconnect.exists)
+        XCTAssertFalse(disconnect.isEnabled)
+        let explanation = app.staticTexts["Keep Apple connected so you can sign in to this account."]
+        for _ in 0..<6 where !explanation.exists { app.swipeUp() }
+        XCTAssertTrue(explanation.exists)
+        capture(app, "account-apple-only")
+    }
+
     func testWelcomeCanOpenSignIn() throws {
         let app = launch(resetSession: true)
         tap(app.buttons["I already have an account"], in: app)
@@ -1258,7 +1291,7 @@ final class ProductionUITests: XCTestCase {
         waitForExpectations(timeout: 15)
     }
 
-    private func launch(resetSession: Bool, legacyToken: String? = nil) -> XCUIApplication {
+    private func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = resetSession ? ["--ui-testing"] : []
         if let appearance = ProcessInfo.processInfo.environment["EXERLY_TEST_APPEARANCE"],
@@ -1271,6 +1304,7 @@ final class ProductionUITests: XCTestCase {
         app.launchEnvironment["EXERLY_API_BASE_URL"] = fixtureURL
         app.launchEnvironment["EXERLY_TEST_STORE_ID"] = UUID().uuidString
         app.launchEnvironment["EXERLY_TEST_LEGACY_TOKEN"] = legacyToken
+        app.launchEnvironment["EXERLY_TEST_ACCOUNT_CONTROLS"] = accountControls
         app.launch()
         return app
     }

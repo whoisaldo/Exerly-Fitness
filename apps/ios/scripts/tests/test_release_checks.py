@@ -93,11 +93,13 @@ class ReleaseChecksTests(unittest.TestCase):
             "UUID": "test-profile", "TeamIdentifier": ["9X79V37Q89"],
             "ExpirationDate": datetime.now(timezone.utc) + timedelta(days=30),
             "Entitlements": {"application-identifier": "9X79V37Q89.com.exerly.fitness",
-                             "get-task-allow": False, "com.apple.developer.healthkit": True},
+                             "get-task-allow": False, "com.apple.developer.healthkit": True,
+                             "com.apple.developer.applesignin": ["Default"]},
         }
         checks.validate_profile(profile)
         for key, value in [("application-identifier", "9X79V37Q89.some.other.app"),
-                           ("get-task-allow", True), ("com.apple.developer.healthkit", False)]:
+                           ("get-task-allow", True), ("com.apple.developer.healthkit", False),
+                           ("com.apple.developer.applesignin", [])]:
             invalid = copy.deepcopy(profile)
             invalid["Entitlements"][key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
