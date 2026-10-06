@@ -190,6 +190,16 @@ test('a write token can only write training documents ExerlyCore could apply', a
     /completed without the values/
   );
 
+  const planned = session(uuid());
+  planned.exercises[0].slotID = uuid();
+  assert.equal((await putAs(writer, 'workout_session', planned)).status, 201);
+  const badSlot = session(uuid());
+  badSlot.exercises[0].slotID = 'slot-1';
+  assert.match(
+    (await putAs(writer, 'workout_session', badSlot)).body.message,
+    /slotID must be a UUID/
+  );
+
   const badExercise = { id: 'custom-x', name: 'X', metric: 'weightReps', mechanics: 'compound' };
   assert.equal((await putAs(writer, 'custom_exercise', badExercise)).status, 400);
 });

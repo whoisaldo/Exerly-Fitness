@@ -81,7 +81,8 @@ public final class TrainingStore {
         let exercises = plan.exercises.map { planned in
             PerformedExercise(exerciseID: planned.exerciseID,
                               sets: planned.recommendation.sets.map { PerformedSet(kind: $0.kind, efforts: [$0.effort], rir: $0.rir) },
-                              notes: planned.notes, supersetID: planned.supersetID, restOverride: planned.target.rest)
+                              notes: planned.notes, supersetID: planned.supersetID, restOverride: planned.target.rest,
+                              slotID: planned.slotID)
         }
         let session = WorkoutSession(name: plan.name, startedAt: now(), timeZone: timeZone, bodyweight: bodyweight,
                                      exercises: exercises, program: plan.program)
@@ -125,6 +126,13 @@ public final class TrainingStore {
     public func removeSet(_ setID: UUID) throws { try edit { try $0.removeSet(setID) } }
     public func removeExercise(_ performedID: UUID) throws { try edit { try $0.removeExercise(performedID) } }
     public func moveExercise(_ performedID: UUID, to index: Int) throws { try edit { try $0.moveExercise(performedID, to: index) } }
+
+    /// Swaps an exercise for another before any of its sets is done, prefilled
+    /// from the new one's last performance.
+    public func replaceExercise(_ performedID: UUID, with exerciseID: ExerciseID) throws {
+        let previous = history.lastPerformance(of: exerciseID)
+        try edit { try $0.replaceExercise(performedID, with: exerciseID, previous: previous, library: library) }
+    }
 
     @discardableResult
     public func makeSuperset(_ performedIDs: [UUID]) throws -> UUID {

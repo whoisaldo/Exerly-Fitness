@@ -61,6 +61,8 @@ extension WorkoutSession {
         case invalidTimeZone(String)
         case endsBeforeStart
         case supersetNeedsTwoExercises
+        /// A set of the exercise is already done, so it can't be swapped.
+        case alreadyStarted(UUID)
     }
 
     /// Throws the first problem that would make the session untrustworthy:
@@ -116,15 +118,38 @@ extension WorkoutSession {
         _ exerciseID: ExerciseID, at index: Int? = nil, previous: PerformedExercise? = nil, library: ExerciseLibrary
     ) throws -> UUID {
         guard let exercise = library.exercise(exerciseID) else { throw EditError.unknownExercise(exerciseID) }
-        var sets = previous?.sets.map { $0.prefilledCopy() } ?? []
-        if sets.isEmpty {
-            sets = exercise.laterality == .unilateral
-                ? [PerformedSet(side: .left), PerformedSet(side: .right)]
-                : [PerformedSet()]
-        }
-        let performed = PerformedExercise(exerciseID: exerciseID, sets: sets, restOverride: previous?.restOverride)
+        let performed = PerformedExercise(exerciseID: exerciseID, sets: Self.startingSets(exercise, previous: previous),
+                                          restOverride: previous?.restOverride)
         exercises.insert(performed, at: min(max(index ?? exercises.count, 0), exercises.count))
         return performed.id
+    }
+
+    private static func startingSets(_ exercise: Exercise, previous: PerformedExercise?) -> [PerformedSet] {
+        let sets = previous?.sets.map { $0.prefilledCopy() } ?? []
+        guard sets.isEmpty else { return sets }
+        return exercise.laterality == .unilateral ? [PerformedSet(side: .left), PerformedSet(side: .right)] : [PerformedSet()]
+    }
+
+    /// Swaps an exercise for another in place, before any of its sets is done.
+    /// It keeps its position, superset, program slot, notes and rest. Its sets
+    /// keep their number and kinds, prefilled from `previous`, the new
+    /// exercise's last performance; a unilateral one starts as when added.
+    public mutating func replaceExercise(_ performedID: UUID, with exerciseID: ExerciseID, previous: PerformedExercise? = nil,
+                                         library: ExerciseLibrary) throws {
+        let index = try exerciseIndex(performedID)
+        guard let exercise = library.exercise(exerciseID) else { throw EditError.unknownExercise(exerciseID) }
+        let current = exercises[index].sets
+        guard !current.contains(where: \.isCompleted) else { throw EditError.alreadyStarted(performedID) }
+        let template = previous?.sets ?? []
+        if exercise.laterality == .unilateral || current.isEmpty {
+            exercises[index].sets = Self.startingSets(exercise, previous: previous)
+        } else {
+            exercises[index].sets = current.indices.map { i in
+                template.isEmpty ? PerformedSet(kind: current[i].kind)
+                    : template[min(i, template.count - 1)].prefilledCopy(side: .some(nil), kind: current[i].kind)
+            }
+        }
+        exercises[index].exerciseID = exerciseID
     }
 
     public mutating func removeExercise(_ performedID: UUID) throws {

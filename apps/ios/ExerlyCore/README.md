@@ -69,8 +69,8 @@ Volume is in kilogram-reps, durations in seconds, distances in metres.
 | `Side` | `left`, `right`, for unilateral exercises logged one side at a time. |
 
 Editing functions on `WorkoutSession` (the store wraps all of them):
-`addExercise`, `removeExercise`, `moveExercise`, `addSet`, `updateSet(_:in:propagate:)`,
-`completeSet`, `reopenSet`, `removeSet`, `makeSuperset`, `removeFromSuperset`,
+`addExercise`, `removeExercise`, `moveExercise`, `replaceExercise(_:with:previous:library:)`,
+`addSet`, `updateSet(_:in:propagate:)`, `completeSet`, `reopenSet`, `removeSet`, `makeSuperset`, `removeFromSuperset`,
 `set(_:)`, `performanceOrder`, `nextSet(after:)` and `finish(at:discardIncompleteSets:)`.
 Failures throw `WorkoutSession.EditError`.
 
@@ -162,6 +162,10 @@ timer and rest policy are saved too, and come back after relaunch.
 - `completeSet(_:)`, which starts the rest timer
 - `reopenSet`, `removeSet`, `removeExercise`, `moveExercise`, `makeSuperset`,
   `removeFromSuperset`
+- `replaceExercise(_:with:)` swaps an exercise in place before any of its sets
+  is done (PARITY T15). It keeps the position, superset, program slot, notes,
+  rest, and the number and kinds of sets, prefilled from the new exercise's
+  last performance. After a set is done it throws `.alreadyStarted`.
 - `updateActiveSession { $0.notes = ... }`
 - `previousSets(for:)`, the "previous" column
 - `summary(of:)`, which returns a `WorkoutSummary` measured to now
@@ -441,7 +445,15 @@ accuracy.
   `plan(_:at:history:bodyweight:)` builds a plan.
 - `TrainingStore.startSession(from:bodyweight:)` starts a session with each
   exercise's planned sets prefilled, not completed, and links it to the program
-  day through `WorkoutSession.program`.
+  day through `WorkoutSession.program`. Each exercise keeps its `slotID`.
+- After `finishSession`, `programs.proposal(applying: finished.session, existing:
+  agent.proposals)` offers to keep the workout's changes in the program
+  (PARITY P06). File it with `agent.file`; it is nil when nothing changed.
+  - Swaps take over their slot.
+  - A different number of working sets becomes the slot's sets for that
+    cycle. A deload cycle without its own targets is left alone.
+  - Exercises added and done become slots, with targets from what was done.
+  - Skipped exercises stay, and the order is kept.
 - `Progression.recommend(_:exercise:history:bodyweight:increments:expandRepRange:)`
   returns a `Recommendation`:
   - per-set `PlannedSet`s with reps, load and target RIR;

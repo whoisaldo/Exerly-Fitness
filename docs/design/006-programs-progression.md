@@ -97,6 +97,23 @@ The result names its basis (the set and e1RM it came from) and its reason:
 progress, hold, reduce, or first session. Screens show the reason, and the
 MCP server can return the same recommendation.
 
+## Keeping a workout's changes (PARITY P06)
+
+Each exercise started from a program keeps its slot's ID, including through a
+swap. After the workout, `ProgramChanges` compares what was done with the day
+and offers the differences as one proposal, which the person accepts or
+declines like any other and can undo.
+
+- A swap takes over its slot.
+- A different number of working sets changes the target for that cycle: the
+  cycle's own targets if it has them, otherwise the slot's. Sets in a deload
+  cycle without its own targets are derived, so they are left alone.
+- An exercise added and done becomes a slot after the one before it. Its
+  targets come from what was done: the sets, the range of reps, and the
+  average RIR.
+- A skipped exercise stays, because skipping once isn't removing, and the
+  order is kept.
+
 ## Checked against simulated lifters
 
 The training simulator (design 005) gains lifters who follow the

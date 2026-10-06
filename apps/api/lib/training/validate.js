@@ -122,6 +122,8 @@ function sessionProblems(session, id, library) {
       problems.push(`${where}.supersetID must be a UUID`);
     if (performed.restOverride != null && !isNumber(performed.restOverride))
       problems.push(`${where}.restOverride must be a number of seconds`);
+    if (performed.slotID != null && !UUID_RE.test(performed.slotID))
+      problems.push(`${where}.slotID must be a UUID`);
     const exercise = library.exercise(performed.exerciseID);
     if (!exercise)
       problems.push(`${where}.exerciseID ${performed.exerciseID} is not a known exercise`);

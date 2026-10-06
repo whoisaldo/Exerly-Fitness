@@ -14,7 +14,7 @@ public final class ProgramStore {
     /// Newest first.
     public private(set) var programs: [Program] = []
 
-    static let kind = "program"
+    nonisolated static let kind = "program"
 
     @ObservationIgnored private let persistence: TrainingPersistence & DocumentPersistence
     @ObservationIgnored private let training: TrainingStore
@@ -112,6 +112,13 @@ public final class ProgramStore {
         guard let program = active, let position = ProgramSchedule.next(for: program, in: training.history) else { return nil }
         return ProgramSchedule.plan(program, at: position, history: training.history, bodyweight: bodyweight,
                                     increments: increments)
+    }
+
+    /// After a finished workout, a proposal to keep its changes in its
+    /// program: `ProgramChanges.proposal` with this store's program.
+    public func proposal(applying session: WorkoutSession, existing: [Proposal], now: Date = Date()) -> Proposal? {
+        ProgramChanges.proposal(for: session, program: session.program.flatMap { program($0.programID) },
+                                library: training.library, existing: existing, now: now)
     }
 
     private func write(_ program: Program) throws {

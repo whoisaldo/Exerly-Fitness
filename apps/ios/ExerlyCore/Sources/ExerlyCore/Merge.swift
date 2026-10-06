@@ -27,6 +27,7 @@ public enum Merge {
         merged.notes = value(base?.notes, local.notes, remote.notes)
         merged.supersetID = value(base?.supersetID, local.supersetID, remote.supersetID)
         merged.restOverride = value(base?.restOverride, local.restOverride, remote.restOverride)
+        merged.slotID = value(base?.slotID, local.slotID, remote.slotID)
         merged.sets = list(base?.sets, local.sets, remote.sets, merge: set)
         return merged
     }

@@ -111,10 +111,12 @@ public struct PerformedExercise: Sendable, Codable, Hashable, Identifiable {
     public var supersetID: UUID?
     /// Overrides the policy's rest after each set of this exercise, in seconds.
     public var restOverride: Double?
+    /// The program slot it was planned from, kept through a swap.
+    public var slotID: UUID?
 
     public init(
         id: UUID = UUID(), exerciseID: ExerciseID, sets: [PerformedSet] = [],
-        notes: String = "", supersetID: UUID? = nil, restOverride: Double? = nil
+        notes: String = "", supersetID: UUID? = nil, restOverride: Double? = nil, slotID: UUID? = nil
     ) {
         self.id = id
         self.exerciseID = exerciseID
@@ -122,6 +124,7 @@ public struct PerformedExercise: Sendable, Codable, Hashable, Identifiable {
         self.notes = notes
         self.supersetID = supersetID
         self.restOverride = restOverride
+        self.slotID = slotID
     }
 }
 
