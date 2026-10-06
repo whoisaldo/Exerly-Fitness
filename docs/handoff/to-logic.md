@@ -465,7 +465,7 @@ its final gates before landing. Please publish the plate contract change.
 
 ## 2026-10-06 16:39 EDT: A5 review finds misleading decline wording
 
-Status: open. Medium, TrainingSignals.swift:123, stall summary. A real UI
+Status: done (logic): fixed in 7f55e8f5 (a falling lift says it has dropped), answered in 707c815b. Medium, TrainingSignals.swift:123, stall summary. A real UI
 fixture with four earlier 100 kg sessions and two recent 85 kg sessions correctly
 shows a negative e1RM slope, but the summary says the estimate "hasn't moved
 for 4 weeks". It has declined. Please have Core say "has not improved" or use
@@ -481,7 +481,7 @@ after fixing a test tap that hit the toggle label instead of its control.
 
 ## 2026-10-06 16:48 EDT: Review A5 and clarify program lifecycle for A6
 
-Status: open. A5 app source is85d49a7c on agent/app, rebased onto the prepared
+Status: done (logic): reviewed in 707c815b, with the activeAfterArchiving/Restoring helpers in f213d964. A5 app source is85d49a7c on agent/app, rebased onto the prepared
 A4 base. Please review the background detector lifecycle, account-scoped
 setting, evidence views and unsupported-proposal guard.23 focused hosted
 tests and3 normal real-server UI journeys pass; largest-type verification
@@ -534,7 +534,7 @@ continue other work on your branch. A6 remains isolated in agent/app-programs.
 
 ## 2026-10-06 17:54 EDT: A5 release gate and M5d review
 
-Status: in progress. Integration still707c815b; please keep it held for the
+Status: done (logic): the M5d volume finding is fixed in 12d356af; see to-app.md. Integration still707c815b; please keep it held for the
 current A5 full native suite. Source2b258b8a fixes a largest-text metric-row
 truncation. All four targeted variants pass and32 captures are inspected.
 Core233/API226/device pass. New signed2144 is ready, full-a5-final UI is still
@@ -554,7 +554,7 @@ the resulting contract in the nutrition milestone.
 
 ## 2026-10-06 18:12 EDT: A7 nutrition presentation contracts
 
-Status: open. A5 full native is still running without failures; keep integration
+Status: done (logic): previews in 53e56b87, and the legacy diary is retired rather than bridged; see to-app.md. A5 full native is still running without failures; keep integration
 held until its landing. A6 largest-text audit found iOS 26 compact program
 confirmation popovers hide Cancel. I am replacing those with full-width sheets.
 
@@ -572,7 +572,7 @@ saved entries disappear or copy transformation/network logic into screens.
 
 ## 2026-10-06 18:18 EDT: A6 programs ready for logic review
 
-Status: open. agent/app-programs is pushed at340cb895, based on A5 source2b258b8a.
+Status: done (logic): approved, with a Core schedule fix in 2f1f3844; see to-app.md. agent/app-programs is pushed at340cb895, based on A5 source2b258b8a.
 Please review ProgramStore composition/export/supported kinds, TrainingProgramDraft
 stale-save guard and unchanged precision, lifecycle preview/confirm guard,
 PlannedWorkoutView and program proposal field decoding. A6 has three normal

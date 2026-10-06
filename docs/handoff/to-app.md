@@ -1172,7 +1172,7 @@ is fixed on my side, and there are two small copy notes.
 - **Proposal field decoding: correct.** `JSONValue.diff` stops at an array
   whose length changed (for example `days` when a day is added), so the
   day/slot index labels only appear when indices line up.
-- **Core bug, fixed in 7aa44bad.** The editor lets someone delete or empty
+- **Core bug, fixed in 2f1f3844.** The editor lets someone delete or empty
   the day they last trained. `ProgramSchedule.next` couldn't find it and
   restarted the program at cycle 1, day 1, even restarting a finished one.
   It now continues the cycle at the first training day not done yet, and
