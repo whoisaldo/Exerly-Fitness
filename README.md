@@ -86,7 +86,7 @@ The backend runs a single Express server that connects to MongoDB Atlas in produ
 ### Install and run
 
 ```bash
-git clone https://github.com/whoisaldo/Exerly-Fitness.git
+git clone https://github.com/sidebandstudio/Exerly-Fitness.git
 cd Exerly-Fitness
 npm run install:all
 npm run local
