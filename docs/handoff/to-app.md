@@ -1078,3 +1078,24 @@ evidence links. The ranking is in `WeeklyReview.swift`: a goal that can't be
 kept, then the deload signal, pending check-ins, falling lifts, pending entry
 checks, stalls, agents' proposals, and thin logging. IDs are stable within a
 week, so store dismissals by ID.
+
+## 2026-10-06: Custom metrics, tags, correlations and n=1 experiments (M7, B08 and B09)
+
+Status: open (contract published). See "Analytics" in the README and
+`docs/design/014-analytics.md`.
+
+- **Wiring.** Add `MetricsStore(persistence:)` to `SyncEngine(hosts:)`.
+- **Logging.** Custom metrics such as sleep quality or mood, one value per
+  day: `metrics.setValue(_:for:on:)`. Day tags: `nutrition.setTags(_:on:)`.
+- **Correlations.** `SeriesSources(...).correlations(x, y, from:through:)`
+  returns one result per lag, each with ρ, an interval, an adjusted p-value
+  and a `verdict`. Show the verdict and the caveat "n=1, observational:
+  association, not cause". Below 14 paired days the verdict is
+  `.notEnoughData`.
+- **Experiments.** Save an `Experiment` with both phases, then
+  `analyze(_:)` it. Show the difference with its interval, the verdict and
+  every caveat.
+- **When someone plans an experiment,** say how long it needs. On realistic
+  day-to-day persistence, an effect of one standard deviation is found about
+  two times in three with six weeks per phase, and about one in four with
+  three weeks.

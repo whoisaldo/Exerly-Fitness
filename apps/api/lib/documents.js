@@ -50,6 +50,22 @@ const KINDS = {
     p.targets.length === 7
       ? []
       : ['a plan needs a startDate, a goal and seven daily targets'],
+  custom_metric: (p) =>
+    typeof p.name === 'string' && ['number', 'scale', 'yesNo'].includes(p.kind)
+      ? []
+      : ['a metric needs a name and a kind: number, scale or yesNo'],
+  metric_entry: (p) =>
+    typeof p.metricID === 'string' && typeof p.date === 'string' && typeof p.value === 'number'
+      ? []
+      : ['a metric value needs a metricID, a date and a number'],
+  experiment: (p) =>
+    typeof p.name === 'string' &&
+    typeof p.metric === 'string' &&
+    ['baselineStart', 'baselineEnd', 'interventionStart', 'interventionEnd'].every(
+      (key) => typeof p[key] === 'string'
+    )
+      ? []
+      : ['an experiment needs a name, a metric and the dates of both phases'],
   proposal: proposalProblems,
   audit_event: auditEventProblems,
 };
@@ -114,6 +130,8 @@ function canonicalPayload(kind, payload) {
     document = mapKey(document, 'program', (ref) => mapKey(ref, 'programID', canonicalID));
   } else if (kind === 'food_entry') {
     document = mapKey(document, 'food', (ref) => mapKey(ref, 'foodID', canonicalID));
+  } else if (kind === 'metric_entry') {
+    document = mapKey(document, 'metricID', canonicalID);
   }
   return document;
 }

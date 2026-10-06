@@ -1,6 +1,6 @@
 # M7: custom metrics, tags, correlations and n=1 experiments
 
-Owner: logic agent. Status: statistics built and measured; data model next, 2026-10-06. PARITY B08 and B09.
+Owner: logic agent. Status: built and measured, 2026-10-06. PARITY B08 and B09.
 
 Optimizers want to know why their numbers move. Exerly answers with their own
 data, and says honestly how little one person's data can show.

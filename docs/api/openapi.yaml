@@ -489,6 +489,9 @@ components:
           - nutrition_day
           - weight_entry
           - nutrition_plan
+          - custom_metric
+          - metric_entry
+          - experiment
           - proposal
           - audit_event
       description: |

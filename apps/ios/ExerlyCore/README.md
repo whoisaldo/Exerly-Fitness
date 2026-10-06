@@ -543,3 +543,32 @@ dieters reach their goal.
 
   The proposal's ID comes from the plan and the date, so two devices propose
   one check-in.
+
+## Analytics: custom metrics, tags, correlations and experiments
+
+`docs/design/014-analytics.md` has the statistics and their measured error
+rates.
+
+- `MetricsStore(persistence:)` is a `DocumentHost` for `custom_metric`,
+  `metric_entry` and `experiment`. Put it in `SyncEngine(hosts:)`.
+  - `saveMetric` takes a `CustomMetric`: a number, a 1–5 scale or yes/no, with
+    an optional range.
+  - `setValue(_:for:on:)` sets one value per metric per day, or clears it
+    with nil. The entry's ID comes from the metric and the date.
+  - `values(of:)` returns a metric's values; `saveExperiment` and
+    `deleteExperiment` manage experiments.
+- Tags: `NutritionStore.setTags(_:on:)` sets a day's labels, and `tags` lists
+  them, most used first. They merge as a set across devices.
+- `SeriesID` names a daily series: a nutrient, trend or scale weight, an
+  exercise's e1RM, a custom metric or a tag. It is stored as text, such as
+  `nutrient:protein`.
+- `SeriesSources(training:nutrition:metrics:)`:
+  - `values(_:from:through:)` returns one value per day; missing days stay
+    missing.
+  - `correlations(_:_:from:through:)` gives Spearman's ρ at lags of 0 to 3
+    days, with an interval, an adjusted p-value and a verdict. It needs at
+    least 14 paired days.
+  - `analyze(_:)` compares an experiment's phases and lists caveats, including
+    tags that differ between the phases.
+- `Analytics` holds the statistics themselves, adjusted for autocorrelated
+  days.

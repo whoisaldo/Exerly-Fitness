@@ -648,3 +648,45 @@ test('legacy food logs and saved foods stay in their own feeds', async () => {
     ['Logged oats']
   );
 });
+
+test('custom metrics, their values and experiments sync, with metric references canonical', async () => {
+  const { token } = await signUp(api);
+  const metric = randomUUID();
+  const write = (kind, id, payload) =>
+    api.put(
+      `/v1/documents/${kind}/${id}`,
+      { payload, base_revision: 0 },
+      { token, headers: key() }
+    );
+  const saved = await write('custom_metric', metric, {
+    id: metric,
+    name: 'Sleep quality',
+    kind: 'scale',
+    createdAt: '2026-10-06T08:00:00.000Z',
+  });
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const entry = randomUUID().toUpperCase();
+  const value = await write('metric_entry', entry, {
+    id: entry,
+    metricID: metric,
+    date: '2026-10-06',
+    value: 4,
+  });
+  assert.equal(value.status, 201, JSON.stringify(value.body));
+  const read = await api.get(`/v1/documents/metric_entry/${entry}`, { token });
+  assert.equal(read.body.payload.metricID, metric.toUpperCase());
+  const experiment = randomUUID().toUpperCase();
+  const planned = await write('experiment', experiment, {
+    id: experiment,
+    name: 'Creatine and sleep',
+    change: '5 g creatine',
+    metric: `metric:${metric.toUpperCase()}`,
+    baselineStart: '2026-10-01',
+    baselineEnd: '2026-10-14',
+    interventionStart: '2026-10-15',
+    interventionEnd: '2026-10-28',
+    createdAt: '2026-10-01T08:00:00.000Z',
+  });
+  assert.equal(planned.status, 201, JSON.stringify(planned.body));
+  assert.equal((await write('custom_metric', randomUUID(), { name: 'No kind' })).status, 400);
+});

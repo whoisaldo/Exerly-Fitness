@@ -146,6 +146,23 @@ public final class NutritionStore {
         try commit(Self.dayKind, day.id, day)
     }
 
+    /// Replaces a day's tags. They're trimmed, lowercased, sorted and made unique.
+    public func setTags(_ tags: [String], on date: LocalDate) throws {
+        let cleaned = Array(Set(tags.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty })).sorted()
+        guard cleaned.allSatisfy({ $0.count <= 40 && !$0.contains(":") }) else {
+            throw StoreError.invalid(["tags are up to 40 characters, without colons"])
+        }
+        var day = self.day(date)
+        day.tags = cleaned
+        try commit(Self.dayKind, day.id, day)
+    }
+
+    /// Every tag used, most days first.
+    public var tags: [String] {
+        let counts = days.values.flatMap(\.tags).reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key)
+    }
+
     public func setNotes(_ notes: String, on date: LocalDate) throws {
         var day = day(date)
         day.notes = notes
@@ -301,6 +318,10 @@ extension NutritionStore: DocumentHost {
             let other = try decoder.decode(NutritionDay.self, from: remote)
             merged.status = Merge.value(original?.status, merged.status, other.status)
             merged.notes = Merge.value(original?.notes, merged.notes, other.notes)
+            // Tags merge as a set: each side's additions and removals against the base.
+            let base = Set(original?.tags ?? []), mine = Set(merged.tags), theirs = Set(other.tags)
+            merged.tags = Array(base.subtracting(base.subtracting(mine)).subtracting(base.subtracting(theirs))
+                .union(mine.subtracting(base)).union(theirs.subtracting(base))).sorted()
             return try ExerlyJSON.canonical(merged)
         default:
             throw DocumentError(message: "Unknown kind \(kind)")

@@ -153,20 +153,24 @@ public struct NutritionDay: Sendable, Codable, Hashable, Identifiable {
     public var date: LocalDate
     public var status: DayStatus
     public var notes: String
+    /// Labels for analysis ("travel", "creatine"), lowercased, sorted and unique.
+    public var tags: [String]
 
-    public init(date: LocalDate, status: DayStatus = .unlogged, notes: String = "") {
+    public init(date: LocalDate, status: DayStatus = .unlogged, notes: String = "", tags: [String] = []) {
         self.date = date
         self.status = status
         self.notes = notes
+        self.tags = tags
     }
 
-    enum CodingKeys: String, CodingKey { case id, date, status, notes }
+    enum CodingKeys: String, CodingKey { case id, date, status, notes, tags }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         date = try c.decode(LocalDate.self, forKey: .date)
         status = try c.decode(DayStatus.self, forKey: .status)
         notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -175,6 +179,7 @@ public struct NutritionDay: Sendable, Codable, Hashable, Identifiable {
         try c.encode(date, forKey: .date)
         try c.encode(status, forKey: .status)
         try c.encode(notes, forKey: .notes)
+        if !tags.isEmpty { try c.encode(tags, forKey: .tags) }
     }
 }
 
