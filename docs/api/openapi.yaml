@@ -492,6 +492,7 @@ components:
           - custom_metric
           - metric_entry
           - experiment
+          - gym_profile
           - proposal
           - audit_event
       description: |

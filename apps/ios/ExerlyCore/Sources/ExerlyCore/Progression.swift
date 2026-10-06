@@ -7,11 +7,15 @@ public struct LoadIncrements: Sendable, Codable, Hashable {
     public var pounds: Double
     /// The lightest loadable weight, such as an empty barbell. Nil means zero.
     public var minimum: Mass?
+    /// The weights the equipment really comes in, such as a gym's dumbbells.
+    /// When set, recommendations choose among these instead of stepping.
+    public var available: [Mass]?
 
-    public init(kilograms: Double, pounds: Double, minimum: Mass? = nil) {
+    public init(kilograms: Double, pounds: Double, minimum: Mass? = nil, available: [Mass]? = nil) {
         self.kilograms = kilograms
         self.pounds = pounds
         self.minimum = minimum
+        self.available = available
     }
 
     public func step(in unit: MassUnit) -> Double { unit == .kilograms ? kilograms : pounds }
@@ -145,11 +149,22 @@ public enum Progression {
         let minimum = increments.minimum?.value(in: unit) ?? 0
         // Added load for bodyweight lifts is optional: nothing added is a valid choice.
         let floorValue = exercise.metric == .bodyweightReps ? 0 : minimum
-        let base = max(floorValue, (ideal / unit.kilogramsPerUnit / step).rounded(.down) * step)
+        var base = max(floorValue, (ideal / unit.kilogramsPerUnit / step).rounded(.down) * step)
         func reps(_ value: Double) -> Double {
             OneRepMax.repsToFailure(load: value * unit.kilogramsPerUnit + share, oneRepMax: estimate) - target.rir
         }
-        let candidates = (-3...3).map { base + Double($0) * step }.filter { $0 >= floorValue }
+        var candidates = (-3...3).map { base + Double($0) * step }.filter { $0 >= floorValue }
+        // The gym's own weights instead: up to three either side of the ideal.
+        if let available = increments.available, !available.isEmpty {
+            var listed = available.map { $0.value(in: unit) }
+            if exercise.metric == .bodyweightReps { listed.append(0) }
+            listed = Set(listed.filter { $0 >= floorValue }).sorted()
+            if !listed.isEmpty {
+                let below = listed.lastIndex { $0 <= ideal / unit.kilogramsPerUnit + 1e-9 } ?? 0
+                base = listed[below]
+                candidates = Array(listed[max(0, below - 3)...min(listed.count - 1, below + 3)])
+            }
+        }
         func choose(lower: Int, upper: Int) -> (Double, Int)? {
             candidates.compactMap { value -> (Double, Int, Double)? in
                 let exact = reps(value)

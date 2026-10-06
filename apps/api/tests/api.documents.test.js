@@ -627,6 +627,33 @@ test("a session's program and an entry's food are stored in canonical form", asy
   assert.equal((await read('food_entry', entry)).food.foodID, food.toUpperCase());
 });
 
+test('gym profiles sync as documents', async () => {
+  const { token } = await signUp(api);
+  const id = randomUUID().toUpperCase();
+  const gym = {
+    id,
+    name: 'Synthetic gym',
+    equipment: ['dumbbell', 'flatBench'],
+    bars: [{ value: 20, unit: 'kg' }],
+    plates: [],
+    loads: { dumbbell: [{ value: 22.5, unit: 'kg' }] },
+    excluded: [],
+    createdAt: '2026-10-06T12:00:00.000Z',
+  };
+  const saved = await api.put(
+    `/v1/documents/gym_profile/${id}`,
+    { payload: gym, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const flat = await api.put(
+    `/v1/documents/gym_profile/${randomUUID()}`,
+    { payload: { ...gym, loads: [] }, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(flat.status, 400);
+});
+
 test('legacy food logs and saved foods stay in their own feeds', async () => {
   const { token } = await signUp(api);
   await api.post('/api/food', { name: 'Logged oats', calories: 300 }, { token });

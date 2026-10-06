@@ -461,6 +461,25 @@ accuracy.
   loadable weights and never repeats a load. Barbell schemes start with an
   empty-bar set (PARITY T17).
 
+### Gyms
+
+See `docs/design/016-gym-profiles.md` (PARITY T05, T06).
+
+- `GymProfile` is a synced `gym_profile` document. It holds a name, the
+  equipment the gym has, its bars (the usual one first), its `PlateStock`,
+  `loads` (the weights equipment such as dumbbells or a stack comes in), and
+  excluded exercises.
+  - `allows(_ exercise:)` is true when the exercise isn't excluded and the
+    gym has all its resistance and support equipment. Use it in pickers and
+    swaps.
+  - `increments(for:)` gives the steps for an exercise there. Listed loads
+    become `LoadIncrements.available`, which progression chooses among.
+- `GymStore` hosts them: `gyms`, `save`, `activate`, `archive`, and `active`,
+  the most recently chosen gym that isn't archived. `increments(for:)` uses
+  the active gym. Pass it to `ProgramStore.nextWorkout(bodyweight:increments:)`,
+  and the active gym's bar and plates to `WarmUpScheme.sets` and
+  `Plates.load`.
+
 ## Nutrition
 
 `docs/design/007-nutrition.md` has the design and the measured accuracy of the

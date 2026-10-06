@@ -45,7 +45,7 @@ public enum JointAction: String, Sendable, Codable, Hashable, CaseIterable {
     case neckFlexion, neckExtension
 }
 
-public enum Equipment: String, Sendable, Codable, Hashable, CaseIterable {
+public enum Equipment: String, Sendable, Codable, Hashable, CaseIterable, CodingKeyRepresentable {
     // Resistance
     case barbell, ezBar, trapBar, dumbbell, kettlebell, cable, machine, smithMachine
     case resistanceBand, bodyweight, weightPlate, medicineBall, landmine, sled

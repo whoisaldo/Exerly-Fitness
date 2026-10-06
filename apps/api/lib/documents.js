@@ -66,6 +66,15 @@ const KINDS = {
     )
       ? []
       : ['an experiment needs a name, a metric and the dates of both phases'],
+  gym_profile: (p) =>
+    typeof p.name === 'string' &&
+    Array.isArray(p.equipment) &&
+    Array.isArray(p.plates) &&
+    p.loads &&
+    typeof p.loads === 'object' &&
+    !Array.isArray(p.loads)
+      ? []
+      : ['a gym needs a name, equipment, plates and loads by equipment'],
   proposal: proposalProblems,
   audit_event: auditEventProblems,
 };
