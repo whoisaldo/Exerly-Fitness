@@ -95,8 +95,8 @@ struct RootView: View {
             }
             if authVM.isOffline && authVM.currentUser != nil {
                 HStack {
-                    Image(systemName: "wifi.slash")
-                    Text("Offline. Showing saved account data.").font(.caption)
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text("Showing saved account details.").font(.caption)
                     Button("Retry") { Task { await authVM.checkAuth() } }
                 }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
             }

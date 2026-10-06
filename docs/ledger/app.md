@@ -61,11 +61,32 @@ Verified on e961d96e over 7a97ae34:
   release checks pass. First draft push failed because SwiftLint selected the
   wrong Xcode; repeat push now sets DEVELOPER_DIR. Check draft-push-xcode.log.
 
-Current tool sessions: push 81144; small-light-final 73137; large-dark-final 3341.
+At 14:40 all four final largest-text variants pass (two journeys each) and all
+36 images were inspected. All earlier recovery matrix images plus the 11 normal
+recovery-real images were inspected too. Normal reconnection showed the cached
+account-details banner still said Offline after training sync succeeded; changed
+that copy and icon to describe saved details, preserving the Retry action.
+
+Full A3 regression on bc5fa8b8 is running, session85774,
+artifacts/account/full-a3-current.xcresult. It predates the banner-copy correction
+and UUID fix; rerun final validation after the logic fix/rebase. Draft push with
+Xcode26.2 succeeded. No A3 archive/upload yet.
+
+A4 prep is now in app-next (rebased to1aad43b8), uncommitted. Design008 and tests
+were written first. Native proposal/evidence/diff/decision/audit screens and
+Connected agents/token creation/revocation are connected in that worktree only.
+Eight hosted presentation, real-store decision and token lifecycle tests pass in
+app-next/artifacts/agents/presentation-connected.xcresult. The first compile
+found legacy ExerciseLibrary/JSONValue shadowing; qualified new references with
+ExerlyCore. Need actual server UI journeys, final review, matrix and A4 release.
+
+Two newer app-owned to-logic inbox entries were absent from the logic worktree;
+appended only those entries there so the other agent can read them during its
+milestone. No logic-owned source edited. Logic is now working on UUID identity.
 Fresh fixture nodes on ports 39203/39204/39205 use the current middleware,
 including /v1 offline interception and dropped deletion acknowledgements.
 39206 is an isolated UUID reproducer fixture. Only stop verified app-owned PIDs.
-No full native test is running now. The usual full suite takes about 25 minutes.
+The full regression currently uses the original Large simulator. The usual full suite takes about 25 minutes.
 
 ## User corrections that persist
 
