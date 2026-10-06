@@ -5,17 +5,19 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 13:11 EDT. A2 training logger is on internal TestFlight, with Ali's
+2026-10-06 13:34 EDT. A2 training logger is on internal TestFlight, with Ali's
 requested purple theme/logo restored and its sign-in backend fixed. A1/A2 are
 committed locally on agent/app but have not landed on integration yet.
 
-1. Correction committed and rebased onto integration 3cba5eae, app8a511eae.
-   API192/Core147/device build pass. Full native retry is running, session64210,
-   artifacts/app-brand/integration-native-retry.xcresult, original Large simulator.
-   First attempt hit SpringBoard Busy before app launch, aborted; restarting that
-   simulator fixed it. Fast-forward integration and push after green full run.
-2. Export normal-size screenshots from the new full training UI run. Captures
-   now include Home and empty Training. Inspect them and update evidence.
+1. A2 final checks on 3cba5eae pass: API192/Core147/device, 77 hosted tests
+   and 14 UI journeys, 7 opt-in skips. Native retry result under app-brand.
+   First attempt hit SpringBoard Busy; restarting only that simulator fixed it.
+   Commit the final docs, fast-forward integration to agent/app and push both.
+   App code has not changed since the checked f38e4b87.
+2. Normal-size training screenshots exported and inspected in
+   artifacts/app-brand/integration-native-retry. Training empty/completed/prefill
+   are clear. The Home capture caught the system password sheet mid-animation;
+   do not use that image as a clean Home preview. Recapture during A3 testing.
 3. Continue A3 accounts/sync. Read latest Core README and inbox. Logic owns the
    session bridge requested in to-logic.md. Build native Apple authorization,
    export/deletion UI, sync status and proposal review against its contracts.
@@ -117,3 +119,24 @@ Artifacts, signing files and private desktop captures are ignored, never commit.
 Proposal review reproduced remote acceptance of invalid completed reps and lost
 first custom exercise after a two-exercise proposal. Details and reproduction
 paths sent in to-logic.md. A3 still needs the shared auth bridge.
+
+## A3 work prepared during the regression
+
+Separate owned worktree: /Users/aldo/Desktop/Exerly-Fitness-app-next,
+branch agent/app-next, branched at f38e4b87. Do not lose its uncommitted work.
+AppleAuthorizationButton, AccountManagementView, native action injection and
+DEBUG-only account UI fixture are built. Three hosted account presentation tests
+pass; two normal dark SE UI journeys pass and screenshots were inspected.
+Largest-text runs found missing Cancel in the iOS26 confirmation popover and
+needed scrolling in the test helpers. Replaced confirmations with explicit native
+alerts/cancel. Retests small-light-fixed and large-dark-fixed both passed. Export and inspect
+them, then run the remaining two variants.
+
+A3 provisioner adds APPLE_ID_AUTH with APPLE_ID_AUTH_APP_CONSENT /
+PRIMARY_APP_CONSENT, checks profile entitlements and reuses profiles that match.
+New Exerly profile J5J395Y9AF, existing certificate unchanged. Repeat provision
+succeeded. Signed archive/IPA2610061727 validates, not uploaded; source later has
+alert/UI-test changes. Its release checker requires SIWA in profile/signature and
+rejects the DEBUG account-fixture marker. Real account views are unconnected,
+waiting on logic's session bridge. Do not claim that synthetic UI tests verify
+Apple login, server export or deletion. Current TestFlight remains2610061654.

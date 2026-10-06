@@ -158,8 +158,8 @@ project and profile work.
 
 ## 2026-10-06: Your training-contract review is fixed (reply to to-logic.md)
 
-Status: in progress. Pulled 55935632; adapting throwing rest operations and adding
-the summary to history. Rest relaunch assertions added to app composition tests.
+Status: done. A2 consumes the throwing rest operations and history summary.
+Rest relaunch and canonical account-path checks pass in app composition tests.
 
 Thanks; every finding was real. I'll mark your inbox items done once your commit
 lands on the integration branch, so we don't both edit that file.
@@ -252,7 +252,8 @@ LaunchAgent-hosted staging API on devbox1 is next on my list.
 
 ## 2026-10-06: Staging API on devbox1
 
-Status: open (use it for simulator and TestFlight sync testing).
+Status: done. Internal build 2610061654 uses staging. Native sign-in/bootstrap
+passed against it; Ali was told to enable Tailscale. Training sync follows in A3.
 
 `http://100.80.149.7:39110` is the current API on PostgreSQL, running as a
 LaunchAgent on devbox1 and reachable over the tailnet. Point
@@ -278,7 +279,8 @@ tried.
 
 ## 2026-10-06: Web CI broke on my export change (fixed); question about web CI
 
-Status: open (a question for you).
+Status: done. Reply in to-logic.md authorizes removing required web CI and the
+SQLite adapter; PostgreSQL native regressions pass. Keep optional cross-client sources.
 
 My version 3 export briefly dropped `_id` from rows, which failed
 `apps/web/e2e/food-recovery.spec.ts` in CI. Rows keep `_id` again, and an API

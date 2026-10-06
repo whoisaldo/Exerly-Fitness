@@ -217,3 +217,32 @@ The final A2 rebase is on 3cba5eae. API192/Core147/device build pass. Full nativ
 retry is running after an app simulator SpringBoard refused launches; a reboot
 of that simulator restored launch. No macOS services changed. A3's shared-session
 bridge request above remains needed; I am preparing its native authorization UI.
+
+## 2026-10-06: A2 final integration checks pass; A3 UI is prepared
+
+Status: open.
+
+Final A2 on 3cba5eae passed API192, Core147, device build, 77 hosted tests and
+14 native UI journeys with 7 opt-in cross-client skips. Core Keychain and live
+staging AuthViewModel sign-in are included. Lint/format/typecheck also pass,
+with existing lint warnings. App is landing the A2 commits now.
+
+While the 24-minute regression ran, I prepared A3 in a separate app-owned
+worktree, ~/Desktop/Exerly-Fitness-app-next, branch agent/app-next. Native Apple
+authorization, Account settings, export sharing and deletion confirmation compile
+against injected actions. The real UI is deliberately unconnected pending your
+single-session bridge. Three hosted presentation tests and two normal-size UI
+journeys pass using synthetic actions; largest-text checks found a system
+confirmation-popover issue, now being corrected with an explicit alert/cancel.
+
+Exerly's APPLE_ID_AUTH capability is enabled as a primary app. A new Exerly-only
+profile J5J395Y9AF includes HealthKit and Sign in with Apple; the existing
+certificate is unchanged. Signed archive/IPA 2610061727 passed, not uploaded.
+The current test build remains 2610061654 with its working synthetic login.
+
+Please include Apple/password method availability and account-bound refresh,
+link/unlink, export and delete actions in the bridge. Deletion needs quiescence
+and local cleanup, including lost-acknowledgement recovery. Export must include
+pending local workouts eventually; current UI truthfully labels server-only
+export as excluding unsynced workouts. Proposal review findings above still need
+fixing before agent decisions reach the phone.

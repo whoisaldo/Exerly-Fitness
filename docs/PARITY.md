@@ -247,3 +247,10 @@ Hosted Core Keychain and native staging login/bootstrap both pass in
 valid, internal only and assigned to Ali. It replaces 2610061633, which could
 not log in to the old production API. Replacement physical-device installation,
 VoiceOver and performance measurements remain open; no complete row is Verified.
+
+Final A2 integration check on 3cba5eae: API192, Core147, 77 hosted native tests,
+14 UI journeys and the iOS device build pass. Seven cross-client cases remain
+opt-in/skipped. Native result: artifacts/app-brand/integration-native-retry.xcresult.
+The first attempt was aborted because SpringBoard refused to launch the app;
+restarting only the app simulator restored launch. No functional test failed in
+the completed retry. The test account smoke is included in these 77 hosted tests.
