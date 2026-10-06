@@ -5,30 +5,46 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Current milestone
 
-**L1: ExerlyCore training domain.** Done on 2026-10-06 and landed on
-`feat/mobile-production-foundations` at `55903a9d`.
+**L1: ExerlyCore training domain.** Done on 2026-10-06 and landed (`55903a9d`).
 
 - `apps/ios/ExerlyCore` holds units, a 119-exercise library, sessions, e1RM, volume,
   statistics, records, rest, session editing and `TrainingStore`.
 - The interface is published in `docs/handoff/to-app.md` and documented in
   `apps/ios/ExerlyCore/README.md`.
 
-**Next: L1b, on-device SQLite persistence for training (`SQLiteTrainingPersistence`).**
-It must have no interface change for the app. Then M1: Postgres, migrations,
-Sign in with Apple, sessions and sync.
+**L1b: on-device SQLite persistence.** Done on 2026-10-06 and landed (`4d10d8dc`).
+
+**M1a: PostgreSQL foundation.** Done on 2026-10-06 and landing now.
+
+- A Postgres driver behind `apps/api/data`, numbered SQL migrations (checksums,
+  advisory lock, rollback) and a throwaway test cluster per run.
+- New isolation, concurrency, migration and backup/restore tests.
+- A non-root Dockerfile, docker-compose, CI on a Postgres service, a Postgres
+  smoke test, and a DigitalOcean spec on the Dockerfile.
+- MongoDB is removed. SQLite is kept only for the app agent's simulator fixture.
+
+**Next: M1b, accounts.** Sign in with Apple, then account deletion and full
+export. Then M1c: document sync for ExerlyCore.
 
 ## Next three steps
 
-1. L1b: SQLite `TrainingPersistence` in ExerlyCore using the system SQLite3 (no
-   dependency). Store sessions as JSON documents keyed by UUID, in WAL mode with
-   atomic writes, and test crash-safety and reloads. Leave room for the sync outbox
-   table.
-2. M1: PostgreSQL in `apps/api`, following `docs/design/001-postgres-foundation.md`
-   (plain SQL migrations, advisory lock, a test cluster per run, docker-compose,
-   CI service). Replace Mongo and SQLite drivers behind `apps/api/data`.
-3. M1, continued: Sign in with Apple verification, account deletion, export, and the
-   training sync contract (session documents with a 3-way merge by set ID), published
-   in `docs/api/` and `to-app.md`.
+1. M1b, Sign in with Apple:
+   - verify Apple identity tokens server-side (JWKS from appleid.apple.com,
+     `aud` = `com.exerly.fitness`, nonce);
+   - link to or create the account;
+   - write migration 0002 for `account_identities`;
+   - add tests with locally signed fake tokens, and no Apple network calls.
+2. M1b, account lifecycle:
+   - `DELETE /api/account`, which removes every row for the account in one
+     transaction (App Store rule), with a test that checks every table;
+   - `GET /api/export`, a full JSON export.
+3. M1c, sync for ExerlyCore documents:
+   - table `documents (account_id, kind, id, revision, payload jsonb, deleted_at)`
+     plus the existing change feed;
+   - a push and pull API with idempotency and base revisions;
+   - the Swift `SyncEngine` and `APIClient` in ExerlyCore, with a 3-way merge of
+     sessions by set ID;
+   - the contract in `docs/api/openapi.yaml` and `to-app.md`.
 
 ## Evidence
 
@@ -57,6 +73,16 @@ Sign in with Apple, sessions and sync.
 Nothing is on TestFlight from the logic side. The app does not link ExerlyCore yet;
 the app agent adds it to the project.
 
+- M1a, 2026-10-06:
+  - `npm test -w apps/api` passed 166 of 166 on a throwaway PostgreSQL 16.13
+    cluster.
+  - `bash scripts/smoke-api.sh` passed on PostgreSQL.
+  - docker-compose on devbox1 (colima): the API was healthy on port 39100,
+    signup, food write and read worked, the container runs as `node`, and the logs
+    hold no password or URL. A restart re-ran migrations as a no-op.
+  - Backup: a `pg_dump` of a synthetic schema restored into a new database with
+    identical rows (`tests/db.backup.test.js`).
+
 ## Risks and external dependencies
 
 - Xcode 26.2 has no watchOS 26.2 platform installed, so watch builds need that
@@ -70,6 +96,12 @@ the app agent adds it to the project.
   to main needs care at the end of a milestone. Every push to main redeploys the
   API, and production still runs Mongo, so don't merge a Postgres-only API to main
   before Ali sets `DATABASE_URL`.
+- Production runs MongoDB on `main` today. The integration branch has no Mongo
+  driver, so merging it to `main` breaks the live API until Ali sets
+  `DATABASE_URL` (Neon) in DigitalOcean. Merge to main only after that, then check
+  `/api/health`.
+- Colima's default VM was started for container checks. Stop it with
+  `colima stop default` when you're done.
 - Mapping MacroFactor's 22 muscle columns to Exerly's 21 regions needs a synthetic
   export with the real column names (import milestone).
 

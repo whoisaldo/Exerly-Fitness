@@ -52,3 +52,48 @@ Details and measured error are in `docs/design/002-exerlycore-training.md`.
 `docs/AGENT_BRIEF.md` is excluded from Prettier. The brief is Ali's, and the
 pre-push format check failed on its list spacing. Agents may not reformat it, so
 it is ignored rather than edited.
+
+## 2026-10-06: PostgreSQL behind the existing storage adapter
+
+M1a keeps the route layer and the `apps/api/data` interface, and adds a PostgreSQL
+driver. That kept every existing test as a regression check: all 153 pass
+unchanged except the one that named the driver.
+
+**Schema.**
+
+- `db/migrations/0001_initial` creates one table per registry collection, with
+  typed columns.
+- Legacy camelCase columns are quoted, so their case survives.
+- Every row has a UUID `id` and a `seq` identity. Callers that sort by id get
+  insertion order, as they did with SQLite row IDs.
+
+**Transactions.**
+
+- They run `SERIALIZABLE`.
+- Serialization failures, deadlocks and unique-index races retry from the
+  start, up to five attempts.
+- Every authenticated mutation already runs inside `executeMutation`, and no
+  mutation handler calls an external service, so retries never repeat a side
+  effect. AI routes are excluded and use their own reservation flow.
+
+**Health.** `/api/health` reports pool state without querying the database, so
+platform health checks don't keep a scale-to-zero database awake.
+
+**Retired drivers.**
+
+- MongoDB and its driver are removed.
+- The SQLite driver stays only for the app agent's isolated simulator fixture
+  (`scripts/ios-fixture-api.cjs`). `sqlite3` moved to devDependencies. It goes
+  once that fixture runs on PostgreSQL.
+
+**Deployment.**
+
+- The API ships as a non-root `node:22-bookworm-slim` image that migrates before
+  it listens.
+- `docker-compose.yml` runs PostgreSQL 16 and the API for self-hosting.
+- `.do/app.yaml` now builds that Dockerfile and expects `DATABASE_URL`.
+- Production must not be redeployed from `main` until Ali sets `DATABASE_URL`.
+
+**Devbox tooling.** Colima's existing default profile is used for Docker. The
+`docker-compose` CLI plugin was installed with Homebrew. Colima is stopped again
+after container checks.

@@ -76,3 +76,17 @@ Measured on devbox1's Mac, not yet on a phone:
 - 1,000 sessions (25,000 sets) load in 0.20 s and index in under 0.03 s.
 - Create the store at launch. Tell me if it shows up in cold-launch time on a
   device, and I'll make history load lazily.
+
+## 2026-10-06: The API runs on PostgreSQL; your fixture still uses SQLite
+
+Status: open (no action needed yet).
+
+- `apps/api` now uses PostgreSQL. MongoDB is gone.
+- `scripts/ios-fixture-api.cjs` (yours) still works unchanged on the SQLite
+  driver, which I keep only for it. `sqlite3` is now a devDependency of
+  `apps/api`, and `npm ci` at the root installs it.
+- New backend features will be PostgreSQL-only. When you next touch the fixture,
+  please move it to PostgreSQL. `apps/api/tests/helpers/cluster.js` exports
+  `start()`, which returns `{ url, stop() }` for a throwaway cluster on a Unix
+  socket with no TCP port. Pass `url` to `store.connect({ connectionString: url })`
+  and call `stop()` on exit. After that I'll delete the SQLite driver.
