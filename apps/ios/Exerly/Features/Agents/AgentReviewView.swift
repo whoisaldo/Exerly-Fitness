@@ -236,7 +236,7 @@ struct ProposalEvidenceView: View {
                     Link("Source: \(url.host ?? source)", destination: url)
                 } else { Text("Source: \(source)").font(.footnote).textSelection(.enabled) }
             }
-        }.padding(.vertical, 6)
+        }.fixedSize(horizontal: false, vertical: true).padding(.vertical, 6)
     }
 
     private func metricView(_ metric: MetricReference) -> some View {
@@ -254,7 +254,7 @@ struct ProposalEvidenceView: View {
             case .unavailable:
                 Label("Cannot verify from saved data", systemImage: "questionmark.circle").foregroundStyle(.secondary)
             }
-        }.accessibilityElement(children: .combine)
+        }.fixedSize(horizontal: false, vertical: true).accessibilityElement(children: .combine)
     }
 }
 

@@ -2,43 +2,49 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-06, updated 15:54 EDT.
+milestone. Current date 2026-10-06, updated 17:42 EDT.
 
 ## Current work and next steps
 
-2026-10-06 17:25 EDT. Done is not met. A4 is live as internal 2610062038, VALID and
-IN_BETA_TESTING, Ali-only group, only assigned build, notes verified. A4 landed
-and pushed as afcbf030. Logic then landed its batch through 707c815b; A5 is
-rebased onto it. This includes M5c, corrected falling/flat summaries, program
-lifecycle previews and the recent entry-check batch API.
+2026-10-06 17:42 EDT. Done is not met. Continue without ending at a milestone.
+A4 is live as internal 2610062038, VALID and IN_BETA_TESTING, Ali-only group,
+only assigned build, notes verified. A4 landed and pushed as afcbf030. Logic
+then landed through 707c815b. Primary agent/app A5 is rebased onto it and
+2db38d83 is pushed. Integration is held at 707c815b for A5 final gates.
 
-Primary agent/app contains A5. Filing-loop regression failed on three assertions
-before the fix; all ten insights passed afterward in filing-loop-green. New
-old-workout regression failed before using Core's recent batch API. Now uses
-EntryErrorDetector.proposals and explicit retry. One invalid proposal no longer
-blocks later ones or repeats automatically. Core summary is visible again.
+A5 adds recent entry checks, observations, exercise source logs, account-scoped
+Off control and reviewable corrections. Logic review fixes adopted: per-proposal
+filing errors do not block later checks or repeat, explicit retry, Core's 14-day
+batch detector, corrected falling/flat summaries. Eleven insight hosted tests
+pass, including two regressions that failed before their fixes. Core233/API226
+and device pass on 2db38d83; Core/API unchanged by the following layout fix.
 
-Final focused runs are active: small-light-canonical/session9381, 11 insights
-and UI3, fixture39206; large-light-canonical/session19439, UI3, fixture39207.
-Need final dark UI3 on both sizes after Core wording change, then inspect all
-final captures. Existing normal UI1/2/3 and all20 images passed/inspected.
-Largest UI1/2 pass across small-light-scroll/off-final, small-dark, large-light,
-large-dark-scroll/final. UI1 captures inspected on both dark sizes and SElight;
-SElight off-final4 inspected; smalldark8 entry captures inspected. Large light
-entry captures still need inspection. Ignore superseded observation images.
+Visual audit found ellipsized metric labels on large iOS26 light after deleting
+source workouts. Evidence and metric stacks now keep their full vertical size.
+small-light-metrics and large-light-metrics UI3 pass; all16 captures inspected,
+including full unavailable-metric labels. small-dark-metrics/session84537 and
+large-dark-metrics/session18106 are running; inspect their eight images each.
+All36 entry-check/sparse largest-type captures and20 normal captures inspected.
+Prior full-a5-canonical was intentionally interrupted and is NOT final evidence.
+Signed archive/IPA 2610062128 is obsolete. NEVER upload it.
 
-Starting final full native suite on OriginalLarge7189, fresh fixture39208,
-artifacts/insights/full-a5-canonical. Core/API/device checks run alongside it.
-Keep primary source frozen during the full suite. New A6 development is in
-Exerly-Fitness-app-programs only. Logic asked to hold integration707c815b.
+Commit the layout fix, then run full-a5-final native suite on OriginalLarge7189,
+fixture39208, plus device. Make a NEW archive after this fix, upload only when
+all gates pass, finalize Ali-only internal release with helper/notes in
+artifacts/insights, update PARITY/RELEASE, ff land and push integration.
+A4 2038 stays live until replacement is IN_BETA_TESTING.
 
-A6 branch agent/app-programs: f74a3d9b composition/draft,463579f9 exact adopted
-lifecycle preview. Six hosted tests passed; new editor compiles for device.
-Uncommitted editor and Programs list; list registration and next-workout preview
-remain, then real UI journeys, program proposal review, four AX variants and
-full release gates. Rebase A6 onto finished A5 before its final suite.
-
-Continue A5, A6 and all remaining parity. Never stop at a milestone.
+A6 is isolated at Exerly-Fitness-app-programs, branch agent/app-programs,
+f74a3d9b composition/draft +463579f9 exact adopted lifecycle Core preview.
+Six hosted tests pass. Uncommitted builder, Programs list/detail/lifecycle,
+planned-workout preview, Training entry points, project registration and real
+UI builder journey. Builder saved/reopened offline but next-workout sheet did
+not appear. Stopped failing builder-ready run; it is not passing UI evidence.
+Moved presentation from virtualized list section to stable TrainingView.
+builder-preview-fix/session53170 is running on ProgramsSE45D463AE, fixture39209.
+Next: fix any runtime failures, inspect program captures, readable program
+proposal diffs, lifecycle and proposal journeys, four AX variants, full gates.
+Rebase A6 onto finished A5 before final suite; do not land before A5.
 
 ## A3 final evidence and release
 
