@@ -487,6 +487,22 @@ const collections = {
     indexes: [{ keys: { nonce_hash: 1 }, unique: true }, { keys: { created_at: 1 } }],
   },
 
+  // ExerlyCore entities synced as documents. Migration 0003.
+  documents: {
+    collection: 'documents',
+    fields: {
+      account_id: t.str,
+      kind: t.str,
+      document_id: t.str,
+      revision: t.num,
+      payload: t.json,
+      deleted_at: t.date,
+      created_at: t.date,
+      updated_at: t.date,
+    },
+    indexes: [{ keys: { account_id: 1, kind: 1, document_id: 1 }, unique: true }],
+  },
+
   barcode_cache: {
     collection: 'barcodecaches',
     fields: {

@@ -38,6 +38,8 @@ async function seedEverything(user) {
         Object.assign(row, { provider: 'apple', subject: randomUUID(), account_id: user.id });
       }
       if (collection === 'sync_changes') row.sequence = Math.random();
+      // A live document has a payload and no tombstone.
+      if (collection === 'documents') row.deleted_at = null;
       try {
         await api.store.insert(collection, { ...row, ...filter });
       } catch (error) {

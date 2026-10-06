@@ -17,6 +17,7 @@ const OWNERSHIP = {
   operations: { keys: ['account_id'], export: false },
   sync_cursors: { keys: ['account_id'], export: false },
   sync_changes: { keys: ['account_id'], export: false },
+  documents: { keys: ['account_id'] },
   onboarding_drafts: { keys: ['account_id'] },
   diary_days: { keys: ['account_id', 'email'] },
   target_versions: { keys: ['account_id', 'email'] },

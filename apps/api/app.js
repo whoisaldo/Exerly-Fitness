@@ -40,7 +40,7 @@ function createApp({ logger = console } = {}) {
   app.use(express.json({ limit: '256kb' }));
 
   app.use(
-    '/api',
+    ['/api', '/v1'],
     rateLimit({
       name: 'global',
       max: 600,
@@ -86,6 +86,7 @@ function createApp({ logger = console } = {}) {
   app.use('/api/library', require('./routes/library'));
   app.use('/api/ai', require('./routes/ai'));
   app.use('/api/admin', require('./routes/admin'));
+  app.use('/v1', require('./routes/documents'));
 
   app.use(notFoundHandler);
   app.use(errorHandler(logger));
