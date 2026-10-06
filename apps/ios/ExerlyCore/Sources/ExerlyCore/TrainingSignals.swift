@@ -119,8 +119,12 @@ public enum TrainingSignals {
             evidence.append(Evidence(claim: "Your top sets averaged \(oneDecimal(rir)) reps in reserve.", level: .personalData,
                                      caveats: rir >= 3 ? ["Top sets this far from failure may not be hard enough to drive progress"] : []))
         }
-        return Diagnosis(kind: .stall, title: "\(exercise.name) has stalled",
-                         summary: "Your \(exercise.name) estimate hasn't moved for \(trend.from.days(until: trend.through) / 7) weeks.",
+        // A stall includes a decline; say which, so a falling lift isn't called unchanged.
+        let weeks = trend.from.days(until: trend.through) / 7
+        let falling = trend.slopePerWeek + trend.standardError < 0
+        return Diagnosis(kind: .stall, title: falling ? "\(exercise.name) has dropped" : "\(exercise.name) has stalled",
+                         summary: falling ? "Your \(exercise.name) estimate has gone down over the last \(weeks) weeks."
+                             : "Your \(exercise.name) estimate hasn't improved for \(weeks) weeks.",
                          exerciseIDs: [exerciseID], evidence: evidence)
     }
 

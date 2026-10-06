@@ -124,6 +124,16 @@ import Testing
         #expect(TrainingSignals.stall(of: "back-squat", in: short, through: LocalDate("2026-10-16")!) == nil)
     }
 
+    @Test func aFallingLiftIsToldAsADropNotAsUnchanged() throws {
+        let falling = log("barbell-bench-press", weeks: 12, oneRepMax: { 110 - Double($0) * 10 / 35 })
+        let drop = try #require(TrainingSignals.stall(of: "barbell-bench-press", in: falling, through: lastDay))
+        #expect(drop.title == "Barbell Bench Press has dropped")
+        #expect(drop.summary == "Your Barbell Bench Press estimate has gone down over the last 7 weeks.")
+        let flat = log("barbell-bench-press", weeks: 12, oneRepMax: { _ in 100 })
+        let stall = try #require(TrainingSignals.stall(of: "barbell-bench-press", in: flat, through: lastDay))
+        #expect(stall.summary == "Your Barbell Bench Press estimate hasn't improved for 7 weeks.")
+    }
+
     @Test func aStallWithoutRIRSaysSo() throws {
         let history = log("deadlift", weeks: 12, oneRepMax: { _ in 180 }, rir: nil)
         let diagnosis = try #require(TrainingSignals.stall(of: "deadlift", in: history, through: lastDay))
