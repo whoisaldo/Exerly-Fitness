@@ -18,7 +18,8 @@ import Testing
         let stock = [PlateStock(.kg(25), pairs: 1), PlateStock(.kg(20), pairs: 4), PlateStock(.kg(5), pairs: 2)]
         #expect(Plates.load(.kg(150), bar: bar, stock: stock).perSide == [.kg(25), .kg(20), .kg(20)])
         let light = Plates.load(.kg(15), bar: bar, stock: stock)
-        #expect(light.perSide.isEmpty && light.total == .kg(20))
+        #expect(light.isBelowBar && light.perSide.isEmpty && light.total == .kg(20))
+        #expect(!Plates.load(.kg(20), bar: bar, stock: stock).isBelowBar)
         // Kilogram plates on a pound bar are converted.
         let mixed = Plates.load(.lb(135), bar: .lb(45), stock: [PlateStock(.kg(20), pairs: 2)])
         #expect(mixed.perSide == [.kg(20)])
@@ -42,5 +43,25 @@ import Testing
         let heavy = WarmUpScheme.heavy.sets(for: .lb(405), exercise: squat, bar: .lb(45), stock: PlateStock.standardPounds)
         #expect(heavy.count == 6 && heavy.last!.primary.load!.value < 405)
         #expect(Set(heavy.compactMap(\.primary.load)).count == heavy.count, "No load repeats")
+    }
+
+    @Test func findsTheBestReachableLoadNotTheGreedyOne() throws {
+        // Greedy takes the one pair of 25s and stops at 70 kg; two 15s a side make 80.
+        let stock = [PlateStock(.kg(25), pairs: 1), PlateStock(.kg(15), pairs: 2)]
+        let eighty = Plates.load(.kg(80), bar: bar, stock: stock)
+        #expect(eighty.perSide == [.kg(15), .kg(15)] && eighty.total == .kg(80) && eighty.shortBy == .kg(0))
+        // Ties go to fewer plates, then heavier ones.
+        #expect(Plates.load(.kg(60), bar: bar, stock: PlateStock.standardKilograms).perSide == [.kg(20)])
+        let few = [PlateStock(.kg(25), pairs: 1), PlateStock(.kg(20), pairs: 2), PlateStock(.kg(5), pairs: 3)]
+        #expect(Plates.load(.kg(100), bar: bar, stock: few).perSide == [.kg(20), .kg(20)], "Not 25 and three 5s")
+        // Every standard load from the bar to 300 kg is exact.
+        for quarter in stride(from: 80, through: 1200, by: 10) {
+            let target = Mass.kg(Double(quarter) / 4)
+            #expect(Plates.load(target, bar: bar, stock: PlateStock.standardKilograms).shortBy == .kg(0), "\(target)")
+        }
+        // Warm-ups use it too: 80 % of 100 kg is 80 kg, not 70.
+        let squat = try #require(ExerciseLibrary.bundled.exercise("back-squat"))
+        #expect(WarmUpScheme.standard.sets(for: .kg(100), exercise: squat, bar: bar, stock: stock).map(\.primary.load)
+            == [.kg(20), .kg(50), .kg(80)])
     }
 }

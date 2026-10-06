@@ -23,31 +23,55 @@ public struct PlateLoad: Sendable, Hashable {
     public var total: Mass
     /// The target minus what could be loaded; zero when exact.
     public var shortBy: Mass
+    /// The target is lighter than the bar alone, so nothing at or under it can
+    /// be loaded; `total` is the bar. A lighter bar is needed.
+    public var isBelowBar: Bool
 }
 
 public enum Plates {
     /// The heaviest load at or under `target` that the bar and plates can make,
     /// with the plates for each side. Plates of the other unit are converted.
+    /// Of the combinations that reach it, the one with the fewest plates wins,
+    /// then the one with heavier plates.
     public static func load(_ target: Mass, bar: Mass, stock: [PlateStock]) -> PlateLoad {
         let unit = bar.unit
         let wanted = target.value(in: unit)
-        guard wanted > bar.value + 1e-9 else {
-            return PlateLoad(perSide: [], bar: bar, total: bar, shortBy: Mass(max(0, wanted - bar.value), unit))
+        guard wanted >= bar.value - 1e-9 else {
+            return PlateLoad(perSide: [], bar: bar, total: bar, shortBy: Mass(0, unit), isBelowBar: true)
         }
-        var remaining = (wanted - bar.value) / 2
-        var side: [Mass] = []
         let plates = stock.filter { $0.pairs > 0 && $0.weight.value > 0 }.sorted { $0.weight > $1.weight }
-        for plate in plates {
-            let each = plate.weight.value(in: unit)
-            var used = 0
-            while used < plate.pairs, each <= remaining + 1e-9 {
-                side.append(plate.weight)
-                remaining -= each
-                used += 1
+        let weights = plates.map { $0.weight.value(in: unit) }
+        let counts = best(upTo: (wanted - bar.value) / 2, weights: weights, available: plates.map(\.pairs))
+        let perSide = zip(plates, counts).flatMap { Array(repeating: $0.weight, count: $1) }
+        let loaded = bar.value + 2 * zip(weights, counts).reduce(0) { $0 + $1.0 * Double($1.1) }
+        return PlateLoad(perSide: perSide, bar: bar, total: Mass(loaded, unit), shortBy: Mass(max(0, wanted - loaded), unit),
+                         isBelowBar: false)
+    }
+
+    /// How many of each plate, heaviest first, make the most weight at or under
+    /// `limit`. A depth-first search that tries more of the heavier plates first,
+    /// so on a tie in weight and count the heavier combination is found first.
+    private static func best(upTo limit: Double, weights: [Double], available: [Int]) -> [Int] {
+        let epsilon = 1e-9
+        var remaining = Array(repeating: 0.0, count: weights.count + 1)
+        for index in weights.indices.reversed() { remaining[index] = remaining[index + 1] + weights[index] * Double(available[index]) }
+        var best = (total: 0.0, plates: 0, counts: Array(repeating: 0, count: weights.count))
+        var counts = best.counts
+        func search(_ index: Int, _ total: Double, _ plates: Int) {
+            if total > best.total + epsilon || (abs(total - best.total) <= epsilon && plates < best.plates) {
+                best = (total, plates, counts)
             }
+            guard index < weights.count, total + remaining[index] >= best.total - epsilon,
+                  !(best.total >= limit - epsilon && plates >= best.plates) else { return }
+            let most = min(available[index], Int(((limit - total) / weights[index] + epsilon).rounded(.down)))
+            for count in stride(from: max(0, most), through: 0, by: -1) {
+                counts[index] = count
+                search(index + 1, total + weights[index] * Double(count), plates + count)
+            }
+            counts[index] = 0
         }
-        let loaded = bar.value + 2 * side.reduce(0) { $0 + $1.value(in: unit) }
-        return PlateLoad(perSide: side, bar: bar, total: Mass(loaded, unit), shortBy: Mass(max(0, wanted - loaded), unit))
+        search(0, 0, 0)
+        return best.counts
     }
 }
 

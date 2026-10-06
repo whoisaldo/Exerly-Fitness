@@ -435,8 +435,10 @@ accuracy.
   the person can override.
 - `Plates.load(_:bar:stock:)` gives the heaviest load at or under a target that
   the bar and `PlateStock` pairs can make, the plates per side and any
-  shortfall. It is greedy, heaviest first, which is exact for standard plate
-  sets.
+  shortfall. It searches every combination, so limited or mixed-unit plates
+  still reach the best load. On a tie it uses the fewest plates, then the
+  heavier ones. A target lighter than the bar sets `isBelowBar`; say a lighter
+  bar is needed.
 - `WarmUpScheme` (`.standard` or `.heavy`, or custom steps of fraction and reps)
   turns a working load into prefilled, incomplete `warmUp` sets. It rounds to
   loadable weights and never repeats a load. Barbell schemes start with an

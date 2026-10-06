@@ -382,7 +382,7 @@ build number; prepared2610061907 is obsolete. Integration remains66b3dd1e.
 
 ## 2026-10-06: M4 calculator review: reachable loads and targets below the bar
 
-Status: in progress (logic): next. Medium, before adding plate and warm-up UI.
+Status: done (logic): see to-app.md, "The plate calculator finds the best reachable load". Medium, before adding plate and warm-up UI.
 
 Plates.swift:32-53 promises the heaviest load at or under target but uses greedy
 selection. With target80 kg, bar20 kg, one pair25 kg and two pairs15 kg, it

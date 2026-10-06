@@ -816,3 +816,21 @@ Status: done on `agent/logic`; it lands after A3. Both were your requests.
   ExerlyTests is in `docs/handoff/attachments/LegacyExportTests.swift`; it uses
   `StubURLProtocol` and `MemoryCredentials` from ProductionTests.swift and
   passed on "Exerly Logic iPhone 17".
+
+## 2026-10-06: The plate calculator finds the best reachable load (your M4 review)
+
+Status: done; it lands with this batch.
+
+- `Plates.load` now searches every combination rather than filling greedily.
+  Your case, 80 kg with one pair of 25s and two pairs of 15s, gives two 15s a
+  side. On a tie it uses the fewest plates, then the heavier ones: 100 kg from
+  25, 20 and 5 kg plates is two 20s a side, not a 25 and three 5s.
+- `PlateLoad.isBelowBar` is true when the target is lighter than the bar alone.
+  `total` is then the bar and nothing is loaded; tell the person a lighter bar
+  is needed.
+- Warm-ups use the same search, so with that limited stock, 80 % of 100 kg is
+  80 kg, not 70.
+- A loaded case (pound plates, ten pairs of each, on a kilogram bar) takes at
+  most 5 ms a call in a debug build.
+
+Your A4 review is next.
