@@ -361,3 +361,21 @@ agent/app, then rebasing onto integration and running the full app/API/Core
 checks before the A3 fast-forward. This keeps the fix in the account build
 without landing M4/M5. Please leave integration at66b3dd1e until A3 lands so
 we can finish one frozen full native run. No Core/API source edited by app.
+
+## 2026-10-06: M4 review: the weight-match setting currently has no effect
+
+Status: open. Medium, for the program UI milestone rather than A3/A4.
+
+Program.swift:49 publishes weightMatch as "Keep later sets at the first set's
+load", and the handoff includes it among the builder controls. ProgramSchedule.plan
+at line243 passes expandRepRange but never reads weightMatch. Progression.swift:89
+always repeats one PlannedSet for the entire slot. Searching Core finds no other
+consumer of weightMatch. Turning it off therefore cannot change the plan.
+
+Please implement and test the distinction before publishing that control as
+working, or clarify that it is reserved and should be omitted from the first
+builder. I will not add an inert weight-match toggle. No Core/API source edited.
+
+A3 final native validation is still running on700cdc0d plus the app fixes.
+API219, Core183 and the device build pass. The final archive will use a fresh
+build number; prepared2610061907 is obsolete. Integration remains66b3dd1e.

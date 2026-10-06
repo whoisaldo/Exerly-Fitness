@@ -5,40 +5,42 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 15:05 EDT. A2 is live in internal TestFlight. Primary agent/app is
-3747a57f over integration 66b3dd1e. A3 remains unreleased. App-next is now active
-A4 work, branch agent/app-next, rebased onto primary with commits 7564a06f and
-acdab159. Do not discard or overwrite it. Done is not met.
+2026-10-06 15:27 EDT. A2 remains live in internal TestFlight. Primary agent/app
+is ba627bb3. It includes logic's exact migrated-payload fix 700cdc0d above
+integration 66b3dd1e. A3 remains unreleased and its source is frozen. App-next
+is A4 work, branch agent/app-next at cc32f2cc, rebased onto primary. Do not
+discard it. Done is not met.
 
-1. Original full A3 regression, artifacts/account/full-a3-current.xcresult,
-   is finishing on the pre-rebase source. It found one test-hook port failure,
-   fixed in 8222e960 and verified by legacy-isolated-port.xcresult. It is not a
-   final pass. Final source also fixes the offline banner covering navigation
-   in iOS18: normal SE A4 review and large A3 offline navigation journeys pass.
-2. Fresh current-source API217/Core182/device build, lint, format, typecheck,
-   six Node and seven Python release checks pass, final-* logs under account.
-   Original UUID duplicate reproducer now passes against a fresh server:
-   app-review-case/uuid-fixed-result.log contains one row for one UUID.
-   A follow-up migrated-payload MCP defect is in to-logic.md. Staging had no
-   pre-migration documents, so it is not an existing internal-account data issue.
-3. Freeze A3, restart the verified app-owned 39203 fixture after its old full
-   run finishes, run full native validation on this final base. Then archive,
-   upload and assign A3, update PARITY/RELEASE, fast-forward integration and push.
-4. A4 real-server review/accept-offline/relaunch/sync/undo/reject/audit passed
-   on SE (offline-navigation-fixed.xcresult). Connection creation/revocation/
-   direct-write cancellation and stale-proposal refusal passed in real-api-first.
-   All 13 relevant agent captures plus both new A3 navigation captures inspected.
-   Eight hosted tests passed before a copy edit; its old-string expectation is
-   now fixed. Largest-text first runs were interrupted after test scrolling
-   failures, not passes. small-light-scroll and large-dark-scroll are running
-   now on the rebased source and fresh API, sessions43792/10785. Large includes
-   all eight hosted tests. Then inspect images, fix findings, run other two
-   variants, complete A4 full checks/release, and continue detectors/programs.
+1. Final A3 full native regression is running on the original Large simulator,
+   session62147, artifacts/account/full-a3-canonical.xcresult and .log. Started
+   15:18 EDT. Fresh current-source API219, Core183 and device build pass in
+   canonical-{api,core,device}.log. Prior lint/format/typecheck and six Node,
+   seven Python release checks passed; repeat the fast gate after current edits.
+2. Original full-a3-current ended118 pass, one failure, eight skips. Its lone
+   legacy-session test-hook port failure is fixed and focused verification
+   passes in legacy-isolated-port.xcresult. full-a3-final was deliberately
+   interrupted to adopt700cdc0d. Neither is final passing evidence.
+3. A3's prepared signed2610061907 archive predates700cdc0d and the large-text
+   Start workout wrap. Do not upload it. After final tests, create a fresh
+   signed upload, assign it internally, update PARITY/RELEASE and fast-forward
+   integration. Logic was asked to leave integration at66b3dd1e until then.
+4. A4 normal real-server review/accept-offline/relaunch/sync/undo/reject/audit,
+   token creation/revocation/write cancellation and stale refusal pass. All13
+   relevant normal screenshots were inspected. large-dark-scroll passes eight
+   hosted plus three UI tests; its13 captures are being inspected. Small-light
+   scroll failed because the test gesture crossed the navigation bar after an
+   offline banner appeared. The helper now drags within the visible list.
+5. A4 small-light-canonical/session86127 and large-light-canonical/session59253
+   are running, using fresh700cdc0d fixtures and cc32f2cc. Each has three UI
+   journeys; large also has eight hosted tests. Inspect images, run both dark
+   variants, then complete A4 full checks and release. Design009 is prepared
+   for A5 entry checks/observations. Logic's new00d9992f addresses the detector
+   review, but do not adopt M4/M5 into the frozen A3 source.
 
-Current fixture nodes use primary source on39204/39205/39206, sessions
-18969/84454/86847. Environment key is EXERLY_FIXTURE_PORT, not PORT. The mistaken
-39001 fixture was stopped. Original39203/session18453 is still the old full-run
-fixture. Only stop verified app-owned PIDs. No protected services changed.
+Current fixtures on39203/39204/39205/39206 use primary700cdc0d source, sessions
+3247/7679/53930/93999. Logs: account/canonical-fixture-<port>.log. Environment
+key is EXERLY_FIXTURE_PORT, not PORT. Only stop verified app-owned PIDs, and
+never restart a fixture while a test uses it. No protected services changed.
 
 ## Active A3 implementation and evidence
 
