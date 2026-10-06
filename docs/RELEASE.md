@@ -5,26 +5,28 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Account milestone A3, version 1.0 build 2610061942, is available in internal
+Agent review milestone A4, version 1.0 build 2610062038, is available in internal
 TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only internal group
 contains exactly this build, and its English test notes were verified. It uses
-devbox1 staging, so the phone needs Tailscale. The original purple/pink theme, dark default and E/pulse icon
-are preserved.
+devbox1 staging, so the phone needs Tailscale. The original purple/pink theme,
+dark default and E/pulse icon are preserved.
 
-A3 adds native Apple authorization, account methods, training sync, offline
-training export and deletion with local cleanup. Final validation passed100
-hosted tests and19 UI journeys, eight opt-in skips, API219, Core183 and the
-iOS device build. Physical Apple sign-in and replacement installation remain
-unverified. Pending legacy food and other entries are excluded from export in
-this build; the UI and test notes disclose that limitation.
+A4 adds complete workout/exercise proposal review, offline accept/reject/undo,
+activity history and scoped agent connections. Exports include queued legacy
+entries and local workouts/proposals. Program proposals can be inspected but
+cannot be applied in this build. Final validation passed 112 hosted tests and
+22 UI journeys, eight opt-in skips, API 226, Core 220 and the iOS device build.
+All four largest-text variants of agent review and updated export passed and
+were visually inspected. Physical Apple sign-in and replacement installation
+remain unverified.
 
 The signed archive and IPA passed identity, HealthKit and Apple sign-in
 entitlements, profile, privacy manifest, icon, version, staging endpoint and
 debug-hook checks. Existing certificate reused.
 
-- Archive: `apps/ios/build/release/2610061942/Exerly.xcarchive`
-- IPA: `apps/ios/build/release/2610061942/export/Exerly.ipa`
-- Logs: `apps/ios/build/release/2610061942/{archive,export,upload}.log`
+- Archive: `apps/ios/build/release/2610062038/Exerly.xcarchive`
+- IPA: `apps/ios/build/release/2610062038/export/Exerly.ipa`
+- Logs: `apps/ios/build/release/2610062038/{archive,export,upload}.log`
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
 - Team: `9X79V37Q89`. Distribution certificate expires2027-09-25.
 - Exerly profile: `J5J395Y9AF`, expires2027-09-25, HealthKit and Apple sign-in.
@@ -78,10 +80,10 @@ bundles are not given an unsupported provisioning profile.
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610061942), valid and in beta testing; only Ali and only this build.                                                                             |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610062038), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | Final A3: API219, Core183, 100 hosted tests and19 UI journeys pass; eight opt-in skips. Device build passes.                                           |
+| Native test suite                 | In progress           | Final A4: API 226, Core 220, 112 hosted tests and 22 UI journeys pass; eight opt-in skips. Device build passes.                                        |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
