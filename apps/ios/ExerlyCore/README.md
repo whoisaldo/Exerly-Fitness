@@ -244,6 +244,11 @@ try await api.signOut()
     `revokeAccessToken(id:)` for the person's own agents. Every token can read;
     `.propose` files proposals, and `.write` changes data. The secret in
     `CreatedAccessToken.secret` is shown once and never again.
+  - `searchFoods(_:limit:)` and `food(barcode:)` look foods up in Open Food
+    Facts and return `DatabaseFoods`: unsaved `Food`s, ready for
+    `NutritionStore.saveFood` or `log`, and the attribution to show with them.
+    A barcode with no match returns nil. Search on submit, not as the person
+    types.
 
 ### ExerlyAPI
 

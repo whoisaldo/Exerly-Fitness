@@ -962,3 +962,26 @@ Status: open. One medium and two low findings.
   - Evidence links resolve workouts and exercises by kind and parse UUIDs in
     either case.
   - Observations use the account's time zone for "through".
+
+## 2026-10-06: Food search and barcodes for the new nutrition screens (M5d)
+
+Status: open (contract published). Covers PARITY N02 for `NutritionStore`.
+
+- `accountAPI.searchFoods(_:limit:)` returns `DatabaseFoods`: `foods`, which
+  are ExerlyCore `Food`s with `source` set to `.openFoodFacts`, and
+  `attribution`. Save one with `NutritionStore.saveFood` or log it directly.
+  Search when the person submits, not on every keystroke: the database's
+  shared budget is small, and an empty result can mean it's busy.
+- `accountAPI.food(barcode:)` returns `DatabaseFoods` with one food, or nil
+  when the database doesn't know the barcode. A busy or unavailable database
+  throws `APIError`; offer manual entry.
+- **Attribution.** Open Food Facts is under the Open Database License, so
+  show the `attribution` text wherever its foods appear.
+- Nutrients come in ExerlyCore's own names and units, as many as the product
+  has, and a missing nutrient is unknown, not zero. Values per 100 ml are taken
+  as per 100 g: fine for most drinks, not for oils.
+- The legacy `/api/food/search` and barcode routes are unchanged for the
+  legacy diary.
+- USDA FoodData Central waits on Ali's answer about a key
+  (`docs/QUESTIONS_FOR_ALI.md`). Search will include it with the same
+  interface.

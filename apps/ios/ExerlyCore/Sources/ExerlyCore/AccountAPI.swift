@@ -127,6 +127,35 @@ public struct AccountAPI: DocumentAPI {
         guard status == 200 else { throw Wire.failure(status, json) }
     }
 
+    // MARK: Food database
+
+    /// Foods matching a search, from a public food database (Open Food Facts),
+    /// as unsaved `Food`s ready for `NutritionStore.saveFood` or `log`. Show the
+    /// attribution with them.
+    public func searchFoods(_ query: String, limit: Int = 20) async throws -> DatabaseFoods {
+        var components = URLComponents()
+        components.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "limit", value: String(limit))]
+        let encoded = (components.percentEncodedQuery ?? "").replacingOccurrences(of: "+", with: "%2B")
+        let (status, data) = try await send("GET", "/v1/foods/search?\(encoded)")
+        guard status == 200 else { throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data)) }
+        return try ExerlyJSON.decoder.decode(DatabaseFoods.self, from: data)
+    }
+
+    /// The food with this barcode, or nil when the database doesn't have it.
+    public func food(barcode: String) async throws -> DatabaseFoods? {
+        let digits = barcode.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
+        let (status, data) = try await send("GET", "/v1/foods/barcode/\(digits)")
+        if status == 404 { return nil }
+        guard status == 200 else { throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data)) }
+        let found = try ExerlyJSON.decoder.decode(BarcodeFood.self, from: data)
+        return DatabaseFoods(foods: [found.food], attribution: found.attribution)
+    }
+
+    private struct BarcodeFood: Decodable {
+        var food: Food
+        var attribution: String
+    }
+
     // MARK: Requests
 
     private func send(_ method: String, _ path: String, body: Data? = nil,
@@ -211,4 +240,10 @@ enum Wire {
     static func failure(_ status: Int, _ json: Any?) -> APIError {
         .server(status: status, message: (json as? [String: Any])?["message"] as? String ?? "HTTP \(status)")
     }
+}
+
+/// Foods from a public database, with the attribution its licence asks for.
+public struct DatabaseFoods: Sendable, Hashable, Decodable {
+    public var foods: [Food]
+    public var attribution: String
 }

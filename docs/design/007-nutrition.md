@@ -160,5 +160,7 @@ random walk alone read 77 kcal high at check-ins for a 0.5 % weekly loss, and
    simulation.
 3. **M5c:** targets, per-weekday distribution and check-in proposals.
 4. **M5d:** food search and barcode lookup through `AccountAPI`, recipes and
-   history.
+   history. Search and barcodes from Open Food Facts are built: the server maps
+   products to ExerlyCore `Food`s, and `docs/api/golden/foods-v1.json` holds
+   the contract both sides test. USDA waits on an API key.
 5. **M5e:** the MacroFactor import.

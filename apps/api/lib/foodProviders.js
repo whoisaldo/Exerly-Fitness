@@ -244,7 +244,7 @@ async function openFoodFactsBarcode(identity, options) {
       return { status: 'temporarily_unavailable', provider: 'openfoodfacts' };
     const food = mapOpenFoodFactsProduct(data.product, identity.identity);
     return food
-      ? { status: 'found', food }
+      ? { status: 'found', food, product: data.product }
       : {
           status: 'temporarily_unavailable',
           provider: 'openfoodfacts',
@@ -271,10 +271,11 @@ async function lookupBarcode(identity, options = {}) {
 }
 
 const searchCache = new Map();
-async function searchFoods(query, limit = 20) {
+/** Open Food Facts products matching a search, unmapped. */
+async function searchOpenFoodFactsProducts(query, limit = 20) {
   const key = `${query.trim().toLowerCase()}:${limit}`;
   const cached = searchCache.get(key);
-  if (cached?.expires > Date.now()) return cached.results;
+  if (cached?.expires > Date.now()) return cached.products;
   // Plain-text OFF search is a legacy endpoint with a strict shared budget.
   // It is deliberately invoked on submit, never as remote autocomplete.
   if (!(await budget.reserve('off-search', 10))) return [];
@@ -303,21 +304,25 @@ async function searchFoods(query, limit = 20) {
       return [];
     }
     if (!response.ok || !Array.isArray(data.products)) return [];
-    const results = data.products
-      .map((product) => mapOpenFoodFactsProduct(product))
-      .filter(Boolean);
     if (searchCache.size >= 200) searchCache.delete(searchCache.keys().next().value);
-    searchCache.set(key, { results, expires: Date.now() + 300000 });
-    return results;
+    searchCache.set(key, { products: data.products, expires: Date.now() + 300000 });
+    return data.products;
   } catch {
     return [];
   }
 }
 
+async function searchFoods(query, limit = 20) {
+  const products = await module.exports.searchOpenFoodFactsProducts(query, limit);
+  return products.map((product) => mapOpenFoodFactsProduct(product)).filter(Boolean);
+}
+
 module.exports = {
   CACHE_TTL_MS,
   lookupBarcode,
+  openFoodFactsBarcode,
   searchFoods,
+  searchOpenFoodFactsProducts,
   fetchWithTimeout,
   mapOpenFoodFactsProduct,
   mapFatSecretFood,

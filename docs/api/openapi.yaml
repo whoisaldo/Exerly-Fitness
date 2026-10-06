@@ -390,6 +390,73 @@ paths:
                   has_more: { type: boolean }
         '401': { $ref: '#/components/responses/Problem' }
 
+  /v1/foods/search:
+    get:
+      operationId: searchFoods
+      tags: [Foods]
+      summary: Foods from Open Food Facts, as ExerlyCore Foods
+      description: |
+        Each result has the `saved_food` document shape, with nutrients per
+        100 g in ExerlyCore's units, so it can be saved or logged as it is.
+        Show the attribution with the results. Search runs on submit, not as
+        you type; the database's shared budget is small.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Matching foods; empty when the database is busy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [foods, attribution]
+                properties:
+                  foods:
+                    type: array
+                    items: { $ref: '#/components/schemas/DatabaseFood' }
+                  attribution: { type: string }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /v1/foods/barcode/{code}:
+    get:
+      operationId: lookupBarcode
+      tags: [Foods]
+      summary: The food with a UPC or EAN barcode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[0-9]{8,14}$' }
+        - name: symbology
+          in: query
+          schema: { type: string, enum: [upca, upce, ean8, ean13, gtin14, itf14] }
+      responses:
+        '200':
+          description: The food and the attribution to show with it.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [food, attribution]
+                properties:
+                  food: { $ref: '#/components/schemas/DatabaseFood' }
+                  attribution: { type: string }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: The database is busy; retry after `Retry-After` seconds.
+          headers:
+            Retry-After: { schema: { type: integer } }
+        '503': { $ref: '#/components/responses/Problem' }
+
 components:
   securitySchemes:
     bearer:
@@ -460,6 +527,31 @@ components:
           schema: { $ref: '#/components/schemas/Problem' }
 
   schemas:
+    DatabaseFood:
+      type: object
+      description: |
+        An ExerlyCore `Food` from a public database. `per100g` is keyed by
+        ExerlyCore's nutrient names (energy in kcal; others in g, mg or µg as
+        ExerlyCore's `Nutrient.unit` says). Amounts per 100 ml are taken as per
+        100 g. docs/api/golden/foods-v1.json has examples.
+      required: [id, name, source, per100g, servings, favorite, createdAt]
+      properties:
+        id: { type: string, example: 'off:0012345678905' }
+        name: { type: string }
+        brand: { type: string }
+        source: { type: string, enum: [openFoodFacts] }
+        per100g: { type: object, additionalProperties: { type: number, minimum: 0 } }
+        servings:
+          type: array
+          items:
+            type: object
+            required: [name, grams]
+            properties:
+              name: { type: string }
+              grams: { type: number, exclusiveMinimum: 0 }
+        barcode: { type: string }
+        favorite: { type: boolean }
+        createdAt: { type: string, format: date-time }
     Session:
       type: object
       required: [token, expiresIn, sessionId, user]
