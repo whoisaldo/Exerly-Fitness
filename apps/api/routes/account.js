@@ -32,9 +32,21 @@ async function consumeNonce(nonceHash) {
     throw new ApiError(401, 'This sign-in was already used. Try again.');
   }
   await store.insert('auth_nonces', { nonce_hash: nonceHash, created_at: new Date() });
-  await store.remove('auth_nonces', {
-    created_at: { lt: new Date(Date.now() - NONCE_RETENTION_MS) },
-  });
+}
+
+/**
+ * Housekeeping that must not run inside a sign-in's serializable
+ * transaction: concurrent sign-ins would conflict on it and fail after
+ * their retries. Failures are harmless and retried next time.
+ */
+function afterSignIn(identityID) {
+  const cutoff = new Date(Date.now() - NONCE_RETENTION_MS);
+  store.remove('auth_nonces', { created_at: { lt: cutoff } }).catch(() => {});
+  if (identityID) {
+    store
+      .update('account_identities', { id: identityID }, { last_used_at: new Date() })
+      .catch(() => {});
+  }
 }
 
 router.post(
@@ -53,8 +65,11 @@ router.post(
         subject: verified.subject,
       });
       if (identity) {
-        await store.update('account_identities', { id: identity.id }, { last_used_at: new Date() });
-        return { user: await store.findById('users', identity.account_id), created: false };
+        return {
+          user: await store.findById('users', identity.account_id),
+          created: false,
+          identityID: identity.id,
+        };
       }
       const email = verified.email ?? placeholderEmail(verified.subject);
       const existing = await store.findOne('users', { email });
@@ -87,6 +102,7 @@ router.post(
       });
       return { user, created: !existing };
     });
+    afterSignIn(outcome.identityID);
     const session = await sessions.createSession(outcome.user, req, { modern: true });
     res.status(outcome.created ? 201 : 200).json({ created: outcome.created, ...session });
   })

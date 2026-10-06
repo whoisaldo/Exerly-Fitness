@@ -16,7 +16,7 @@ const { normalizeFilter, normalizeOptions, normalizePatch } = require('./query')
 const { migrateUp } = require('../db/migrate');
 
 const RETRYABLE = new Set(['40001', '40P01', '23505']);
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 6;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SCHEMA_RE = /^[a-z_][a-z0-9_]{0,62}$/;
 
@@ -99,7 +99,8 @@ async function transaction(fn) {
     } catch (error) {
       await client.query('ROLLBACK').catch(() => {});
       if (attempt < MAX_ATTEMPTS && RETRYABLE.has(error.code)) {
-        await delay(Math.random() * 10 * attempt);
+        // Exponential backoff with jitter spreads out transactions that keep colliding.
+        await delay(Math.random() * 5 * 2 ** attempt);
         continue;
       }
       throw error;
