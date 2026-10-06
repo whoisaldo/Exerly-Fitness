@@ -77,6 +77,7 @@ public final class SyncEngine {
             switch error {
             case is CancellationError, APIError.accountChanged: state = .idle
             case APIError.sessionExpired, APIError.notSignedIn: state = .failed("Sign in again to sync.")
+            case APIError.accountDeleted: state = .failed("This account was deleted.")
             case APIError.server(_, let message): state = .failed(message)
             case APIError.invalidResponse: state = .failed("The server sent an unexpected response.")
             default: state = .offline

@@ -26,6 +26,9 @@ public enum APIError: Error, Equatable {
     case linkConflict
     /// Account deletion needs a fresh Sign in with Apple authorization code.
     case appleReauthorizationRequired
+    /// The account no longer exists: it was deleted, perhaps by a request whose
+    /// response was lost, or on another device. Remove its local data.
+    case accountDeleted
     /// The session was replaced or removed while the request was in flight,
     /// or it belongs to another account. Nothing from the response was applied.
     case accountChanged
@@ -40,6 +43,7 @@ extension APIError: LocalizedError {
         case .linkRequired: "An Exerly account already uses this email. Sign in with your password, then connect Apple in Settings."
         case .linkConflict: "This Apple ID is already connected to another Exerly account."
         case .appleReauthorizationRequired: "Sign in with Apple again to confirm."
+        case .accountDeleted: "This Exerly account was deleted."
         case .accountChanged: "The signed-in account changed, so this request was stopped."
         case .invalidResponse: "The server sent an unexpected response. Try again."
         case .server(_, let message): message
@@ -150,10 +154,15 @@ public actor ExerlyAPI: SessionTransport {
         _ = try? await send("POST", "/auth/logout", body: Data("{}".utf8), headers: [:], token: token)
     }
 
-    /// Deletes the account and everything in it, then forgets the session.
+    /// Deletes the account and everything in it, then forgets the session. A
+    /// retry after a lost response finds the account already gone and succeeds.
     public func deleteAccount(appleAuthorizationCode: String?) async throws {
         let account = try account()
-        try await account.deleteAccount(appleAuthorizationCode: appleAuthorizationCode)
+        do {
+            try await account.deleteAccount(appleAuthorizationCode: appleAuthorizationCode)
+        } catch APIError.accountDeleted {
+            return
+        }
         guard accountID == account.accountID else { return }
         endGeneration()
         try credentials.save(nil)
@@ -172,6 +181,12 @@ public actor ExerlyAPI: SessionTransport {
             // Nothing from an old session's response may reach the caller.
             guard generation == started else { throw APIError.accountChanged }
             if status != 401 { return (status, data) }
+            if Wire.code(try? JSONSerialization.jsonObject(with: data)) == "account_deleted" {
+                endGeneration()
+                try credentials.save(nil)
+                try credentials.savePendingRefreshKey(nil)
+                throw APIError.accountDeleted
+            }
             if attempt == 1 { break }
             current = try await freshCredentials(forceRefresh: true)
         }

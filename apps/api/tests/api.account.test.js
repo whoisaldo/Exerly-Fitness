@@ -191,3 +191,34 @@ test('an Apple account is revoked with Apple before anything is deleted', async 
     apple.revokeAuthorizationCode = original.revoke;
   }
 });
+
+test('after deletion, the account’s own tokens learn it was deleted; nobody else does', async () => {
+  const doomed = await signUp(api);
+  const id = doomed.user._id;
+  const expired = jwt.sign({ sub: id, email: doomed.user.email }, process.env.JWT_SECRET, {
+    expiresIn: -60,
+  });
+  assert.equal(
+    (await api.del('/api/account', { token: doomed.token, body: { confirm: true } })).status,
+    200
+  );
+
+  for (const token of [doomed.token, expired]) {
+    const res = await api.get('/api/bootstrap', { token });
+    assert.equal(res.status, 401);
+    assert.equal(res.body.details?.code, 'account_deleted');
+  }
+  // A retried deletion whose first response was lost says the same.
+  const retried = await api.del('/api/account', { token: doomed.token, body: { confirm: true } });
+  assert.equal(retried.body.details?.code, 'account_deleted');
+
+  const alive = await signUp(api);
+  const stale = jwt.sign({ sub: alive.user._id, email: alive.user.email }, process.env.JWT_SECRET, {
+    expiresIn: -60,
+  });
+  const expiredAlive = await api.get('/api/bootstrap', { token: stale });
+  assert.equal(expiredAlive.status, 401);
+  assert.equal(expiredAlive.body.details?.code, undefined);
+  const forged = jwt.sign({ sub: id }, 'not-the-secret', { expiresIn: -60 });
+  assert.equal((await api.get('/api/bootstrap', { token: forged })).body.details?.code, undefined);
+});

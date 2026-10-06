@@ -4,6 +4,8 @@ import ExerlyCore
 
 extension Notification.Name {
     static let exerlySessionExpired = Notification.Name("exerlySessionExpired")
+    /// The signed-in account no longer exists on the server. The object is its ID.
+    static let exerlyAccountDeleted = Notification.Name("exerlyAccountDeleted")
 }
 
 enum APIError: LocalizedError {
@@ -15,6 +17,8 @@ enum APIError: LocalizedError {
     case unknown
     case invalidSessionResponse
     case sessionStorage
+    /// The account was deleted: by a request whose response was lost, or elsewhere.
+    case accountDeleted
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +30,7 @@ enum APIError: LocalizedError {
         case .unknown: return "The request could not be completed. Please try again."
         case .invalidSessionResponse: return "The session response could not be verified. Your saved session is unchanged. Try connecting again."
         case .sessionStorage: return "Your session update could not be saved on this device. Your saved session and changes are still here. Try again."
+        case .accountDeleted: return "This Exerly account was deleted."
         }
     }
 
@@ -41,6 +46,11 @@ enum APIError: LocalizedError {
 struct APIMessageResponse: Codable {
     let message: String?
     let error: String?
+}
+
+private struct APIErrorCode: Decodable {
+    struct Details: Decodable { let code: String? }
+    let details: Details?
 }
 
 actor APIClient {
@@ -197,7 +207,16 @@ actor APIClient {
         // current account after logout, login, or credential rotation.
         if let token, keychain.getToken() != token { throw CancellationError() }
         guard let http = response as? HTTPURLResponse else { throw APIError.unknown }
-        if http.statusCode == 401 { throw APIError.unauthorized }
+        if http.statusCode == 401 {
+            // Only this account's own token hears that it was deleted; no refresh can help.
+            if (try? decoder.decode(APIErrorCode.self, from: data))?.details?.code == "account_deleted" {
+                if let token, let owner = Self.accountID(in: token), keychain.getToken() == token {
+                    NotificationCenter.default.post(name: .exerlyAccountDeleted, object: owner)
+                }
+                throw APIError.accountDeleted
+            }
+            throw APIError.unauthorized
+        }
         return try accept(http.statusCode, data)
     }
 
@@ -369,6 +388,7 @@ extension APIClient: SessionTransport {
         } catch let error as APIError {
             switch error {
             case .unauthorized: throw ExerlyCore.APIError.sessionExpired
+            case .accountDeleted: throw ExerlyCore.APIError.accountDeleted
             case .networkError(let underlying): throw underlying
             case .invalidURL, .unknown, .decodingError, .invalidSessionResponse: throw ExerlyCore.APIError.invalidResponse
             case .serverError(let status, let message): throw ExerlyCore.APIError.server(status: status, message: message)

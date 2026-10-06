@@ -30,12 +30,18 @@ final class AuthViewModel: ObservableObject {
     @Published private(set) var setupStatus: SetupStatus?
     /// From the last bootstrap; nil until the server has been reached.
     @Published private(set) var signInMethods: SignInMethods?
+    /// Accounts deleted on the server whose data is still on this device. The
+    /// app removes it (see `deleteAccount`) and then calls `finishLocalCleanup`.
+    /// Kept across launches, so an interrupted cleanup resumes.
+    @Published private(set) var accountsAwaitingLocalCleanup: [String] = []
+    private static let cleanupKey = "exerly.accounts.awaitingLocalCleanup"
 
     private let api: APIClient
     private let keychain: any SessionCredentials
     private let defaults: UserDefaults
     private let onSessionInvalidated: @MainActor () -> Void
     private var expiryObserver: NSObjectProtocol?
+    private var deletionObserver: NSObjectProtocol?
     private var sessionGeneration = UUID()
     var sessionID: UUID { sessionGeneration }
 
@@ -55,11 +61,37 @@ final class AuthViewModel: ObservableObject {
                 self.invalidateSession()
             }
         }
+        accountsAwaitingLocalCleanup = defaults.stringArray(forKey: Self.cleanupKey) ?? []
+        deletionObserver = NotificationCenter.default.addObserver(
+            forName: .exerlyAccountDeleted, object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let accountID = notification.object as? String else { return }
+            Task { @MainActor in
+                guard let self, APIClient.accountID(in: self.keychain.getToken()) == accountID else { return }
+                self.accountRemoved(accountID)
+            }
+        }
         if automaticallyCheck { Task { await checkAuth() } }
     }
 
     deinit {
         if let expiryObserver { NotificationCenter.default.removeObserver(expiryObserver) }
+        if let deletionObserver { NotificationCenter.default.removeObserver(deletionObserver) }
+    }
+
+    /// The account is gone on the server: sign out and queue its local data for removal.
+    private func accountRemoved(_ accountID: String) {
+        if !accountsAwaitingLocalCleanup.contains(accountID) {
+            accountsAwaitingLocalCleanup.append(accountID)
+            defaults.set(accountsAwaitingLocalCleanup, forKey: Self.cleanupKey)
+        }
+        if APIClient.accountID(in: keychain.getToken()) == accountID { invalidateSession() }
+    }
+
+    /// Call once the account's local training database and legacy data are removed.
+    func finishLocalCleanup(for accountID: String) {
+        accountsAwaitingLocalCleanup.removeAll { $0 == accountID }
+        defaults.set(accountsAwaitingLocalCleanup, forKey: Self.cleanupKey)
     }
 
     private func cacheKey(_ token: String) -> String {
@@ -134,6 +166,9 @@ final class AuthViewModel: ObservableObject {
         } catch APIError.unauthorized {
             guard generation == sessionGeneration else { return }
             invalidateSession()
+        } catch APIError.accountDeleted {
+            guard generation == sessionGeneration, let owner = APIClient.accountID(in: token) else { return }
+            accountRemoved(owner)
         } catch {
             guard generation == sessionGeneration else { return }
             self.error = error.localizedDescription
@@ -226,21 +261,36 @@ final class AuthViewModel: ObservableObject {
         try await signedInAccount().exportAccount()
     }
 
-    /// Deletes the account and all of its data on the server, then signs out and
-    /// forgets this account's session and cached account data.
+    /// Deletes the account and all of its data on the server, then signs out,
+    /// forgets this account's session and cached account data, and adds it to
+    /// `accountsAwaitingLocalCleanup`.
     ///
-    /// The caller then removes the rest of the account's local data, in order:
-    /// `await` its ExerlyCore `SyncEngine.shutdown()`, delete the training database
-    /// with `SQLiteTrainingPersistence.deleteDatabase(accountID:)`, and call
-    /// `SyncEngine.shared.purge(accountID:)` for the legacy offline data.
+    /// If the response is lost, the server is asked whether the account still
+    /// exists, so a deletion that happened is reported as one. If that can't be
+    /// told either, the original error is thrown and a retry settles it.
+    ///
+    /// Shut down the account's ExerlyCore `SyncEngine` first. For each account
+    /// awaiting cleanup, the app deletes the training database with
+    /// `SQLiteTrainingPersistence.deleteDatabase(accountID:)`, calls
+    /// `SyncEngine.shared.purge(accountID:)`, then `finishLocalCleanup(for:)`.
     func deleteAccount(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome {
         let account = try signedInAccount()
         do {
             try await account.deleteAccount(appleAuthorizationCode: appleAuthorizationCode)
         } catch ExerlyCore.APIError.appleReauthorizationRequired {
             return .appleReauthorizationRequired
+        } catch ExerlyCore.APIError.accountDeleted {
+            // Already gone: a lost response, or deleted on another device.
+        } catch let error as URLError where error.code != .cancelled {
+            do {
+                let _: BootstrapResponse = try await api.get("/api/bootstrap")
+            } catch APIError.accountDeleted {
+                accountRemoved(account.accountID)
+                return .deleted
+            } catch {}
+            throw error
         }
-        if APIClient.accountID(in: keychain.getToken()) == account.accountID { invalidateSession() }
+        accountRemoved(account.accountID)
         return .deleted
     }
 

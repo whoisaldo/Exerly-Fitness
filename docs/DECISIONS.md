@@ -207,3 +207,19 @@ scripts and future targets.
   older one saves credentials or returns a response.
 - `SyncEngine.shutdown()` stops sync and waits for it before an account is
   signed out, switched or deleted.
+
+## 2026-10-06: The SQLite API driver is removed
+
+PostgreSQL is the only database, in tests, the simulator fixture, staging and
+production. The SQLite driver (`DB_MODE=local`) was kept only for the iOS
+fixture. The fixture moved to a throwaway PostgreSQL cluster, and the app agent
+approved the removal. `sqlite3` and `cross-env` left the API's dependencies with
+it.
+
+## 2026-10-06: Deleted accounts are recognisable
+
+A request carrying a session token this server signed, even an expired one, for
+an account that no longer exists gets 401 with code `account_deleted`. Only the
+account's own tokens can learn it, so nothing is revealed to anyone else. A
+client whose deletion response was lost can then tell the deletion happened and
+remove the account's data from the device.

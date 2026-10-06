@@ -235,6 +235,66 @@ final class SessionBridgeTests: XCTestCase {
         XCTAssertNil(auth.accountAPI)
         XCTAssertNil(keychain.getToken())
         XCTAssertNil(defaults.data(forKey: APIClient.accountCacheKey(token)))
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["a"])
+        auth.finishLocalCleanup(for: "a")
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, [])
+    }
+
+    nonisolated static let deletedBody = json(["message": "This account was deleted.", "details": ["code": "account_deleted"]])
+
+    func testADeletionWhoseResponseWasLostIsConfirmedByTheServer() async throws {
+        let auth = try await signedIn()
+        StubURLProtocol.handler = { request in
+            if request.httpMethod == "DELETE" { throw URLError(.networkConnectionLost) }
+            XCTAssertEqual(request.url!.path, "/api/bootstrap")
+            return (401, Self.deletedBody)
+        }
+        let outcome = try await auth.deleteAccount(appleAuthorizationCode: nil)
+        XCTAssertEqual(outcome, .deleted)
+        XCTAssertEqual(auth.authState, .unauthenticated)
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["a"])
+    }
+
+    func testADeletionThatDidNotHappenStaysAnError() async throws {
+        let auth = try await signedIn()
+        StubURLProtocol.handler = { request in
+            if request.httpMethod == "DELETE" { throw URLError(.networkConnectionLost) }
+            return (200, Self.bootstrap("a", password: true, apple: false))
+        }
+        do {
+            _ = try await auth.deleteAccount(appleAuthorizationCode: nil)
+            XCTFail("Expected the network error")
+        } catch let error as URLError {
+            XCTAssertEqual(error.code, .networkConnectionLost)
+        }
+        XCTAssertEqual(auth.authState, .authenticated)
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, [])
+    }
+
+    func testAnAccountDeletedElsewhereIsSignedOutAndQueuedForCleanup() async throws {
+        let auth = try await signedIn()
+        StubURLProtocol.handler = { _ in (401, Self.deletedBody) }
+        await auth.checkAuth(useCached: false)
+        XCTAssertEqual(auth.authState, .unauthenticated)
+        XCTAssertNil(keychain.getToken())
+        XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["a"])
+        // A relaunch before the cleanup finished still knows.
+        let relaunched = AuthViewModel(api: api, keychain: keychain, defaults: defaults, automaticallyCheck: false, onSessionInvalidated: {})
+        XCTAssertEqual(relaunched.accountsAwaitingLocalCleanup, ["a"])
+    }
+
+    func testExerlyCoreHearsThatTheAccountWasDeleted() async throws {
+        keychain.saveSession(token: Self.token("a"), refreshToken: "refresh-1")
+        var refreshes = 0
+        StubURLProtocol.handler = { request in
+            if request.url!.path == "/auth/token" { refreshes += 1 }
+            return (401, Self.deletedBody)
+        }
+        do {
+            _ = try await AccountAPI(accountID: "a", transport: api).changes(after: 0, limit: 500)
+            XCTFail("Expected accountDeleted")
+        } catch ExerlyCore.APIError.accountDeleted {}
+        XCTAssertEqual(refreshes, 0, "No refresh can bring a deleted account back")
     }
 
     func testPurgeRemovesOnlyTheDeletedAccountsOfflineData() throws {

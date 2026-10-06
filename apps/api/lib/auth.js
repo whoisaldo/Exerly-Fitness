@@ -2,7 +2,28 @@
 
 const jwt = require('jsonwebtoken');
 const { createHash } = require('node:crypto');
-const { unauthorized, forbidden } = require('./errors');
+const { ApiError, unauthorized, forbidden } = require('./errors');
+
+// Told only to someone holding a token this server signed for the account, so
+// it reveals nothing to anyone else. A client that lost the response to its own
+// deletion learns from it that the deletion happened.
+const accountDeleted = () =>
+  new ApiError(401, 'This account was deleted.', { code: 'account_deleted' });
+
+/** Whether a validly signed, possibly expired, session token's account is gone. */
+async function accountGone(token) {
+  let claims;
+  try {
+    claims = jwt.verify(token, resolveSecret(), { ignoreExpiration: true });
+  } catch {
+    return false;
+  }
+  const store = require('../data');
+  const user = claims.sub
+    ? await store.findById('users', claims.sub)
+    : await store.findOne('users', { email: claims.email });
+  return !user;
+}
 
 // In production a missing secret is fatal: signing with a value that's in the
 // public repo would let anyone mint an admin token.
@@ -95,6 +116,11 @@ async function authenticate(req, _res, next) {
     req.token = token;
   } catch (err) {
     const expired = err.name === 'TokenExpiredError';
+    try {
+      if (expired && (await accountGone(token))) return next(accountDeleted());
+    } catch (error) {
+      return next(error);
+    }
     return next(unauthorized(expired ? 'Session expired. Log in again.' : 'Invalid token.'));
   }
   try {
@@ -102,7 +128,8 @@ async function authenticate(req, _res, next) {
     const user = req.user.sub
       ? await store.findById('users', req.user.sub)
       : await store.findOne('users', { email: req.user.email });
-    if (!user || (req.user.version ?? 0) !== (user.credentials_version ?? 0))
+    if (!user) return next(accountDeleted());
+    if ((req.user.version ?? 0) !== (user.credentials_version ?? 0))
       return next(unauthorized('Session has been revoked'));
     if (req.user.sid) {
       const session = await store.findOne('sessions', {

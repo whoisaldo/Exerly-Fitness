@@ -228,6 +228,44 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
     }
 }
 
+@Suite struct AccountDeletedTests {
+    let base = URL(string: "https://api.exerly.test")!
+    let start = Date.milliseconds(1_791_223_200_000)
+
+    func signedIn() throws -> InMemoryCredentialStore {
+        let store = InMemoryCredentialStore()
+        try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600),
+                                   sessionID: "s", accountID: "a"))
+        return store
+    }
+
+    @Test func aDeletedAccountIsReportedWithoutARefreshAndForgotten() async throws {
+        let store = try signedIn()
+        let transport = FakeTransport { _ in (401, ["message": "This account was deleted.", "details": ["code": "account_deleted"]]) }
+        let start = self.start
+        let api = ExerlyAPI(baseURL: base, transport: transport, credentials: store, now: { start })
+        await #expect(throws: APIError.accountDeleted) { try await api.account().changes(after: 0) }
+        #expect(transport.requests.map(\.path) == ["/v1/changes?after=0&limit=500"])
+        #expect(try store.load() == nil)
+    }
+
+    @Test func aDeletionWhoseResponseWasLostSucceedsOnRetry() async throws {
+        let store = try signedIn()
+        var attempts = 0
+        let transport = FakeTransport { _ in
+            attempts += 1
+            if attempts == 1 { throw Offline() }
+            return (401, ["message": "This account was deleted.", "details": ["code": "account_deleted"]])
+        }
+        let start = self.start
+        let api = ExerlyAPI(baseURL: base, transport: transport, credentials: store, now: { start })
+        await #expect(throws: Offline.self) { try await api.deleteAccount(appleAuthorizationCode: nil) }
+        #expect(try store.load() != nil, "The outcome is unknown, so the session stays")
+        try await api.deleteAccount(appleAuthorizationCode: nil)
+        #expect(try store.load() == nil)
+    }
+}
+
 #if os(iOS)
 /// Host-less package tests have no Keychain entitlement (errSecMissingEntitlement,
 /// -34018), so this runs only inside a host app: set EXERLY_KEYCHAIN_TESTS.

@@ -262,7 +262,18 @@ Errors are `APIError`, with user-facing descriptions (`LocalizedError`):
 - `linkConflict`: the Apple ID is connected to another account.
 - `appleReauthorizationRequired`: deletion needs a fresh Apple authorization code.
 - `accountChanged`: the account changed during the request; nothing was applied.
+- `accountDeleted`: the account no longer exists, perhaps deleted by a request
+  whose response was lost. `ExerlyAPI.deleteAccount` treats it as success.
+  Otherwise, remove the account's local data.
 - `server(status:message:)`, `notSignedIn` and `invalidResponse`.
+
+### AccountExport
+
+`AccountExport.merging(server:hosts:state:)` overlays this device's unsynced
+documents on the server's export from `exportAccount()`. Each added or replaced
+row is marked `"pending_sync": true`, and documents deleted on the device are
+left out. Pass `nil` while offline to export this device's documents only; the
+result says so in `note`.
 
 ### Credentials
 
