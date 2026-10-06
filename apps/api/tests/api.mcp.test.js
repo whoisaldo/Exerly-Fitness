@@ -80,6 +80,8 @@ test('a read token gets the read tools, with numbers that match ExerlyCore', asy
   assert.deepEqual(names, [
     'exercise_history',
     'get_document',
+    'get_nutrition_day',
+    'get_nutrition_summary',
     'get_profile',
     'get_workout',
     'list_programs',
@@ -450,4 +452,93 @@ test('programs: the active one, its next workout and recommendations, and propos
   assert.match(refused.error, /cycles must be 1 to 52/);
   assert.match(refused.error, /not-an-exercise is not a known exercise/);
   await agent.close();
+});
+
+test('nutrition tools read the log, the targets in force and the energy balance', async () => {
+  const user = await signUp(api, { timezone: 'UTC' });
+  const plan = randomUUID().toUpperCase();
+  const day = (energy) => ({ energy, protein: 150, fat: 70, carbohydrate: 200 });
+  await put(user, 'nutrition_plan', {
+    id: plan,
+    startDate: '2026-09-01',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    goal: { direction: 'lose', weeklyRate: 0.005 },
+    mode: 'coached',
+    diet: 'balanced',
+    protein: 'moderate',
+    weekdayWeights: [1, 1, 1, 1, 1, 1, 1],
+    checkInDay: 2,
+    allowBelowFloor: false,
+    basis: { expenditure: 2500, expenditureError: 400, trendWeight: 80 },
+    targets: [day(2100), day(2000), day(2000), day(2000), day(2000), day(2000), day(2100)],
+  });
+  const oats = {
+    foodID: 'off:0012345678905',
+    name: 'Oats',
+    source: 'openFoodFacts',
+    per100g: { energy: 380, protein: 13, sodium: 5 },
+  };
+  for (let offset = 0; offset < 14; offset++) {
+    const date = `2026-09-${String(offset + 1).padStart(2, '0')}`;
+    for (const grams of [200, 300]) {
+      const id = randomUUID().toUpperCase();
+      await put(user, 'food_entry', {
+        id,
+        date,
+        meal: 'Breakfast',
+        loggedAt: `${date}T08:00:00.000Z`,
+        food: oats,
+        grams,
+      });
+    }
+    await put(user, 'nutrition_day', {
+      id: date,
+      date,
+      status: offset === 3 ? 'partial' : 'complete',
+      notes: '',
+    });
+    const id = randomUUID().toUpperCase();
+    await put(user, 'weight_entry', {
+      id,
+      at: `${date}T07:00:00.000Z`,
+      date,
+      weight: { unit: 'kg', value: 80 - offset * 0.05 },
+    });
+  }
+  const client = await connect((await token(user, ['read'])).token);
+
+  const tuesday = await call(client, 'get_nutrition_day', { date: '2026-09-01' });
+  assert.equal(tuesday.status, 'complete');
+  assert.equal(tuesday.totals.energy, 1900, '500 g of oats at 380 kcal per 100 g');
+  assert.equal(tuesday.totals.sodium, 25);
+  assert.deepEqual(tuesday.targets, day(2000), 'Tuesday, from the plan in force');
+  assert.equal(tuesday.remaining.energy, 100);
+  assert.deepEqual(
+    tuesday.entries.map((e) => [e.food, e.grams, e.energy]),
+    [
+      ['Oats', 200, 760],
+      ['Oats', 300, 1140],
+    ]
+  );
+  assert.equal((await call(client, 'get_nutrition_day', { date: '2026-08-31' })).targets, null);
+
+  const summary = await call(client, 'get_nutrition_summary', {
+    from: '2026-09-01',
+    through: '2026-09-14',
+  });
+  assert.equal(summary.days.length, 14);
+  assert.equal(summary.plan.check_in_day, 'monday');
+  assert.equal(summary.days[3].status, 'partial');
+  const last = summary.days.at(-1);
+  assert.ok(Math.abs(last.trend - 79.35) < 0.2, JSON.stringify(last));
+  assert.ok(
+    last.expenditure > 1900 && last.expenditure < 2600 && last.expenditure_error > 0,
+    JSON.stringify(last)
+  );
+  const { balanceDays } = require('../lib/nutritionTools');
+  const ws = await require('../lib/agentTools').workspace({ id: user.user._id, timezone: 'UTC' });
+  const known = balanceDays(ws.nutrition, '2026-09-01', '2026-09-14');
+  assert.equal(known[3].intake, null, 'A partial day is not known intake');
+  assert.equal(known[0].intake, 1900);
+  await client.close();
 });

@@ -13,6 +13,7 @@ const training = require('./training/history');
 const { sessionProblems, customExerciseProblems, programProblems } = require('./training/validate');
 const progression = require('./training/progression');
 const dates = require('./dates');
+const nutritionTools = require('./nutritionTools');
 
 const DATA_KINDS = ['workout_session', 'custom_exercise', 'program'];
 const EVIDENCE_LEVELS = ['humanRCT', 'observational', 'mechanism', 'anecdote', 'personalData'];
@@ -43,7 +44,7 @@ function trainingProblems(kind, id, payload, library) {
 async function workspace(account) {
   const rows = await store.find('documents', {
     account_id: account.id,
-    kind: { in: [...DATA_KINDS, 'proposal'] },
+    kind: { in: [...DATA_KINDS, 'proposal', ...nutritionTools.KINDS] },
     deleted_at: null,
   });
   const of = (kind) => rows.filter((row) => row.kind === kind).map((row) => row.payload);
@@ -56,6 +57,7 @@ async function workspace(account) {
     customExercises: of('custom_exercise'),
     programs: of('program'),
     proposals: of('proposal'),
+    nutrition: nutritionTools.prepare(of),
     history: new training.TrainingHistory(
       sessions.filter((s) => s.endedAt),
       library

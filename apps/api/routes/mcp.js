@@ -15,16 +15,18 @@ const { asyncHandler, forbidden } = require('../lib/errors');
 const { rateLimit } = require('../lib/ratelimit');
 const { MUSCLES } = require('../lib/training/library');
 const tools = require('../lib/agentTools');
+const nutrition = require('../lib/nutritionTools');
 
 const router = express.Router();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 const muscle = z.enum(MUSCLES);
 const readOnly = { readOnlyHint: true, openWorldHint: false };
 
-const INSTRUCTIONS = `Exerly holds this person's training log. Every number these tools return
+const INSTRUCTIONS = `Exerly holds this person's training and nutrition logs. Every number these tools return
 comes from Exerly's tested calculations, the same ones the app shows: quote them rather than
 computing your own. Loads are kilograms and volume is kilogram-reps unless a field says
-otherwise; get_profile says which units the person prefers. You can't change data directly.
+otherwise; nutrition is in kcal and grams, weights in kilograms; get_profile says which units the
+person prefers. Trend weight and expenditure come with one standard deviation: report the range. You can't change data directly.
 To suggest a change (fix an entry, adjust a session, add a custom exercise), call propose: the
 person reviews the diff, your evidence and your falsifier in Exerly and decides. Label evidence
 honestly: personalData is n=1, and say when data is short or confounded. No medical claims.`;
@@ -61,6 +63,33 @@ function buildServer(account, pat) {
       annotations: readOnly,
     },
     (ws) => tools.profile(ws)
+  );
+
+  tool(
+    'get_nutrition_day',
+    {
+      title: 'A day of nutrition',
+      description:
+        "One local day's food log: each entry with its meal, food, grams and macros, the day's totals for every nutrient logged, the targets that held that day, what remains, and whether the person marked the day complete, partial or fasting.",
+      inputSchema: { date: date.optional().describe('Local date; today if omitted') },
+      annotations: readOnly,
+    },
+    (ws, input) => nutrition.nutritionDay(ws, input)
+  );
+
+  tool(
+    'get_nutrition_summary',
+    {
+      title: 'Nutrition, weight and expenditure over time',
+      description:
+        "Each day in a range (28 days to today by default, a year at most): energy and protein logged, the energy target, the day's status, the scale weight, and Exerly's smoothed trend weight and expenditure with their standard deviations. Only days marked complete or fasting count as known intake. Also the plan in force: goal, mode and check-in day.",
+      inputSchema: {
+        from: date.optional().describe('First local date, inclusive'),
+        through: date.optional().describe('Last local date, inclusive; today if omitted'),
+      },
+      annotations: readOnly,
+    },
+    (ws, input) => nutrition.nutritionSummary(ws, input)
   );
 
   tool(

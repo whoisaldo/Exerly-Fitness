@@ -313,4 +313,37 @@ struct LiveSyncTests {
         #expect(tablet.agent.proposal(proposal.id)?.status == .accepted)
         #expect(tablet.engine.rejected.isEmpty)
     }
+
+    @Test func theServerReportsTheSameTrendAndExpenditureAsThePhone() async throws {
+        let (email, password) = try await signUp()
+        let phone = try LiveDevice(base: base)
+        _ = try await phone.signIn(email: email, password: password)
+        let today = LocalDate(Date(), in: .gmt)
+        let start = today.adding(days: -13), end = today.adding(days: -1)
+        let plan = try NutritionPlan(startDate: start, goal: NutritionGoal(.lose, weeklyRate: 0.005))
+            .computed(from: PlanBasis(expenditure: 2500, expenditureError: 400, trendWeight: 80))
+        try phone.nutrition.prepareWrite(kind: "nutrition_plan", id: plan.id.uuidString, payload: ExerlyJSON.canonical(plan))()
+        let oats = Food(name: "Synthetic oats", per100g: NutrientAmounts([.energy: 380, .protein: 13]))
+        for offset in 0..<13 {
+            let date = start.adding(days: offset)
+            try phone.nutrition.log(oats, grams: 450 + Double(offset % 3) * 40, on: date, meal: "Breakfast")
+            try phone.nutrition.setStatus(offset == 4 ? .partial : .complete, on: date)
+            let morning = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: .gmt, year: date.year,
+                                                                                  month: date.month, day: date.day, hour: 7))!
+            if offset % 4 != 1 { try phone.nutrition.logWeight(.kg(80 - Double(offset) * 0.06), at: morning, timeZone: .gmt) }
+        }
+        try await phone.engine.sync()
+
+        let expected = EnergyBalance.estimate(phone.nutrition.energyBalanceDays(from: start, through: end), prior: (2500, 400))
+        let account = try await phone.api.account()
+        let token = try await account.createAccessToken(name: "Synthetic agent", scopes: []).secret
+        let summary = try await tool("get_nutrition_summary", ["from": start.description, "through": end.description], token: token)
+        let days = try #require(summary["days"] as? [[String: Any]])
+        #expect(days.count == expected.count)
+        for (day, estimate) in zip(days, expected) {
+            #expect(day["date"] as? String == estimate.date.description)
+            #expect(abs((day["trend"] as? Double ?? .nan) - estimate.trend) <= 0.005, "\(estimate.date)")
+            #expect(abs((day["expenditure"] as? Double ?? .nan) - estimate.expenditure) <= 0.5, "\(estimate.date)")
+        }
+    }
 }
