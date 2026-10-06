@@ -14,37 +14,51 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 **L1b: on-device SQLite persistence.** Done on 2026-10-06 and landed (`4d10d8dc`).
 
-**M1a: PostgreSQL foundation.** Done on 2026-10-06 and landing now.
+**M1a: PostgreSQL foundation.** Done on 2026-10-06 and landed (`5278f84b`).
 
-- A Postgres driver behind `apps/api/data`, numbered SQL migrations (checksums,
-  advisory lock, rollback) and a throwaway test cluster per run.
-- New isolation, concurrency, migration and backup/restore tests.
-- A non-root Dockerfile, docker-compose, CI on a Postgres service, a Postgres
-  smoke test, and a DigitalOcean spec on the Dockerfile.
-- MongoDB is removed. SQLite is kept only for the app agent's simulator fixture.
+- A Postgres driver, SQL migrations, a throwaway test cluster, docker-compose, CI,
+  and the DigitalOcean spec on the Dockerfile.
 
-**Next: M1b, accounts.** Sign in with Apple, then account deletion and full
-export. Then M1c: document sync for ExerlyCore.
+**M1b: accounts.** Done on 2026-10-06 and landed (`51f67e57`).
+
+- Sign in with Apple, account linking, and account deletion and export from one
+  ownership map.
+- Apple token revocation waits for a key from Ali (QUESTIONS_FOR_ALI.md).
+
+**Review fixes.** Landed (`55935632`): validation at the store boundary, rest
+state that persists, a database per account, and `WorkoutSummary`.
+
+**M1c: document sync.** Server landed (`3c5ea561`); the Swift client is landing
+now.
+
+- Server: `/v1/documents` and `/v1/changes`, plus `docs/api/openapi.yaml`.
+- ExerlyCore: `ExerlyAPI` (sessions with refresh rotation), the credential
+  stores, `ExerlyJSON`, `Merge` and `SyncEngine`, with sync state in SQLite
+  schema v3.
+
+**M1 status.** M1 is complete in code. Two things are outside my control:
+
+- **Production cutover** waits on Ali's Neon `DATABASE_URL`. The integration
+  branch must not merge to `main` before that, or the live API breaks.
+- **Keychain verification** needs the app agent's hosted tests.
 
 ## Next three steps
 
-1. M1b, Sign in with Apple:
-   - verify Apple identity tokens server-side (JWKS from appleid.apple.com,
-     `aud` = `com.exerly.fitness`, nonce);
-   - link to or create the account;
-   - write migration 0002 for `account_identities`;
-   - add tests with locally signed fake tokens, and no Apple network calls.
-2. M1b, account lifecycle:
-   - `DELETE /api/account`, which removes every row for the account in one
-     transaction (App Store rule), with a test that checks every table;
-   - `GET /api/export`, a full JSON export.
-3. M1c, sync for ExerlyCore documents:
-   - table `documents (account_id, kind, id, revision, payload jsonb, deleted_at)`
-     plus the existing change feed;
-   - a push and pull API with idempotency and base revisions;
-   - the Swift `SyncEngine` and `APIClient` in ExerlyCore, with a 3-way merge of
-     sessions by set ID;
-   - the contract in `docs/api/openapi.yaml` and `to-app.md`.
+1. A staging API on devbox1, so the app can sync on a simulator or device
+   before production exists:
+   - deploy a copy under `~/Services/exerly-staging`, with a PostgreSQL cluster
+     under `~/Services`;
+   - add one LaunchAgent, following `~/Services/devbox-recovery/README.md`;
+   - bind to `0.0.0.0` on scratch port 39110, report
+     `http://100.80.149.7:39110`, and register it with the recovery inventory.
+2. M2, the agent core (design note `docs/design/004-agent-core.md`):
+   - proposals with a diff, evidence, confidence and a falsifier;
+   - accept and undo, and an audit log;
+   - scoped personal access tokens (read, write, propose);
+   - the MCP server over the same rules;
+   - first features on training data: stall diagnosis and deload detection.
+3. A JSON Schema for synced documents, shared by the API's validation and the
+   Swift tests, before the MCP server reads documents.
 
 ## Evidence
 
@@ -82,6 +96,19 @@ the app agent adds it to the project.
     hold no password or URL. A restart re-ran migrations as a no-op.
   - Backup: a `pg_dump` of a synthetic schema restored into a new database with
     identical rows (`tests/db.backup.test.js`).
+
+- M1c, 2026-10-06:
+  - `npm test -w apps/api` passed 182 of 182.
+  - ExerlyCore `swift test` passed 124 of 124 on macOS.
+  - The ExerlyCore suite also passed on the "Exerly Logic iPhone 17" simulator
+    (iOS 26.2, UDID `4FAB7031-A3BD-4298-A75C-F1259ACDAE6B`); log in
+    `artifacts/logic/`.
+  - `apps/ios/ExerlyCore/scripts/live-sync.sh` passed: the Swift client and
+    engine against the real API and PostgreSQL.
+  - The OpenAPI file passes `redocly lint`, except for its licence warning
+    (licence is Ali's decision).
+  - GitHub CI for `5278f84b`: the API (PostgreSQL), ExerlyCore, SwiftLint and
+    actionlint jobs passed.
 
 ## Risks and external dependencies
 

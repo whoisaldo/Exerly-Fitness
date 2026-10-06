@@ -24,8 +24,13 @@ try store.completeSet(setID)                                // starts store.rest
 let summary = try store.finishSession()                     // summary.records: PRs
 ```
 
-Test: `swift test` in this directory, with
-`DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer`.
+Test with `DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer` set.
+
+- `swift test` in this directory.
+- `scripts/live-sync.sh` runs the client and sync engine against the real API on
+  a throwaway PostgreSQL database, on port 39102.
+- The Keychain store needs a host app, so its test runs only when
+  `EXERLY_KEYCHAIN_TESTS` is set.
 
 ## Public interface
 
@@ -181,3 +186,78 @@ launch.
   - `loadValue(forKey:)` and `saveValue(_:forKey:)` hold small values, such as the
     rest timer and settings.
 - `InMemoryTrainingPersistence` is for previews and tests.
+
+## Accounts and sync
+
+Wiring in the app:
+
+```swift
+let api = ExerlyAPI(baseURL: apiURL, credentials: KeychainCredentialStore())
+
+// Sign in with Apple: give Apple nonce.sha256, send nonce.raw to Exerly.
+let nonce = AppleSignInNonce()
+request.nonce = nonce.sha256
+// ... after ASAuthorization succeeds:
+let result = try await api.signInWithApple(identityToken: token, rawNonce: nonce.raw,
+                                           name: fullName, timeZone: .current, unitSystem: nil)
+
+let persistence = try SQLiteTrainingPersistence(url: .defaultURL(accountID: result.account.id))
+let store = try TrainingStore(persistence: persistence)
+let sync = SyncEngine(store: store, state: persistence, api: api)
+try await sync.sync()   // at launch, on foreground, after finishing a session, and every few minutes
+```
+
+### ExerlyAPI
+
+An actor.
+
+- `signInWithApple(identityToken:rawNonce:name:timeZone:unitSystem:)` and
+  `signIn(email:password:)` return a `SignInResult` with `created` and
+  `account` (`id`, `email`, `name`).
+- `signOut()`, `deleteAccount(appleAuthorizationCode:)`, `exportAccount()`,
+  `isSignedIn` and `accountID`.
+
+It refreshes the 15-minute access token before it expires and once after a 401. A
+refresh's idempotency key stays in the credential store until the rotated
+credential is saved.
+
+Errors are `APIError`:
+
+- `sessionExpired`: sign in again.
+- `linkRequired`: a password account owns that email.
+- `appleReauthorizationRequired`: deletion needs a fresh Apple authorization code.
+- `server(status:message:)`, `notSignedIn` and `invalidResponse`.
+
+### Credentials
+
+- `KeychainCredentialStore` keeps the session in the Keychain, readable after first
+  unlock and never migrated to another device.
+- `InMemoryCredentialStore` is for previews and tests.
+
+### SyncEngine
+
+`@MainActor @Observable`.
+
+- `sync()` pulls, pushes, then pulls again. Overlapping calls share one run.
+- `state` is `idle`, `syncing`, `offline` or `failed(message)`, and
+  `lastSyncedAt` records the last success.
+- `SQLiteTrainingPersistence` and `InMemoryTrainingPersistence` both provide the
+  `SyncStateStore` the engine needs.
+
+How it decides what to send:
+
+- A document needs pushing when its canonical JSON differs from the last version
+  the server acknowledged. A crash between saving and syncing therefore loses
+  nothing.
+- Conflicts merge three ways with `Merge`: whichever side changed a field wins,
+  local wins when both did, and items merge by ID. Nothing logged on either side
+  is lost.
+- Sessions and custom exercises sync today.
+
+### Wire format and storage
+
+- `ExerlyJSON.encoder` and `ExerlyJSON.decoder` use sorted keys and ISO 8601 dates
+  with milliseconds. The store creates dates at whole milliseconds
+  (`Date.roundedToMilliseconds`), so they round-trip exactly.
+- `SQLiteTrainingPersistence.deleteDatabase(accountID:)` removes an account's
+  local data after it is deleted.

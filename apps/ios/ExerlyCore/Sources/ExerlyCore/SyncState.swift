@@ -1,0 +1,74 @@
+import Foundation
+
+/// The last version of a document both this device and the server agreed on,
+/// plus the key of a push that hasn't been acknowledged yet.
+public struct SyncBase: Sendable, Hashable {
+    public var kind: String
+    public var id: String
+    /// 0 until the server has acknowledged a version.
+    public var revision: Int
+    /// Canonical JSON of that version; nil for a tombstone or before the first push.
+    public var payload: Data?
+    /// Reused when the same content is pushed again after a lost response.
+    public var pushKey: String?
+    public var pushHash: String?
+}
+
+/// Where the sync engine keeps bases and its cursor. Both training
+/// persistence implementations provide it, in the same store as the data.
+@MainActor
+public protocol SyncStateStore: AnyObject {
+    func syncBases() throws -> [SyncBase]
+    func saveSyncBase(_ base: SyncBase) throws
+    func removeSyncBase(kind: String, id: String) throws
+    func syncCursor() throws -> Int
+    func saveSyncCursor(_ cursor: Int) throws
+}
+
+private let cursorKey = "sync.cursor"
+
+extension InMemoryTrainingPersistence: SyncStateStore {
+    public func syncBases() throws -> [SyncBase] { Array(bases.values) }
+    public func saveSyncBase(_ base: SyncBase) throws { bases["\(base.kind)/\(base.id)"] = base }
+    public func removeSyncBase(kind: String, id: String) throws { bases["\(kind)/\(id)"] = nil }
+    public func syncCursor() throws -> Int {
+        try loadValue(forKey: cursorKey).flatMap { String(bytes: $0, encoding: .utf8).flatMap(Int.init) } ?? 0
+    }
+    public func saveSyncCursor(_ cursor: Int) throws { try saveValue(Data(String(cursor).utf8), forKey: cursorKey) }
+}
+
+extension SQLiteTrainingPersistence: SyncStateStore {
+    public func syncBases() throws -> [SyncBase] {
+        try database.query("SELECT kind, id, revision, payload, push_key, push_hash FROM sync_bases").compactMap { row in
+            guard case .text(let kind) = row[0], case .text(let id) = row[1], case .integer(let revision) = row[2] else {
+                return nil
+            }
+            var base = SyncBase(kind: kind, id: id, revision: Int(revision))
+            if case .blob(let payload) = row[3] { base.payload = payload }
+            if case .text(let key) = row[4] { base.pushKey = key }
+            if case .text(let hash) = row[5] { base.pushHash = hash }
+            return base
+        }
+    }
+
+    public func saveSyncBase(_ base: SyncBase) throws {
+        try database.execute(
+            """
+            INSERT INTO sync_bases (kind, id, revision, payload, push_key, push_hash) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (kind, id) DO UPDATE SET revision = excluded.revision, payload = excluded.payload,
+                push_key = excluded.push_key, push_hash = excluded.push_hash
+            """,
+            base.kind, base.id, base.revision, base.payload, base.pushKey, base.pushHash
+        )
+    }
+
+    public func removeSyncBase(kind: String, id: String) throws {
+        try database.execute("DELETE FROM sync_bases WHERE kind = ? AND id = ?", kind, id)
+    }
+
+    public func syncCursor() throws -> Int {
+        try loadValue(forKey: cursorKey).flatMap { String(bytes: $0, encoding: .utf8).flatMap(Int.init) } ?? 0
+    }
+
+    public func saveSyncCursor(_ cursor: Int) throws { try saveValue(Data(String(cursor).utf8), forKey: cursorKey) }
+}

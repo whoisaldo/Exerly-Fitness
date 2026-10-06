@@ -117,3 +117,31 @@ after container checks.
   stored. It needs a Sign in with Apple key from Ali; see QUESTIONS_FOR_ALI.md.
 - **Sessions.** New sign-in paths always issue protocol 2 sessions: 15-minute
   access tokens and rotating refresh credentials.
+
+## 2026-10-06: Document sync for ExerlyCore
+
+- **Unit of sync.** ExerlyCore entities sync as whole documents, with server
+  revisions, stale-base conflicts, idempotent writes and tombstones
+  (`/v1/documents`), plus a document view of the shared change feed
+  (`/v1/changes`).
+- **Derived dirtiness.** The client marks nothing dirty. A document needs
+  pushing when its canonical JSON (sorted keys, millisecond ISO dates) differs
+  from the last acknowledged version. A crash between a save and a dirty flag
+  therefore cannot lose a change, and no cross-table transaction is needed.
+- **Push keys.** Each push key is tied to the content and the base revision. A
+  lost response is retried with the same key and replays; a merged version gets
+  a new key.
+- **Merging.** Conflicts merge three ways, so sets logged on two devices both
+  survive:
+  - whichever side changed a field wins, and local wins when both did;
+  - lists merge by ID, with additions from both sides kept;
+  - a deletion applies only to an item the other side left unchanged.
+- **Dates.** The store creates every date at whole milliseconds, so wire
+  round trips are exact.
+- **Server validation** checks the kind, the ID, that the payload is an object
+  and that its `id` matches, plus each kind's essential fields. It does not
+  reinterpret payloads. A JSON Schema shared with the Swift tests is due before
+  the MCP server reads documents.
+- **Forward compatibility.** An older client that pushes a document drops fields
+  it doesn't know. Acceptable while there are no old clients; revisit before
+  public release.

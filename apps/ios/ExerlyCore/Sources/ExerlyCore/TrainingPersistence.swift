@@ -24,6 +24,7 @@ public final class InMemoryTrainingPersistence: TrainingPersistence {
     public private(set) var sessions: [UUID: WorkoutSession] = [:]
     public private(set) var customExercises: [ExerciseID: Exercise] = [:]
     public private(set) var values: [String: Data] = [:]
+    var bases: [String: SyncBase] = [:]
 
     public init(sessions: [WorkoutSession] = [], customExercises: [Exercise] = []) {
         for session in sessions { self.sessions[session.id] = session }

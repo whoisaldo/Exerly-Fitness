@@ -121,6 +121,19 @@ import Testing
         #expect(try TrainingStore(persistence: persistence).restTimer == nil)
     }
 
+    @Test func anAccountsDatabaseCanBeRemoved() throws {
+        let account = "4f9e1c3a-0000-4000-8000-\(String(UInt64.random(in: 0..<1_000_000_000_000), radix: 10))"
+        let url = try SQLiteTrainingPersistence.defaultURL(accountID: account)
+        do {
+            let persistence = try SQLiteTrainingPersistence(url: url)
+            try persistence.save(Fixture.session([("deadlift", [Fixture.set(3, 150)])]))
+        }
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        try SQLiteTrainingPersistence.deleteDatabase(accountID: account)
+        #expect(!FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
+        try SQLiteTrainingPersistence.deleteDatabase(accountID: account)
+    }
+
     @Test func eachAccountHasItsOwnDatabase() throws {
         let a = try SQLiteTrainingPersistence.defaultURL(accountID: "4f9e1c3a-0000-4000-8000-000000000001")
         let b = try SQLiteTrainingPersistence.defaultURL(accountID: "4f9e1c3a-0000-4000-8000-000000000002")

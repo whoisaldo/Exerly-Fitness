@@ -44,6 +44,11 @@ public struct ExerciseLibrary: Sendable {
         try ExerciseLibrary(exercises: exercises + [exercise])
     }
 
+    /// Adds the exercise, or replaces the one with the same ID.
+    func replacing(_ exercise: Exercise) throws -> ExerciseLibrary {
+        try ExerciseLibrary(exercises: exercises.filter { $0.id != exercise.id } + [exercise])
+    }
+
     /// Exercises matching `query`, best first. An empty query lists every
     /// exercise alphabetically. `muscle` keeps exercises that target it;
     /// `available` keeps exercises whose resistance and support equipment are

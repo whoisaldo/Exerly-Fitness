@@ -15,13 +15,13 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
         case invalidAccountID(String)
     }
 
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     /// Rows that could not be decoded, as `table/id`. They stay in the file
     /// untouched so a later version can read them.
     public private(set) var unreadableRows: [String] = []
 
-    private let database: SQLiteDatabase
+    let database: SQLiteDatabase
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -43,6 +43,15 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
             .appendingPathComponent("Exerly", isDirectory: true)
             .appendingPathComponent(accountID, isDirectory: true)
             .appendingPathComponent("exerly.sqlite")
+    }
+
+    /// Removes an account's local database, for after the account is deleted.
+    /// Close every persistence using it first.
+    public static func deleteDatabase(accountID: String) throws {
+        let directory = try defaultURL(accountID: accountID).deletingLastPathComponent()
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
+        }
     }
 
     func schemaVersion() throws -> Int {
@@ -72,6 +81,17 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
             key TEXT PRIMARY KEY,
             value BLOB NOT NULL,
             updated_at REAL NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE sync_bases (
+            kind TEXT NOT NULL,
+            id TEXT NOT NULL,
+            revision INTEGER NOT NULL,
+            payload BLOB,
+            push_key TEXT,
+            push_hash TEXT,
+            PRIMARY KEY (kind, id)
         );
         """,
     ]

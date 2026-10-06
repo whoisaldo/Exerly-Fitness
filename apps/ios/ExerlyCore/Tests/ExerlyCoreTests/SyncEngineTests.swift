@@ -1,0 +1,262 @@
+import Foundation
+import Testing
+@testable import ExerlyCore
+
+/// The document contract of the real API, in memory: revisions, stale-base
+/// conflicts, idempotent replays, tombstones and an ordered change feed.
+final class FakeDocumentServer: DocumentAPI, @unchecked Sendable {
+    struct Stored { var revision: Int; var payload: Data? }
+    private let lock = NSLock()
+    private var documents: [String: Stored] = [:]
+    private var feed: [RemoteDocument] = []
+    private var receipts: [String: DocumentWriteResult] = [:]
+    /// When set, the next write is applied but its response is lost.
+    var loseNextResponse = false
+    var offline = false
+    private(set) var writes = 0
+
+    private func key(_ kind: String, _ id: String) -> String { "\(kind)/\(id)" }
+
+    func revision(_ kind: String, _ id: String) -> Int? { lock.withLock { documents[key(kind, id)]?.revision } }
+
+    func putDocument(kind: String, id: String, payload: Data, baseRevision: Int, idempotencyKey: String) async throws -> DocumentWriteResult {
+        try write(kind, id, payload, baseRevision, idempotencyKey)
+    }
+
+    func deleteDocument(kind: String, id: String, baseRevision: Int, idempotencyKey: String) async throws -> DocumentWriteResult {
+        try write(kind, id, nil, baseRevision, idempotencyKey)
+    }
+
+    private func write(_ kind: String, _ id: String, _ payload: Data?, _ base: Int, _ idempotency: String) throws -> DocumentWriteResult {
+        try lock.withLock {
+            if offline { throw Offline() }
+            if let receipt = receipts[idempotency] { return receipt }
+            let current = documents[key(kind, id)]
+            if payload == nil && current == nil { throw APIError.server(status: 404, message: "Document not found") }
+            guard base == (current?.revision ?? 0) else {
+                return .conflict(current.map {
+                    RemoteDocument(kind: kind, id: id, revision: $0.revision, deleted: $0.payload == nil, payload: $0.payload)
+                })
+            }
+            let revision = base + 1
+            documents[key(kind, id)] = Stored(revision: revision, payload: payload)
+            feed.append(RemoteDocument(kind: kind, id: id, revision: revision, deleted: payload == nil, payload: payload,
+                                       sequence: feed.count + 1))
+            writes += 1
+            let result = DocumentWriteResult.applied(revision: revision)
+            receipts[idempotency] = result
+            if loseNextResponse {
+                loseNextResponse = false
+                throw Offline()
+            }
+            return result
+        }
+    }
+
+    func changes(after cursor: Int, limit: Int) async throws -> ChangePage {
+        try lock.withLock {
+            if offline { throw Offline() }
+            let page = Array(feed.dropFirst(cursor).prefix(limit))
+            return ChangePage(changes: page, cursor: cursor + page.count, hasMore: cursor + page.count < feed.count)
+        }
+    }
+}
+
+@MainActor
+final class Device {
+    let persistence: InMemoryTrainingPersistence
+    let store: TrainingStore
+    let engine: SyncEngine
+    private let clockBox: ClockBox
+
+    init(server: FakeDocumentServer) throws {
+        let box = ClockBox()
+        let persistence = InMemoryTrainingPersistence()
+        clockBox = box
+        self.persistence = persistence
+        store = try TrainingStore(persistence: persistence, now: { box.now })
+        engine = SyncEngine(store: store, state: persistence, api: server)
+    }
+
+    func advance(minutes: Double) { clockBox.now = clockBox.now.addingTimeInterval(minutes * 60) }
+
+    final class ClockBox: @unchecked Sendable { var now = Fixture.instant() }
+
+    /// Logs a completed set of the first exercise in the active session.
+    func logSet(reps: Int, kg: Double) throws {
+        let performed = try #require(store.activeSession?.exercises.first)
+        let id = try store.addSet(to: performed.id)
+        var set = store.activeSession!.set(id)!.set
+        set.primary = Effort(reps: reps, load: .kg(kg))
+        try store.updateSet(set, in: performed.id)
+        try store.completeSet(id)
+    }
+}
+
+@MainActor
+@Suite struct SyncEngineTests {
+    @Test func aSessionLoggedOnOneDeviceArrivesOnAnother() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let tablet = try Device(server: server)
+        try phone.store.startSession(name: "Legs", bodyweight: .kg(80))
+        try phone.store.addExercise("back-squat")
+        try phone.logSet(reps: 5, kg: 100)
+        try phone.store.finishSession()
+        try await phone.engine.sync()
+
+        try await tablet.engine.sync()
+        #expect(tablet.store.history.sessions == phone.store.history.sessions)
+        #expect(tablet.store.history.statistics(of: "back-squat")?.totalVolume == 500)
+        #expect(phone.engine.state == .idle && tablet.engine.state == .idle)
+        #expect(phone.engine.lastSyncedAt != nil)
+    }
+
+    @Test func concurrentEditsMergeAndConverge() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let watch = try Device(server: server)
+        try phone.store.startSession(name: "Upper", bodyweight: .kg(80))
+        try phone.store.addExercise("barbell-bench-press")
+        try await phone.engine.sync()
+        try await watch.engine.sync()
+        #expect(watch.store.activeSession?.id == phone.store.activeSession?.id)
+
+        // Both log offline.
+        try phone.logSet(reps: 5, kg: 100)
+        try watch.logSet(reps: 8, kg: 80)
+        try watch.store.updateActiveSession { $0.notes = "From the watch" }
+
+        try await phone.engine.sync()
+        try await watch.engine.sync()
+        try await phone.engine.sync()
+
+        let phoneSession = try #require(phone.store.activeSession)
+        let watchSession = try #require(watch.store.activeSession)
+        #expect(phoneSession == watchSession)
+        #expect(phoneSession.notes == "From the watch")
+        let loads = phoneSession.exercises[0].sets.filter(\.isCompleted).map(\.primary.load)
+        #expect(Set(loads) == [.kg(100), .kg(80)])
+    }
+
+    @Test func aLostAcknowledgementReplaysInsteadOfConflicting() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        try phone.store.startSession(name: "Pull", bodyweight: nil)
+        try phone.store.addExercise("lat-pulldown")
+        server.loseNextResponse = true
+        await #expect(throws: Offline.self) { try await phone.engine.sync() }
+        #expect(phone.engine.state == .offline)
+        let id = try #require(phone.store.activeSession?.id.uuidString)
+        #expect(server.revision("workout_session", id) == 1)
+
+        try await phone.engine.sync()
+        #expect(server.revision("workout_session", id) == 1, "the retry replayed the first write")
+        #expect(server.writes == 1)
+    }
+
+    @Test func offlineChangesWaitAndThenPush() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        server.offline = true
+        try phone.store.startSession(name: "Offline", bodyweight: nil)
+        try phone.store.addExercise("deadlift")
+        try phone.logSet(reps: 3, kg: 180)
+        try phone.store.finishSession()
+        await #expect(throws: Offline.self) { try await phone.engine.sync() }
+        #expect(phone.store.history.sessions.count == 1, "local data is untouched")
+
+        server.offline = false
+        try await phone.engine.sync()
+        let tablet = try Device(server: server)
+        try await tablet.engine.sync()
+        #expect(tablet.store.history.sessions.count == 1)
+    }
+
+    @Test func deletionsPropagate() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let tablet = try Device(server: server)
+        try phone.store.startSession(name: "Doomed", bodyweight: nil)
+        try phone.store.addExercise("deadlift")
+        try phone.logSet(reps: 3, kg: 150)
+        let finished = try phone.store.finishSession().session
+        try await phone.engine.sync()
+        try await tablet.engine.sync()
+        #expect(tablet.store.history.sessions.count == 1)
+
+        try phone.store.deleteSession(finished.id)
+        try await phone.engine.sync()
+        try await tablet.engine.sync()
+        #expect(tablet.store.history.sessions.isEmpty)
+        #expect(tablet.persistence.sessions.isEmpty)
+    }
+
+    @Test func aChangeSurvivesADeletionOnAnotherDevice() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let tablet = try Device(server: server)
+        try phone.store.startSession(name: "Contested", bodyweight: nil)
+        try phone.store.addExercise("deadlift")
+        try await phone.engine.sync()
+        try await tablet.engine.sync()
+
+        try phone.store.discardSession()
+        try tablet.logSet(reps: 5, kg: 140)
+        try await phone.engine.sync()
+        try await tablet.engine.sync()
+        try await phone.engine.sync()
+
+        #expect(phone.store.activeSession?.exercises[0].sets.contains { $0.isCompleted } == true)
+        #expect(phone.store.activeSession == tablet.store.activeSession)
+    }
+
+    @Test func customExercisesArriveBeforeTheSessionsThatUseThem() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        let tablet = try Device(server: server)
+        let custom = Exercise(id: .custom(), name: "Zercher Squat", metric: .weightReps, mechanics: .compound,
+                              region: .lower, muscles: [.quads: 1, .glutes: 1], equipment: [.barbell])
+        try phone.store.addCustomExercise(custom)
+        try phone.store.startSession(name: "Custom", bodyweight: nil)
+        try phone.store.addExercise(custom.id)
+        try phone.logSet(reps: 5, kg: 90)
+        try phone.store.finishSession()
+        try await phone.engine.sync()
+
+        try await tablet.engine.sync()
+        #expect(tablet.store.library.exercise(custom.id) == custom)
+        #expect(tablet.store.history.statistics(of: custom.id)?.totalVolume == 450)
+    }
+
+    @Test func syncingTwiceChangesNothing() async throws {
+        let server = FakeDocumentServer()
+        let phone = try Device(server: server)
+        try phone.store.startSession(name: "Stable", bodyweight: nil)
+        try phone.store.addExercise("deadlift")
+        try await phone.engine.sync()
+        let writes = server.writes
+        try await phone.engine.sync()
+        try await phone.engine.sync()
+        #expect(server.writes == writes)
+    }
+
+    @Test func syncStateSurvivesARelaunchWithSQLite() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("exerly-sync-\(UUID().uuidString)")
+        let url = directory.appendingPathComponent("exerly.sqlite")
+        let server = FakeDocumentServer()
+        do {
+            let persistence = try SQLiteTrainingPersistence(url: url)
+            let store = try TrainingStore(persistence: persistence, now: { Fixture.instant() })
+            try store.startSession(name: "Persisted sync", bodyweight: nil)
+            try store.addExercise("deadlift")
+            try await SyncEngine(store: store, state: persistence, api: server).sync()
+        }
+        let persistence = try SQLiteTrainingPersistence(url: url)
+        let store = try TrainingStore(persistence: persistence)
+        let writes = server.writes
+        try await SyncEngine(store: store, state: persistence, api: server).sync()
+        #expect(server.writes == writes, "bases and the cursor were remembered")
+        #expect(try persistence.syncCursor() > 0)
+    }
+}

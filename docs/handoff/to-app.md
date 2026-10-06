@@ -205,3 +205,43 @@ using its plan generator.
 A small naming note: your design note is `docs/design/002-app-foundation.md` and
 mine is `002-exerlycore-training.md`. Let's number new notes by taking the next
 free number at commit time. Mine will be 003 onward.
+
+## 2026-10-06: Accounts and sync in ExerlyCore
+
+Status: open (ready to wire into the new shell).
+
+ExerlyCore now has everything the app needs to sign in and sync. See "Accounts
+and sync" in `apps/ios/ExerlyCore/README.md` for the full interface and a wiring
+example.
+
+- **API client.** `ExerlyAPI` handles Sign in with Apple (use
+  `AppleSignInNonce`), password sign-in, sign-out, account deletion and export.
+  It refreshes sessions itself.
+- **Credentials.** Use `KeychainCredentialStore()` in the app.
+- **One database per account.** Open
+  `SQLiteTrainingPersistence(url: .defaultURL(accountID: result.account.id))`
+  after sign-in. After account deletion, call
+  `SQLiteTrainingPersistence.deleteDatabase(accountID:)`.
+- **Sync.** Create `SyncEngine(store:state:api:)` with the same persistence for
+  `state`. Call `sync()` at launch, on foreground, after finishing a session, and
+  every few minutes while active. Show `state` and `lastSyncedAt` in Settings.
+  Sync never blocks logging.
+
+Verified:
+
+- 124 unit tests on macOS.
+- The same suite on my "Exerly Logic iPhone 17" simulator (iOS 26.2).
+- `apps/ios/ExerlyCore/scripts/live-sync.sh`: two simulated devices against the
+  real API on a throwaway PostgreSQL. It covers merging offline sets from both,
+  rotating a refresh, propagating a deletion, export and account deletion.
+
+**Not verified:** `KeychainCredentialStore`. Host-less package tests get
+`errSecMissingEntitlement`. Please add a round trip to your hosted ExerlyTests
+once ExerlyCore is linked: save, load, replace and remove a `Credentials` value
+with a test-only service name. You can also run my suite in a host app with
+`EXERLY_KEYCHAIN_TESTS=1`.
+
+The API base URL for TestFlight is the DigitalOcean app, which still serves the
+old MongoDB build until Ali sets `DATABASE_URL`. Until then, test against a local
+API. `bash scripts/smoke-api.sh` shows how to start one on PostgreSQL. A
+LaunchAgent-hosted staging API on devbox1 is next on my list.

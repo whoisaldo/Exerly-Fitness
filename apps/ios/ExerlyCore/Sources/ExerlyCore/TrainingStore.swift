@@ -44,7 +44,8 @@ public final class TrainingStore {
         restPolicy: RestPolicy = RestPolicy(), now: @escaping () -> Date = Date.init
     ) throws {
         self.persistence = persistence
-        self.now = now
+        // Whole milliseconds, so dates survive a round trip through the server exactly.
+        self.now = { now().roundedToMilliseconds }
         self.restPolicy = try persistence.loadValue(forKey: Self.restPolicyKey)
             .map { try JSONDecoder().decode(RestPolicy.self, from: $0) } ?? restPolicy
         var library = library
@@ -198,6 +199,60 @@ public final class TrainingStore {
         } catch {
             throw StoreError.invalidCustomExercise(["\(error)"])
         }
+        try persistence.save(exercise)
+        library = updated
+        history = TrainingHistory(sessions: history.sessions, library: updated)
+    }
+
+    // MARK: Sync
+
+    /// Every syncable entity as (kind, id, value), for the sync engine.
+    func syncDocuments() -> [(kind: String, id: String, value: any Encodable & Sendable)] {
+        var documents: [(kind: String, id: String, value: any Encodable & Sendable)] = []
+        for exercise in library.exercises where exercise.id.isCustom {
+            documents.append(("custom_exercise", exercise.id.rawValue, exercise))
+        }
+        for session in history.sessions + (activeSession.map { [$0] } ?? []) {
+            documents.append(("workout_session", session.id.uuidString, session))
+        }
+        return documents
+    }
+
+    func session(withID id: UUID) -> WorkoutSession? {
+        activeSession?.id == id ? activeSession : history.session(id)
+    }
+
+    /// Saves a session that arrived from another device or a merge, without
+    /// the single-active-session rule: a finished one joins history, and an
+    /// unfinished one becomes the active session unless another one is.
+    func applyRemote(_ session: WorkoutSession) throws {
+        try persistence.save(session)
+        let others = history.sessions.filter { $0.id != session.id }
+        if session.isFinished {
+            history = TrainingHistory(sessions: others + [session], library: library)
+            if activeSession?.id == session.id {
+                activeSession = nil
+                try setRestTimer(nil)
+            }
+        } else {
+            if history.session(session.id) != nil { history = TrainingHistory(sessions: others, library: library) }
+            if activeSession == nil || activeSession?.id == session.id { activeSession = session }
+        }
+    }
+
+    func removeRemoteSession(_ id: UUID) throws {
+        try persistence.deleteSession(id)
+        if activeSession?.id == id {
+            activeSession = nil
+            try setRestTimer(nil)
+        }
+        if history.session(id) != nil {
+            history = TrainingHistory(sessions: history.sessions.filter { $0.id != id }, library: library)
+        }
+    }
+
+    func applyRemote(_ exercise: Exercise) throws {
+        let updated = try library.replacing(exercise)
         try persistence.save(exercise)
         library = updated
         history = TrainingHistory(sessions: history.sessions, library: updated)
