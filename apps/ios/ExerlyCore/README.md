@@ -476,3 +476,35 @@ trend weight and expenditure.
   intake into a daily `Estimate`: trend weight and expenditure, each with one
   standard deviation. Feed it `store.energyBalanceDays(from:through:)`; only
   complete and fasting days count as known intake. Show the band.
+
+### Targets and check-ins
+
+`docs/design/011-nutrition-targets.md` has the design and how closely simulated
+dieters reach their goal.
+
+- `NutritionPlan` is a synced `nutrition_plan` document, one per version. A
+  version never changes once in force; a new goal or an accepted check-in adds
+  a version with a later `startDate`, so past days keep their targets.
+  - The goal is lose, maintain or gain, a weekly rate as a share of bodyweight
+    (up to 1 % to lose, 0.5 % to gain) and an optional goal weight.
+  - The mode is coached, collaborative or manual; the diet type balanced, low
+    fat, low carb or keto; the protein level 1.4, 1.8 or 2.2 g/kg.
+  - `weekdayWeights` share the weekly budget out, Sunday first; 0 is a fasting
+    day. `checkInDay` is the weekly review day.
+  - `computed(from: PlanBasis)` fills the seven `DailyTargets` from
+    expenditure and trend weight, or throws `.invalid(messages)`: a day under
+    1,200 kcal without `allowBelowFloor`, or macros that don't fit.
+- `NutritionStore` hosts plans: `plans`, `plan(on:)`, `targets(on:)` and
+  `savePlan(_:timeZone:)`, which refuses a start in the past or an edit to a
+  version in force.
+- `store.checkIn(today:existing:)` returns a `NutritionCheckIn.Review` for the
+  latest check-in day: the estimate, the week's trend change, complete and
+  weigh-in days, and an `outcome`:
+  - `.proposed`, with a `proposal` to file in `AgentStore`; accepting it adds
+    the new version, and undo removes it;
+  - `.unchanged`, `.notEnoughData`, `.notDue` or `.manual`;
+  - `.cannotKeepGoal`, with `problems` to show, when new targets would break a
+    floor.
+
+  The proposal's ID comes from the plan and the date, so two devices propose
+  one check-in.

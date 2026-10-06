@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Finds likely typing mistakes in a finished session and proposes the fix:
@@ -167,15 +166,7 @@ public enum EntryErrorDetector {
 
     static let namespace = UUID(uuidString: "9DDD2C9C-1E91-46F7-800A-D974DD0D0F29")!
 
-    /// A name-based (version 5) UUID from this detector's namespace and the session's ID.
-    static func proposalID(for session: UUID) -> UUID {
-        var data = withUnsafeBytes(of: namespace.uuid) { Data($0) }
-        data.append(Data(session.uuidString.utf8))
-        var bytes = Array(Insecure.SHA1.hash(data: data).prefix(16))
-        bytes[6] = bytes[6] & 0x0F | 0x50
-        bytes[8] = bytes[8] & 0x3F | 0x80
-        return bytes.withUnsafeBytes { UUID(uuid: $0.loadUnaligned(as: uuid_t.self)) }
-    }
+    static func proposalID(for session: UUID) -> UUID { UUID(named: session.uuidString, in: namespace) }
 
     // MARK: Checks
 

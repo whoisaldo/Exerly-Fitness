@@ -244,3 +244,22 @@ write, and the migration mirrors it in SQL; a test checks that they agree.
 ExerlyCore's `ProposedChange` and `DataRef` keep a UUID ID in uppercase however
 it arrived, so a proposal stored before the fix can still be accepted and
 undone.
+
+## 2026-10-06: Expenditure follows weight in the estimator
+
+`EnergyBalance` now moves expenditure 22 kcal a day for each kilogram of trend
+weight gained or lost (Hall et al., 2011), on top of its random-walk drift.
+As a pure random walk, the estimator lagged a diet's falling expenditure: in
+simulated dieters it read 171 kcal high at a 1 % weekly loss, so check-in
+targets undershot the goal. With the coupling, M5b's mean expenditure error
+fell from 90 to 74 kcal with daily weigh-ins, and from 114 to 97 kcal with
+weekly ones. The coefficient is a parameter, `expenditurePerKilogram`.
+
+## 2026-10-06: Nutrition plans are versioned, and check-ins are proposals
+
+A `nutrition_plan` version never changes once it starts, so any past day's
+targets are the ones that held then. A weekly check-in is a built-in proposal
+that adds a version, with the expenditure band, the week's trend and logging
+coverage as evidence. A check-in whose new targets would break the 1,200 kcal
+floor or the protein and fat minimums proposes nothing and says why, instead
+of silently slowing the goal.

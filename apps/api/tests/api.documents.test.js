@@ -548,6 +548,38 @@ test('nutrition documents sync like training ones', async () => {
     );
     assert.equal(res.status, 201, `${kind}: ${JSON.stringify(res.body)}`);
   }
+  const planID = randomUUID().toUpperCase();
+  const day = { energy: 2060, protein: 144, fat: 69, carbohydrate: 215 };
+  const plan = await api.put(
+    `/v1/documents/nutrition_plan/${planID}`,
+    {
+      payload: {
+        id: planID,
+        startDate: '2026-10-05',
+        createdAt: '2026-10-05T08:00:00.000Z',
+        goal: { direction: 'lose', weeklyRate: 0.005 },
+        mode: 'coached',
+        diet: 'balanced',
+        protein: 'moderate',
+        weekdayWeights: [1, 1, 1, 1, 1, 1, 1],
+        checkInDay: 2,
+        allowBelowFloor: false,
+        targets: Array(7).fill(day),
+      },
+      base_revision: 0,
+    },
+    { token, headers: key() }
+  );
+  assert.equal(plan.status, 201, JSON.stringify(plan.body));
+  const noTargets = await api.put(
+    `/v1/documents/nutrition_plan/${randomUUID()}`,
+    {
+      payload: { startDate: '2026-10-05', goal: { direction: 'lose' }, targets: [] },
+      base_revision: 0,
+    },
+    { token, headers: key() }
+  );
+  assert.equal(noTargets.status, 400);
   const wrongDay = await api.put(
     '/v1/documents/nutrition_day/2026-10-06',
     { payload: { id: '2026-10-06', date: '2026-10-05', status: 'complete' }, base_revision: 0 },
@@ -557,7 +589,7 @@ test('nutrition documents sync like training ones', async () => {
   const changes = (await api.get('/v1/changes?after=0', { token })).body.changes;
   assert.deepEqual(
     changes.map((c) => c.kind),
-    ['saved_food', 'food_entry', 'nutrition_day', 'weight_entry']
+    ['saved_food', 'food_entry', 'nutrition_day', 'weight_entry', 'nutrition_plan']
   );
 });
 

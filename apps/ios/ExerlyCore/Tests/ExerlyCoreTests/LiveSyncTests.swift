@@ -56,6 +56,7 @@ struct LiveSyncTests {
         let persistence: InMemoryTrainingPersistence
         let store: TrainingStore
         let programs: ProgramStore
+        let nutrition: NutritionStore
         let agent: AgentStore
         private(set) var engine: SyncEngine!
 
@@ -65,13 +66,14 @@ struct LiveSyncTests {
             api = ExerlyAPI(baseURL: base, credentials: credentials)
             store = try TrainingStore(persistence: persistence)
             programs = try ProgramStore(persistence: persistence, training: store)
-            agent = try AgentStore(persistence: persistence, hosts: [store, programs])
+            nutrition = try NutritionStore(persistence: persistence)
+            agent = try AgentStore(persistence: persistence, hosts: [store, programs, nutrition])
         }
 
         /// Signs in, then binds sync to the signed-in account.
         func signIn(email: String, password: String) async throws -> SignInResult {
             let result = try await api.signIn(email: email, password: password)
-            engine = SyncEngine(hosts: [store, programs, agent], state: persistence, api: try await api.account())
+            engine = SyncEngine(hosts: [store, programs, nutrition, agent], state: persistence, api: try await api.account())
             return result
         }
 
@@ -261,6 +263,8 @@ struct LiveSyncTests {
                 }
             }
             try phone.store.finishSession()
+            // Workouts that start in the same millisecond are ordered by ID, which is random.
+            try await Task.sleep(for: .milliseconds(5))
         }
         try await phone.engine.sync()
 
@@ -285,5 +289,28 @@ struct LiveSyncTests {
                 #expect(load?["unit"] as? String == set.effort.load?.unit.rawValue)
             }
         }
+    }
+
+    @Test func aNutritionPlanAndAnAcceptedCheckInSyncThroughTheRealAPI() async throws {
+        let (email, password) = try await signUp()
+        let phone = try LiveDevice(base: base)
+        _ = try await phone.signIn(email: email, password: password)
+        let today = LocalDate(Date(), in: .gmt)
+        let plan = try NutritionPlan(startDate: today.adding(days: -21), goal: NutritionGoal(.lose, weeklyRate: 0.005))
+            .computed(from: PlanBasis(expenditure: 2500, expenditureError: 400, trendWeight: 80))
+        try phone.nutrition.prepareWrite(kind: "nutrition_plan", id: plan.id.uuidString, payload: ExerlyJSON.canonical(plan))()
+        let days = (1...21).map { EnergyBalance.Day(date: today.adding(days: -$0), intake: 2300, weights: [80]) }
+        let review = try NutritionCheckIn.review(plan: plan, days: days, prior: (2500, 400), today: today, existing: [], now: Date())
+        let proposal = try #require(review.proposal, "\(review.outcome)")
+        try phone.agent.file(proposal)
+        try phone.agent.accept(proposal.id)
+        try await phone.engine.sync()
+
+        let tablet = try LiveDevice(base: base)
+        _ = try await tablet.signIn(email: email, password: password)
+        try await tablet.engine.sync()
+        #expect(tablet.nutrition.plans == phone.nutrition.plans && tablet.nutrition.plans.count == 2)
+        #expect(tablet.agent.proposal(proposal.id)?.status == .accepted)
+        #expect(tablet.engine.rejected.isEmpty)
     }
 }

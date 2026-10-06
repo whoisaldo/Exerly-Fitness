@@ -42,6 +42,14 @@ const KINDS = {
       : ['a weigh-in needs an instant and a weight'],
   program: (p) =>
     typeof p.name === 'string' && Array.isArray(p.days) ? [] : ['a program needs a name and days'],
+  nutrition_plan: (p) =>
+    typeof p.startDate === 'string' &&
+    p.goal &&
+    typeof p.goal.direction === 'string' &&
+    Array.isArray(p.targets) &&
+    p.targets.length === 7
+      ? []
+      : ['a plan needs a startDate, a goal and seven daily targets'],
   proposal: proposalProblems,
   audit_event: auditEventProblems,
 };

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Who filed a proposal.
@@ -235,5 +236,19 @@ public struct MetricReference: Sendable, Codable, Hashable {
         default:
             return nil
         }
+    }
+}
+
+extension UUID {
+    /// A name-based (version 5) UUID: the same name in the same namespace gives
+    /// the same UUID on every device, so built-in proposals made independently
+    /// are one document.
+    init(named name: String, in namespace: UUID) {
+        var data = withUnsafeBytes(of: namespace.uuid) { Data($0) }
+        data.append(Data(name.utf8))
+        var bytes = Array(Insecure.SHA1.hash(data: data).prefix(16))
+        bytes[6] = bytes[6] & 0x0F | 0x50
+        bytes[8] = bytes[8] & 0x3F | 0x80
+        self = bytes.withUnsafeBytes { UUID(uuid: $0.loadUnaligned(as: uuid_t.self)) }
     }
 }

@@ -421,6 +421,7 @@ components:
           - food_entry
           - nutrition_day
           - weight_entry
+          - nutrition_plan
           - proposal
           - audit_event
       description: |

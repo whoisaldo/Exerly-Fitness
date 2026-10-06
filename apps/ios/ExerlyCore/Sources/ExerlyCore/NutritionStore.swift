@@ -20,11 +20,14 @@ public final class NutritionStore {
     public private(set) var days: [LocalDate: NutritionDay] = [:]
     /// Oldest first.
     public private(set) var weights: [WeightEntry] = []
+    /// Plan versions, the earliest in force first.
+    public private(set) var plans: [NutritionPlan] = []
 
     static let foodKind = "saved_food"
     static let entryKind = "food_entry"
     static let dayKind = "nutrition_day"
     static let weightKind = "weight_entry"
+    nonisolated static let planKind = "nutrition_plan"
 
     @ObservationIgnored private let persistence: TrainingPersistence & DocumentPersistence
     @ObservationIgnored private let now: () -> Date
@@ -41,6 +44,12 @@ public final class NutritionStore {
             .map { try decoder.decode(NutritionDay.self, from: $0) }.map { ($0.date, $0) }, uniquingKeysWith: { a, _ in a })
         weights = try persistence.loadDocuments(kind: Self.weightKind).map { try decoder.decode(WeightEntry.self, from: $0) }
             .sorted { $0.at < $1.at }
+        plans = try persistence.loadDocuments(kind: Self.planKind).map { try decoder.decode(NutritionPlan.self, from: $0) }
+            .sorted(by: Self.planOrder)
+    }
+
+    static func planOrder(_ a: NutritionPlan, _ b: NutritionPlan) -> Bool {
+        (a.startDate, a.createdAt, a.id.uuidString) < (b.startDate, b.createdAt, b.id.uuidString)
     }
 
     static func entryOrder(_ a: FoodEntry, _ b: FoodEntry) -> Bool {
@@ -179,6 +188,26 @@ public final class NutritionStore {
         publish()
     }
 
+    // MARK: Plans
+
+    /// The version in force on a date: the latest to start on or before it.
+    public func plan(on date: LocalDate) -> NutritionPlan? { plans.last { $0.startDate <= date } }
+
+    public func targets(on date: LocalDate) -> DailyTargets? { plan(on: date)?.targets(on: date) }
+
+    /// Saves a version that starts today or later. Versions already in force
+    /// can't change, so past days keep their targets; start a new one instead.
+    public func savePlan(_ plan: NutritionPlan, timeZone: TimeZone) throws {
+        let today = LocalDate(now(), in: timeZone)
+        var problems = plan.validationErrors
+        if plan.startDate < today { problems.append("A plan can't start in the past") }
+        if let saved = plans.first(where: { $0.id == plan.id }), saved.startDate <= today {
+            problems.append("This version is already in force; start a new one")
+        }
+        guard problems.isEmpty else { throw StoreError.invalid(problems) }
+        try commit(Self.planKind, plan.id.uuidString, plan)
+    }
+
     // MARK: Private
 
     private func commit<T: Encodable>(_ kind: String, _ id: String, _ value: T) throws {
@@ -188,7 +217,7 @@ public final class NutritionStore {
 }
 
 extension NutritionStore: DocumentHost {
-    public var documentKinds: [String] { [Self.foodKind, Self.entryKind, Self.dayKind, Self.weightKind] }
+    public var documentKinds: [String] { [Self.foodKind, Self.entryKind, Self.dayKind, Self.weightKind, Self.planKind] }
 
     public func documentIDs(kind: String) -> [String] {
         switch kind {
@@ -196,6 +225,7 @@ extension NutritionStore: DocumentHost {
         case Self.entryKind: entries.map(\.id.uuidString)
         case Self.dayKind: days.values.map(\.id)
         case Self.weightKind: weights.map(\.id.uuidString)
+        case Self.planKind: plans.map(\.id.uuidString)
         default: []
         }
     }
@@ -206,6 +236,7 @@ extension NutritionStore: DocumentHost {
         case Self.entryKind: return try entries.first { $0.id.uuidString == id }.map(ExerlyJSON.canonical)
         case Self.dayKind: return try LocalDate(id).flatMap { days[$0] }.map(ExerlyJSON.canonical)
         case Self.weightKind: return try weights.first { $0.id.uuidString == id }.map(ExerlyJSON.canonical)
+        case Self.planKind: return try plans.first { $0.id.uuidString == id }.map(ExerlyJSON.canonical)
         default: return nil
         }
     }
@@ -217,6 +248,7 @@ extension NutritionStore: DocumentHost {
         case Self.entryKind: return try ExerlyJSON.canonical(decoder.decode(FoodEntry.self, from: payload))
         case Self.dayKind: return try ExerlyJSON.canonical(decoder.decode(NutritionDay.self, from: payload))
         case Self.weightKind: return try ExerlyJSON.canonical(decoder.decode(WeightEntry.self, from: payload))
+        case Self.planKind: return try ExerlyJSON.canonical(decoder.decode(NutritionPlan.self, from: payload))
         default: throw DocumentError(message: "Unknown kind \(kind)")
         }
     }
@@ -237,13 +269,16 @@ extension NutritionStore: DocumentHost {
         case Self.weightKind:
             let weight = try decoder.decode(WeightEntry.self, from: payload)
             problems = (weight.id.uuidString == id ? [] : ["the ID doesn't match"]) + weight.problems
+        case Self.planKind:
+            let plan = try decoder.decode(NutritionPlan.self, from: payload)
+            problems = (plan.id.uuidString == id ? [] : ["the ID doesn't match"]) + plan.validationErrors
         default:
             throw DocumentError(message: "Unknown kind \(kind)")
         }
         guard problems.isEmpty else { throw DocumentError(message: problems.joined(separator: "; ")) }
     }
 
-    /// Foods, entries and weigh-ins merge as whole values. A day merges field by field.
+    /// Foods, entries, weigh-ins and plans merge as whole values. A day merges field by field.
     public func merge(kind: String, base: Data?, local: Data, remote: Data) throws -> Data {
         let decoder = ExerlyJSON.decoder
         func whole<T: Codable & Equatable>(_ type: T.Type) throws -> Data {
@@ -254,6 +289,7 @@ extension NutritionStore: DocumentHost {
         case Self.foodKind: return try whole(Food.self)
         case Self.entryKind: return try whole(FoodEntry.self)
         case Self.weightKind: return try whole(WeightEntry.self)
+        case Self.planKind: return try whole(NutritionPlan.self)
         case Self.dayKind:
             let original = try base.map { try decoder.decode(NutritionDay.self, from: $0) }
             var merged = try decoder.decode(NutritionDay.self, from: local)
@@ -276,6 +312,7 @@ extension NutritionStore: DocumentHost {
                 case Self.entryKind: entries.removeAll { $0.id.uuidString == id }
                 case Self.dayKind: if let date = LocalDate(id) { days[date] = nil }
                 case Self.weightKind: weights.removeAll { $0.id.uuidString == id }
+                case Self.planKind: plans.removeAll { $0.id.uuidString == id }
                 default: break
                 }
             }
@@ -295,9 +332,12 @@ extension NutritionStore: DocumentHost {
         case Self.dayKind:
             let day = try decoder.decode(NutritionDay.self, from: canonical)
             return { [self] in days[day.date] = day }
-        default:
+        case Self.weightKind:
             let weight = try decoder.decode(WeightEntry.self, from: canonical)
             return { [self] in weights = (weights.filter { $0.id != weight.id } + [weight]).sorted { $0.at < $1.at } }
+        default:
+            let plan = try decoder.decode(NutritionPlan.self, from: canonical)
+            return { [self] in plans = (plans.filter { $0.id != plan.id } + [plan]).sorted(by: Self.planOrder) }
         }
     }
 }

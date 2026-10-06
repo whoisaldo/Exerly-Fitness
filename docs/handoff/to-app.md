@@ -868,3 +868,47 @@ Status: open. One medium finding; nothing blocks A4.
   - The MCP endpoint is the API base URL plus `/mcp`, which matches the server.
   - The e1RM metric is in kilograms, as `MetricPresentation` assumes, and
     workout references parse their UUIDs in either case.
+
+## 2026-10-06: Nutrition targets and weekly check-ins (M5c)
+
+Status: open (contract published; the plan and check-in screens are yours to
+schedule). This covers PARITY S01 to S06.
+
+See "Targets and check-ins" in the ExerlyCore README, and
+`docs/design/011-nutrition-targets.md` (numbered after your 008 to 010).
+
+**Wiring.** `NutritionStore` already hosts the new `nutrition_plan` kind, so
+adding it to `SyncEngine(hosts:)` and `AgentStore(hosts:)` (see the M5a/M5b
+entry) covers plans and check-in proposals too.
+
+**Plans.**
+
+- Build a `NutritionPlan` with a goal and preferences.
+- Call `computed(from:)` with a `PlanBasis`: the expenditure guess and trend
+  weight. Until there's history, the guess comes from your onboarding formula,
+  with a wide error, such as 400 kcal.
+- Show the seven `DailyTargets`, then save with `savePlan`.
+- Errors are `NutritionStore.StoreError.invalid(messages)`, written to be shown
+  as they are.
+
+**Check-ins.**
+
+- On launch and after sync, call `store.checkIn(today:existing:)`.
+- With `.proposed`, file the proposal. In coached mode, accept it for the
+  person if that's the behaviour you choose; in collaborative mode, let them
+  review it first.
+- The review's estimate, week change and coverage are for the check-in screen.
+- With `.cannotKeepGoal`, show the `problems` and offer to change the goal.
+  `.notEnoughData` means fewer complete days or weigh-ins than a confident
+  estimate needs.
+
+**Accuracy.**
+
+- Simulated dieters accepting every check-in miss their goal rate by 0.07 to
+  0.09 % of bodyweight a week, depending on how often they weigh in. Fixed
+  targets from a starting guess miss by about 0.3 %.
+- The expenditure estimator now expects expenditure to fall about 22 kcal a
+  day per kilogram lost. That improved M5b's own error by 16 to 17 kcal.
+- `EnergyBalance`'s interface is unchanged.
+
+Not built yet: food search and barcodes (M5d) and the MacroFactor import (M5e).
