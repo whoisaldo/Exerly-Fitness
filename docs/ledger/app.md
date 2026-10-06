@@ -5,13 +5,15 @@ No parity row is fully device-verified. Keep working from this ledger.
 
 ## Current milestone and next steps
 
-2026-10-06 13:05 EDT. A2 training logger is on internal TestFlight, with Ali's
+2026-10-06 13:11 EDT. A2 training logger is on internal TestFlight, with Ali's
 requested purple theme/logo restored and its sign-in backend fixed. A1/A2 are
 committed locally on agent/app but have not landed on integration yet.
 
-1. Commit the brand/sign-in correction, rebase onto integration (last seen
-   3cba5eae), run the full API/Core/native suite and device build. The previous
-   full run passed on a4eeba40. Fast-forward integration and push when green.
+1. Correction committed and rebased onto integration 3cba5eae, app8a511eae.
+   API192/Core147/device build pass. Full native retry is running, session64210,
+   artifacts/app-brand/integration-native-retry.xcresult, original Large simulator.
+   First attempt hit SpringBoard Busy before app launch, aborted; restarting that
+   simulator fixed it. Fast-forward integration and push after green full run.
 2. Export normal-size screenshots from the new full training UI run. Captures
    now include Home and empty Training. Inspect them and update evidence.
 3. Continue A3 accounts/sync. Read latest Core README and inbox. Logic owns the
@@ -96,6 +98,7 @@ revocation secrets remain Ali's QUESTIONS_FOR_ALI items. SIWA capability pending
 ## Commands and processes
 
 DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer. Only app sims:
+
 - Large7189880A-91EC-4555-83E8-A37464802FE6, iPhone17ProMax/iOS26.2.
 - Small7D2096B8-3E67-477F-82BF-0E2BEDF2CA2B, SE3/iOS18.6.
 - Accessibility large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19, iOS26.2.
@@ -110,3 +113,7 @@ EXERLY_FIXTURE_EXTERNAL=1 for an existing fixture. Defaults use new fixture39001
 Full run on original Large uses .deriveddata/app-training. Small uses
 .deriveddata/app-training-small; accessibility Large uses .deriveddata/app-brand.
 Artifacts, signing files and private desktop captures are ignored, never commit.
+
+Proposal review reproduced remote acceptance of invalid completed reps and lost
+first custom exercise after a two-exercise proposal. Details and reproduction
+paths sent in to-logic.md. A3 still needs the shared auth bridge.

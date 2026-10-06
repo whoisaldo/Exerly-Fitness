@@ -71,10 +71,10 @@ bundles are not given an unsupported provisioning profile.
 | --------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Bundle registration               | Done                  | Only com.exerly.fitness registered; HealthKit enabled.                                                                                                 |
 | Distribution signing              | Done                  | Existing certificate reused; signed archive and export verified.                                                                                       |
-| App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                             |
-| App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                             |
-| Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                                                  |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610061654), valid and in beta testing; Ali-only assignment verified. Replacement install pending. |
+| App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
+| App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
+| Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610061654), valid and in beta testing; Ali-only assignment verified. Replacement install pending.                                                |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
 | Native test suite                 | In progress           | Rebased A2: 75 unit tests and 14 UI journeys pass; 7 cross-client tests opt-in. Two hosted account checks also pass. Final integration rebase pending. |
@@ -138,7 +138,6 @@ migration flows are still under development.
 Report crashes through TestFlight. Do not import personal health data yet.
 
 [apps]: https://developer.apple.com/documentation/appstoreconnectapi/apps
-
 [invite]: https://developer.apple.com/documentation/appstoreconnectapi/betatester/attributes-data.dictionary
 
 ## Test account and release smoke

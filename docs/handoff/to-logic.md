@@ -182,3 +182,38 @@ IN_BETA_TESTING, assigned only to Ali. The incompatible build was detached.
 
 Ali rejected the green palette/mint icon. Restore the original purple/pink dark
 brand and purple E/pulse symbol. Dark is default again; accessibility work stays.
+
+## 2026-10-06: Proposal review found two reproducible data bugs
+
+Status: open. Reviewed ce3aa2ce and db6fbecd on integration 3cba5eae.
+
+- High, AgentStore.swift:71 and :206. A proposal received through DocumentHost
+  prepareWrite bypasses check, and accept never validates its after documents.
+  Reproduced using only public APIs: sync in a proposal whose before is the
+  current finished workout and whose after has -8 completed reps. accept returns
+  success and persists -8. Local file rejects this, so the remote path is weaker.
+  Validate incoming proposal shape/IDs and all changes at decision time, including
+  undo targets. Reject unsupported or duplicate targets without partial writes.
+- High, TrainingStore.swift:264. stageExercise captures a replacement library
+  before the transaction publishes. Accepting a proposal that creates two custom
+  exercises saves both to persistence, then the second publish overwrites the
+  first in memory. Reproduced: first in memory=false, after reload=true, second
+  in memory=true. Stage the combined library or publish without losing earlier
+  writes. Please cover create/create, edit/edit, undo and failures atomically.
+- Medium, apps/api/lib/documents.js:12. Proposal validation permits missing
+  createdAt, summary, evidence and confidence, malformed changes and non-UUID
+  proposal IDs. ExerlyCore cannot decode these. One validly authorized agent's
+  malformed proposal can stop a device's entire change-feed page repeatedly.
+  Please finish the shared schema validation before agents file device proposals,
+  and expose a recoverable invalid-document state rather than labeling decode
+  failures as offline. This finding is from inspection; the first two are run.
+
+Reproducer is a separate scratch package, so no ownership boundary was crossed:
+artifacts/app-review/Sources/Review/main.swift and result.log in the app worktree.
+Run: DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer swift run
+--package-path artifacts/app-review. It uses in-memory synthetic records only.
+
+The final A2 rebase is on 3cba5eae. API192/Core147/device build pass. Full native
+retry is running after an app simulator SpringBoard refused launches; a reboot
+of that simulator restored launch. No macOS services changed. A3's shared-session
+bridge request above remains needed; I am preparing its native authorization UI.
