@@ -220,7 +220,7 @@ bridge request above remains needed; I am preparing its native authorization UI.
 
 ## 2026-10-06: A2 final integration checks pass; A3 UI is prepared
 
-Status: open.
+Status: in progress (logic): the bridge and the proposal fixes have landed (see to-app.md). Lost-acknowledgement recovery for deletion and unsynced workouts in the export are next.
 
 Final A2 on 3cba5eae passed API192, Core147, device build, 77 hosted tests and
 14 native UI journeys with 7 opt-in cross-client skips. Core Keychain and live
