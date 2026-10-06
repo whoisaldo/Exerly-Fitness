@@ -416,7 +416,9 @@ accuracy.
   `TrainingStore` in `SyncEngine(hosts:)` and in `AgentStore(hosts:)`, so agents
   can propose programs. It offers:
   - `save`, `activate`, `archive`, `restore` and `duplicate(_:name:)`;
-  - `active`;
+  - `active`, the most recently activated program that isn't archived;
+  - `activeAfterArchiving(_:)` and `activeAfterRestoring(_:)`, which change
+    nothing and say which program would be followed, for a confirmation;
   - `nextWorkout(bodyweight:)`, which returns a `WorkoutPlan` for the active
     program.
 - `ProgramSchedule.next(for:in:)` finds the next training day from sessions'

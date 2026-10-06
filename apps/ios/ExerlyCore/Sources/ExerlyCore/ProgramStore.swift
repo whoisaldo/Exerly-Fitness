@@ -36,7 +36,24 @@ public final class ProgramStore {
 
     /// The program the person is following: the most recently activated one
     /// that isn't archived.
-    public var active: Program? {
+    public var active: Program? { Self.active(in: programs) }
+
+    /// What `active` would be after archiving `id`, changing nothing, so a
+    /// confirmation can name the program the person will be following.
+    /// Archiving the active program returns to the one activated before it.
+    public func activeAfterArchiving(_ id: UUID) -> Program? { Self.active(in: programs.filter { $0.id != id }) }
+
+    /// What `active` would be after restoring `id`, changing nothing. A
+    /// restored program that was activated most recently is followed again.
+    public func activeAfterRestoring(_ id: UUID) -> Program? {
+        Self.active(in: programs.map { program in
+            var restored = program
+            if program.id == id { restored.archivedAt = nil }
+            return restored
+        })
+    }
+
+    private static func active(in programs: [Program]) -> Program? {
         programs.filter { $0.activatedAt != nil && $0.archivedAt == nil }.max { $0.activatedAt! < $1.activatedAt! }
     }
 

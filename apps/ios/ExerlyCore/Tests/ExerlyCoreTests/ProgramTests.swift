@@ -209,6 +209,28 @@ func fullBody(cycles: Int = 4, deload: DeloadPlacement = .none) -> Program {
         #expect(try ProgramStore(persistence: persistence, training: training).programs.count == 2, "Saved")
     }
 
+    @Test func archivingOrRestoringSaysWhichProgramWillBeFollowed() throws {
+        let persistence = InMemoryTrainingPersistence()
+        var clock = Fixture.instant()
+        let programs = try ProgramStore(persistence: persistence, training: try TrainingStore(persistence: persistence),
+                                        now: { clock })
+        let first = fullBody(), second = fullBody()
+        try programs.save(first)
+        try programs.save(second)
+        try programs.activate(first.id)
+        clock += 60
+        try programs.activate(second.id)
+
+        #expect(programs.activeAfterArchiving(second.id)?.id == first.id)
+        #expect(programs.active?.id == second.id, "A preview changes nothing")
+        try programs.archive(second.id)
+        #expect(programs.active?.id == first.id)
+        #expect(programs.activeAfterRestoring(second.id)?.id == second.id)
+        try programs.restore(second.id)
+        #expect(programs.active?.id == second.id)
+        #expect(programs.activeAfterArchiving(first.id)?.id == second.id, "Archiving one not followed changes nothing")
+    }
+
     @Test func programsSyncAndCanBeProposedByAnAgent() async throws {
         let server = FakeDocumentServer()
         let phoneStore = InMemoryTrainingPersistence()
