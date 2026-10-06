@@ -22,14 +22,31 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
     public private(set) var unreadableRows: [String] = []
 
     let database: SQLiteDatabase
+    private let path: String
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    public private(set) var isClosed = false
+
+    /// Every persistence opened in this process, so deleting a file can close
+    /// the ones still using it.
+    private struct Opened { let path: String; weak var persistence: SQLiteTrainingPersistence? }
+    private static var opened: [Opened] = []
 
     public init(url: URL) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         database = try SQLiteDatabase(url: url)
+        path = url.standardizedFileURL.path
         try database.executeScript("PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;")
         try migrate()
+        Self.opened.removeAll { $0.persistence == nil }
+        Self.opened.append(Opened(path: path, persistence: self))
+    }
+
+    /// Closes the file. Reads and writes after this throw, so a store that
+    /// outlives its account can't write to it.
+    public func close() {
+        database.close()
+        isClosed = true
     }
 
     /// `Application Support/Exerly/<accountID>/exerly.sqlite`. Each account
@@ -46,9 +63,13 @@ public final class SQLiteTrainingPersistence: TrainingPersistence {
     }
 
     /// Removes an account's local database, for after the account is deleted.
-    /// Close every persistence using it first.
+    /// Any persistence still using the file is closed first, so nothing that
+    /// still holds one can write to the deleted file, or to a new one at the
+    /// same path.
     public static func deleteDatabase(accountID: String) throws {
-        let directory = try defaultURL(accountID: accountID).deletingLastPathComponent()
+        let url = try defaultURL(accountID: accountID)
+        for entry in opened where entry.path == url.standardizedFileURL.path { entry.persistence?.close() }
+        let directory = url.deletingLastPathComponent()
         if FileManager.default.fileExists(atPath: directory.path) {
             try FileManager.default.removeItem(at: directory)
         }

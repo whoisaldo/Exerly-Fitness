@@ -36,6 +36,17 @@ final class SQLiteDatabase {
 
     deinit { sqlite3_close(handle) }
 
+    /// Closes the connection. Everything after that throws.
+    func close() {
+        sqlite3_close(handle)
+        handle = nil
+    }
+
+    private func open() throws -> OpaquePointer {
+        guard let handle else { throw Error(code: SQLITE_MISUSE, message: "The database is closed") }
+        return handle
+    }
+
     private func check(_ status: Int32) throws {
         guard status == SQLITE_OK || status == SQLITE_DONE || status == SQLITE_ROW else {
             throw Error(code: status, message: String(cString: sqlite3_errmsg(handle)))
@@ -49,7 +60,7 @@ final class SQLiteDatabase {
 
     /// Runs several statements with no parameters.
     func executeScript(_ sql: String) throws {
-        try check(sqlite3_exec(handle, sql, nil, nil, nil))
+        try check(sqlite3_exec(try open(), sql, nil, nil, nil))
     }
 
     func query(_ sql: String, _ parameters: Any?...) throws -> [[Value]] {
@@ -58,7 +69,7 @@ final class SQLiteDatabase {
 
     func query(_ sql: String, values parameters: [Value]) throws -> [[Value]] {
         var statement: OpaquePointer?
-        try check(sqlite3_prepare_v2(handle, sql, -1, &statement, nil))
+        try check(sqlite3_prepare_v2(try open(), sql, -1, &statement, nil))
         defer { sqlite3_finalize(statement) }
         for (offset, parameter) in parameters.enumerated() {
             let index = Int32(offset + 1)

@@ -134,6 +134,27 @@ import Testing
         try SQLiteTrainingPersistence.deleteDatabase(accountID: account)
     }
 
+    @Test func deletingAnAccountsDatabaseClosesWhatStillUsesIt() throws {
+        let account = "4f9e1c3a-0000-4000-8000-\(String(UInt64.random(in: 0..<1_000_000_000_000), radix: 10))"
+        let url = try SQLiteTrainingPersistence.defaultURL(accountID: account)
+        // Held the way a view that outlives the account could hold it.
+        let retained = try SQLiteTrainingPersistence(url: url)
+        try retained.save(Fixture.session([("deadlift", [Fixture.set(3, 150)])]))
+        try SQLiteTrainingPersistence.deleteDatabase(accountID: account)
+        #expect(retained.isClosed)
+        #expect(!FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
+
+        // The account signs in again: the old connection must not reach the new file.
+        let fresh = try SQLiteTrainingPersistence(url: url)
+        #expect(throws: (any Error).self) { try retained.save(Fixture.session([("deadlift", [Fixture.set(3, 160)])])) }
+        #expect(throws: (any Error).self) { try retained.loadSessions() }
+        #expect(try fresh.loadSessions().isEmpty)
+        // Closing is final, and harmless twice.
+        fresh.close()
+        fresh.close()
+        try SQLiteTrainingPersistence.deleteDatabase(accountID: account)
+    }
+
     @Test func eachAccountHasItsOwnDatabase() throws {
         let a = try SQLiteTrainingPersistence.defaultURL(accountID: "4f9e1c3a-0000-4000-8000-000000000001")
         let b = try SQLiteTrainingPersistence.defaultURL(accountID: "4f9e1c3a-0000-4000-8000-000000000002")

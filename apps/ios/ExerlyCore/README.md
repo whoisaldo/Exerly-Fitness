@@ -189,6 +189,10 @@ launch.
   - Rows it cannot decode are listed in `unreadableRows` and left untouched.
   - `loadValue(forKey:)` and `saveValue(_:forKey:)` hold small values, such as the
     rest timer and settings.
+  - `close()` ends its use: reads and writes after it throw. Close the account's
+    persistence when the account signs out or switches.
+    `deleteDatabase(accountID:)` closes any persistence still open on that file
+    before removing it, so a store that outlives its account can't write there.
   - `performAtomically` runs on one transaction; a nested call uses a savepoint.
 - `InMemoryTrainingPersistence` is for previews and tests.
 
