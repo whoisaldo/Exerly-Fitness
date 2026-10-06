@@ -107,9 +107,14 @@ struct TrainingProgramEditor: View {
             }
         }
         .interactiveDismissDisabled(draft.hasChanges)
-        .confirmationDialog("Discard program changes?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) { }
+        .sheet(isPresented: $confirmingDiscard) {
+            TrainingProgramConfirmation(title: "Discard program changes?", message: "Your unsaved changes will be discarded. The saved program will stay as it is.",
+                                        confirm: "Discard changes", cancelLabel: "Keep editing", destructive: true) {
+                confirmingDiscard = false
+                dismiss()
+            } cancel: {
+                confirmingDiscard = false
+            }
         }
     }
 }

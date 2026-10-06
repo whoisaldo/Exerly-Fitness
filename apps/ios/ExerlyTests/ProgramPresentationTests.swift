@@ -4,6 +4,30 @@ import XCTest
 
 @MainActor
 final class ProgramPresentationTests: XCTestCase {
+    func testFirstWorkoutExplainsMissingLoadAndDoesNotInventRepsForTimedExercise() throws {
+        let persistence = InMemoryTrainingPersistence()
+        let training = try TrainingStore(persistence: persistence)
+        let programs = try ProgramStore(persistence: persistence, training: training)
+        let lift = try XCTUnwrap(training.library.exercise("deadlift"))
+        let timed = try XCTUnwrap(training.library.exercises.first { !$0.metric.tracksReps })
+        let target = SlotTarget(sets: 1, minReps: 5, maxReps: 8, rir: 2)
+        let program = Program(name: "First workout", days: [ProgramDay(name: "Mixed", slots: [
+            ProgramSlot(exerciseID: lift.id, target: target), ProgramSlot(exerciseID: timed.id, target: target)
+        ])], cycles: 1)
+        try programs.save(program)
+        try programs.activate(program.id)
+        let plan = try XCTUnwrap(programs.nextWorkout(bodyweight: nil))
+        let lifting = plan.exercises[0]
+        XCTAssertNil(lifting.recommendation.sets.first?.effort.load)
+        XCTAssertEqual(TrainingProgramFormat.reason(lifting.recommendation, exercise: lift, target: target),
+                       "Choose a load that leaves 2 reps in reserve.")
+        let duration = plan.exercises[1]
+        XCTAssertEqual(TrainingProgramFormat.target(duration.target, exercise: timed), "1 set")
+        XCTAssertEqual(TrainingProgramFormat.reason(duration.recommendation, exercise: timed, target: target),
+                       "Enter the required values while logging. Later workouts can repeat your last entry.")
+        XCTAssertNil(duration.recommendation.sets.first?.effort.reps)
+    }
+
     func testProgramTargetDiffNamesTheDayExerciseCycleAndRestUnit() throws {
         var before = sampleProgram()
         before.days[0].slots[0].cycleTargets[0] = SlotTarget(sets: 3, minReps: 5, maxReps: 8, rir: 2, rest: 90)

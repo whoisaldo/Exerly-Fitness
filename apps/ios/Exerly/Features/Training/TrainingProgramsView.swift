@@ -52,7 +52,7 @@ struct TrainingProgramsView: View {
                                 Image(systemName: program.icon ?? "dumbbell")
                                     .foregroundStyle(program.color.map(Color.init(hex:)) ?? Color.exPrimary)
                             }
-                            Text("\(program.cycles) cycles · \(program.trainingDays.count) training days per cycle")
+                            Text("\(program.cycles) \(program.cycles == 1 ? "cycle" : "cycles") · \(program.trainingDays.count) \(program.trainingDays.count == 1 ? "training day" : "training days") per cycle")
                                 .font(.subheadline).foregroundStyle(.secondary)
                             if workspace.programs.active?.id == program.id {
                                 Text("Following").font(.subheadline.weight(.semibold))
@@ -127,12 +127,13 @@ private struct TrainingProgramDetailView: View {
         }
         .navigationTitle("Program").navigationBarTitleDisplayMode(.inline)
         .sheet(item: $editing) { TrainingProgramEditor(workspace: workspace, editing: $0) }
-        .confirmationDialog(action?.title ?? "Program", isPresented: Binding(get: { action != nil }, set: { if !$0 { action = nil } }),
-                            titleVisibility: .visible, presenting: action) { pending in
-            Button(pending.button) { perform(pending) }
-            Button("Cancel", role: .cancel) { }
-        } message: { pending in
-            Text(pending.message)
+        .sheet(item: $action) { pending in
+            TrainingProgramConfirmation(title: pending.title, message: pending.message, confirm: pending.button) {
+                action = nil
+                perform(pending)
+            } cancel: {
+                action = nil
+            }
         }
     }
 
@@ -168,12 +169,13 @@ private struct TrainingProgramDetailView: View {
     }
 }
 
-private struct ProgramLifecycleAction {
+private struct ProgramLifecycleAction: Identifiable {
     enum Kind { case activate, archive, restore }
     let kind: Kind
     let program: Program
     let current: Program?
     let next: Program?
+    var id: UUID { program.id }
 
     var button: String {
         switch kind { case .activate: "Follow program"; case .archive: "Archive program"; case .restore: "Restore program" }
@@ -182,6 +184,42 @@ private struct ProgramLifecycleAction {
     var message: String {
         let following = next.map { "You will be following \($0.name)." } ?? "No program will be selected."
         return "\(program.name). \(following) Completed workouts and any workout in progress stay saved."
+    }
+}
+
+/// Full-width confirmation keeps the explanation and Cancel reachable at
+/// accessibility sizes, where the system's compact popover can hide them.
+struct TrainingProgramConfirmation: View {
+    let title: String
+    let message: String
+    let confirm: String
+    var cancelLabel = "Cancel"
+    var destructive = false
+    let perform: () -> Void
+    let cancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text(title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                    Text(message)
+                    Button(role: destructive ? .destructive : nil, action: perform) {
+                        Text(confirm).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("program.confirm")
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding()
+            }
+            .navigationTitle("Confirm").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(cancelLabel, action: cancel).accessibilityIdentifier("program.confirmCancel")
+                }
+            }
+        }
     }
 }
 

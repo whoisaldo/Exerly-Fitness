@@ -151,9 +151,14 @@ private struct PlannedExerciseSection: View {
             }
             if let basisID = planned.recommendation.basisSetID {
                 if let record = store.history.sets(of: planned.exerciseID).first(where: { $0.set.id == basisID }) {
+                    if record.set.rir == nil && record.set.kind != .failure {
+                        Text("RIR was not recorded for this source set. Adjust the suggested load while logging.")
+                            .foregroundStyle(.secondary)
+                    }
                     NavigationLink {
                         WorkoutDetailView(store: store, sessionID: record.sessionID, unit: unit)
                     } label: { Text("Source workout").fixedSize(horizontal: false, vertical: true) }
+                    .accessibilityIdentifier("program.source.\(planned.exerciseID.rawValue)")
                 } else {
                     Text("The source set is unavailable on this device.").foregroundStyle(.secondary)
                 }
