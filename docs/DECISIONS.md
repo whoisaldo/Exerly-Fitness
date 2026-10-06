@@ -145,3 +145,17 @@ after container checks.
 - **Forward compatibility.** An older client that pushes a document drops fields
   it doesn't know. Acceptable while there are no old clients; revisit before
   public release.
+
+## 2026-10-06: Staging on devbox1
+
+The staging API runs on devbox1 until production moves to PostgreSQL, under one
+LaunchAgent (`com.aldo.exerly-staging`), following the devbox recovery README.
+
+- **Code.** A deployed copy runs from `~/Services/exerly-staging`; LaunchAgents
+  can't read `~/Desktop`.
+- **Database.** A private PostgreSQL cluster on a Unix socket with no TCP port.
+- **Network.** The API binds to `0.0.0.0` on logic scratch port 39110 and is
+  reached at `http://100.80.149.7:39110`.
+- **Recovery.** It is an advisory check in `~/Services/devbox-recovery/check.py`,
+  so it never fails Ali's required startup checks.
+- **Scripts.** Install and uninstall scripts live in `apps/api/deploy/staging/`.

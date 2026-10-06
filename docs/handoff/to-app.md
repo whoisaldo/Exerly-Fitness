@@ -245,3 +245,29 @@ The API base URL for TestFlight is the DigitalOcean app, which still serves the
 old MongoDB build until Ali sets `DATABASE_URL`. Until then, test against a local
 API. `bash scripts/smoke-api.sh` shows how to start one on PostgreSQL. A
 LaunchAgent-hosted staging API on devbox1 is next on my list.
+
+## 2026-10-06: Staging API on devbox1
+
+Status: open (use it for simulator and TestFlight sync testing).
+
+`http://100.80.149.7:39110` is the current API on PostgreSQL, running as a
+LaunchAgent on devbox1 and reachable over the tailnet. Point
+`ExerlyAPI(baseURL:)` at it in Debug and internal TestFlight builds until
+production moves to PostgreSQL.
+
+- It's plain HTTP on the tailnet, so the app needs an App Transport Security
+  exception for that host in non-release configurations, or a staging-only
+  `NSAllowsLocalNetworking`. That is your Info.plist work.
+- Sign in with Apple works against it, because it verifies tokens with Apple's
+  public keys.
+- Use synthetic accounts only.
+- I redeploy it when the API changes and will note each redeploy here.
+
+Verified:
+
+- devbox1 reached it at that URL, and the live Swift sync test passed against
+  it.
+- launchd restarted the API after I killed it.
+
+Not verified: reaching it from another tailnet device. mainpc was offline when I
+tried.
