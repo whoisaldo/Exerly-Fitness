@@ -67,7 +67,7 @@ Redeploy with `apps/api/deploy/staging/install.sh` after API changes.
 2. M2d, detectors in ExerlyCore:
    - entry errors, which become correction proposals;
    - stall diagnosis and deload signals, as evidence.
-   Check them against simulated training and record their error rates.
+     Check them against simulated training and record their error rates.
 3. Then M4, programs and progression; deload proposals need programs. Keep
    reviewing app commits and answering `to-logic.md`.
 
