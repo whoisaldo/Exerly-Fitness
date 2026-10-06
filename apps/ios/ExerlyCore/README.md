@@ -492,6 +492,21 @@ See `docs/design/016-gym-profiles.md` (PARITY T05, T06).
   and the active gym's bar and plates to `WarmUpScheme.sets` and
   `Plates.load`.
 
+### Generating a program
+
+See `docs/design/017-program-generation.md` (PARITY P02).
+
+- `ProgramGeneration.Request(daysPerWeek:goal:experience:emphasis:minutes:)`:
+  2 to 6 days; hypertrophy, strength or general; beginner, intermediate or
+  advanced; muscles to emphasise; 30 to 150 minutes a session.
+- `ProgramGeneration.generate(_:library:gym:)` returns a `Result`: the
+  `program`, `weeklySets` and `targets` by muscle, and `shortfalls`, the
+  muscles under 80 % of target. It throws `.invalid` for a request out of
+  range.
+- `ProgramGeneration.proposal(for:library:gym:)` wraps it as a proposal to
+  add the program, with its research evidence and any gaps in the summary.
+  File it with `agent.file`; accepting adds the program, not yet followed.
+
 ## Nutrition
 
 `docs/design/007-nutrition.md` has the design and the measured accuracy of the
