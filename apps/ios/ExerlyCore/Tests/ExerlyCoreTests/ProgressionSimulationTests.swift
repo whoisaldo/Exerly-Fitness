@@ -21,6 +21,9 @@ import Testing
         var reportNoise = 0.7
         var unit: MassUnit = .kilograms
         var weeks = 16
+        /// Re-plan each later set from the one before (`Progression.adjust`).
+        var adjust = false
+        var weightMatch = true
     }
 
     struct Score: CustomStringConvertible {
@@ -30,6 +33,10 @@ import Testing
         var prescriptions = 0
         /// Recommended e1RM against the truth, as a fraction.
         var trackingErrors: [Double] = []
+        /// Actual minus target RIR on later sets, from the third session on, and in first sessions.
+        var laterErrors: [Double] = []
+        var assessmentErrors: [Double] = []
+        var laterOutside = 0
 
         var meanAbsolute: Double { errors.map(abs).reduce(0, +) / Double(max(1, errors.count)) }
         var bias: Double { errors.reduce(0, +) / Double(max(1, errors.count)) }
@@ -44,6 +51,9 @@ import Testing
             outsideRange += other.outsideRange
             prescriptions += other.prescriptions
             trackingErrors += other.trackingErrors
+            laterErrors += other.laterErrors
+            assessmentErrors += other.assessmentErrors
+            laterOutside += other.laterOutside
         }
     }
 
@@ -102,10 +112,25 @@ import Testing
                         baseline = (top.load, min(planned.target.maxReps, (top.reps ?? planned.target.minReps) + 1))
                     }
                 }
-                for (setIndex, prescribed) in planned.recommendation.sets.enumerated() {
+                var steps = LoadIncrements.defaults(for: exercise)
+                if profile.unit == .pounds { steps.minimum = steps.minimum.map { _ in .lb(45) } }
+                for (setIndex, original) in planned.recommendation.sets.enumerated() {
                     let capacity = strength * (1 - 0.02 * Double(setIndex))
+                    var prescribed = original
+                    var adjusted = false
+                    if profile.adjust && profile.method == .exerly && setIndex > 0 {
+                        let next = Progression.adjust(planned.target, exercise: exercise, done: sets,
+                                                      remaining: planned.recommendation.sets.count - setIndex,
+                                                      planned: planned.recommendation, bodyweight: .kg(bodyweight), increments: steps,
+                                                      weightMatch: profile.weightMatch)
+                        if let first = next.sets.first {
+                            prescribed = first
+                            adjusted = true
+                            if next.outsideRange { score.laterOutside += 1 }
+                        }
+                    }
                     var load = baseline.map { $0.load } ?? prescribed.effort.load
-                    if planned.recommendation.reason == .firstSession && profile.method != .oracle {
+                    if planned.recommendation.reason == .firstSession && profile.method != .oracle && !adjusted {
                         // A cautious first pick: a little under what the target needs.
                         let pick = OneRepMax.load(forReps: planned.target.targetReps + planned.target.rir + 1, oneRepMax: strength) - share
                         let step = profile.unit == .kilograms ? 2.5 : 5
@@ -118,6 +143,9 @@ import Testing
                     let done = max(1, min(planReps, Int(failure.rounded(.down))))
                     let actual = failure - Double(done)
                     let reported = min(6, max(0, (actual + profile.reportNoise * random.normal()).rounded()))
+                    let reserveError = failure - Double(planReps) - prescribed.rir
+                    if setIndex > 0 && (seen[planned.exerciseID] ?? 0) >= 2 { score.laterErrors.append(reserveError) }
+                    if setIndex > 0 && (seen[planned.exerciseID] ?? 0) == 0 { score.assessmentErrors.append(reserveError) }
                     if setIndex == 0 && (seen[planned.exerciseID] ?? 0) >= 2 {
                         score.errors.append(failure - Double(planReps) - prescribed.rir)
                         score.prescriptions += 1
@@ -139,11 +167,14 @@ import Testing
         return score
     }
 
-    static func population(noise: Double, reportNoise: Double, method: Method = .exerly) -> Score {
+    static func population(noise: Double, reportNoise: Double, method: Method = .exerly, adjust: Bool = false,
+                           weightMatch: Bool = true) -> Score {
         var total = Score()
         for seed in 0..<24 {
             var profile = Profile(seed: UInt64(seed))
             profile.method = method
+            profile.adjust = adjust
+            profile.weightMatch = weightMatch
             profile.noise = noise
             profile.reportNoise = reportNoise
             profile.gain = [0.002, 0.006, 0.012][seed % 3]
@@ -172,5 +203,33 @@ import Testing
             #expect(score.outsideRange == 0)
             #expect(score.meanAbsolute < baseline.meanAbsolute - 0.4, "Clearly better than double progression")
         }
+    }
+
+    /// Set-by-set adjustment against planning every set alike: later sets of
+    /// a slot, which lose strength to fatigue, and the sets after a first
+    /// session's assessment set.
+    @Test func adjustingEachSetFromTheOneBeforeLandsLaterSetsNearerTheTarget() {
+        func mean(_ values: [Double]) -> Double { values.map(abs).reduce(0, +) / Double(max(1, values.count)) }
+        func bias(_ values: [Double]) -> Double { values.reduce(0, +) / Double(max(1, values.count)) }
+        let plain = Self.population(noise: 0.025, reportNoise: 0.7)
+        let matched = Self.population(noise: 0.025, reportNoise: 0.7, adjust: true)
+        let free = Self.population(noise: 0.025, reportNoise: 0.7, adjust: true, weightMatch: false)
+        for (name, score) in [("as planned", plain), ("adjusted, weight match", matched), ("adjusted, free loads", free)] {
+            print(String(format: "Later sets, %@: mean |%.2f|, bias %+.2f; assessment follow-ups mean |%.2f|, bias %+.2f; outside %d",
+                         name, mean(score.laterErrors), bias(score.laterErrors), mean(score.assessmentErrors),
+                         bias(score.assessmentErrors), score.laterOutside))
+            print("  next sessions' first sets: \(score)")
+        }
+        #expect(plain.laterErrors.count > 1000 && matched.laterErrors.count == plain.laterErrors.count)
+        for score in [matched, free] {
+            #expect(mean(score.laterErrors) < mean(plain.laterErrors) - 0.3)
+            #expect(abs(bias(score.laterErrors)) < abs(bias(plain.laterErrors)))
+            #expect(mean(score.assessmentErrors) < mean(plain.assessmentErrors))
+            #expect(abs(bias(score.assessmentErrors)) < abs(bias(plain.assessmentErrors)))
+            // Adjusted sets feed the next session's plan; that plan is no worse.
+            #expect(score.meanAbsolute <= plain.meanAbsolute + 0.05)
+        }
+        // Without weight match, loads keep the reps in range.
+        #expect(free.laterOutside * 100 < free.laterErrors.count)
     }
 }

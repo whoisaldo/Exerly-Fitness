@@ -89,6 +89,21 @@ function recommend(
   const latest = sessions.at(-1);
   if (!latest) return plan({ reps: targetReps }, 'firstSession');
   const top = latest.record.set.efforts[0];
+  // The session's top set, for "the same load" and "more than last time", as
+  // ExerlyCore picks it: the hardest load (least assistance), most reps at it,
+  // among sets with an estimate.
+  let opening = top;
+  let hardest = null;
+  for (const record of records) {
+    const effort = record.set.efforts[0];
+    if (record.sessionID !== latest.id || effort.reps == null) continue;
+    const load = training.effectiveLoad(effort, exercise, record.bodyweight);
+    if (load == null) continue;
+    if (hardest === null || load > hardest || (load === hardest && effort.reps > opening.reps)) {
+      hardest = load;
+      opening = effort;
+    }
+  }
   const unit =
     top.load?.unit ??
     [...records].reverse().find((r) => r.set.efforts[0].load)?.set.efforts[0].load.unit ??
@@ -108,7 +123,7 @@ function recommend(
       estimate = Math.max(estimate, previous * (1 - MAXIMUM_CUT));
     } else if (estimate < previous) {
       const held = { reps: targetReps };
-      if (top.load) held.load = top.load;
+      if (opening.load) held.load = opening.load;
       return plan(held, 'hold', previous, latest.record.set.id);
     } else if (estimate === previous) {
       reason = 'hold';
@@ -168,12 +183,12 @@ function recommend(
     exercise.metric === 'bodyweightReps' && choice.value === 0
       ? null
       : { unit, value: choice.value };
-  if (reason === 'progress' && top.reps != null) {
-    const lastLoad = top.load ? training.kilograms(top.load) : 0;
+  if (reason === 'progress' && opening.reps != null) {
+    const lastLoad = opening.load ? training.kilograms(opening.load) : 0;
     const newLoad = load ? training.kilograms(load) : 0;
     if (
       newLoad < lastLoad - 1e-9 ||
-      (Math.abs(newLoad - lastLoad) < 1e-9 && choice.whole <= top.reps)
+      (Math.abs(newLoad - lastLoad) < 1e-9 && choice.whole <= opening.reps)
     ) {
       reason = 'hold';
     }

@@ -1888,3 +1888,33 @@ well at that size. Three small things:
    editors, the previous row's text ("3 RIR", "5") shows cut off behind the
    bar at the top. Captures taken mid-scroll may cause this; if not, inset
    the content below the bar.
+
+## 2026-10-07: Set-by-set adjustment and weight match (P08)
+
+Status: open (app: call it after each completed set; weight match can be a control now).
+
+`Progression.adjust(_:exercise:done:remaining:planned:bodyweight:increments:expandRepRange:weightMatch:)`
+re-plans the rest of a slot after each working set:
+
+- **When.** Whenever a working set is completed. Pass the slot's target for
+  this cycle, the exercise, this session's sets of it (`done`; warm-ups are
+  ignored), how many working sets are left, the recommendation you showed at
+  the start (`planned`), the gym's increments, and the slot's
+  `expandRepRange` and `weightMatch`. Show the returned `sets` for the sets
+  that are left.
+- **Weight match** is no longer reserved. On (the default) keeps the load and
+  lets the reps fall a little each set; off gives each set its own load. Offer
+  it as the per-exercise control P08 asks for. `outsideRange` is true when
+  weight match pushes reps below the range; say so plainly.
+- **Assessment.** In a first session there's no load to recommend: ask for
+  the first set at a weight that leaves the target RIR, and once it's logged,
+  `adjust` gives the rest their loads with reason `firstSession`.
+- **Reasons** are the same cases as before (no new ones), comparing the set
+  with what the plan predicted for it.
+
+In simulation, the later sets land nearer the target reserve: mean error
+0.93 → 0.55, and the bias goes from −0.59 to about +0.3. Design 006 has the
+details. One related change: when a small shortfall holds the load, "the
+same load" is now last session's hardest set rather than its best-estimate
+set, which stops lighter adjusted sets from dragging the next plan down. The
+MCP server's recommendations follow the same rule.

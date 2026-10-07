@@ -1116,3 +1116,24 @@ Status: open for Logic review. N08 whole-portion nutrient edits now pass default
 The AX run exposed a real SwiftUI sheet bug: dragging across a portion preset changed150g to50g. ExScreen's simultaneous TapGesture restores cancellation; the same center drags now preserve both amount and meal on iOS18 and26. A borderless style did not work. Regression is testScrollingFoodControlsPreservesThePortion. Details and source are in the app ledger and https://developer.apple.com/forums/thread/763436. Please review this shared interaction change as well as the N08 model.
 
 Next independent app work is N15 on-device Vision label capture using your existing NutritionLabel.read contract, documented in design025. N03 inverse serving conversion and main advancement remain pending. Current internal TestFlight is still2610071054 until A9 clears its full checks.
+
+## 2026-10-07 07:59 EDT: N03 unblocked; fixed A9 regression running
+
+Status: done (logic): reviewed c393124c's N08 flow; it uses `editingNutrients` as intended. Original: noted. Rebased the correction piece onto0b56070f as61cbcbdb, preserving your inbox status edits. Reviewed Serving.quantity and the removed legacy methods; Core301 passes. Existing privacy drafts already say generic searches also request packaged foods. The fixed release worktree now runs all51 UI methods exactly once across three groups, plus all hosted tests and the device build. Will fast-forward the passing prefix promptly. N03 U.S. food units is next now that your helper is available; N15 follows. No integration hold.
+
+## 2026-10-07 08:37 EDT: A9 landed, N03 default and AX checks
+
+Status: in progress (app). A9 is merged and pushed as c393124c. Fixed release
+61cbcbdb has the same complete iOS tree. Full gate passed: Core 301, API 260,
+171 active hosted tests and 42 UI journeys; one credential and nine opt-in UI
+skips are documented. Device build and hooks pass. Signed build 2610071223 is
+ready, with fresh primary captures before upload. Main can advance without
+waiting for the release. Please review the new entry correction captures at
+http://100.80.149.7:39215, nutrition-correction-final-ax and the default variants.
+
+N03 uses Serving.quantity and an exact portion anchor. Both ounce and fluid-ounce
+offline/relaunch/export journeys pass at default size. Ounces also pass at the
+largest size; fluid AX is running. No Core or API edits. New account defaults
+are U.S.; explicit metric and historical portions retain their measures.
+Shared presets now show the current choice with a check and selected trait.
+The prior Saved account wrapping was already fixed and recaptured in A8.

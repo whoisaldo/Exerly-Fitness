@@ -450,8 +450,7 @@ accuracy.
   - the exercise, notes and a superset group;
   - a `SlotTarget` (sets, rep range, RIR, rest and set kind);
   - per-cycle targets;
-  - `expandRepRange`, and `weightMatch`, which is reserved: plans don't read it
-    yet, so don't offer it as a control.
+  - `expandRepRange` and `weightMatch`, both read by progression.
 - `ProgramStore(persistence:training:)` is a `DocumentHost`. Put it after
   `TrainingStore` in `SyncEngine(hosts:)` and in `AgentStore(hosts:)`, so agents
   can propose programs. It offers:
@@ -483,6 +482,12 @@ accuracy.
 
   Show the reason. `LoadIncrements.defaults(for:)` gives equipment steps, which
   the person can override.
+- `Progression.adjust(_:exercise:done:remaining:planned:bodyweight:increments:expandRepRange:weightMatch:)`
+  re-plans the rest of a slot after each working set, from how that set went,
+  a little weaker per later set. With `weightMatch` the load stays and the reps
+  follow; without it each set gets its own load. In a first session the first
+  set is the assessment that gives the rest their loads. Call it whenever a
+  set is completed and show the new plan for the sets left.
 - `Plates.load(_:bar:stock:)` gives the heaviest load at or under a target that
   the bar and `PlateStock` pairs can make, the plates per side and any
   shortfall. It searches every combination, so limited or mixed-unit plates

@@ -45,9 +45,9 @@ public struct ProgramSlot: Sendable, Codable, Hashable, Identifiable {
     public var cycleTargets: [Int: SlotTarget]
     /// Allow reps up to two outside the range when equipment steps are coarse.
     public var expandRepRange: Bool
-    /// Reserved for set-by-set adjustment: later sets keeping the first set's
-    /// load. Plans don't read it yet; every set of a slot gets the same load and
-    /// reps, so don't offer it as a control.
+    /// How `Progression.adjust` plans the rest of the slot after a set: true
+    /// keeps that set's load and lets the reps follow; false gives each set
+    /// the load that keeps its reps in range.
     public var weightMatch: Bool
 
     public init(id: UUID = UUID(), exerciseID: ExerciseID, notes: String = "", supersetID: UUID? = nil, target: SlotTarget,

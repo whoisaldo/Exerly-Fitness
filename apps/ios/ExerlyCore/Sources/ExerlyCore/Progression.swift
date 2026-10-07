@@ -76,6 +76,9 @@ public enum Progression {
     /// Falling short of the prediction by up to this many reps to failure holds the load.
     static let holdBand = 1.0
     static let recentSessions = 4
+    /// Strength lost by each later set of a slot, as a share of the e1RM: about
+    /// a rep at a typical working load with a few minutes' rest.
+    static let setFatigue = 0.02
 
     public static func recommend(_ target: SlotTarget, exercise: Exercise, history: TrainingHistory, before date: Date? = nil,
                                  bodyweight: Mass?, increments: LoadIncrements? = nil,
@@ -114,6 +117,16 @@ public enum Progression {
         guard let latest = sessions.last else {
             return plan(Effort(reps: targetReps), .firstSession)
         }
+        // The session's top set, for "the same load" and "more than last time":
+        // the hardest load (least assistance), most reps at it, among sets with
+        // an estimate. Not the best estimate, which can come from a lighter
+        // later set reported generously.
+        let top = records.filter { $0.sessionID == latest.id }.compactMap { record -> (SetRecord, Double)? in
+            guard record.set.primary.reps != nil,
+                  let load = Volume.effectiveLoad(record.set.primary, exercise: exercise, bodyweight: record.bodyweight)
+            else { return nil }
+            return (record, load)
+        }.max { a, b in a.1 != b.1 ? a.1 < b.1 : (a.0.set.primary.reps ?? 0) < (b.0.set.primary.reps ?? 0) }?.0 ?? latest.set
         let unit = latest.set.set.primary.load?.unit ?? records.last(where: { $0.set.primary.load != nil })?.set.primary.load?.unit
             ?? .kilograms
         let earlier = sessions.dropLast().suffix(recentSessions)
@@ -131,7 +144,7 @@ public enum Progression {
                 estimate = max(estimate, previous * (1 - maximumCut))
             } else if estimate < previous {
                 // A small shortfall: the same load as last time, at the target reps.
-                let effort = Effort(reps: targetReps, load: latest.set.set.primary.load)
+                let effort = Effort(reps: targetReps, load: top.set.primary.load)
                 return plan(effort, .hold, e1rm: previous, basis: latest.set.set.id)
             } else if estimate == previous {
                 reason = .hold
@@ -143,7 +156,88 @@ public enum Progression {
             return plan(Effort(reps: targetReps, load: latest.set.set.primary.load), .repeatLast, e1rm: estimate,
                         basis: latest.set.set.id)
         }
-        let aim = Double(targetReps) + target.rir
+        let (effort, outside) = prescription(target, exercise: exercise, estimate: estimate, unit: unit, share: share,
+                                             increments: increments, expandRepRange: expandRepRange)
+        let load = effort.load, count = effort.reps ?? targetReps
+        if reason == .progress, let last = top.set.primary.reps {
+            // Only call it progress when it asks for more than the last top set did.
+            let lastLoad = top.set.primary.load?.kilograms ?? 0
+            let newLoad = load?.kilograms ?? 0
+            if newLoad < lastLoad - 1e-9 || (abs(newLoad - lastLoad) < 1e-9 && count <= last) { reason = .hold }
+        }
+        return plan(Effort(reps: count, load: load), reason, e1rm: estimate, basis: latest.set.set.id, outside: outside)
+    }
+
+    /// Set-by-set adjustment: once some working sets of a slot are done in
+    /// today's session, the plan for the `remaining` ones, from how the last
+    /// set went. Each later set is planned a little weaker (`setFatigue`).
+    ///
+    /// - With `weightMatch`, the remaining sets keep that set's load and their
+    ///   reps follow, up to the top of the range; reps below it set `outsideRange`.
+    /// - Without it, each set gets the load that leaves the target RIR in range.
+    ///
+    /// `planned` is the session's recommendation: today's estimate stays within
+    /// its never-punitive bounds (no more than 5 % above, 10 % below), and the
+    /// reason compares today with it. Without one, or after a first session's
+    /// plan, the first set is the assessment and sets the loads.
+    public static func adjust(_ target: SlotTarget, exercise: Exercise, done: [PerformedSet], remaining: Int,
+                              planned: Recommendation? = nil, bodyweight: Mass?, increments: LoadIncrements? = nil,
+                              expandRepRange: Bool = false, weightMatch: Bool = true) -> Recommendation {
+        let count = max(0, remaining)
+        let fallback = Recommendation(sets: Array((planned?.sets ?? []).suffix(count)), reason: planned?.reason ?? .firstSession,
+                                      oneRepMax: planned?.oneRepMax, basisSetID: planned?.basisSetID,
+                                      outsideRange: planned?.outsideRange ?? false)
+        let working = done.filter { $0.kind != .warmUp }
+        guard let last = working.last else { return fallback }
+        guard exercise.metric.tracksReps, exercise.metric != .assistedReps else {
+            return Recommendation(sets: Array(repeating: PlannedSet(kind: target.kind, effort: last.primary, rir: target.rir), count: count),
+                                  reason: .repeatLast, oneRepMax: nil, basisSetID: last.id, outsideRange: false)
+        }
+        var rated = last
+        if rated.rir == nil && rated.kind != .failure { rated.rir = target.rir }
+        guard let today = ExerciseStatistics.oneRepMax(rated, exercise: exercise, bodyweight: bodyweight) else { return fallback }
+        let baseline = planned?.reason == .firstSession ? nil : planned?.oneRepMax
+        let estimate = baseline.map { min(max(today, $0 * (1 - maximumCut)), $0 * (1 + maximumRise)) } ?? today
+        var reason = Recommendation.Reason.firstSession
+        if let baseline {
+            // What the plan predicted for this set, fatigue included, against what was done.
+            let index = Double(working.count - 1)
+            let load = Volume.effectiveLoad(last.primary, exercise: exercise, bodyweight: bodyweight) ?? 0
+            let predicted = OneRepMax.repsToFailure(load: load, oneRepMax: baseline * (1 - setFatigue * index))
+            let achieved = Double(last.primary.reps ?? 0) + (rated.effectiveRIR ?? target.rir)
+            reason = achieved < predicted - holdBand - 1e-9 ? .reduce : achieved > predicted + holdBand + 1e-9 ? .progress : .hold
+        }
+        let unit = last.primary.load?.unit ?? planned?.sets.lazy.compactMap(\.effort.load).first?.unit ?? .kilograms
+        let share = exercise.metric == .bodyweightReps ? (bodyweight?.kilograms ?? 0) * exercise.bodyweightShare : 0
+        let steps = increments ?? .defaults(for: exercise)
+        var outside = false
+        let sets = (0..<count).map { offset -> PlannedSet in
+            let capacity = estimate * (1 - setFatigue * Double(offset + 1))
+            let effort: Effort
+            if weightMatch {
+                let load = (last.primary.load?.kilograms ?? 0) + share
+                let reps = Int((OneRepMax.repsToFailure(load: load, oneRepMax: capacity) - target.rir).rounded(.down))
+                let range = expandRepRange ? max(1, target.minReps - 2)...(target.maxReps + 2) : target.minReps...target.maxReps
+                // Below the range is outside it; above, the reps stop at the top and leave more in reserve.
+                if reps < range.lowerBound { outside = true }
+                effort = Effort(reps: min(max(reps, 1), range.upperBound), load: last.primary.load)
+            } else {
+                let chosen = prescription(target, exercise: exercise, estimate: capacity, unit: unit, share: share,
+                                          increments: steps, expandRepRange: expandRepRange)
+                if chosen.outside { outside = true }
+                effort = chosen.effort
+            }
+            return PlannedSet(kind: target.kind, effort: effort, rir: target.rir)
+        }
+        return Recommendation(sets: sets, reason: reason, oneRepMax: estimate, basisSetID: last.id, outsideRange: outside)
+    }
+
+    /// The load and reps for one set at an estimated `estimate` (e1RM, kg):
+    /// the heaviest load the equipment allows that leaves the target RIR
+    /// within the rep range. `share` is the bodyweight a lift moves, in kg.
+    static func prescription(_ target: SlotTarget, exercise: Exercise, estimate: Double, unit: MassUnit, share: Double,
+                             increments: LoadIncrements, expandRepRange: Bool) -> (effort: Effort, outside: Bool) {
+        let aim = target.targetReps.rounded(.down) + target.rir
         let ideal = OneRepMax.load(forReps: aim, oneRepMax: estimate) - share
         let step = increments.step(in: unit)
         let minimum = increments.minimum?.value(in: unit) ?? 0
@@ -193,12 +287,6 @@ public enum Progression {
             return (base, min(max(clamped, target.minReps), target.maxReps))
         }()
         let load: Mass? = exercise.metric == .bodyweightReps && value == 0 ? nil : Mass(value, unit)
-        if reason == .progress, let last = latest.set.set.primary.reps {
-            // Only call it progress when it asks for more than the last top set did.
-            let lastLoad = latest.set.set.primary.load?.kilograms ?? 0
-            let newLoad = load?.kilograms ?? 0
-            if newLoad < lastLoad - 1e-9 || (abs(newLoad - lastLoad) < 1e-9 && count <= last) { reason = .hold }
-        }
-        return plan(Effort(reps: count, load: load), reason, e1rm: estimate, basis: latest.set.set.id, outside: outside)
+        return (Effort(reps: count, load: load), outside)
     }
 }

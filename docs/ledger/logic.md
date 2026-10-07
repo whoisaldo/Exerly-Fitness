@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 07:57 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 08:41 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                                    |
 | --------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:57 EDT, integration (tokens can't manage tokens)                                 |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 08:41 EDT, integration (set-by-set adjustment, P08)                                 |
 | `main`                                        | –        | `0b56070f` (fast-forward, the design release), 2026-10-07 07:53 EDT; CI run 37616722886 queued |
 
 `main` and integration converged: integration was merged into `main`
@@ -221,6 +221,13 @@ while Express routes regardless of case. So a read token could mint a write
 token, or a successor outliving its revocation. Fixed in `tokenMayUse` and by
 a guard in the tokens router, each tested alone. Production never ran this
 API; on staging only a synthetic probe account was affected.
+
+**Set-by-set adjustment (P08).** `Progression.adjust` re-plans a slot's
+remaining sets after each set, with weight match (load kept, reps follow) or
+free loads, and gives first sessions an assessment set. In simulation, later
+sets' mean RIR error falls from 0.93 to 0.55. A hold now repeats the last
+session's hardest set (in Swift and the JS port, golden regenerated), so
+lighter adjusted sets don't pull the next plan down. Core 305, API 260.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

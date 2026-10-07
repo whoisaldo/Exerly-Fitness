@@ -85,10 +85,9 @@ Steps:
    - If those reps fall outside the range, the next increment is too far.
    - With `expandRepRange`, the reps may go up to two outside the range.
    - Without it, the load moves one increment so the reps fit the range.
-4. **Weight match.** Later sets keep the first set's load, and their reps follow
-   from the RIR. Not built: plans repeat one set for the whole slot, because
-   telling the two apart needs a model of fatigue between sets. That arrives
-   with set-by-set adjustment, and `weightMatch` is reserved until then.
+4. **One plan for every set.** Before the session, every set of a slot gets
+   the same load and reps. Once sets are done, set-by-set adjustment (below)
+   takes over.
 5. **Never punitive.** A small shortfall (reps-to-failure within 1 of the
    prediction) holds the load. A larger one lowers the load by the e1RM, never
    more than 10 % in one step.
@@ -96,6 +95,48 @@ Steps:
 The result names its basis (the set and e1RM it came from) and its reason:
 progress, hold, reduce, or first session. Screens show the reason, and the
 MCP server can return the same recommendation.
+
+## Set-by-set adjustment and weight match (PARITY P08)
+
+After each working set, `Progression.adjust` plans the slot's remaining sets
+from that set:
+
+- Today's e1RM comes from the set's reps, load and RIR (a missing RIR counts
+  as the target). With a plan, it stays within the plan's never-punitive
+  bounds, 5 % up and 10 % down, so a mistyped load can't move it far.
+- Each later set is planned 2 % weaker than the one before, about a rep at a
+  working load with a few minutes' rest. This is an assumption, the same one
+  the simulator uses, not a measured constant.
+- **Weight match on** (the default): the load stays and the reps follow,
+  up to the top of the range. Reps forced below it set `outsideRange`.
+- **Weight match off:** each set gets the load that leaves the target RIR in
+  range, chosen as the plan chooses.
+- **Assessment.** A first session has no load to recommend. Its first set is
+  the assessment, and the rest get their loads from it.
+- The reason compares the set with what the plan predicted for it, fatigue
+  included: within a rep to failure is hold, better is progress, worse is
+  reduce.
+
+"The same load as last time", when a small shortfall holds the load, is the
+session's hardest load (least assistance), at the most reps, among sets with
+an estimate. It used to be the set with the best estimate. Once later sets
+can be lighter, a generously reported later set sometimes won that, and the
+next plan came out too light. The JavaScript port and its golden follow the
+same rule.
+
+Simulated (24 lifters, 16 weeks, day noise 2.5 %, RIR reports ±0.7), the
+later sets of a slot land nearer the target reserve:
+
+| Later sets             | Mean error | Bias  |
+| ---------------------- | ---------- | ----- |
+| As planned             | 0.93       | -0.59 |
+| Adjusted, weight match | 0.55       | +0.38 |
+| Adjusted, free loads   | 0.53       | +0.30 |
+
+The sets after a first session's assessment go from 0.63 to 0.56 (bias +0.56
+to +0.38). The rest of that bias is the planner's: reps round down, so a
+prescription leaves the target RIR or up to one more. The next session's
+plans are unchanged (0.81).
 
 ## Keeping a workout's changes (PARITY P06)
 
