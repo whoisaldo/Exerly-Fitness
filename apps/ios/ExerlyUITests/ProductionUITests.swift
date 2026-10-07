@@ -381,7 +381,7 @@ final class ProductionUITests: XCTestCase {
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
         let searchField = app.searchFields.firstMatch
-        replace(searchField, with: "oat", in: app)
+        replace(searchField, with: "Synthetic oat", in: app)
         let before = try await request("GET", "/__test/food-database-requests")
         XCTAssertEqual((before["requests"] as? [[String: Any]])?.count, 0, "Typing must not query the food database")
         XCTAssertTrue(app.keyboards.buttons["Search"].waitForExistence(timeout: 5))
