@@ -1805,6 +1805,59 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue((trend["series"] as? [[String: Any]] ?? []).allSatisfy { $0["weight"] == nil || $0["weight"] is NSNull })
     }
 
+    func testMealChoiceSurvivesScrollingAndCanBeChangedExplicitly() async throws {
+        try await control([:])
+        let email = "meal-choice-\(UUID().uuidString.lowercased())@exerly.test"
+        let password = "Simulator-Test-123!"
+        let signup = try await request("POST", "/signup", body: ["email": email, "password": password, "name": "Meal Taylor"])
+        let token = try XCTUnwrap(signup["token"] as? String)
+        _ = try await request("POST", "/api/onboarding/complete", body: [
+            "name": "Meal Taylor", "age": 34, "gender": "female", "height": 167.75, "weight": 72.25,
+            "goal": "maintain", "activityLevel": "light", "timezone": "America/New_York", "unitSystem": "metric"
+        ], token: token)
+        let app = launch(resetSession: true)
+        tap(app.buttons["I already have an account"], in: app)
+        replace(app.textFields["Email"], with: email, in: app)
+        replace(app.secureTextFields["Password"], with: password, in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Log In"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        tap(app.buttons["diary.add.dinner"], in: app)
+        tap(app.buttons["Scan food barcode"], in: app)
+        replace(app.textFields["barcode.digits"], with: "0036000291452", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Look up barcode"], in: app)
+        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Simulator oat drink")).firstMatch, in: app)
+        let meal = app.buttons["food.meal"]
+        reveal(meal, in: app)
+        XCTAssertEqual(meal.value as? String, "Dinner")
+        capture(app, "meal-choice-initial-dinner")
+        tap(meal, in: app)
+        XCTAssertTrue(app.buttons["Lunch"].waitForExistence(timeout: 5))
+        capture(app, "meal-choice-menu")
+        app.buttons["Lunch"].tap()
+        XCTAssertEqual(meal.value as? String, "Lunch")
+        tap(meal, in: app)
+        XCTAssertTrue(app.buttons["Dinner"].waitForExistence(timeout: 5))
+        app.buttons["Dinner"].tap()
+        XCTAssertEqual(meal.value as? String, "Dinner")
+        reveal(app.buttons["Log Food"], in: app)
+        XCTAssertEqual(meal.value as? String, "Dinner", "Scrolling must preserve the chosen meal")
+        tap(app.buttons["Log Food"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        reveal(app.buttons["Edit Simulator oat drink"], in: app)
+        capture(app, "meal-choice-saved-dinner")
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let summary = try await request("GET", "/api/summary?entry_date=\(formatter.string(from: Date()))", token: token)
+        let meals = try XCTUnwrap(summary["meals"] as? [String: Any])
+        let dinner = try XCTUnwrap(meals["dinner"] as? [String: Any])
+        XCTAssertEqual((dinner["entries"] as? [[String: Any]])?.count, 1)
+        XCTAssertEqual((meals["lunch"] as? [String: Any])?["entries"] as? [[String: String]], [])
+    }
+
     func testSignupInterruptedSetupBarcodeAndOfflineRelaunch() async throws {
         try await control([:])
         let app = launch(resetSession: true)
@@ -1856,7 +1909,11 @@ final class ProductionUITests: XCTestCase {
         replace(app.textFields["Number of servings"], with: "1.5", in: app)
         dismissKeyboard(app)
         XCTAssertTrue(app.staticTexts["Total: 150 ml"].exists)
+        XCTAssertEqual(app.buttons["food.meal"].value as? String, "Dinner")
         capture(app, "yesterday-dinner-150ml")
+        reveal(app.buttons["Log Food"], in: app)
+        XCTAssertEqual(app.buttons["food.meal"].value as? String, "Dinner", "Scrolling must not change the meal")
+        capture(app, "yesterday-meal-before-save")
         tap(app.buttons["Log Food"], in: app)
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
         reveal(app.buttons["Edit Simulator oat drink"], in: app)

@@ -144,22 +144,26 @@ struct FoodDetailView: View {
                 Text("Meal Type")
                     .font(.exLabel)
                     .foregroundStyle(.exTextSecondary)
-                HStack(spacing: 8) {
-                    ForEach(mealTypes, id: \.self) { type in
-                        Button {
-                            selectedMealType = type
-                        } label: {
-                            Text(type.capitalized)
-                                .font(.exSmall)
-                                .fontWeight(selectedMealType == type ? .semibold : .regular)
-                                .foregroundStyle(selectedMealType == type ? .white : .exTextSecondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(selectedMealType == type ? Color.exPrimary : Color.exSurface2)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                Menu {
+                    Picker("Meal", selection: $selectedMealType) {
+                        ForEach(mealTypes, id: \.self) { type in
+                            Text(type.capitalized).tag(type)
                         }
                     }
+                } label: {
+                    HStack {
+                        Text(selectedMealType.capitalized)
+                            .font(.exBody)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down").font(.caption)
+                    }
+                    .foregroundStyle(Color.exPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
+                .accessibilityLabel("Meal")
+                .accessibilityValue(selectedMealType.capitalized)
+                .accessibilityIdentifier("food.meal")
             }
         }
     }
