@@ -141,6 +141,7 @@ final class NutritionEntryDraft: ObservableObject {
     @Published var date: LocalDate
     @Published var meal: String
     @Published var loggedAt: Date
+    @Published private(set) var snapshot: FoodSnapshot
     @Published private(set) var errors: [String] = []
     let food: ExerlyCore.Food
     private let store: NutritionStore
@@ -152,6 +153,7 @@ final class NutritionEntryDraft: ObservableObject {
     private let initialMeal: String
     private let initialTime: Date
     private let initialPortion: FoodEntry?
+    private let initialSnapshot: FoodSnapshot
 
     init(store: NutritionStore, food: ExerlyCore.Food, date: LocalDate, meal: String,
          editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date()) {
@@ -163,6 +165,12 @@ final class NutritionEntryDraft: ObservableObject {
         original = editing
         entryID = editing?.id ?? UUID()
         let previous = editing ?? repeating.flatMap { $0.food.foodID == food.id ? $0 : nil }
+        var entrySnapshot = editing?.food ?? food.snapshot
+        if editing == nil, previous?.food.edited == true, previous?.food.per100g == food.per100g {
+            entrySnapshot.edited = true
+        }
+        snapshot = entrySnapshot
+        initialSnapshot = entrySnapshot
         initialPortion = previous
         serving = previous?.serving
         initialServing = previous?.serving
@@ -178,18 +186,49 @@ final class NutritionEntryDraft: ObservableObject {
     }
 
     var hasChanges: Bool {
-        amount != initialAmount || serving != initialServing || date != initialDate || meal != initialMeal || loggedAt != initialTime
+        amount != initialAmount || serving != initialServing || date != initialDate || meal != initialMeal ||
+            loggedAt != initialTime || snapshot != initialSnapshot
     }
 
     func preview(locale: Locale = .current) throws -> LoggedAmount {
+        let currentFood = snapshot.foodForLogging(serving: serving)
         guard let value = try amount.value(named: serving == nil ? "grams" : "quantity", locale: locale) else {
             throw NutritionDraftError.input("Enter an amount to log.")
         }
         if let initialPortion, amount == initialAmount, serving == initialServing {
-            return try NutritionStore.preview(food, grams: initialPortion.grams, serving: initialPortion.serving, quantity: initialPortion.quantity)
+            return try NutritionStore.preview(currentFood, grams: initialPortion.grams, serving: initialPortion.serving, quantity: initialPortion.quantity)
         }
-        return try NutritionStore.preview(food, grams: serving == nil ? value : nil,
+        return try NutritionStore.preview(currentFood, grams: serving == nil ? value : nil,
                                           serving: serving, quantity: serving == nil ? nil : value)
+    }
+
+    func reviewNutrition(locale: Locale = .current) -> FoodEntry? {
+        errors = []
+        do { return try stagedEntry(locale: locale) } catch {
+            errors = NutritionDraftError.messages(error)
+            return nil
+        }
+    }
+
+    func applyNutrition(_ corrected: FoodEntry, reviewed: FoodEntry, locale: Locale = .current) throws {
+        guard try stagedEntry(locale: locale) == reviewed else {
+            throw NutritionDraftError.input("The portion changed while you were editing nutrition. Reopen nutrition to review its amounts.")
+        }
+        snapshot = corrected.food
+        errors = []
+    }
+
+    private func stagedEntry(locale: Locale) throws -> FoodEntry {
+        let portion = try preview(locale: locale)
+        var entry = FoodEntry(id: entryID, date: date, meal: meal.trimmingCharacters(in: .whitespacesAndNewlines),
+                              loggedAt: loggedAt.roundedToMilliseconds, food: snapshot,
+                              grams: portion.grams, serving: portion.serving, quantity: portion.quantity)
+        if let original, amount == initialAmount, serving == initialServing {
+            entry.grams = original.grams
+            entry.serving = original.serving
+            entry.quantity = original.quantity
+        }
+        return entry
     }
 
     @discardableResult
@@ -200,15 +239,7 @@ final class NutritionEntryDraft: ObservableObject {
             return nil
         }
         do {
-            let portion = try preview(locale: locale)
-            var entry = FoodEntry(id: entryID, date: date, meal: meal.trimmingCharacters(in: .whitespacesAndNewlines),
-                                  loggedAt: loggedAt.roundedToMilliseconds, food: original?.food ?? food.snapshot,
-                                  grams: portion.grams, serving: portion.serving, quantity: portion.quantity)
-            if let original, amount == initialAmount, serving == initialServing {
-                entry.grams = original.grams
-                entry.serving = original.serving
-                entry.quantity = original.quantity
-            }
+            let entry = try stagedEntry(locale: locale)
             try store.saveEntry(entry)
             original = entry
             return entry

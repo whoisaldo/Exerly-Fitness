@@ -1577,6 +1577,122 @@ final class ProductionUITests: XCTestCase {
         capture(app, "training-prefilled-one-tap")
     }
 
+    func testScrollingFoodControlsPreservesThePortion() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "portion-scroll", units: "imperial")
+        let seeded = try await seedNutritionEntry(token: person.token, grams: 150)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        let amount = app.textFields["Amount (g)"]
+        reveal(amount, in: app)
+        XCTAssertEqual(amount.value as? String, "150")
+        for index in 0..<8 {
+            capture(app, "nutrition-scroll-before-\(index)")
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.68))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.43))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+            let value = amount.value as? String
+            XCTAssertEqual(value, "150", "Scrolling must not select a portion preset")
+            if value != "150" {
+                capture(app, "nutrition-scroll-changed-\(index)")
+                throw NSError(domain: "Portion changed during scrolling", code: index)
+            }
+        }
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Food entry"].waitForNonExistence(timeout: 10),
+                      "Scrolling must not leave a changed meal or portion that requires discard confirmation")
+    }
+
+    func testEntryNutrientCorrectionCanBeCancelledAndKeepsItsSourceAcrossOfflineRelaunch() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "entry-correction", units: "imperial")
+        let seeded = try await seedNutritionEntry(token: person.token, name: "Precise oats",
+            nutrients: ["energy": 99.5, "protein": 3.3333, "sodium": 0], grams: 150)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        reveal(app.textFields["Amount (g)"], in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "150")
+        capture(app, "nutrition-entry-original-portion")
+        reveal(app.buttons["nutrition.editEntryNutrients"], in: app)
+        capture(app, "nutrition-entry-portion-before-correction")
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        XCTAssertTrue(app.navigationBars["Entry nutrition"].waitForExistence(timeout: 10))
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "149.25")
+        replace(app.textFields["Calories (kcal)"], with: "120.5", in: app)
+        replace(app.textFields["Protein (g)"], with: "", in: app)
+        replace(app.textFields["Fat (g)"], with: "0", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-entry-correction-draft")
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        XCTAssertTrue(app.navigationBars["Food entry"].waitForExistence(timeout: 10))
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        XCTAssertTrue(app.staticTexts["Discard entry changes?"].waitForExistence(timeout: 10))
+        tap(app.buttons["nutrition.confirm"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "149.25", "Cancelling the entry discards its nutrient correction")
+        replace(app.textFields["Calories (kcal)"], with: "120.5", in: app)
+        replace(app.textFields["Protein (g)"], with: "", in: app)
+        replace(app.textFields["Fat (g)"], with: "0", in: app)
+        dismissKeyboard(app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        reveal(app.staticTexts["Edited nutrition"].firstMatch, in: app)
+        XCTAssertTrue(app.staticTexts["Edited nutrition"].firstMatch.exists)
+        capture(app, "nutrition-entry-corrected-offline")
+
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        replace(app.textFields["Amount (g)"], with: "75", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "60.25")
+        reveal(app.textFields["Protein (g)"], in: app)
+        let unknownProtein = app.textFields["Protein (g)"].value as? String
+        XCTAssertTrue(unknownProtein == "" || unknownProtein == "Unknown")
+        reveal(app.textFields["Fat (g)"], in: app)
+        XCTAssertEqual(app.textFields["Fat (g)"].value as? String, "0")
+        capture(app, "nutrition-entry-correction-scaled")
+        tap(app.buttons["nutrition.cancelEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entry = try XCTUnwrap(documents.first { $0["kind"] as? String == "food_entry" }?["payload"] as? [String: Any])
+        XCTAssertEqual(entry["id"] as? String, seeded.id)
+        XCTAssertEqual(entry["grams"] as? Double, 75)
+        let snapshot = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(snapshot["source"] as? String, "custom")
+        XCTAssertEqual(snapshot["foodID"] as? String, seeded.foodID)
+        XCTAssertEqual(snapshot["edited"] as? Bool, true)
+        let nutrients = try XCTUnwrap(snapshot["per100g"] as? [String: Any])
+        XCTAssertEqual(try XCTUnwrap(nutrients["energy"] as? Double), 80.33333333333333, accuracy: 0.000_000_001)
+        XCTAssertNil(nutrients["protein"])
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        let savedFood = try XCTUnwrap(documents.first { $0["kind"] as? String == "saved_food" }?["payload"] as? [String: Any])
+        let label = try XCTUnwrap(savedFood["per100g"] as? [String: Any])
+        XCTAssertEqual(label["energy"] as? Double, 99.5)
+        XCTAssertEqual(label["protein"] as? Double, 3.3333)
+        XCTAssertNil(label["fat"])
+    }
+
     func testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "food-precision")
@@ -3015,9 +3131,13 @@ final class ProductionUITests: XCTestCase {
         }
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)
         if field.elementType == .textField {
+            func matchesExpectedValue() -> Bool {
+                guard let actual = field.value as? String else { return false }
+                return actual == text || (text.isEmpty && actual == field.placeholderValue)
+            }
             // Busy CI simulators can drop keystrokes or miss the selection.
             // Retry through the real editing menu and verify the final value.
-            for _ in 0..<2 where field.value as? String != text {
+            for _ in 0..<2 where !matchesExpectedValue() {
                 field.press(forDuration: 1.1)
                 let selectAll = app.menuItems["Select All"].firstMatch
                 let selectAllButton = app.buttons["Select All"].firstMatch
@@ -3028,7 +3148,7 @@ final class ProductionUITests: XCTestCase {
                 field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: count + 3))
                 for character in text { field.typeText(String(character)) }
             }
-            XCTAssertEqual(field.value as? String, text)
+            XCTAssertTrue(matchesExpectedValue(), "Expected '\(text)', found '\(field.value as? String ?? "unavailable")'")
         }
     }
     private func dismissKeyboard(_ app: XCUIApplication) {

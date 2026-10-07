@@ -255,6 +255,9 @@ struct NutritionDiaryView: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(entry.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                             Text(NutritionFormat.portion(entry)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                            if entry.food.edited == true {
+                                Text("Edited nutrition").font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                            }
                         }
                         if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                         VStack(alignment: .trailing, spacing: 2) {

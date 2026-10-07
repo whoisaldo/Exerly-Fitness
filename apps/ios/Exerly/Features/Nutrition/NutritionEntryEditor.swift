@@ -10,9 +10,11 @@ struct NutritionEntryEditor: View {
     @StateObject private var draft: NutritionEntryDraft
     @StateObject private var libraryActions: NutritionLibraryActions
     @State private var confirmation: Confirmation?
+    @State private var nutritionEditing: FoodEntry?
     @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private enum Confirmation: String, Identifiable {
         case discard, delete
@@ -73,13 +75,29 @@ struct NutritionEntryEditor: View {
                     }
                     ExCard(accent: true) {
                         ExEyebrow("This portion", color: .exPrimaryText)
+                        if draft.snapshot.edited == true {
+                            Text("Edited nutrition").font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                        }
                         portion
+                        Button("Edit entry nutrition", systemImage: "pencil") {
+                            typing = false
+                            nutritionEditing = draft.reviewNutrition()
+                        }.accessibilityIdentifier("nutrition.editEntryNutrients")
                     }
                     ExCard {
+                        if typeSize.isAccessibilitySize {
+                            Text("Diary date").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                            DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
+                                .labelsHidden().accessibilityIdentifier("nutrition.entryDate")
+                            Text("Eaten at").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                            DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
+                                .labelsHidden().accessibilityIdentifier("nutrition.eatenAt")
+                        } else {
                         DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
                             .accessibilityIdentifier("nutrition.entryDate")
                         DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
                             .accessibilityIdentifier("nutrition.eatenAt")
+                        }
                         Text("Dates and times use \(timeZone.identifier). The diary date controls which day's totals include this food.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
@@ -144,6 +162,7 @@ struct NutritionEntryEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { typing = false; if draft.hasChanges { confirmation = .discard } else { dismiss() } }
+                        .accessibilityIdentifier("nutrition.cancelEntry")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(editing == nil ? "Log" : "Save") {
@@ -173,11 +192,16 @@ struct NutritionEntryEditor: View {
                     }
                 } cancel: { confirmation = nil }
             } else {
-                NutritionConfirmation(title: "Discard entry changes?", message: "Your unsaved portion, date and meal changes will be discarded.",
+                NutritionConfirmation(title: "Discard entry changes?", message: "Your unsaved portion, nutrition, date and meal changes will be discarded.",
                                       confirm: "Discard changes", cancelLabel: "Keep editing", destructive: true) {
                     confirmation = nil
                     dismiss()
                 } cancel: { confirmation = nil }
+            }
+        }
+        .sheet(item: $nutritionEditing) { reviewed in
+            NutritionEntryNutrientsEditor(entry: reviewed) { corrected in
+                try draft.applyNutrition(corrected, reviewed: reviewed)
             }
         }
     }
