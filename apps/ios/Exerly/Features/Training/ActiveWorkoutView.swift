@@ -22,7 +22,7 @@ struct ActiveWorkoutView: View {
     @State private var error: String?
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 ExCard(accent: true) {
                     HStack {
@@ -31,16 +31,16 @@ struct ActiveWorkoutView: View {
                         Text(session.startedAt, style: .timer).font(.exMono).foregroundStyle(Color.exTextSecondary)
                             .accessibilityLabel("Workout elapsed time")
                     }
-                    Text(session.name).font(.exH2).foregroundStyle(Color.exTextPrimary)
                     let sets = session.exercises.flatMap(\.sets)
                     let completed = sets.filter(\.isCompleted).count
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(completed)").font(.exStat)
-                        Text("of \(sets.count) sets").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                        Text("\(completed)").font(.exStatMedium)
+                        Text("of \(sets.count) \(sets.count == 1 ? "set" : "sets") complete").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        Spacer()
+                        Button("Workout details", systemImage: "note.text") { details = true }
+                            .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
                     }
                     ExProgressBar(value: Double(completed), total: Double(sets.count))
-                    Button("Workout details", systemImage: "note.text") { details = true }
-                        .font(.exLabel).frame(minHeight: 44)
                     if !session.notes.isEmpty { Text(session.notes).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }

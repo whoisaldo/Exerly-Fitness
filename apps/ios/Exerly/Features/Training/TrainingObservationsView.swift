@@ -35,7 +35,7 @@ struct TrainingObservationsView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 ExCard(accent: true) {
                     ExEyebrow("Training insights", color: .exPrimary)
@@ -132,7 +132,7 @@ private struct TrainingObservationDetailView: View {
     let unit: MassUnit
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 Text(finding.title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
                 Text(finding.summary)

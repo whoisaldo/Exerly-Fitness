@@ -29,7 +29,7 @@ struct TrainingProgramEditor: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
-                Form {
+                ExForm {
                     Section {
                         ExCard(accent: true) {
                             ExEyebrow(isNew ? "New program" : "Edit program", color: .exPrimary)
@@ -185,7 +185,7 @@ private struct TrainingProgramDayEditor: View {
     @FocusState private var typing: Bool
 
     var body: some View {
-        Form {
+        ExForm {
             Section {
                 ExCard(accent: true) {
                     ExEyebrow(day.isRest ? "Rest day" : "Training day", color: .exPrimary)
@@ -240,7 +240,7 @@ private struct TrainingProgramSlotEditor: View {
     }
 
     var body: some View {
-        Form {
+        ExForm {
             Section {
                 ExCard(accent: true) {
                     ExEyebrow("Exercise prescription", color: .exPrimary)
@@ -320,6 +320,7 @@ private struct ProgramTargetEditor: View {
     @State private var fields: ProgramTargetFields
     @State private var error: String?
     @FocusState private var typing: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.dismiss) private var dismiss
 
     init(target: SlotTarget, exercise: ExerlyCore.Exercise?, title: String = "Set targets", apply: @escaping (SlotTarget) -> Void) {
@@ -330,38 +331,41 @@ private struct ProgramTargetEditor: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                ExCard(accent: true) {
-                    ExEyebrow(title, color: .exPrimary)
-                    Text(exercise?.name ?? "Your prescription").font(.exH2)
-                    Text("Choose the work for each session.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+        ExScreen {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                ExEyebrow(title, color: .exPrimary)
+                Text(exercise?.name ?? "Your prescription").font(.exH2)
             }
-            Section {
-                ProgramNumberField("Sets", text: $fields.sets, integer: true).focused($typing)
-                    .accessibilityIdentifier("program.targetSets")
-                if exercise?.metric.tracksReps == true {
-                    ProgramNumberField("Minimum reps", text: $fields.minReps, integer: true).focused($typing)
-                        .accessibilityIdentifier("program.minReps")
-                    ProgramNumberField("Maximum reps", text: $fields.maxReps, integer: true).focused($typing)
-                        .accessibilityIdentifier("program.maxReps")
-                    ProgramNumberField("Reps in reserve", text: $fields.rir).focused($typing)
-                        .accessibilityIdentifier("program.targetRIR")
-                } else {
-                    Text("Enter time, distance and any load while logging. Later workouts can repeat your last entry.")
-                        .foregroundStyle(.secondary)
+            ExCard(accent: true) {
+                ExQuantityControl(title: "Sets", text: $fields.sets, step: 1, presets: [2, 3, 4, 5],
+                                  identifier: "program.targetSets", integer: true)
+            }
+            if exercise?.metric.tracksReps == true {
+                ExCard {
+                    ExSectionHeading("Rep range")
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
+                        : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.content))
+                    layout { repBounds }
+                    ExQuantityControl(title: "Reps in reserve", text: $fields.rir, step: 1, presets: [0, 1, 2, 3],
+                                      identifier: "program.targetRIR")
                 }
-                ProgramNumberField("Rest in seconds, optional", text: $fields.rest).focused($typing)
-                Picker("Set type", selection: $fields.kind) {
-                    ForEach(SetKind.allCases.filter { $0 != .warmUp }, id: \.self) {
-                        Text(TrainingFormat.kind($0)).tag($0)
+            } else {
+                Text("Enter time, distance and any load while logging. Later workouts can repeat your last entry.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+            ExCard {
+                ExQuantityControl(title: "Rest in seconds, optional", text: $fields.rest, step: 15, presets: [60, 90, 120], unit: "s")
+                Button("Use my usual timer") { fields.rest = "" }.font(.exLabel).frame(minHeight: 44)
+                ProgramChoiceField("Set type", value: TrainingFormat.kind(fields.kind)) {
+                    Picker("Set type", selection: $fields.kind) {
+                        ForEach(SetKind.allCases.filter { $0 != .warmUp }, id: \.self) {
+                            Text(TrainingFormat.kind($0)).tag($0)
+                        }
                     }
                 }
-            } footer: { Text("Leave rest empty to use your usual timer. Targets are checked when you save the program.") }
+            }
             if let error { Text(error).foregroundStyle(Color.exError) }
         }
-        .exListStyle()
         .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -373,6 +377,12 @@ private struct ProgramTargetEditor: View {
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
         }
     }
+    @ViewBuilder
+    private var repBounds: some View {
+        NutritionNumberInput(title: "Minimum reps", text: $fields.minReps, identifier: "program.minReps")
+        NutritionNumberInput(title: "Maximum reps", text: $fields.maxReps, identifier: "program.maxReps")
+    }
+
 }
 
 private struct ProgramNumberField: View {

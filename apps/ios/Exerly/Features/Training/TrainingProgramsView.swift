@@ -8,7 +8,7 @@ struct TrainingProgramsView: View {
     @State private var creating = false
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 if workspace.programs.programs.isEmpty {
                     ExEmptyState(icon: "square.stack.3d.up", title: "Build your first program",
@@ -88,7 +88,7 @@ private struct TrainingProgramDetailView: View {
     @State private var copiedName: String?
 
     var body: some View {
-        List {
+        ExList {
             if let program = workspace.programs.program(programID) {
                 Section {
                     ExCard(accent: true) {

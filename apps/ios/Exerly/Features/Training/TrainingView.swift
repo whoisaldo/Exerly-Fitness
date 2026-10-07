@@ -68,6 +68,12 @@ struct TrainingView: View {
                                 ExCard {
                                     WorkoutHistoryRow(session: session, library: store.library)
                                         .foregroundStyle(Color.exTextPrimary)
+                                    let summary = store.summary(of: session)
+                                    Text("\(summary.workingSets) working sets · \(TrainingFormat.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb")·reps")
+                                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                                    if !summary.tonnage.isComplete {
+                                        Text("Volume excludes unrecorded bodyweight").font(.exSmall).foregroundStyle(Color.exTextMuted)
+                                    }
                                 }
                             }.buttonStyle(.plain)
                         }
@@ -188,7 +194,13 @@ struct ExercisePickerView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            ExList {
+                Section {
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        ExEyebrow("Exercise library", color: .exPrimary)
+                        Text(onSelect == nil ? "Know your movements" : "Choose your next exercise").font(.exH2)
+                    }.padding(.vertical, ExSpacing.small)
+                }.listRowBackground(Color.clear)
                 Section {
                     Picker("Target muscle", selection: $muscle) {
                         Text("All muscles").tag(Muscle?.none)
@@ -215,6 +227,7 @@ struct ExercisePickerView: View {
                     }
                 }
             }
+            .exListStyle()
             .searchable(text: $query, prompt: "Search exercises")
             .navigationTitle(onSelect == nil ? "Exercises" : "Add exercise")
             .navigationBarTitleDisplayMode(.inline)
@@ -242,7 +255,14 @@ private struct ExerciseLibraryRow: View {
 private struct ExerciseInformationView: View {
     let exercise: ExerlyCore.Exercise
     var body: some View {
-        List {
+        ExList {
+            Section {
+                ExCard(accent: true) {
+                    ExEyebrow(TrainingFormat.words(exercise.metric.rawValue), color: .exPrimary)
+                    Text(exercise.name).font(.exH2)
+                    Text(exercise.targetMuscles.map(\.name).joined(separator: " · ")).font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+            }
             Section("Target muscles") { Text(exercise.targetMuscles.map(\.name).joined(separator: ", ")) }
             if !exercise.synergistMuscles.isEmpty {
                 Section("Assisting muscles") { Text(exercise.synergistMuscles.map(\.name).joined(separator: ", ")) }
@@ -255,6 +275,6 @@ private struct ExerciseInformationView: View {
                 LabeledContent("Tracking", value: TrainingFormat.words(exercise.metric.rawValue))
                 ForEach(exercise.actions, id: \.self) { Text(TrainingFormat.words($0.rawValue)) }
             }
-        }.navigationTitle(exercise.name).navigationBarTitleDisplayMode(.inline)
+        }.exListStyle().navigationTitle(exercise.name).navigationBarTitleDisplayMode(.inline)
     }
 }

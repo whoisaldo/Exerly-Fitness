@@ -43,7 +43,7 @@ struct PlannedWorkoutView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            ExList {
                 if workspace.store.activeSession != nil {
                     Section {
                         Text("A workout is already in progress. Close this preview to continue it in Training.")

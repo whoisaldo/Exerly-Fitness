@@ -8,7 +8,7 @@ struct ExerciseLogView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        List {
+        ExList {
             if let exercise = store.library.exercise(exerciseID) {
                 if let stats = store.history.statistics(of: exerciseID) {
                     Section {
@@ -69,7 +69,7 @@ struct ExerciseLogView: View {
         if typeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                Text(value).foregroundStyle(.secondary).monospacedDigit()
+                Text(value).foregroundStyle(.secondary).font(.exStatSmall)
             }
         } else { LabeledContent(title, value: value) }
     }

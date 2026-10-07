@@ -7,7 +7,7 @@ struct WorkoutHistoryView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List {
+        ExList {
             if store.history.sessions.isEmpty {
                 ExEmptyState(icon: "dumbbell", title: "Your training, recorded",
                              message: "Finish a session to see every set here, ready to compare next time.", action: "Back to Training") {
@@ -56,7 +56,7 @@ struct WorkoutDetailView: View {
     var body: some View {
         Group {
             if let session = store.history.session(sessionID) {
-                List {
+                ExList {
                     Section {
                         ExCard(accent: true) {
                         ExEyebrow("Completed session", color: .exPrimary)
