@@ -213,3 +213,25 @@ import Testing
         #expect(nutrition.plans == [current])
     }
 }
+
+@MainActor
+@Suite struct DayProgressTests {
+    @Test func remainingAndOverFollowTheTargetsInForceAndCountUnreportedEntries() throws {
+        let monday = LocalDate("2026-10-05")!
+        let persistence = InMemoryTrainingPersistence()
+        let nutrition = try NutritionStore(persistence: persistence, now: { Fixture.instant() })
+        #expect(nutrition.progress(on: monday).hasTargets == false)
+        let plan = NutritionPlan(startDate: monday, createdAt: Fixture.instant(), goal: NutritionGoal(.maintain), mode: .manual,
+                                 targets: Array(repeating: DailyTargets(energy: 2000, protein: 150, fat: 60, carbohydrate: 200), count: 7))
+        try nutrition.savePlan(plan, timeZone: .gmt)
+        try nutrition.log(Foods.oats, grams: 200, on: monday, meal: "Breakfast")
+        try nutrition.log(Food(name: "Mystery bar", per100g: NutrientAmounts([.energy: 500])), grams: 100, on: monday, meal: "Snacks")
+        let day = nutrition.progress(on: monday)
+        #expect(day.hasTargets && day.energy.consumed == 1260 && day.energy.remaining == 740 && day.energy.over == 0)
+        #expect(day.protein.consumed == 26 && day.protein.unreported == 1 && day.energy.unreported == 0)
+        #expect(abs((day.energy.fraction ?? 0) - 0.63) < 1e-12)
+        try nutrition.log(Foods.oats, grams: 300, on: monday, meal: "Dinner")
+        let over = nutrition.progress(on: monday).energy
+        #expect(over.remaining == 0 && over.over == 400)
+    }
+}

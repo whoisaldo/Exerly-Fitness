@@ -306,3 +306,44 @@ public struct LoggedAmount: Sendable, Hashable {
     public var serving: Serving?
     public var quantity: Double?
 }
+
+/// One nutrient's intake against its target on a day, for a progress bar and
+/// "x left". Values are unrounded; format them for display.
+public struct NutrientProgress: Sendable, Hashable {
+    public var nutrient: Nutrient
+    /// The total of the entries that report it.
+    public var consumed: Double
+    /// Entries that don't report it, so the total may be low.
+    public var unreported: Int
+    public var target: Double?
+    /// The target minus consumed, never below zero; nil without a target.
+    public var remaining: Double? { target.map { max(0, $0 - consumed) } }
+    /// Consumed minus the target when above it, else zero; nil without a target.
+    public var over: Double? { target.map { max(0, consumed - $0) } }
+    /// Consumed over the target: 1 is exactly on target. Nil without a positive target.
+    public var fraction: Double? { target.flatMap { $0 > 0 ? consumed / $0 : nil } }
+}
+
+/// The day's energy and macros against the targets in force.
+public struct DayProgress: Sendable, Hashable {
+    public var date: LocalDate
+    public var energy: NutrientProgress
+    public var protein: NutrientProgress
+    public var fat: NutrientProgress
+    public var carbohydrate: NutrientProgress
+    public var hasTargets: Bool { energy.target != nil }
+}
+
+extension NutritionStore {
+    /// The day's intake against `targets(on:)`.
+    public func progress(on date: LocalDate) -> DayProgress {
+        let logged = entries(on: date)
+        let targets = targets(on: date)
+        func progress(_ nutrient: Nutrient, _ target: Double?) -> NutrientProgress {
+            NutrientProgress(nutrient: nutrient, consumed: logged.compactMap { $0.nutrients[nutrient] }.reduce(0, +),
+                             unreported: logged.filter { $0.nutrients[nutrient] == nil }.count, target: target)
+        }
+        return DayProgress(date: date, energy: progress(.energy, targets?.energy), protein: progress(.protein, targets?.protein),
+                           fat: progress(.fat, targets?.fat), carbohydrate: progress(.carbohydrate, targets?.carbohydrate))
+    }
+}
