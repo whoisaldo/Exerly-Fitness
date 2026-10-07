@@ -2819,7 +2819,22 @@ final class ProductionUITests: XCTestCase {
             field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         }
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)
-        if field.elementType == .textField { XCTAssertEqual(field.value as? String, text) }
+        if field.elementType == .textField {
+            // Busy CI simulators can drop keystrokes or miss the selection.
+            // Retry through the real editing menu and verify the final value.
+            for _ in 0..<2 where field.value as? String != text {
+                field.press(forDuration: 1.1)
+                let selectAll = app.menuItems["Select All"].firstMatch
+                let selectAllButton = app.buttons["Select All"].firstMatch
+                if selectAll.exists { selectAll.tap() }
+                else if selectAllButton.exists { selectAllButton.tap() }
+                else { field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
+                let count = (field.value as? String ?? "").count
+                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: count + 3))
+                for character in text { field.typeText(String(character)) }
+            }
+            XCTAssertEqual(field.value as? String, text)
+        }
     }
     private func dismissKeyboard(_ app: XCUIApplication) {
         if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
