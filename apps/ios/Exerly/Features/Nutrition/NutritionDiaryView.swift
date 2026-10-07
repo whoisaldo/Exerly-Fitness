@@ -97,7 +97,7 @@ struct NutritionDiaryView: View {
                     }.buttonStyle(.plain).accessibilityLabel("Edit note, \(store.day(date).notes)")
                 }
                 if dailySync.attentionCount > 0 {
-                    NavigationLink { SyncIssuesView() } label: {
+                    NavigationLink { SavedChangesReviewView() } label: {
                         ExNavigationLabel(title: "Review changes", icon: "arrow.triangle.2.circlepath",
                                           detail: "Activity or body measurements changed on another device")
                     }.accessibilityLabel("Review changes")

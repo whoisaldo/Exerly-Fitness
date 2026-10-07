@@ -101,7 +101,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(sync.pendingCount) changes waiting to sync.")
                     if sync.isOffline { Text("Offline. Showing saved activity, sleep and water.") }
-                    if sync.attentionCount > 0 { NavigationLink("Review changes") { SyncIssuesView() } }
+                    if sync.attentionCount > 0 { NavigationLink("Review changes") { SavedChangesReviewView() } }
                     Button("Sync now") { Task { await sync.synchronize(force: true); await viewModel.load(for: selectedDate) } }
                 }.diaryListRow()
             }
@@ -123,7 +123,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if sync.pendingCount > 0 { Text("\(sync.pendingCount) changes saved on this device, waiting to sync.") }
                     if sync.attentionCount > 0 { Text("\(sync.attentionCount) changes need your attention.") }
-                    if sync.attentionCount > 0 { NavigationLink("Review changes") { SyncIssuesView() }.frame(minHeight: 44) }
+                    if sync.attentionCount > 0 { NavigationLink("Review changes") { SavedChangesReviewView() }.frame(minHeight: 44) }
                     if sync.isOffline { Text("Offline. Showing saved diary entries.") }
                     Button("Sync now") { Task { await sync.synchronize(force: true); await viewModel.load(for: selectedDate) } }
                         .frame(minHeight: 44)

@@ -121,7 +121,7 @@ struct MeasurementsTab: View {
                     Button("Review older measurements") { showLegacyReview = true }.frame(minHeight: 44)
                 }
                 if sync.attentionCount > 0 {
-                    NavigationLink("Review unsynced changes") { SyncIssuesView() }
+                    NavigationLink("Review unsynced changes") { SavedChangesReviewView() }
                         .frame(minHeight: 44)
                 }
             }
@@ -663,7 +663,7 @@ struct WeightEntrySheet: View {
                             }
                         }
                         if current.sync_state == "pending" { Text("Saved on this device. Waiting to sync.").font(.callout) }
-                        if current.sync_state == "attention" { NavigationLink("Review weight changes") { SyncIssuesView() } }
+                        if current.sync_state == "attention" { NavigationLink("Review weight changes") { SavedChangesReviewView() } }
                     } else { ProgressView("Loading this day's reading") }
                 }
                 if offline { ExCard { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }

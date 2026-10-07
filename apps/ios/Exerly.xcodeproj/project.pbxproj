@@ -35,6 +35,7 @@
         86593338082A43D56B239D68 /* AgentPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52BB90CC9EF39DDCF29601F; };
         E50000000000000000000007 /* AccountWorkspaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000008; };
         E50000000000000000000005 /* SessionBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000006; };
+        E80000000000000000000001 /* SavedChangesReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E80000000000000000000002; };
         E50000000000000000000003 /* AccountSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000004; };
         E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000002; };
         E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000008; };
@@ -162,6 +163,7 @@
         A52BB90CC9EF39DDCF29601F /* AgentPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentPresentation.swift; sourceTree = SOURCE_ROOT; };
         E50000000000000000000008 /* AccountWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountWorkspaceTests.swift; sourceTree = SOURCE_ROOT; };
         E50000000000000000000006 /* SessionBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/SessionBridgeTests.swift; sourceTree = SOURCE_ROOT; };
+        E80000000000000000000002 /* SavedChangesReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/SavedChangesReviewView.swift; sourceTree = SOURCE_ROOT; };
         E50000000000000000000004 /* AccountSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountSyncView.swift; sourceTree = SOURCE_ROOT; };
         E50000000000000000000002 /* AppAccountWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AppAccountWorkspace.swift; sourceTree = SOURCE_ROOT; };
         E40000000000000000000008 /* AccountControlsFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountControlsFixtureView.swift; sourceTree = SOURCE_ROOT; };
@@ -573,6 +575,7 @@
                 E20000000000000000000005 /* TrainingPresentationTests.swift */,
                 E30000000000000000000002 /* AccountInfrastructureTests.swift */,
                 E40000000000000000000008 /* AccountControlsFixtureView.swift */,
+                E80000000000000000000002 /* SavedChangesReviewView.swift */,
                 E50000000000000000000004 /* AccountSyncView.swift */,
                 E50000000000000000000002 /* AppAccountWorkspace.swift */,
                 E40000000000000000000006 /* AccountPresentationTests.swift */,
@@ -754,6 +757,7 @@
                 D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */,
                 F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */,
                 E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */,
+                E80000000000000000000001 /* SavedChangesReviewView.swift in Sources */,
                 E50000000000000000000003 /* AccountSyncView.swift in Sources */,
                 E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */,
                 E40000000000000000000003 /* AccountManagementView.swift in Sources */,

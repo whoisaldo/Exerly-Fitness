@@ -41,7 +41,7 @@ struct LogActivityView: View {
                     CalendarDayPicker("Activity date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                 }
                 if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.").font(.exCaption) }
-                if editing?.syncState == "attention" { NavigationLink("Review activity changes") { SyncIssuesView() } }
+                if editing?.syncState == "attention" { NavigationLink("Review activity changes") { SavedChangesReviewView() } }
                 if editing != nil {
                     Button("Delete activity", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                 }

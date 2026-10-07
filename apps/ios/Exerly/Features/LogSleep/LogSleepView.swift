@@ -53,7 +53,7 @@ struct LogSleepView: View {
                     CalendarDayPicker("Wake date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                 }
                 if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.").font(.exCaption) }
-                if editing?.syncState == "attention" { NavigationLink("Review sleep changes") { SyncIssuesView() } }
+                if editing?.syncState == "attention" { NavigationLink("Review sleep changes") { SavedChangesReviewView() } }
                 if editing != nil {
                     Button("Delete sleep entry", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                 }
