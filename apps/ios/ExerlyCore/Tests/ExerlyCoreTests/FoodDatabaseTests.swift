@@ -63,6 +63,10 @@ import Testing
         // Logged straight from search, with no saved food to look up later.
         let entry = try nutrition.log(oil, serving: oil.servings[0], on: LocalDate("2026-10-05")!, meal: "Dinner")
         #expect(entry.food.volume == oil.volume && entry.grams == 13.8)
+        // The editor reopens the amount in the millilitres it was entered in.
+        #expect(abs((entry.food.volume?.milliliters(grams: entry.grams) ?? 0) - 15) < 1e-12)
+        #expect(oil.milliliters(grams: 13.8) == entry.food.volume?.milliliters(grams: 13.8))
+        #expect(Food(name: "Rice", per100g: NutrientAmounts()).milliliters(grams: 100) == nil)
         let dressing = Food.recipe(name: "Dressing", ingredients: [RecipeIngredient(food: oil.snapshot, grams: 30)])
         try nutrition.saveFood(dressing)
         var thick = entry

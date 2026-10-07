@@ -150,10 +150,17 @@ public enum USUnits {
     /// One U.S. fluid ounce, exactly.
     public static let millilitersPerFluidOunce = 29.573_529_562_5
     public static let centimetersPerInch = 2.54
+    /// One avoirdupois ounce, exactly: a sixteenth of the pound.
+    public static let gramsPerOunce = 28.349_523_125
 
     public static func milliliters(fluidOunces: Double) -> Double { fluidOunces * millilitersPerFluidOunce }
 
     public static func fluidOunces(milliliters: Double) -> Double { milliliters / millilitersPerFluidOunce }
+
+    /// Food mass. Nutrients stay per 100 g; only the amount eaten is in ounces.
+    public static func grams(ounces: Double) -> Double { ounces * gramsPerOunce }
+
+    public static func ounces(grams: Double) -> Double { grams / gramsPerOunce }
 
     /// Whole millilitres, for stores that keep integers such as water:
     /// rounded to the nearest, halves away from zero. Whole fluid ounces come

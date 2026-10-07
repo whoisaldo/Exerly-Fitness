@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 04:30 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 04:50 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                         |
 | --------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:30 EDT, integration (M14 export and import)                           |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:50 EDT, integration (sync P1, food units, recipes, N08)               |
 | `main`                                        | –        | `ad767e2a`, 2026-10-07 02:45 EDT; CI run 37580092392 in progress; integration ahead |
 
 `main` and integration converged: integration was merged into `main`
@@ -176,6 +176,15 @@ and bridged plans following the legacy Program screen.
 **M14: CSV exports and import.** Landed 2026-10-07 (design 022, I14): seven CSV
 files with units and empty unknowns, and an idempotent import of a JSON export,
 checked by a live round trip between two accounts.
+
+**Sync P1, food units, recipes and entry corrections.** Landed 2026-10-07.
+The legacy `SyncEngine` clears a stale error and offline state after a
+successful pull and publishes `lastSyncedAt`; the app's reconnect regression
+passes against it (hosted suite 164, 1 skipped). Core adds exact ounce and
+millilitre conversions, recipe `servingCount`, `preparation`, `recipeServing`
+and `withIngredients` (N11), and per-entry nutrient corrections marked
+`edited` (N08). Core 298, API 251. The final design critique is in
+`to-app.md`.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

@@ -8,6 +8,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { startServer, signUp } = require('./helpers/server');
 const docs = require('../lib/documents');
+const { foodProblems } = require('../lib/nutrition/validate');
 
 let api;
 test.before(async () => {
@@ -716,4 +717,42 @@ test('custom metrics, their values and experiments sync, with metric references 
   });
   assert.equal(planned.status, 201, JSON.stringify(planned.body));
   assert.equal((await write('custom_metric', randomUUID(), { name: 'No kind' })).status, 400);
+});
+
+test('a recipe keeps its serving count and preparation; an agent cannot write a bad count', async () => {
+  const { token } = await signUp(api);
+  const recipe = {
+    id: 'R1',
+    name: 'Porridge',
+    source: 'recipe',
+    per100g: { energy: 127.4 },
+    servings: [],
+    favorite: false,
+    createdAt: '2026-10-07T08:00:00.000Z',
+    ingredients: [
+      {
+        food: { foodID: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 } },
+        grams: 80,
+      },
+    ],
+    servingCount: 2,
+    preparation: 'Simmer 5 minutes, stirring.',
+  };
+  const saved = await api.put(
+    '/v1/documents/saved_food/R1',
+    { payload: recipe, base_revision: 0 },
+    { token, headers: key() }
+  );
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const [change] = (await api.get('/v1/changes?after=0', { token })).body.changes;
+  assert.deepEqual(
+    [change.payload.servingCount, change.payload.preparation],
+    [2, 'Simmer 5 minutes, stirring.']
+  );
+
+  assert.deepEqual(foodProblems(recipe, 'R1'), []);
+  assert.deepEqual(foodProblems({ ...recipe, servingCount: 0, preparation: 3 }, 'R1'), [
+    'the serving count must be positive',
+    'preparation must be text',
+  ]);
 });

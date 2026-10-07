@@ -26,6 +26,9 @@ public struct FoodSnapshot: Sendable, Codable, Hashable {
     /// The food's volume basis, so a label per 100 ml and its assumed density
     /// stay with the history.
     public var volume: VolumeBasis?
+    /// True when the person changed this entry's nutrients. The food it came
+    /// from, and its source, are unchanged.
+    public var edited: Bool?
 }
 
 public struct RecipeIngredient: Sendable, Codable, Hashable {
@@ -53,6 +56,11 @@ public struct VolumeBasis: Sendable, Codable, Hashable {
         self.note = note
     }
 
+    public func grams(milliliters: Double) -> Double { milliliters * density }
+
+    /// The volume a logged weight was, to reopen an amount entered in millilitres.
+    public func milliliters(grams: Double) -> Double { grams / density }
+
     var problems: [String] {
         density.isFinite && density > 0.3 && density < 3 ? [] : ["the density must be between 0.3 and 3 g/ml"]
     }
@@ -72,6 +80,10 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
     public var ingredients: [RecipeIngredient]?
     /// A recipe's cooked weight, when it differs from its ingredients'.
     public var yieldGrams: Double?
+    /// How many servings a recipe makes; see `recipeServing`.
+    public var servingCount: Double?
+    /// How a recipe is made.
+    public var preparation: String?
     public var favorite: Bool
     public var createdAt: Date
     public var archivedAt: Date?
@@ -96,13 +108,36 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
     /// A recipe from ingredients. Its nutrients per 100 g come from their total
     /// over the cooked weight, or over the ingredients' weight without one.
     public static func recipe(id: String = UUID().uuidString, name: String, ingredients: [RecipeIngredient],
-                              yieldGrams: Double? = nil, servings: [Serving] = [],
-                              createdAt: Date = Date().roundedToMilliseconds) -> Food {
-        var food = Food(id: id, name: name, source: .recipe, per100g: Self.per100g(ingredients, yield: yieldGrams),
-                        servings: servings, createdAt: createdAt)
+                              yieldGrams: Double? = nil, servingCount: Double? = nil, preparation: String? = nil,
+                              servings: [Serving] = [], createdAt: Date = Date().roundedToMilliseconds) -> Food {
+        var food = Food(id: id, name: name, source: .recipe, per100g: NutrientAmounts(), servings: servings,
+                        createdAt: createdAt)
+        food.servingCount = servingCount
+        food.preparation = preparation
+        return food.withIngredients(ingredients, yieldGrams: yieldGrams)
+    }
+
+    /// The recipe with new ingredients or a new cooked weight, its nutrients
+    /// recalculated. Everything else is kept.
+    public func withIngredients(_ ingredients: [RecipeIngredient], yieldGrams: Double?) -> Food {
+        var food = self
         food.ingredients = ingredients
         food.yieldGrams = yieldGrams
+        food.per100g = Self.per100g(ingredients, yield: yieldGrams)
         return food
+    }
+
+    /// A recipe's whole weight: its cooked weight, or its ingredients' without one.
+    public var recipeGrams: Double? {
+        guard let ingredients, !ingredients.isEmpty else { return nil }
+        return yieldGrams ?? ingredients.reduce(0) { $0 + $1.grams }
+    }
+
+    /// One of a recipe's `servingCount` equal servings. It follows the
+    /// recipe's weight, so it isn't kept in `servings`.
+    public var recipeServing: Serving? {
+        guard let servingCount, servingCount.isFinite, servingCount > 0, let whole = recipeGrams else { return nil }
+        return Serving("1 serving", grams: whole / servingCount)
     }
 
     static func per100g(_ ingredients: [RecipeIngredient], yield: Double?) -> NutrientAmounts {
@@ -115,7 +150,10 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
     public var per100ml: NutrientAmounts? { volume.map { per100g.scaled(by: $0.density) } }
 
     /// Grams for a volume, for a food labelled per volume.
-    public func grams(milliliters: Double) -> Double? { volume.map { milliliters * $0.density } }
+    public func grams(milliliters: Double) -> Double? { volume?.grams(milliliters: milliliters) }
+
+    /// Millilitres for a weight, for a food labelled per volume.
+    public func milliliters(grams: Double) -> Double? { volume?.milliliters(grams: grams) }
 
     /// Nutrients per 100 g from a label's amounts for one serving of `servingGrams`.
     public static func per100g(fromLabel amounts: NutrientAmounts, servingGrams: Double) throws -> NutrientAmounts {
@@ -136,6 +174,9 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
             problems.append("each serving needs a name and a positive weight")
         }
         if let yieldGrams, !(yieldGrams.isFinite && yieldGrams > 0) { problems.append("the yield must be positive") }
+        if let servingCount, !(servingCount.isFinite && servingCount > 0) {
+            problems.append("the serving count must be positive")
+        }
         if source == .recipe && (ingredients ?? []).isEmpty { problems.append("a recipe needs ingredients") }
         if (ingredients ?? []).contains(where: { !($0.grams.isFinite && $0.grams > 0) }) {
             problems.append("each ingredient needs a positive weight")
@@ -171,6 +212,15 @@ public struct FoodEntry: Sendable, Codable, Hashable, Identifiable {
     }
 
     public var nutrients: NutrientAmounts { food.per100g.scaled(by: grams / 100) }
+
+    /// The entry with its nutrients corrected for this entry only. Changing
+    /// the amount later scales the corrected nutrients.
+    public func editingNutrients(_ nutrients: NutrientAmounts) -> FoodEntry {
+        var entry = self
+        entry.food.per100g = nutrients.scaled(by: 100 / grams)
+        entry.food.edited = true
+        return entry
+    }
 
     var problems: [String] {
         var problems = food.per100g.problems + (food.volume?.problems ?? [])

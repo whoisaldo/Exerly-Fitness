@@ -57,6 +57,8 @@ final class SyncEngine: ObservableObject {
     @Published private(set) var isOffline = false
     @Published private(set) var changeToken = 0
     @Published var error: String?
+    /// When a sync last sent every queued change it could and pulled the server's.
+    @Published private(set) var lastSyncedAt: Date?
     @Published private(set) var accountID: String?
     @Published private(set) var calendar: AccountCalendar
     @Published private(set) var today: CalendarDay
@@ -932,6 +934,7 @@ final class SyncEngine: ObservableObject {
             refreshCounts()
             if automaticallySync && accountID != nil && accountID != owner { Task { await synchronize(force: true) } }
         }
+        var sendFailed = false
         do {
             for operation in try operations() {
                 guard accountID == owner else { return }
@@ -998,6 +1001,7 @@ final class SyncEngine: ObservableObject {
                     } else {
                         operation.state = "pending"
                         isOffline = true
+                        sendFailed = true
                         let delay = min(pow(2, Double(min(operation.attempts, 5))), 30)
                         operation.retryAt = Date().addingTimeInterval(delay)
                         retryTask?.cancel()
@@ -1013,8 +1017,21 @@ final class SyncEngine: ObservableObject {
                     break
                 }
             }
-            if accountID == owner { try await pullChanges(owner: owner, context: context) }
-        } catch { self.error = error.localizedDescription }
+            guard accountID == owner else { return }
+            try await pullChanges(owner: owner, context: context)
+            guard accountID == owner else { return }
+            // The server answered, so an earlier failure is over. A change that
+            // couldn't be sent this time keeps the app offline until it is.
+            error = nil
+            if !sendFailed {
+                isOffline = false
+                lastSyncedAt = now()
+            }
+        } catch {
+            guard accountID == owner else { return }
+            self.error = error.localizedDescription
+            if (error as? APIError)?.permitsReadRetry == true { isOffline = true }
+        }
     }
 
     private func pullChanges(owner: String, context: ModelContext) async throws {

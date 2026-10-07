@@ -49,7 +49,8 @@ Volume is in kilogram-reps, durations in seconds, distances in metres.
   stored values staying metric. `wholeMilliliters(fluidOunces:)` rounds to the
   nearest millilitre for integer stores such as water, so whole fluid ounces
   come back when shown to 0.1 fl oz. `feetAndInches(centimeters:inchStep:)`
-  carries 12 inches to a foot.
+  carries 12 inches to a foot. `grams(ounces:)` and `ounces(grams:)` convert
+  the amount of food eaten exactly; nutrients stay per 100 g.
 
 ### Exercise library
 
@@ -273,8 +274,9 @@ try await api.signOut()
     refused without one, since EAN-8 and UPC-E look alike. Search on submit,
     not as the person types. A product labelled per 100 ml has a `volume` basis: the density
     used to convert it to grams, whether it was assumed, and a note to show.
-    `per100ml` gives the label back, and `grams(milliliters:)` converts an
-    amount poured.
+    `per100ml` gives the label back, `grams(milliliters:)` converts an
+    amount poured, and `milliliters(grams:)` (also on `VolumeBasis`, for an
+    entry's snapshot) gives it back.
 
 ### ExerlyAPI
 
@@ -586,6 +588,12 @@ trend weight and expenditure.
     `move(_ ids:to:meal:)` moves them, keeping their IDs.
   - `logIngredients(of:grams:serving:quantity:on:meal:at:)` logs a recipe
     portion as its ingredients, scaled to the portion.
+  - A recipe (`Food.recipe`) may say how many servings it makes and how it is
+    made (`servingCount`, `preparation`). `recipeGrams` is its whole weight and
+    `recipeServing` an equal share of it. `withIngredients(_:yieldGrams:)`
+    changes the ingredients and recalculates the nutrients.
+  - `FoodEntry.editingNutrients(_:)` corrects one entry's nutrients and marks
+    its snapshot `edited`; the food it came from is unchanged.
   - `suggestions(at:timeZone:days:limit:)` returns `FoodSuggestion`s: foods
     usually logged within 90 minutes of this time of day over the last 28
     days, with the amount and meal last used. Foods already logged today

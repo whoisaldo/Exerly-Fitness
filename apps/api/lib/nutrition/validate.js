@@ -109,6 +109,8 @@ function snapshotProblems(food, where) {
   if (!absent(food.brand) && !isString(food.brand)) problems.push(`${where}.brand must be text`);
   if (!FOOD_SOURCES.includes(food.source))
     problems.push(`${where}.source must be one of ${FOOD_SOURCES.join(', ')}`);
+  if (!absent(food.edited) && typeof food.edited !== 'boolean')
+    problems.push(`${where}.edited must be true or false`);
   return [
     ...problems,
     ...amountsProblems(food.per100g, `${where}.per100g`),
@@ -163,6 +165,10 @@ function foodProblems(food, id) {
     problems.push('archivedAt must be an ISO 8601 instant');
   if (!absent(food.yieldGrams) && !(isNumber(food.yieldGrams) && food.yieldGrams > 0))
     problems.push('the yield must be positive');
+  if (!absent(food.servingCount) && !(isNumber(food.servingCount) && food.servingCount > 0))
+    problems.push('the serving count must be positive');
+  if (!absent(food.preparation) && !isString(food.preparation))
+    problems.push('preparation must be text');
   problems.push(...volumeProblems(food.volume, 'volume'));
   if (!absent(food.ingredients)) {
     if (!Array.isArray(food.ingredients)) problems.push('ingredients must be an array');

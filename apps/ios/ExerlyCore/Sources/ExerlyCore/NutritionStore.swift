@@ -212,11 +212,10 @@ public final class NutritionStore {
     @discardableResult
     public func logIngredients(of recipe: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil,
                                on date: LocalDate, meal: String, at time: Date? = nil) throws -> [FoodEntry] {
-        guard let ingredients = recipe.ingredients, !ingredients.isEmpty else {
+        guard let ingredients = recipe.ingredients, let whole = recipe.recipeGrams else {
             throw StoreError.invalid(["\(recipe.name) has no ingredients"])
         }
         let portion = try Self.preview(recipe, grams: grams, serving: serving, quantity: quantity).grams
-        let whole = recipe.yieldGrams ?? ingredients.reduce(0) { $0 + $1.grams }
         let loggedAt = time?.roundedToMilliseconds ?? now()
         let parts = ingredients.map {
             FoodEntry(date: date, meal: meal, loggedAt: loggedAt, food: $0.food, grams: $0.grams * portion / whole)

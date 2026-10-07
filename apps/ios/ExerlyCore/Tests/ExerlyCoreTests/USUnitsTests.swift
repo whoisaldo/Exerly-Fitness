@@ -14,6 +14,16 @@ import Testing
         #expect(abs(USUnits.milliliters(fluidOunces: 1) - 29.5735295625) < 1e-12)
     }
 
+    @Test func foodInOuncesConvertsExactlyBothWays() {
+        #expect(USUnits.grams(ounces: 16) == 453.592_37, "16 oz is exactly a pound")
+        #expect(USUnits.grams(ounces: 1) == 28.349_523_125)
+        for tenths in 1...1000 {
+            let ounces = Double(tenths) / 10
+            #expect(abs(USUnits.ounces(grams: USUnits.grams(ounces: ounces)) - ounces) < 1e-12)
+        }
+        #expect(USUnits.grams(ounces: 1) == ShortcutsJSON.grams["ounces"])
+    }
+
     @Test func heightsConvertBothWaysAndCarryInchesToFeet() {
         #expect(abs(USUnits.centimeters(feet: 5, inches: 11) - 180.34) < 1e-9)
         #expect(USUnits.feetAndInches(centimeters: 180) == (5, 11))

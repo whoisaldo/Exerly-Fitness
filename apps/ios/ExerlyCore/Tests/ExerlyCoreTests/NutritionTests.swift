@@ -59,6 +59,54 @@ enum Foods {
         }
     }
 
+    @Test func aRecipeMakesEqualServingsAndRecalculatesWhenItsIngredientsChange() throws {
+        let nutrition = try store()
+        var porridge = Food.recipe(name: "Porridge", ingredients: [RecipeIngredient(food: Foods.oats.snapshot, grams: 80),
+                                                                   RecipeIngredient(food: Foods.milk.snapshot, grams: 300)],
+                                   servingCount: 2, preparation: "Simmer 5 minutes, stirring.")
+        #expect(porridge.recipeGrams == 380 && porridge.recipeServing == Serving("1 serving", grams: 190))
+        porridge.favorite = true
+        try nutrition.saveFood(porridge)
+        let bowl = try nutrition.log(porridge, serving: porridge.recipeServing, on: monday, meal: "Breakfast")
+        #expect(close(bowl.nutrients.energy, (380 * 0.8 + 60 * 3) / 2))
+
+        // Reordered, one ingredient changed, and cooked down: the serving follows the new weight.
+        let edited = porridge.withIngredients([RecipeIngredient(food: Foods.milk.snapshot, grams: 400),
+                                               RecipeIngredient(food: Foods.oats.snapshot, grams: 80)], yieldGrams: 360)
+        try nutrition.saveFood(edited)
+        let saved = try #require(nutrition.food(porridge.id))
+        #expect(saved.favorite && saved.preparation == "Simmer 5 minutes, stirring." && saved.servingCount == 2)
+        #expect(saved.ingredients?.map(\.food.name) == ["Milk", "Rolled oats"])
+        #expect(saved.recipeServing?.grams == 180 && close(saved.per100g.energy, (60 * 4 + 380 * 0.8) / 3.6))
+        #expect(nutrition.entries(on: monday).first?.nutrients.energy == bowl.nutrients.energy, "history is kept")
+        #expect(try ExerlyJSON.decoder.decode(Food.self, from: ExerlyJSON.canonical(saved)) == saved)
+
+        var none = porridge
+        none.servingCount = 0
+        #expect(none.recipeServing == nil)
+        #expect(throws: NutritionStore.StoreError.invalid(["the serving count must be positive"])) {
+            try nutrition.saveFood(none)
+        }
+        #expect(Foods.oats.recipeGrams == nil && Foods.oats.recipeServing == nil)
+    }
+
+    @Test func anEntrysNutrientsCanBeCorrectedWithoutChangingItsFood() throws {
+        let nutrition = try store()
+        try nutrition.saveFood(Foods.oats)
+        let entry = try nutrition.log(Foods.oats, grams: 80, on: monday, meal: "Breakfast")
+        let corrected = entry.editingNutrients(NutrientAmounts([.energy: 320, .protein: 12]))
+        try nutrition.saveEntry(corrected)
+        let saved = try #require(nutrition.entries(on: monday).first)
+        #expect(close(saved.nutrients.energy, 320) && close(saved.nutrients[.protein], 12) && saved.nutrients[.fat] == nil)
+        #expect(saved.food.edited == true && saved.food.foodID == Foods.oats.id && saved.food.source == .custom)
+        #expect(nutrition.food(Foods.oats.id)?.per100g == Foods.oats.per100g, "the library keeps its label")
+        var doubled = saved
+        doubled.grams = 160
+        #expect(close(doubled.nutrients.energy, 640))
+        #expect(try ExerlyJSON.decoder.decode(FoodEntry.self, from: ExerlyJSON.canonical(saved)) == saved)
+        #expect(entry.food.edited == nil)
+    }
+
     @Test func editingAFoodLeavesItsHistoryAlone() throws {
         let nutrition = try store()
         try nutrition.saveFood(Foods.oats)

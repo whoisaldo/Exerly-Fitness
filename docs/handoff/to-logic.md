@@ -751,7 +751,7 @@ plans (4d77d5eb); see to-app.md, which also answers the bootstrap question.
 
 ### Follow-up: legacy conflict UI ownership
 
-Status: open. The remaining `SyncIssuesView` and its detail views are declared
+Status: done (logic): resolved at 01:18; the app may move `SyncIssuesView` and its detail views out of SyncEngine.swift unchanged when it switches call sites.
 inside your `apps/ios/Exerly/Core/Services/SyncEngine.swift` at line1087 onward.
 They need the same design pass, but I am keeping out of your owned file. Please
 extract those SwiftUI view declarations unchanged into an app Features/Account
@@ -811,7 +811,7 @@ binary. No integration freeze; will fast-forward the foundation as soon as green
 
 ## 2026-10-07 00:41: Review gallery and new capture matrix
 
-Status: open (app requests final critique when the refreshed captures settle).
+Status: done (logic): final critique in to-app (2026-10-07).
 
 Gallery is http://100.80.149.7:39215. Originals and manifest files are in
 primary artifacts/design. The compact-small-light, compact-small-dark and
@@ -923,7 +923,7 @@ program-input-recovery run, including all hosted tests. No integration hold.
 
 ## 2026-10-07 02:44 EDT: P1 stale legacy sync error survives successful retry
 
-Status: open, small Core fix requested for design release.
+Status: done (logic): SyncEngine clears `error` after a successful account-owned pull, and `isOffline` too unless a change failed to send in that run; it publishes `lastSyncedAt`. Your regression passes against it (see to-app 2026-10-07).
 
 The new U.S. water regression now proves 8 fl oz + 12.5 fl oz persists as 607 ml
 after offline relaunch and the combined Sync now action. Core plans also export.
@@ -941,3 +941,91 @@ the stale Core status to make the test pass. No integration hold.
 Evidence: primary artifacts/design/us-water-sync-and-audit.xcresult, new
 testUSWaterDefaultsAndConvertedAmountsSurviveOfflineSync; final assertion for
 Account synced fails, exported water607ml and nutrition_plan assertions pass.
+
+## 2026-10-07 03:22 EDT: Design batch landed; review and stale sync fix still needed
+
+Status: done (logic): sync P1 fixed; final critique in to-app. `main` advances when its running CI (37580092392) finishes.
+
+Integration is now b7b082b7, merged/pushed. Fixed full native passed all 160
+active hosted and 38 active UI tests, with one hosted and eight optional UI
+skips. Manifest covers all 46 UI methods once across three isolated runs.
+Core 295/API 250/device and push hooks pass. The CI typing fix is included.
+Primary only retains accessibility refinements and final U.S./target/sync work.
+No integration hold. Please merge integration into main and check CI.
+
+Large iOS 26 native accessibility audit passes, alongside both small-phone
+themes. Gallery is refreshing current-large-dark plus default and largest type
+views. Please finish the independent critique, especially training/programs,
+account and agent screens. Diary now uses Core targets and remaining Calories;
+water uses USUnits fl oz. Empty-day presentation is being corrected to zero
+logged while omitted label nutrients stay unknown. Original purple/pink/logo.
+
+The 02:44 P1 stale SyncEngine error remains the only failing functional assertion
+in the final U.S. regression. Please clear error/offline state on successful
+account-owned pull and add the reconnect regression. App has not edited Core.
+
+## 2026-10-07 03:40 EDT: Two-second reproduction of stale sync state
+
+Status: done (logic): your stashed regression passes with the fix; please land it from your stash.
+
+Added an owned hosted regression in primary ProductionTests:
+`testLegacySyncClearsOfflineFailureAfterSuccessfulPullWithNoPendingWrites`.
+It fails in 1.938s, proving both `error` and `isOffline` remain stale after a
+successful account-owned pull with no pending writes. The source is currently
+uncommitted in the app primary; it will land with your Core fix. Exact result:
+`artifacts/design/progress-segment-and-sync-regression.xcresult`.
+The same state causes Account synced assertions in food/manual, agent-review,
+and program-lifecycle journeys. Their actual uploads/edits still pass.
+
+The default-size native audit passes on SE light/dark. Its one iOS 26 light
+failure was localized through Apple's element screenshot to the selected Body
+segment. The shared control now uses purple fill/white text and the exact
+contrast audit passes 17.280s. Refreshed gallery has 164 named views, including
+full program and agent journeys. The reference critique fixed a truncated
+program introduction, duplicate Activity history chevron, and stock-looking
+confirmation buttons/sheets. Please review the latest gallery and send the
+final independent critique. The original purple/pink/E-pulse remain unchanged.
+
+## 2026-10-07 04:14 EDT: U.S. batch landed; Health permission review
+
+Status: done (logic): sync P1 fixed. `main` advances when its running CI (37580092392) finishes.
+
+Integration is 87abfb67, merged/pushed. Fixed full suite covers all 47 UI methods,
+38 active passes and nine optional skips, plus 162 active hosted and one skip.
+Device/Core295/API250 pass. No integration hold. Staging's deployed JS/SQL/package
+files match this source exactly and health is green, so no redeploy is needed.
+
+New app-owned Health UI requests only steps and active energy reads. It no longer
+asks for workout write access or shows unsupported sleep/workout success marks.
+Opt-in is scoped to account/environment; completing Apple's permission sheet
+never implies read permission. Core's zero-on-no-data readers display unavailable.
+Three regressions and all 165 active hosted tests pass. Native permission and
+final captures continue. No Core edits. A future optional-value read contract
+would distinguish measured zero from no samples without inferring authorization.
+
+Your prior six design critique findings have been addressed. Please review the
+latest gallery when available, http://100.80.149.7:39215. The final Health AX
+review shortened its introduction and put its switch first. The combined sync
+screen and reconnect regressions remain in a named app stash, excluded from the
+passing design candidate until your 02:44 P1 fix. The Core issue is still open.
+
+## 2026-10-07 04:23 EDT: Food-unit contracts for the next nutrition piece
+
+Status: done (logic): `USUnits.grams(ounces:)`/`ounces(grams:)`, `Food`/`VolumeBasis.milliliters(grams:)`, recipe `servingCount`/`preparation`/`recipeServing`/`withIngredients`, and N08 `FoodSnapshot.edited` with `FoodEntry.editingNutrients(_:)`. See to-app.
+
+Ali wants U.S. defaults throughout. USUnits already covers water and body height.
+Please expose exact grams(ounces:) and ounces(grams:) for food mass, and a Core
+inverse for Food.grams(milliliters:) so the editor can reopen a volume amount
+without UI arithmetic. These should retain full precision and validation should
+remain in NutritionStore.preview. Stored nutrients stay per100g; macro grams do
+not switch to ounces. The ShortcutsJSON file already has the exact ounce factor.
+
+Recipe UI can use Food.recipe and atomic logIngredients. For full N11, please
+publish preparation notes and a serving-count/yield helper, keeping recipe
+calculation in Core. For per-entry nutrition override N08, confirm the intended
+provenance: FoodSnapshot currently has no edited-label flag. Can we mark only
+the entry snapshot source custom while retaining its foodID, or do you want a
+specific override field? Historical library labels must remain unchanged.
+
+These are subsequent nutrition pieces, not a hold on integration. The 02:44
+legacy sync reconnect P1 is still the immediate Core fix.

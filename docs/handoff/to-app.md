@@ -1593,3 +1593,107 @@ Status: open (contract published). See design 022.
   here) and any `skipped` reasons, then sync. Importing twice is safe.
 - The live tests cover a round trip between two accounts through the
   client.
+
+## 2026-10-07: Sync P1 fixed; food units, recipes and entry corrections
+
+Status: open (app: land your reconnect regression; contracts published).
+
+**Sync (P1).** `SyncEngine.synchronize` now clears `error` after a successful
+account-owned pull. It also clears `isOffline` and sets the new
+`lastSyncedAt: Date?`, unless a queued change failed to send in that run; that
+change keeps the app offline until it sends. A pull that fails with a network
+error or a 502/503/504 sets `isOffline`. Your stashed
+`testLegacySyncClearsOfflineFailureAfterSuccessfulPullWithNoPendingWrites`
+passes against it (1.76 s). I didn't commit it: please land it from your stash.
+Use `lastSyncedAt` for "Last synced" on the Sync screen.
+
+**Food in ounces and millilitres.**
+
+- `USUnits.grams(ounces:)` and `ounces(grams:)` are exact (`gramsPerOunce`,
+  the same factor as ShortcutsJSON). Convert, then call
+  `NutritionStore.preview` with grams; validation stays there.
+- `VolumeBasis.grams(milliliters:)`, `VolumeBasis.milliliters(grams:)` and
+  `Food.milliliters(grams:)` (nil without a volume basis). To reopen an entry
+  in millilitres: `entry.food.volume?.milliliters(grams: entry.grams)`.
+
+**Recipes (N11).**
+
+- `Food.recipe(name:ingredients:yieldGrams:servingCount:preparation:...)`.
+  `servingCount` and `preparation` are optional fields of the recipe.
+- `recipeGrams`: the cooked weight, or the ingredients' total without one.
+  `recipeServing`: "1 serving", an equal share of `recipeGrams`. It follows
+  edits, so don't copy it into `servings`; offer it first when logging.
+- `withIngredients(_:yieldGrams:)` for adding, removing, reordering or changing
+  ingredients: it recalculates `per100g` and keeps everything else. Use it
+  rather than setting `ingredients` yourself, because `saveFood` doesn't
+  recalculate.
+
+**Correcting one entry's nutrients (N08).** A specific field, not
+`source = custom`, which would lose the database attribution:
+`entry.editingNutrients(amounts)` takes the nutrients for the logged amount and
+returns the entry with `food.edited == true`. Its food ID, source and the
+library food are unchanged. A later change of amount scales the corrected
+values. Save it with `saveEntry`, and show a small "Edited" mark on it.
+
+The API checks `edited`, `servingCount` and `preparation` on agent writes.
+
+## 2026-10-07: Final design critique
+
+Status: open (app).
+
+I reviewed 20 captures in large dark: Train, workout and set editor, planned
+workout, program editor, suggestions, Account, Sync and agents. Several came
+from runs before your 03:40 fixes. For example, the duplicate chevron still
+shows in the 12:43 suggestions-inbox capture. Skip anything you've fixed since.
+In order of importance:
+
+1. **Volume reads "4188.783 lb·reps"** on Train's last session (04:19
+   capture) and in workout history. `TrainingFormat.number` keeps three
+   decimals and doesn't group thousands. Show whole numbers, "4,189 lb", and
+   label it "Volume" as MacroFactor Workouts does.
+2. **Planned sets repeat.** Each identical set takes three lines ("Set 1 ·
+   Working / 60 kg × 6 reps / Target 2 RIR"), under a summary that already
+   says "3 sets · 5–8 reps · 2 RIR" (program-estimate-summary,
+   program-next-preview). Use a compact table, one row per set: Set, weight,
+   reps, RIR. Cut the "All sets start incomplete…" footnote and shorten the
+   bodyweight explainer. Check that the "Bodyweight (kg, optional)" label
+   follows the U.S. default.
+3. **The em-dash placeholder looks like a loading bar.** Reps in the set editor
+   and calories on the empty diary show a long "—". Use a muted "0", or the
+   field's name, as the placeholder.
+4. **Program editor rows.** Icon and Color each take two rows, with the label
+   above the value. Use one row with the value trailing, as "Expires after"
+   already does. The purple "Edit" row in "Days in each cycle" reads as
+   content: put the edit button in the section header or toolbar. Text from
+   the scrolled title ("…cycle") shows behind the sheet's toolbar.
+5. **Validation message.** "Could not save / a program needs a training day"
+   appears at the bottom, after Save, in lower case. Core's problem strings are
+   lower-case fragments meant to be joined. Capitalise one shown alone, and put
+   it in the Days section, or disable Save with that hint.
+6. **Suggestion diff.** Before and after are two plain lines ("Before: 1500 kg
+   / After: 150 kg"). Make the change the hero, "1,500 → 150 kg" with the old
+   value secondary, and put it above "Read original/proposed program". Shorten
+   "Day 1 · Pull · Deadlift · Base targets · Reps in reserve" to a "Pull ·
+   Deadlift" title and a "Reps in reserve" label. Evidence labels "Anecdote"
+   and "n=1" are jargon: say "Your note" and "1 workout".
+7. **Account exports.** Two export actions with a paragraph each, and the
+   filled purple button, make export look like the screen's main task. Use one
+   "Export data" row. When offline, export from the device automatically and
+   say what's left out. Put "Export as spreadsheets" and "Import an export"
+   (I14) in the same group. The Sync screen's card says "BACKUP": pick one
+   name.
+8. **Connected agents.** "Connected agents" appears three times: the
+   navigation title, the card's label and a section header. Drop the card's
+   label. In the empty state, "No connected agents" repeats the hero; remove
+   it. The endpoint shows the fixture's 127.0.0.1; make sure a release build
+   shows the configured API's address.
+9. **Connect an agent.** "Create access token" is a plain row at the bottom.
+   Make it the toolbar's confirming action, or a filled button. The agent's
+   name reads as a title, not as a field you can edit.
+10. **Captures to redo.** training-home shows the Diary, and
+    account-live-export-options is identical to account settings: no options
+    sheet appears.
+
+What works: Train's "Next up" card with one action, the set keypad with a large
+value and ± steppers, the rest bar, the Sync status card with its time, the
+delete confirmation, and the original purple, pink and pulse logo.

@@ -34,12 +34,18 @@ synced documents and pure functions, and the app's screens use only ExerlyCore.
   already uses in the change table.
   - Name, brand, nutrients per 100 g, serving sizes as gram weights, barcode
     and source (custom, recipe, USDA, Open Food Facts, FatSecret).
-  - A recipe also has its ingredients and its yield.
+  - A recipe also has its ingredients and its yield, and optionally how many
+    servings it makes and how it is made (`servingCount`, `preparation`). One
+    serving is an equal share of the whole weight, so it follows edits to the
+    ingredients and is not kept in the serving sizes.
 - **`food_entry`**: one logged food.
   - Its local date and meal, the time it was logged, a snapshot of the food (so
     later edits to the food don't rewrite history), and the amount in grams
     with the serving it was entered in.
   - Its nutrients are the snapshot scaled by the amount.
+  - Correcting one entry's nutrients changes only its snapshot and marks it
+    `edited`. The food ID and source stay, so attribution and the library's
+    label are unchanged.
 - **`nutrition_day`**: a day's status (unlogged, partial, complete or fasting)
   and notes. The expenditure estimate trusts only complete and fasting days.
 - **`weight_entry`**: a weigh-in instant, its local date, the weight as entered,
