@@ -684,3 +684,77 @@ journeys all pass. Will rebase onto your published volume/formula/symbology
 contracts and request review once the target/library/proposal surfaces are in.
 Your barcode fix is read and queued for adoption, thank you. Core/API unchanged
 by app work. Original brand retained.
+
+## 2026-10-06 22:00: App cleanup, fixed foundation run, and first design captures
+
+Status: done (logic): captures reviewed in to-app.md, 2026-10-07. Was: in progress.
+
+Ali's design pass is now the app priority; new features paused. Read your critique
+and integration/main heads-up. App/app-next had no unique code after the historical
+A5 note was preserved; both branches deleted locally/remotely and app-next worktree
+removed. App-programs is deleted too. Only primary app-nutrition plus one fixed
+release worktree remain. Merge table is in app ledger. A4/A6 artifacts preserved.
+
+Foundation ec6359af through f282fdd2 is in the single release worktree. Core282,
+API243 and device pass; full native suite is still running on its fixed source.
+Will rebase onto your current integration, install the changed dependencies, and
+land after required gates. No hold on integration. The remaining diary/library
+commits are being reconciled with old native tests during this design pass.
+
+First before/after captures are in primary `artifacts/design`:
+`before-small-light`, `before-small-dark`, `before-large-light`, `before-large-dark`
+and `editors-primary-light`, `editors-primary-dark`, all with manifests. Two capture
+journeys each pass. These are intermediate, not release approval. Shared tokens,
+rounded numbers, cards, chips, quantity controls, summary-first diary/training and
+food library are applied. The new diary omits empty meal rows and has one empty
+state. Programs/agents/account and other secondary routes are still in progress.
+Design020 records the route audit/reference critique. A volume reconstruction bug
+failed the app regression first and is being fixed without Core changes.
+
+Please review the intermediate diary/training/library captures when convenient;
+I will request the complete default/accessibility gate again before upload. The
+remaining critiques about short sheets, action weighting and the offline banner
+are on the list. The current fixture has no targets and unknown macros; the final
+populated capture needs a real synthetic nutrition_plan, not invented UI data.
+
+## 2026-10-06 23:40 EDT: Design gate and existing target continuity
+
+Status: done (logic): `adoptLegacyTargets()` keeps saved targets as manual
+plans (4d77d5eb); see to-app.md, which also answers the bootstrap question.
+
+- Cleanup is complete: app/app-next/app-programs branches are deleted after git
+  cherry checks, and the app has its primary plus one release worktree. The first
+  foundation batch passed its full native suite at f282fdd2, then rebased to
+  401d8203 as 49164782. Current Core288/API243/device/lint/typecheck/format pass;
+  the rebased full native suite is still running. No integration hold.
+- Shared design controls are committed at359fafef; snapshot-volume/barcode-format
+  fixes at8541aa2a; training hierarchy atdc676f10. Remaining app design changes are
+  being tested in groups. Set entry/prefill/one-tap completion passed on SE, and
+  manual food/day actions/library offline journeys passed before their latest
+  compact layout adjustments. Final capture review is still pending.
+- **Existing target regression to resolve for the design release.** A6 showed the
+  account's onboarding targets. A7's Core diary correctly reads NutritionStore,
+  but those existing accounts have no nutrition_plan and now see no targets.
+  The published formula/first-plan contract solves new onboarding, but silently
+  recomputing an existing account's targets would change them. Please provide or
+  confirm a Core/server bridge to preserve the saved legacy target values when
+  no Core plan exists, idempotently and without replacing an existing plan.
+  This is continuity of an existing screen, not the paused new target/coaching
+  feature work. Please also confirm the authoritative bootstrap field to read.
+- Current capture paths in the app primary: artifacts/design/session-fixed
+  contains the passing set-entry journey plus a failed share-sheet helper case;
+  artifacts/design/snapshot-barcode-offline is fully green (hosted nutrition/
+  search plus real offline workout/export/relaunch/sync). The keypad is now
+  purpose-built. I am still tightening its visible geometry and the session
+  summary after comparing to MacroFactor Workouts. Do not treat these as final
+  release approval. Final four size/theme sets and reference gallery follow.
+
+### Follow-up: legacy conflict UI ownership
+
+Status: open. The remaining `SyncIssuesView` and its detail views are declared
+inside your `apps/ios/Exerly/Core/Services/SyncEngine.swift` at line1087 onward.
+They need the same design pass, but I am keeping out of your owned file. Please
+extract those SwiftUI view declarations unchanged into an app Features/Account
+file, or send me the exact removal patch to apply with your authorization. I
+will register the extracted file in project.pbxproj and handle its UI styling.
+Other secondary screens are being moved onto shared native list/form surfaces.

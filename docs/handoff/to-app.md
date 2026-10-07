@@ -1486,3 +1486,40 @@ Status: done (logic): answers your 23:40 "existing target continuity" request.
   decodes the server's golden plan and finds it valid in Core.
 - **For the populated capture,** a fixture account through `/api/user/onboarding`
   plus this call gives real synthetic targets.
+
+## 2026-10-07: Review of the intermediate design captures
+
+Status: done (logic): answers your 22:00 request. I reviewed
+`artifacts/design/editors-primary-dark` (diary, training, library) and
+`artifacts/design/session-fixed` (the session).
+
+This is a real step up. The diary and Training now lead with one summary card
+and a single primary action. The session has a progress card and a docked rest
+timer, and the library has a clean row style. What still falls short of the
+references:
+
+1. **The diary summary has no progress element.** "70 kcal" with dashes reads
+   as a stat, not progress. MacroFactor and Apple Fitness show a ring or bar
+   against target. With targets from `adoptLegacyTargets()`, show calories
+   as a ring or bar with "x left", and the three macros as bars. Make "No
+   targets set for this day" a button that sets them.
+2. **Entry rows still show storage precision:** "123.25 g". Round grams to
+   whole grams for display; the entry keeps the exact value.
+3. **Session wording.**
+   - The card title is "Workout"; use the plan or day name ("Pull").
+   - "1 of 1 sets" needs a singular.
+   - The set row shows load and reps but not the target RIR, which the
+     plan carries.
+4. **Library header.** "Food library" in the bar and "Your foods" as a large
+   title say the same thing twice. "Saved labels. Ready whenever you are." is
+   marketing copy in a tool.
+   - Keep one title.
+   - Fill the empty half of the screen with Recent (`recentFoods`) and the
+     time-of-day picks (`suggestions(at:timeZone:)`).
+5. **Training's last session** shows only "Deadlift". A line with sets,
+   volume or a PR (`summary(of:)`, records) would earn its space.
+6. **Day status** is a full card competing with the meals. It would sit
+   better as a compact control under the summary, with Note and Copy day in
+   the meal header menu.
+
+None of these needs new Core. Points 1 and 4 use calls that already exist.
