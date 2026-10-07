@@ -12,6 +12,9 @@
         DA98042370154B58880B6723 /* NutritionLabelCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CE0675DF54481188064576; };
         89B033C001014463A1CADE58 /* NutritionLabelCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D893E42B7E34C2E8CBFD0B8; };
         CE6120F617A748C58A21C374 /* NutritionLabelRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370749DB269D4B678A46F37A; };
+        B57FE442895E470E9535FFB8 /* NutritionPlatePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D94DCD541C4A428D354E93; };
+        C3A00D2369094809AF3F059C /* NutritionPlateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4E4156456940E284AD8C9B; };
+        63EC972621864F10A0F38854 /* NutritionPlateDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 617E8059E32745DE93EDF0FE; };
         0998AC5B0FE247F5B0EA7AA5 /* NutritionEntryNutrients.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860ABF9074DA4AF59CA36CC4; };
         158519B1CE2B42EFA6713569 /* NutritionPortionMeasure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110575E554E44A29B44DB8B8; };
         C079CB2BC89F4E12B91C33A1 /* NutritionLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7D81F5D97F04C4E964B2BEA; };
@@ -147,6 +150,9 @@
         A9CE0675DF54481188064576 /* NutritionLabelCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionLabelCaptureView.swift; sourceTree = SOURCE_ROOT; };
         7D893E42B7E34C2E8CBFD0B8 /* NutritionLabelCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionLabelCamera.swift; sourceTree = SOURCE_ROOT; };
         370749DB269D4B678A46F37A /* NutritionLabelRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionLabelRecognition.swift; sourceTree = SOURCE_ROOT; };
+        62D94DCD541C4A428D354E93 /* NutritionPlatePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/NutritionPlatePresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        9A4E4156456940E284AD8C9B /* NutritionPlateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionPlateView.swift; sourceTree = SOURCE_ROOT; };
+        617E8059E32745DE93EDF0FE /* NutritionPlateDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionPlateDraft.swift; sourceTree = SOURCE_ROOT; };
         860ABF9074DA4AF59CA36CC4 /* NutritionEntryNutrients.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionEntryNutrients.swift; sourceTree = SOURCE_ROOT; };
         110575E554E44A29B44DB8B8 /* NutritionPortionMeasure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionPortionMeasure.swift; sourceTree = SOURCE_ROOT; };
         D7D81F5D97F04C4E964B2BEA /* NutritionLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionLibraryView.swift; sourceTree = SOURCE_ROOT; };
@@ -566,6 +572,8 @@
                 D7D81F5D97F04C4E964B2BEA /* NutritionLibraryView.swift */,
                 8020E7EEC6A948FC866775E6 /* NutritionDrafts.swift */,
                 9466ADD66997466E960DF138 /* NutritionComponents.swift */,
+                9A4E4156456940E284AD8C9B /* NutritionPlateView.swift */,
+                617E8059E32745DE93EDF0FE /* NutritionPlateDraft.swift */,
                 DCBE4BB9D2DA439BB10E047E /* NutritionFoodEditor.swift */,
                 860ABF9074DA4AF59CA36CC4 /* NutritionEntryNutrients.swift */,
                 370749DB269D4B678A46F37A /* NutritionLabelRecognition.swift */,
@@ -578,6 +586,7 @@
                 011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */,
                 A4AD25D26B1142A7B73B77AA /* NutritionLabelPresentationTests.swift */,
                 E9FE851555CB44219DE581E3 /* NutritionPresentationTests.swift */,
+                62D94DCD541C4A428D354E93 /* NutritionPlatePresentationTests.swift */,
                 0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */,
                 2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */,
                 C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */,
@@ -762,6 +771,8 @@
                 C079CB2BC89F4E12B91C33A1 /* NutritionLibraryView.swift in Sources */,
                 65319BE475B64C4E83B11FEA /* NutritionDrafts.swift in Sources */,
                 6A0912B0C6B2470CA5333FE9 /* NutritionComponents.swift in Sources */,
+                C3A00D2369094809AF3F059C /* NutritionPlateView.swift in Sources */,
+                63EC972621864F10A0F38854 /* NutritionPlateDraft.swift in Sources */,
                 0FEC17CB82D14EF29F455A23 /* NutritionFoodEditor.swift in Sources */,
                 0998AC5B0FE247F5B0EA7AA5 /* NutritionEntryNutrients.swift in Sources */,
                 CE6120F617A748C58A21C374 /* NutritionLabelRecognition.swift in Sources */,
@@ -867,7 +878,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B57FE442895E470E9535FFB8,289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

@@ -1969,7 +1969,7 @@ names are added.
 
 ## 2026-10-07: Meal builder (N04) review
 
-Status: open (app, minor).
+Status: done (app): all four corrections pass in final light, dark and largest-type journeys. Exact weights remain unchanged. Updated captures are in plate-integrated-light, -dark and -ax.
 
 I reviewed plate-default-light-01 and plate-default-light-cancel-01. The
 summary-first review, honest unknown macros with their caption, and the empty

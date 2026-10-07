@@ -1825,6 +1825,119 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Portion measure"].waitForNonExistence(timeout: 10))
     }
 
+    func testMealDraftSelectionPortionsAndCancellationDoNotWriteDiaryEntries() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "meal-draft-cancel", units: "imperial")
+        let powder = try await seedPortionFood(token: person.token, volume: false)
+        let liquid = try await seedPortionFood(token: person.token, volume: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.buildMeal"], in: app)
+        capture(app, "nutrition-plate-empty")
+        tap(app.buttons["Choose foods"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        capture(app, "nutrition-plate-selection")
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
+        replace(app.textFields["Amount (oz)"], with: "0", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        let validation = app.descendants(matching: .any).matching(identifier: "nutrition.platePortionError").firstMatch
+        XCTAssertTrue(validation.waitForExistence(timeout: 5))
+        XCTAssertTrue(validation.isHittable, "An invalid portion must explain what to fix without searching below the fold")
+        capture(app, "nutrition-plate-invalid-portion")
+        revealAbove(app.textFields["Amount (oz)"], in: app)
+        replace(app.textFields["Amount (oz)"], with: "2.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        replace(app.textFields["Amount (oz)"], with: "4", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.cancelPlatePortion"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "2.5")
+        tap(app.buttons["nutrition.cancelPlatePortion"], in: app)
+        tap(app.buttons["Remove Synthetic liquid"], in: app)
+        XCTAssertFalse(plateRow(liquid, in: app).exists)
+        capture(app, "nutrition-plate-after-removal")
+        tap(app.buttons["nutrition.cancelPlate"], in: app)
+        tap(app.buttons["Discard meal"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 10))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "food_entry" })
+    }
+
+    func testMultiFoodMealLogsOnceOfflineAndPreservesExactPortionsAfterRelaunch() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "meal-draft-offline", units: "imperial")
+        let powder = try await seedPortionFood(token: person.token, volume: false)
+        let liquid = try await seedPortionFood(token: person.token, volume: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.buildMeal"], in: app)
+        tap(app.buttons["Choose foods"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        for (id, title) in [(powder, "Amount (oz)"), (liquid, "Amount (fl oz)")] {
+            tap(plateRow(id, in: app), in: app)
+            replace(app.textFields[title], with: "2.5", in: app)
+            dismissKeyboard(app)
+            capture(app, id == powder ? "nutrition-plate-ounces" : "nutrition-plate-fluid-ounces")
+            tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        }
+        tap(app.buttons["Lunch"], in: app)
+        revealAbove(app.staticTexts["nutrition.plateSummary"], in: app)
+        capture(app, "nutrition-plate-review")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.savePlate"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        for (name, title) in [("Synthetic powder", "Amount (oz)"), ("Synthetic liquid", "Amount (fl oz)")] {
+            let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", name)).firstMatch
+            tap(entry, in: app)
+            reveal(app.textFields[title], in: app)
+            XCTAssertEqual(app.textFields[title].value as? String, "2.5")
+            capture(app, name == "Synthetic powder" ? "nutrition-plate-powder-relaunched" : "nutrition-plate-liquid-relaunched")
+            tap(app.buttons["nutrition.cancelEntry"], in: app)
+        }
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 2, "One save must log exactly one copy of each portion")
+        for (id, grams, measure) in [(powder, 70.8738078125, "oz"), (liquid, 68.01911799375, "fl oz")] {
+            let entry = try XCTUnwrap(entries.first { ($0["food"] as? [String: Any])?["foodID"] as? String == id })
+            XCTAssertEqual(entry["meal"] as? String, "Lunch")
+            XCTAssertEqual(try XCTUnwrap(entry["grams"] as? Double), grams, accuracy: 0.000_000_001)
+            XCTAssertEqual(entry["quantity"] as? Double, 2.5)
+            XCTAssertEqual((entry["serving"] as? [String: Any])?["name"] as? String, measure)
+            let food = try XCTUnwrap(entry["food"] as? [String: Any])
+            let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+            XCTAssertEqual(nutrients["energy"] as? Double, 123.456789)
+            XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+            XCTAssertNil(nutrients["protein"])
+            if id == liquid { XCTAssertEqual((food["volume"] as? [String: Any])?["density"] as? Double, 0.92) }
+        }
+    }
+
+    private func plateRow(_ foodID: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.plateRow.\(foodID).")).firstMatch
+    }
+
     private func seedPortionFood(token: String, volume: Bool) async throws -> String {
         let id = UUID().uuidString
         var food: [String: Any] = [
@@ -3338,7 +3451,7 @@ final class ProductionUITests: XCTestCase {
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             let home = app.buttons["Home"]
             let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
-            let bottom = home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38
+            let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
             let height = max(80, bottom - top)
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.84) / app.frame.height))
@@ -3370,12 +3483,16 @@ final class ProductionUITests: XCTestCase {
             // allowlist drag the content 48 times before tapping a visible tab.
             if visibleFrame(element) && element.isHittable,
                app.tabBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
+            // Persistent meal actions are outside the scrolling viewport.
+            // Tap them directly when visible, while keeping other drags above them.
+            if visibleFrame(element) && element.isHittable,
+               ["nutrition.plateAddFoods", "nutrition.reviewPlate"].contains(element.identifier) { return }
             // Stacked sheets expose the diary's navigation bar as well as
             // their own. Find the control in any bar instead of assuming
             // the last accessibility node is the frontmost navigation bar.
             if visibleFrame(element) && element.isHittable,
                app.navigationBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
-            let lowerEdge = visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30
+            let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30, fixedFooterTop(in: app))
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             // The saved-account notice is outside the navigation stack. Its
             // Retry button is already visible above the bar; scrolling the
@@ -3405,6 +3522,14 @@ final class ProductionUITests: XCTestCase {
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
+    }
+    private func fixedFooterTop(in app: XCUIApplication) -> CGFloat {
+        // Stacked sheets can expose the scroll view underneath. Never start a
+        // content drag inside the current sheet's persistent action buttons.
+        ["nutrition.plateAddFoods", "nutrition.reviewPlate"].compactMap { identifier in
+            let button = app.buttons[identifier]
+            return button.exists && button.isHittable ? button.frame.minY - 12 : nil
+        }.min() ?? app.frame.height
     }
     private func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in

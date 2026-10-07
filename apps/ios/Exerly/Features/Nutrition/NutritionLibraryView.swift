@@ -144,6 +144,7 @@ struct NutritionLibraryView: View {
 
 struct NutritionFoodRow: View {
     let food: ExerlyCore.Food
+    var showsIcon = true
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -151,7 +152,7 @@ struct NutritionFoodRow: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
             : AnyLayout(HStackLayout(spacing: ExSpacing.item))
         layout {
-            if !typeSize.isAccessibilitySize {
+            if showsIcon && !typeSize.isAccessibilitySize {
             Image(systemName: food.favorite ? "star.fill" : "fork.knife")
                 .foregroundStyle(food.favorite ? Color.exAccent : Color.exPrimary)
                 .frame(width: 42, height: 48).background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))

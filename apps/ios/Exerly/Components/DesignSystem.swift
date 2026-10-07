@@ -286,7 +286,7 @@ struct ExChoiceChips<Value: Hashable>: View {
         ForEach(values, id: \.self) { value in
             Button { selection = value } label: {
                 Text(title(value)).font(.exLabel).fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .padding(.horizontal, 12).frame(minWidth: 44, minHeight: 44)
                     .foregroundStyle(selection == value ? Color.white : Color.exTextSecondary)
                     .background(selection == value ? Color.exActionFill : Color.exSurface2, in: Capsule())
             }.buttonStyle(.plain).accessibilityAddTraits(selection == value ? .isSelected : [])

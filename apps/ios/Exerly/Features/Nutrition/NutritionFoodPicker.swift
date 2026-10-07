@@ -10,6 +10,8 @@ struct NutritionFoodPicker: View {
     let unit: MassUnit
     @ObservedObject var actions: NutritionDiaryActions
     let onLogged: () -> Void
+    let onPick: ((ExerlyCore.Food) -> Int?)?
+    let pickError: () -> String?
     @StateObject private var search: NutritionSearchModel
     @State private var query = ""
     @State private var selectedFood: ExerlyCore.Food?
@@ -17,10 +19,17 @@ struct NutritionFoodPicker: View {
     @State private var creating = false
     @State private var scanningLabel = false
     @State private var didLog = false
+    @State private var buildingMeal = false
+    @State private var pickedCount: Int
+    @State private var addedIDs: Set<String> = []
+    @State private var selectionError: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
-         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
+         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
+         pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
+         pickError: @escaping () -> String? = { nil }) {
         self.workspace = workspace
         self.api = api
         self.date = date
@@ -29,26 +38,40 @@ struct NutritionFoodPicker: View {
         self.unit = unit
         self.actions = actions
         self.onLogged = onLogged
+        self.onPick = onPick
+        self.pickError = pickError
+        _pickedCount = State(initialValue: pickedCount)
+        _addedIDs = State(initialValue: pickedFoodIDs)
         _search = StateObject(wrappedValue: NutritionSearchModel(api: api))
     }
 
     var body: some View {
         NavigationStack {
             ExScreen {
-                ExCard {
-                    ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
-                    Button { creating = true } label: { ExNavigationLabel(title: "Create food", icon: "square.and.pencil") }
-                        .accessibilityIdentifier("nutrition.createFood")
-                    Button { scanningLabel = true } label: { ExNavigationLabel(title: "Scan label", icon: "text.viewfinder") }
-                        .accessibilityIdentifier("nutrition.scanLabel")
-                    NavigationLink {
-                        NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
-                                             timeZone: timeZone, unit: unit, actions: actions) {
-                            onLogged()
-                            dismiss()
-                        }
-                    } label: { ExNavigationLabel(title: "Barcode", icon: "barcode.viewfinder") }
-                    .accessibilityIdentifier("nutrition.barcode")
+                if onPick == nil {
+                    ExCard {
+                        ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
+                        Button { buildingMeal = true } label: { ExNavigationLabel(title: "Build a meal", icon: "fork.knife", detail: "Choose several foods, then log together") }
+                            .accessibilityIdentifier("nutrition.buildMeal")
+                        Button { creating = true } label: { ExNavigationLabel(title: "Create food", icon: "square.and.pencil") }
+                            .accessibilityIdentifier("nutrition.createFood")
+                        Button { scanningLabel = true } label: { ExNavigationLabel(title: "Scan label", icon: "text.viewfinder") }
+                            .accessibilityIdentifier("nutrition.scanLabel")
+                        NavigationLink {
+                            NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
+                                                 timeZone: timeZone, unit: unit, actions: actions) {
+                                onLogged()
+                                dismiss()
+                            }
+                        } label: { ExNavigationLabel(title: "Barcode", icon: "barcode.viewfinder") }
+                        .accessibilityIdentifier("nutrition.barcode")
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
+                        Text("Add foods, then review portions.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        if let selectionError { Text(selectionError).foregroundStyle(Color.exError) }
+                    }
                 }
                 if !favorites.isEmpty {
                     foodGroup("Favorites", foods: favorites)
@@ -62,31 +85,51 @@ struct NutritionFoodPicker: View {
                 databaseResults
                 if query.isEmpty && favorites.isEmpty && recents.isEmpty && otherSaved.isEmpty {
                     ExEmptyState(icon: "magnifyingglass", title: "Find your first food",
-                                 message: "Search above, scan a barcode, or enter the details from a label.",
+                                 message: onPick == nil ? "Search above, scan a barcode, or enter the details from a label." : "Search above or enter the details from a label.",
                                  action: "Enter a food label") { creating = true }
                 }
             }
             .scrollContentBackground(.hidden).background(Color.exBackground)
-            .navigationTitle("Add food").navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                if onPick != nil {
+                    Button(pickedCount == 0 ? "Back to meal" : "Review meal · \(pickedCount) \(pickedCount == 1 ? "food" : "foods")") { dismiss() }
+                        .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.reviewPlate")
+                        .padding(ExSpacing.page).background(Color.exBackground)
+                }
+            }
+            .navigationTitle(onPick == nil ? "Add food" : "Choose foods").navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search food database")
             .onSubmit(of: .search) { Task { await search.search(query) } }
             .onChange(of: query) { _, _ in search.clear() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { search.close(); dismiss() } }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Search") { hideKeyboard(); Task { await search.search(query) } }
-                        .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if onPick == nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Search") { hideKeyboard(); Task { await search.search(query) } }
+                            .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                } else {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Create food", systemImage: "square.and.pencil") { creating = true }
+                            .labelStyle(.iconOnly).accessibilityIdentifier("nutrition.createFood")
+                    }
                 }
             }
             .sheet(isPresented: $creating, onDismiss: {
-                if let createdFood { selectedFood = createdFood; self.createdFood = nil }
+                if let createdFood { select(createdFood); self.createdFood = nil }
             }, content: {
                 NutritionFoodEditor(workspace: workspace) { createdFood = $0 }
             })
             .sheet(isPresented: $scanningLabel, onDismiss: {
-                if let createdFood { selectedFood = createdFood; self.createdFood = nil }
+                if let createdFood { select(createdFood); self.createdFood = nil }
             }, content: {
                 NutritionLabelCaptureView(workspace: workspace) { createdFood = $0 }
+            })
+            .sheet(isPresented: $buildingMeal, onDismiss: {
+                if didLog { didLog = false; onLogged(); dismiss() }
+            }, content: {
+                NutritionPlateView(workspace: workspace, api: api, date: date, meal: meal,
+                                   timeZone: timeZone, unit: unit, actions: actions) { didLog = true }
             })
             .sheet(item: $selectedFood, onDismiss: {
                 if didLog { didLog = false; onLogged(); dismiss() }
@@ -135,11 +178,34 @@ struct NutritionFoodPicker: View {
     private func foodRow(_ food: ExerlyCore.Food) -> some View {
         Button {
             hideKeyboard()
-            selectedFood = food
+            select(food)
         } label: {
-            NutritionFoodRow(food: food)
+            HStack(spacing: ExSpacing.item) {
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    NutritionFoodRow(food: food, showsIcon: onPick == nil)
+                    if onPick != nil && addedIDs.contains(food.id) {
+                        Label("Added · Tap to add another", systemImage: "checkmark")
+                            .font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                    }
+                }
+                if onPick != nil && !typeSize.isAccessibilitySize {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                }
+            }
+        }.accessibilityIdentifier("nutrition.\(onPick == nil ? "food" : "platePick").\(food.id)")
+            .accessibilityValue(addedIDs.contains(food.id) ? "Added to meal" : "")
+            .accessibilityHint(onPick == nil ? "" : "Adds a portion. You can adjust it in the meal review.")
+    }
 
-        }.accessibilityIdentifier("nutrition.food.\(food.id)")
+    private func select(_ food: ExerlyCore.Food) {
+        guard let onPick else { selectedFood = food; return }
+        if let count = onPick(food) {
+            pickedCount = count
+            addedIDs.insert(food.id)
+            selectionError = nil
+            UISelectionFeedbackGenerator().selectionChanged()
+        } else { selectionError = pickError() ?? "This food could not be added. Review its saved label and try again." }
     }
 
     private func foodGroup(_ title: String, foods: [ExerlyCore.Food]) -> some View {

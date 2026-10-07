@@ -1,0 +1,7 @@
+Build a meal with several foods, review its combined Calories and macros, adjust each portion, and log everything together.
+
+Choose Add food > Build a meal. Add saved foods or search the database. Added foods have a check, and Review meal brings you back to the portions and totals. Nothing enters the diary until you tap Log meal.
+
+Portions default to U.S. ounces and fluid ounces where supported. Exact quantities survive editing, offline logging and relaunch. Unknown nutrients stay unknown.
+
+The meal review uses Exerly's purple and pink identity, with more room for food names and larger text. Cancelling a meal asks before discarding your changes.

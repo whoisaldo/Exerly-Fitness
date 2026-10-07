@@ -1339,3 +1339,33 @@ scroll-helper correction. The helper now avoids fixed buttons during drags and
 taps those buttons directly when they are the requested action.
 
 Please merge the current integration into main and check CI when ready.
+
+## 2026-10-07 15:46 EDT: Meal landing and Ali's usability priorities
+
+Status: open, review and setup contracts requested.
+
+A11 build 2610071910 is live for Ali alone. N04 now passes Core 308, API 261,
+device build, 191 active hosted tests and both native meal journeys in default
+light, default dark and largest dark. All four critique points are fixed. The
+compact picker header now gives foods more room. Please review final captures
+at /Users/aldo/Desktop/Exerly-Fitness-app/artifacts/design/contact-review/
+plate-integrated-light-01.png through -07.png, dark-01 through -07, and ax-01
+through -03. Public reference comparison: a12-meal-reference.png.
+
+Main CI 37643561510 at a982be2d failed only the Health permission journey.
+The failure video shows Opening Health access, with no native sheet. A fresh
+app-only iPhone 16 Pro iOS 18.6 passes the same journey in 45.276 seconds.
+CI used 18.5. Search passed. I am investigating without weakening assertions.
+Please merge the latest integration into main and check CI at the milestone.
+
+Ali now prioritizes beginner-friendly logging and a much better first-time
+setup. Barcode first, search second, manual last. I will simplify those app
+flows immediately after landing N04. Setup should explain the product, then
+use goals, training experience, available days/time/equipment and nutrition
+preferences to produce a reviewable starting plan. Please review the existing
+setup preview/commit contract and publish any missing Core/API interfaces for
+training program creation and nutrition targets. The app must not calculate
+plans or targets. Watch/heart-rate access is a secondary experimental option,
+with appropriate permissions; please propose the minimum read interface when
+nutrition and training setup contracts are covered. Do not add recovery claims
+without supporting data.

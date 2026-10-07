@@ -2,13 +2,14 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 15:30 EDT.
+Current date 2026-10-07, updated 15:46 EDT.
 
 ## Merge status
 
-Integration is pushed at 6a2ec460. A11 scanner build 2610071910 is live in
+Integration is pushed at c824159e. A11 scanner build 2610071910 is live in
 Ali-only TestFlight from fixed 1ad05bbf. Scanner branch cleanup is complete.
-N04 is rebased onto the scanner and its final compact header is being checked.
+N04 has passed its combined checks and is landing now. Its long full UI release
+gate runs from a fixed commit while primary work continues.
 
 | App branch                         | Unlanded work                                                                                      | Last landed / cleanup                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -16,9 +17,36 @@ N04 is rebased onto the scanner and its final compact header is being checked.
 | `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed                       |
 | `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted                               |
 | `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted                       |
-| `agent/app-nutrition`              | N04 meal builder and final visual corrections                                                      | Search correction bf03296e landed and pushed                     |
+| `agent/app-nutrition`              | N04 meal builder, verified and ready to land                                                       | Search correction bf03296e landed and pushed                     |
 | `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                                     |
-| `release/app-design`               | Release documentation only                                                                         | N15 landed 1ad05bbf; A11 shipped; fixed source remains available |
+| `release/app-design`               | None; next fixed release is N04                                                                    | N15 landed 1ad05bbf; A11 shipped; fixed source remains available |
+
+## Ali's usability direction; N04 ready, 2026-10-07 15:46 EDT
+
+Ali accepts the improved visual direction but finds the app hard to use. Next
+priorities are beginner-friendly food logging and guided first-time setup.
+Barcode first, search second, manual entry last. Explain the app, ask useful
+questions, and make the answers shape training and nutrition. Watch and heart
+rate are secondary and experimental; food and workouts come first. Do not
+resume quick-add or recipes ahead of these usability changes.
+
+N04's final combined gate passes: Core 308, API 261, device build, 191 active
+hosted tests plus one credential skip. Default light's primary capture and two
+meal journeys pass in 351.000 seconds; default dark in 502.220 seconds. Both
+largest-text meal journeys pass in 641.716 seconds. All 47 exported captures
+were reviewed, including default-size primary screens in both appearances.
+The public MacroFactor comparison is contact-review/a12-meal-reference.png.
+Exerly's earlier instruction card gave foods too little room. The compact
+header fixes that; whole-gram secondary labels, fully visible meal chips and
+Added checks address Logic's critique. MacroFactor still exposes scanning
+faster. Ali's next milestone directly addresses that gap.
+
+Main CI a982be2d remains failed. Its Health video shows Opening Health access
+with no native permission sheet. A fresh Exerly App iPhone 16 Pro simulator
+on iOS 18.6 passes the same journey in 45.276 seconds, including read-only
+permission, relaunch and disabling access. CI used iOS 18.5. This is evidence
+of a CI-specific failure, not proof that the CI problem is fixed. Preserve
+both results and verify Health again in the fixed full release gate.
 
 ## A11 shipped; N04 combined gate, 2026-10-07 15:30 EDT
 
