@@ -2178,6 +2178,79 @@ final class ProductionUITests: XCTestCase {
                       "Scrolling must not leave a changed meal or portion that requires discard confirmation")
     }
 
+    func testQuickCaloriesAndMacrosCancelLogOfflineAndRemainEditableWithoutAFoodWeight() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "quick-nutrition", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        XCTAssertTrue(app.navigationBars["Quick add"].waitForExistence(timeout: 5))
+        capture(app, "nutrition-quick-empty")
+        tap(app.buttons["nutrition.quick.save"], in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.quick.error"].waitForExistence(timeout: 5))
+        replace(app.textFields["nutrition.quick.energy"], with: "300", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.quick.cancel"], in: app)
+        capture(app, "nutrition-quick-discard")
+        tap(app.buttons["Discard entry"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 5))
+        tap(app.buttons["Cancel"].firstMatch, in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch.exists)
+
+        tap(app.buttons["nutrition.dayActions"], in: app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        replace(app.textFields["nutrition.quick.energy"], with: "525", in: app)
+        replace(app.textFields["nutrition.quick.fat"], with: "0", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Lunch"], in: app)
+        XCTAssertTrue(app.buttons["Lunch"].isSelected)
+        XCTAssertEqual(app.buttons["nutrition.quick.save"].label, "Log to Lunch")
+        replace(app.textFields["nutrition.quick.name"], with: "Restaurant lunch", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-quick-ready")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.quick.save"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        let entryButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch
+        tap(entryButton, in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        XCTAssertFalse(app.textFields["nutrition.amount"].exists)
+        capture(app, "nutrition-quick-relaunched")
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        replace(app.textFields["Calories (kcal)"], with: "550", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "saved_food" })
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }
+        XCTAssertEqual(entries.count, 1, "Cancelling must not add an entry")
+        let entry = try XCTUnwrap(entries.first?["payload"] as? [String: Any])
+        XCTAssertEqual(entry["meal"] as? String, "Lunch")
+        let food = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(food["unweighed"] as? Bool, true)
+        XCTAssertEqual(food["name"] as? String, "Restaurant lunch")
+        XCTAssertTrue((food["foodID"] as? String)?.hasPrefix("quick:") == true)
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 550)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
+        XCTAssertNil(nutrients["carbohydrate"])
+    }
+
     func testUnweighedEntryHidesInventedWeightAndKeepsNutrientEditsOffline() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "unweighed-entry", units: "imperial")
@@ -2190,7 +2263,7 @@ final class ProductionUITests: XCTestCase {
         XCTAssertFalse(app.textFields["nutrition.amount"].exists)
         capture(app, "nutrition-unweighed-entry")
         tap(app.buttons["nutrition.editEntryNutrients"], in: app)
-        XCTAssertTrue(app.staticTexts["Unweighed portion"].exists)
+        XCTAssertTrue(app.staticTexts["Whole portion"].exists)
         replace(app.textFields["Calories (kcal)"], with: "352.5", in: app)
         replace(app.textFields["Protein (g)"], with: "", in: app)
         replace(app.textFields["Fat (g)"], with: "0", in: app)
@@ -3761,7 +3834,7 @@ final class ProductionUITests: XCTestCase {
     }
     private var persistentActionIDs: [String] {
         ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
-         "planSetup.continue", "planSetup.accept", "gym.save"]
+         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save"]
     }
     private func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in

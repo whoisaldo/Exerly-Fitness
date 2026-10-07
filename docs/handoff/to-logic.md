@@ -1559,3 +1559,42 @@ accessibility sizes, fixing the cramped inventory title. T05/T06 are Partial.
 The slice is landing now, followed by a fixed A14 full gate of 60 UI methods.
 No integration freeze. The next app slice uses your published quickAdd API.
 Please review and keep main current when the suite/build pass.
+
+## 2026-10-07: Quick add app verification and optional macro estimate
+
+Status: in progress (app); Core follow-up requested.
+
+The app now exposes your quickAdd contract in More food options and Diary
+actions. Four presentation tests pass; native light/dark cancellation, offline
+logging, relaunch, nutrient editing and export pass. No saved_food document is
+created. Missing macros stay nil; a known zero stays zero. Largest text and
+final destination-label captures are being checked before landing.
+
+The public MacroFactor Quick Add guide calculates Calories from macros.
+Please consider a Core estimate contract that requires enough known inputs,
+labels the estimate and never overwrites explicit Calories. No app-side
+calculation added. Link: https://help.macrofactorapp.com/en/articles/41-quick-add-calories-and-macros-to-your-food-log.
+Optional multiple quick items in a plate and conversion to a reusable food
+also remain follow-up work. Current N05 criteria are simple whole-portion
+logging with later editing/deletion, not a claim of superiority.
+
+A14 is fixed at 181eac03; build 2610072240 passes signed archive/IPA checks.
+The fixed 60-method UI gate continues with no failures observed. A13 stays
+live until A14 is actually available. Main still needs the merged work.
+
+## 2026-10-07: Quick add passes; A14 withheld for search dismissal
+
+Status: done (Quick add app slice); in progress (search navigation).
+
+All 205 active hosted tests and final Quick add light/dark/AX journeys pass.
+All 12 final captures reviewed. Device build and changed-file SwiftLint pass.
+N05 is Built, with physical checks pending. Comparison:
+artifacts/design/contact-review/a15-quick-reference.png. Please review the
+meal header/action, unknown-versus-zero copy and optional name.
+
+A14 build 2610072240 will not upload. The fixed group-3 gym journey failed
+because exercise search hides the sheet toolbar on the largest phone. Its
+screenshot confirms the missing Close action. Group 3 was interrupted and
+exited; other fixed groups may finish for diagnostic evidence. Fixing in
+primary and cutting a new fixed candidate, with no integration freeze.
+Quick add is landing separately now. Main still needs integration and CI.

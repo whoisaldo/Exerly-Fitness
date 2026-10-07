@@ -9,7 +9,7 @@ final class NutritionPresentationTests: XCTestCase {
         let date = try XCTUnwrap(LocalDate("2026-10-07"))
         let original = try store.quickAdd(NutrientAmounts([.energy: 351.25, .protein: 12.3456789, .sodium: 0]),
                                           name: "Unweighed meal", on: date, meal: "Lunch")
-        XCTAssertEqual(NutritionFormat.portion(original), "Unweighed portion")
+        XCTAssertEqual(NutritionFormat.portion(original), "Whole portion")
         let draft = NutritionEntryDraft(store: store, food: original.food.foodForLogging(), date: date, meal: "Lunch", editing: original)
         let reviewed = try XCTUnwrap(draft.reviewNutrition())
         let correction = reviewed.editingNutrients(NutrientAmounts([.energy: 352.5, .fat: 0, .sodium: 0]))
@@ -20,7 +20,7 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(saved.nutrients[.energy], 352.5)
         XCTAssertEqual(saved.nutrients[.fat], 0)
         XCTAssertNil(saved.nutrients[.protein])
-        XCTAssertEqual(NutritionFormat.portion(saved), "Unweighed portion")
+        XCTAssertEqual(NutritionFormat.portion(saved), "Whole portion")
         XCTAssertTrue(store.foods.isEmpty)
     }
 

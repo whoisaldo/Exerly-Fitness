@@ -18,6 +18,7 @@ struct NutritionFoodPicker: View {
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
     @State private var scanningLabel = false
+    @State private var quickAdding = false
     @State private var didLog = false
     @State private var buildingMeal = false
     @State private var showingBarcode: Bool
@@ -108,6 +109,10 @@ struct NutritionFoodPicker: View {
                     Menu("More food options", systemImage: "ellipsis") {
                         Button("Scan nutrition label", systemImage: "text.viewfinder") { scanningLabel = true }
                             .accessibilityIdentifier("nutrition.scanLabel")
+                        if onPick == nil {
+                            Button("Quick calories & macros", systemImage: "bolt") { quickAdding = true }
+                                .accessibilityIdentifier("nutrition.quickAdd")
+                        }
                         Button("Enter food manually", systemImage: "square.and.pencil") { creating = true }
                             .accessibilityIdentifier("nutrition.createFood")
                     }.labelStyle(.iconOnly).accessibilityIdentifier("nutrition.moreFoodOptions")
@@ -136,6 +141,11 @@ struct NutritionFoodPicker: View {
             }, content: {
                 NutritionPlateView(workspace: workspace, api: api, date: date, meal: meal,
                                    timeZone: timeZone, unit: unit, actions: actions) { didLog = true }
+            })
+            .sheet(isPresented: $quickAdding, onDismiss: {
+                if didLog { didLog = false; onLogged(); dismiss() }
+            }, content: {
+                NutritionQuickAddView(workspace: workspace, date: date, meal: meal, timeZone: timeZone) { didLog = true }
             })
             .sheet(item: $selectedFood, onDismiss: {
                 if didLog { didLog = false; onLogged(); dismiss() }

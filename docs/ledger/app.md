@@ -2,24 +2,91 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 18:39 EDT.
+Current date 2026-10-07, updated 19:17 EDT.
 
 ## Merge status
 
-Integration is pushed at 208ed075. Barcode-first logging landed at 30bc0aed,
-guided setup at 584fefc0, and the workout builder at 208ed075. A13 is fixed at
-208ed075 in the existing release worktree. Build 2610072129 passes the full 59-method gate and is live in Ali-only
-TestFlight. The fixed release source stayed independent of integration.
+Integration and agent/app-nutrition are pushed at 181eac03. The Quick add
+slice has passed its final checks and is landing next. A14 candidate
+2610072240 must not upload: its fixed full UI gate found a hidden exercise
+search toolbar on the largest phone. Its signed archive/IPA checks pass, but
+that is not a passing release. A13 build 2610072129 remains live internally.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                         |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                      |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed    |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted            |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted    |
-| `agent/app-nutrition`              | Gym inventory passed; landing now                                                                  | Guided plan landed/pushed 208ed075, 17:27 EDT |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                  |
-| `release/app-design`               | None; A13 fixed source, released                                                                   | Fixed 208ed075; live build 2610072129         |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition`              | Quick add passed; landing now                                                                      | Gyms landed/pushed 181eac03, 18:40 EDT     |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
+| `release/app-design`               | None; fixed A14 candidate failed its UI gate                                                       | Fixed 181eac03; candidate 2610072240       |
+
+## Quick add ready; A14 navigation failure, 2026-10-07 19:17 EDT
+
+Final Quick add journeys pass in default light, default dark and largest text:
+147.123, 143.007 and 363.461 seconds. All four captures from each final run
+were inspected. The final device build passes, all 205 active hosted tests
+pass with one credential skip, and changed nutrition files pass SwiftLint.
+Core 308 and API 261 passed at the unchanged domain/API source. N05 is Built,
+not device-verified. Calories and macros can be logged with no food weight,
+then corrected after offline relaunch. Missing and zero remain distinct.
+
+Comparison contact-review/a15-quick-reference.png places final light/dark
+screens beside MacroFactor's public Quick Add and App Store images and the
+old manual-food editor. The four-field entry removes the old food/weight
+setup. MacroFactor is denser and offers macro-derived Calories and several
+quick items per plate. Those capabilities remain explicit follow-ups. The
+selected meal now appears in both the header and the Log to meal action.
+
+A14 group 1 completed successfully. Group 2 continues. Group 3 was stopped
+after testGymInventorySavesMixedUnitsOfflineFiltersExercisesAndRestoresArchivedPlaces
+failed to find Close during active exercise search on the largest phone.
+The screenshot a14-gym-failure.png confirms the sheet remains visible while
+its navigation toolbar is hidden. Its search-dismiss icon is at the bottom.
+The run ended with code 73 after interruption; no passing claim. A14
+2610072240 is retained as a failed candidate and will not upload. Fix the
+search toolbar in primary, land it, then cut a new fixed release candidate.
+
+## Quick add visual correction, 2026-10-07 18:56 EDT
+
+All five first light attachments and four dark captures were inspected.
+The small phone showed the selected meal below the initial fold. The header
+and persistent action now name the meal, such as Log to Lunch. Intro copy is
+shorter. The public reference is references/macrofactor-quick-add.png from
+MacroFactor's Quick Add guide. Its macro-derived Calorie estimate and plate
+integration remain explicit follow-ups; no estimate is added in app code.
+
+The subsequent dark journey and existing unweighed regression pass, together
+with all 205 active hosted tests. The device build passes. The old AX capture
+was interrupted after the destination-label change. A replacement started
+before cleanup finished and was also stopped. Both attempts ended with code
+73 and are preserved with no passing claim. Both processes have exited.
+Final default light then AX now run sequentially on 39; final dark runs on EBE.
+Do not touch either simulator until its run finishes. A14's fixed simulators
+and source remain independent.
+
+## A14 fixed and Quick add in progress, 2026-10-07 18:49 EDT
+
+181eac03 is merged and pushed to integration and the app branch. The release
+worktree is fixed, tracked-clean and building A14 2610072240. Archive and
+exported IPA pass identity, signature, HealthKit, Apple sign-in, debug-marker,
+privacy and internal-only checks. The full gate selects all 60 UI methods once.
+Release simulators 7D, 02 and 718 are reserved until those runs finish.
+
+Quick add uses the published Core contract. Four focused presentation tests
+pass, including whole-portion persistence, unknown versus zero, macro-only
+values, locale parsing, invalid input, changed account and repeated save.
+The first light and dark native journeys pass, with cancellation, offline
+logging, relaunch, correction and exact synchronized export. The light run
+also passes all 205 active hosted tests. All four dark captures were inspected;
+the light export is ready for inspection. Nav title is the compact Quick add.
+
+The remaining copy now says Whole portion instead of Unweighed portion.
+Final dark runs all hosted tests, the quick journey and existing unweighed
+regression. Final AX runs the quick journey on 39. EBE runs dark. The device
+build is running. Review those captures and land this nutrition slice next,
+without changing A14's source. No physical checks or full parity claimed.
 
 ## Gym inventory ready to land, 2026-10-07 18:39 EDT
 

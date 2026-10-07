@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        04DD8B7B56A0466BA3439CFB /* NutritionQuickAddPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F36EF2D484EEC8A46C675; };
+        49E8068189F245EEB0412182 /* NutritionQuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20384D5BCC384B44AE4DA541; };
         388C1337938D46019543FCDD /* GymPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0534D736A5A4F21B498FC25; };
         C54FD2E4FDC544B8860F4066 /* TrainingGymsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D0EB706F0C494EA6BB91B7; };
         526B28C39B884D7A829AE71A /* GymEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1463BAA436B34C9BAC2B4D9F; };
@@ -151,6 +153,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        8F8F36EF2D484EEC8A46C675 /* NutritionQuickAddPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/NutritionQuickAddPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        20384D5BCC384B44AE4DA541 /* NutritionQuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionQuickAdd.swift; sourceTree = SOURCE_ROOT; };
         B0534D736A5A4F21B498FC25 /* GymPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/GymPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         F0D0EB706F0C494EA6BB91B7 /* TrainingGymsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingGymsView.swift; sourceTree = SOURCE_ROOT; };
         1463BAA436B34C9BAC2B4D9F /* GymEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/GymEditorModel.swift; sourceTree = SOURCE_ROOT; };
@@ -592,6 +596,8 @@
                 617E8059E32745DE93EDF0FE /* NutritionPlateDraft.swift */,
                 DCBE4BB9D2DA439BB10E047E /* NutritionFoodEditor.swift */,
                 860ABF9074DA4AF59CA36CC4 /* NutritionEntryNutrients.swift */,
+                8F8F36EF2D484EEC8A46C675 /* NutritionQuickAddPresentationTests.swift */,
+                20384D5BCC384B44AE4DA541 /* NutritionQuickAdd.swift */,
                 370749DB269D4B678A46F37A /* NutritionLabelRecognition.swift */,
                 7D893E42B7E34C2E8CBFD0B8 /* NutritionLabelCamera.swift */,
                 A9CE0675DF54481188064576 /* NutritionLabelCaptureView.swift */,
@@ -797,6 +803,7 @@
                 63EC972621864F10A0F38854 /* NutritionPlateDraft.swift in Sources */,
                 0FEC17CB82D14EF29F455A23 /* NutritionFoodEditor.swift in Sources */,
                 0998AC5B0FE247F5B0EA7AA5 /* NutritionEntryNutrients.swift in Sources */,
+                49E8068189F245EEB0412182 /* NutritionQuickAdd.swift in Sources */,
                 CE6120F617A748C58A21C374 /* NutritionLabelRecognition.swift in Sources */,
                 89B033C001014463A1CADE58 /* NutritionLabelCamera.swift in Sources */,
                 DA98042370154B58880B6723 /* NutritionLabelCaptureView.swift in Sources */,
@@ -900,7 +907,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B57FE442895E470E9535FFB8,289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 09845E5CFDF241848D8F0CBA, 388C1337938D46019543FCDD, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (04DD8B7B56A0466BA3439CFB,B57FE442895E470E9535FFB8,289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 09845E5CFDF241848D8F0CBA, 388C1337938D46019543FCDD, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

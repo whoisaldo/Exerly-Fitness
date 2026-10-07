@@ -45,12 +45,13 @@ struct NutritionDiaryView: View {
     }
 
     private enum Destination: Identifiable {
-        case date, add(LocalDate, String), scan(LocalDate, String), edit(FoodEntry), notes(LocalDate), copy(LocalDate, String?), status(StatusReview)
+        case date, add(LocalDate, String), scan(LocalDate, String), quick(LocalDate, String), edit(FoodEntry), notes(LocalDate), copy(LocalDate, String?), status(StatusReview)
         var id: String {
             switch self {
             case .date: "date"
             case .add(let date, let meal): "add-\(date)-\(meal)"
             case .scan(let date, let meal): "scan-\(date)-\(meal)"
+            case .quick(let date, let meal): "quick-\(date)-\(meal)"
             case .edit(let entry): "edit-\(entry.id)"
             case .notes(let date): "notes-\(date)"
             case .copy(let date, let meal): "copy-\(date)-\(meal ?? "all")"
@@ -84,6 +85,9 @@ struct NutritionDiaryView: View {
                     dayStatus
                     Spacer(minLength: 0)
                     Menu {
+                        Button("Quick calories & macros", systemImage: "bolt") {
+                            destination = .quick(date, store.entries.last?.meal ?? "Snacks")
+                        }.accessibilityIdentifier("nutrition.quickAdd")
                         Button(store.day(date).notes.isEmpty ? "Add a note" : "Edit note", systemImage: "square.and.pencil") {
                             destination = .notes(date)
                         }.accessibilityIdentifier("nutrition.editNote")
@@ -318,6 +322,8 @@ struct NutritionDiaryView: View {
         case .scan(let date, let meal):
             NutritionFoodPicker(workspace: workspace, api: api, date: date, meal: meal,
                                 timeZone: timeZone, unit: unit, actions: actions, onLogged: {}, startsWithBarcode: true)
+        case .quick(let date, let meal):
+            NutritionQuickAddView(workspace: workspace, date: date, meal: meal, timeZone: timeZone) {}
         case .edit(let entry):
             NutritionEntryEditor(workspace: workspace,
                 food: entry.food.foodForLogging(serving: entry.serving),
