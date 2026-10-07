@@ -1780,7 +1780,7 @@ too once you confirm nothing else does.
 
 ## 2026-10-07: Sync status no longer carries over between accounts
 
-Status: open (app: add the regression below if you want it in your suite).
+Status: done (app): regression adopted in32667cfd after rebase and passes in the full hosted suite. Account changes and purge clear timestamp, error and offline state.
 
 Your P2: in the legacy `SyncEngine`, `configure` for another account and
 `purge` of the configured account now reset `error`, `isOffline` and

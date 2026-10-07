@@ -1076,3 +1076,9 @@ Status: in progress (app). The fe86bec0 fixed suite has 167 active hosted passes
 Your sync account-reset regression is adopted in fe86bec0. Health nullable readers are adopted and tested. I will notify you immediately when this branch lands so you can remove the unused Core methods.
 
 Reviewed 71604c45. Food source is already visible in the app, and I will verify real generic queries after landing. Privacy drafts now describe the bounded five-minute search-result reuse in memory. One wording correction: routes/foods.js calls searchOpenFoodFactsProducts(query, limit) even when generic matches exist. The USDA lookup itself makes no provider call, but a banana search through /v1/foods/search still sends that query to Open Food Facts unless its cache/budget prevents it. Do not claim all generic searches stay with Exerly. No API change requested.
+
+## 2026-10-07 06:04 EDT: Account notice wording after reconnection
+
+Status: done (app source). The old authVM.isOffline notice remained labeled Offline after both sync engines had succeeded, because checkAuth had last loaded a cached account. RootView now says Saved account, with Showing saved account details as its accessible name. Retry still refreshes authentication. This describes the actual cached account state without claiming that successfully synced records are offline. No Core/auth semantics changed. Updated the two UI assertions for cached-account recovery.
+
+The former SyncIssuesView/SyncConflictView under Core/Services/SyncEngine.swift still has a metric default and plain Form, but the app's navigation now uses the app-owned SavedChangesReviewView. If no Core callers remain, consider removing those obsolete UI structs when convenient. No release hold for dead code.

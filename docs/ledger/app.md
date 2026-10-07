@@ -2,22 +2,72 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 05:50 EDT.
+milestone. Current date 2026-10-07, updated 06:21 EDT.
 
 ## Merge status
 
-Integration advanced to `71604c45`; app primary has `c1456da0` on `2edab7c8`.
+Integration is `71604c45`; app primary is rebased onto it through `dff64429`.
 Last app landing was `87abfb67` at 04:11 EDT. Primary plus one fixed release
-worktree. No integration hold. The final review suite runs from `fe86bec0`.
+worktree. No integration hold. The complete release suite runs from `5b2c9f92`.
 
-| App branch                         | Unlanded work                                                            | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                 | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                 | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                            | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | Health/design/privacy work through c1456da0; rebasing onto 71604c45 next | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
-| `release/app-design`               | Fixed fe86bec0, same code as primary                                     | 0a15b7fe full suite passed; final fe86bec0 49-method suite now running                                          |
+| App branch                         | Unlanded work                                                                                    | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                         | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                                         | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                                         | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                    | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | Health/design/privacy work through dff64429; private program choices delta under AX verification | U.S./accessibility batch 87abfb67 landed and pushed 04:11; primary pushed 137c7505 with all hooks passing       |
+| `release/app-design`               | Fixed 5b2c9f92; same as primary except the latest program choice sheet and short brand prompt    | release-verified-{1,2,3}, 49 UI methods exactly once and all hosted tests, now running                          |
+
+## Final release verification, 2026-10-07 06:21 EDT
+
+Current internal build remains2610070024. Do not upload the obsolete signed
+2610070818 or2610070937. The latter passed signing checks but missed the final
+keyboard and program corrections. After current verification, fix the release
+worktree to the latest passing app commit, archive a new timestamp and upload.
+Do not stop after internal availability. Resume nutrition with food ounces and
+fluid ounces first, then entry nutrient corrections, plates, quick entries,
+recipes and account CSV/import.
+
+Completed after rebasing onto71604c45: Core300, API260,167 active hosted tests
+plus one credential skip, device build and push hooks. The private TestFlight
+account also signs in successfully against staging, without printing credentials.
+fe86's final-design-complete groups1 and3 passed13 and14 UI methods; group2 was
+stopped at the wrapping agent name keyboard defect. Its replacement passed the
+agent journey133.125s, account81.830s and activity/sleep299.543s before it was
+superseded by the complete5b2 run. Preserve these distinctions in release notes.
+
+The keyboard-program-final-ax run proved the Return fix, then failed because
+the test checked the now-offscreen empty state without scrolling. Added that
+scroll in45a36cd5. Its empty, photo import/relaunch and secondary captures passed.
+All current weight controls are visible before the reading date; the former
+blank date region is gone. Export now exposes its action before the explanatory
+text. Shortened weight and food-brand placeholders that truncated at AX.
+
+The same AX run found the program Deload menu did not open when tapped. A wider
+hit area alone did not fix it, so dff64429 gives program choices an explicit
+selection sheet at AX sizes, with a checkmark, full-width buttons and cancel.
+Default sizes keep compact menus. The new program-choice-sheet-ax run has
+successfully opened and selected No deload cycle and reached validation; the
+rest of the program journey continues. Device build and scoped lint pass.
+Once green, check its default-size program flows too. Other screens are
+unchanged by this private control; don't repeat unrelated tests without cause.
+
+RootView's cached-account notice now says Saved account. The old Offline label
+could remain while both record stores were synced. Retry still checks auth.
+No Core/auth behavior changed. Both cached-account UI assertions were updated.
+Reviewed USDA71604c45 and corrected privacy drafts: the search uses a local USDA
+table plus Open Food Facts for the same query, with at most200 cached OFF query
+results in memory, reused for five minutes. Sent that wording correction to Logic.
+
+Active verification commands and logs: release artifacts/design/run-release-
+verified-{1,2,3}.sh and release-verified-manifest.json, fixed5b2c9f92. Primary
+artifacts/design/run-program-choice-sheet-ax.sh uses the fourth SE simulator.
+Fixtures39222/24/26 were restarted from71604c45 API source;39225 matches it too.
+Use primary artifacts/design/design-test-progress.py for progress. The full suite
+is independent of primary changes, and integration is free for Logic to land.
+New screenshots are in the gallery, but failed program/menu captures are excluded
+from the after selection and kept in their raw result bundles.
 
 ## Complete review suite passed; final corrections, 2026-10-07 05:39 EDT
 
