@@ -8,6 +8,7 @@ private struct MealLogDestination: Identifiable {
 
 struct HomeView: View {
     let refreshToken: Int
+    let healthOnly: Bool
 
     @AppStorage("unitSystem") private var unitSystem = "metric"
     @StateObject private var viewModel = DiaryViewModel()
@@ -24,8 +25,9 @@ struct HomeView: View {
 
     private let mealTypes = ["breakfast", "lunch", "dinner", "snack"]
 
-    init(refreshToken: Int, initialDate: CalendarDay) {
+    init(refreshToken: Int, initialDate: CalendarDay, healthOnly: Bool = false) {
         self.refreshToken = refreshToken
+        self.healthOnly = healthOnly
         _selectedDate = State(initialValue: initialDate)
     }
 
@@ -34,7 +36,7 @@ struct HomeView: View {
             if viewModel.isLoading && viewModel.summary == nil {
                 LoadingStateView(message: "Loading diary…")
             } else if let summary = viewModel.summary {
-                diary(summary)
+                if healthOnly { healthDiary(summary) } else { diary(summary) }
             } else if let error = viewModel.error {
                 ErrorStateView(message: error) {
                     Task { await viewModel.load(for: selectedDate) }
@@ -48,7 +50,7 @@ struct HomeView: View {
             }
         }
         .background(Color.exBackground)
-        .navigationTitle("Diary")
+        .navigationTitle(healthOnly ? "Daily health" : "Diary")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(selectedDate.rawValue)-\(refreshToken)") {
             await viewModel.load(for: selectedDate)
@@ -89,6 +91,27 @@ struct HomeView: View {
             }
         }
         .onChange(of: sync.changeToken) { _, _ in Task { await viewModel.load(for: selectedDate) } }
+    }
+
+    private func healthDiary(_ summary: DaySummaryDTO) -> some View {
+        List {
+            dateNavigation.diaryListRow()
+            if let error = viewModel.error { errorBanner(error).diaryListRow() }
+            if sync.pendingCount > 0 || sync.attentionCount > 0 || sync.isOffline {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(sync.pendingCount) changes waiting to sync.")
+                    if sync.isOffline { Text("Offline. Showing saved activity, sleep and water.") }
+                    if sync.attentionCount > 0 { NavigationLink("Review changes") { SyncIssuesView() } }
+                    Button("Sync now") { Task { await sync.synchronize(force: true); await viewModel.load(for: selectedDate) } }
+                }.diaryListRow()
+            }
+            waterCard(waterDay(summary)).diaryListRow()
+            ActivitySleepRows(summary: summary, date: selectedDate) {
+                Task { await viewModel.load(for: selectedDate) }
+            }.diaryListRow()
+        }
+        .listStyle(.plain).scrollContentBackground(.hidden).background(Color.exBackground)
+        .refreshable { await viewModel.load(for: selectedDate) }
     }
 
     private func diary(_ summary: DaySummaryDTO) -> some View {

@@ -7,6 +7,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const store = require('../apps/api/data');
 const providers = require('../apps/api/lib/foodProviders');
+const foodDatabaseGolden = require('../docs/api/golden/foods-v1.json');
+const { ApiError } = require('../apps/api/lib/errors');
 const { createApp } = require('../apps/api/app');
 const { reset: resetRateLimits } = require('../apps/api/lib/ratelimit');
 const { start: startCluster } = require('../apps/api/tests/helpers/cluster');
@@ -30,6 +32,20 @@ let weightRoundTrip = null;
 let dailyLogsRoundTrip = null;
 let setupRoundTrip = null;
 let preferencesRoundTrip = null;
+const foodDatabaseRequests = [];
+providers.searchOpenFoodFactsProducts = async (query, limit) => {
+  foodDatabaseRequests.push({ type: 'search', query, limit });
+  if (query === 'provider unavailable')
+    throw new ApiError(503, 'The food database is unavailable right now.');
+  return foodDatabaseGolden.products
+    .filter((product) => product.product_name?.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, limit);
+};
+providers.openFoodFactsBarcode = async (identity) => {
+  foodDatabaseRequests.push({ type: 'barcode', code: identity.openFoodFacts });
+  const product = foodDatabaseGolden.products.find((item) => identity.aliases.includes(item.code));
+  return product ? { status: 'found', product } : { status: 'not_found' };
+};
 providers.lookupBarcode = async (identity) => ({
   status: 'found',
   food: providers.mapOpenFoodFactsProduct(
@@ -58,9 +74,14 @@ providers.lookupBarcode = async (identity) => ({
   await store.connect({ connectionString: cluster.url });
   const app = express();
   app.use('/__test', express.json());
+  app.get('/__test/food-database-requests', (req, res) => {
+    if (req.get('X-Test-Fixture') !== 'isolated-simulator') return res.sendStatus(403);
+    res.json({ requests: foodDatabaseRequests });
+  });
   app.post('/__test/control', async (req, res, next) => {
     if (req.get('X-Test-Fixture') !== 'isolated-simulator') return res.sendStatus(403);
     try {
+      if (req.body.resetFoodDatabaseRequests) foodDatabaseRequests.length = 0;
       if (req.body.repairLegacyEmail) {
         const email = String(req.body.repairLegacyEmail);
         if (!email.endsWith('@exerly.test')) return res.sendStatus(400);

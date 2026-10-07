@@ -78,6 +78,7 @@ struct NutritionFoodEditor: View {
                     errorsFocused = true
                 }
             }
+            .scrollContentBackground(.hidden).background(Color.exBackground)
             .navigationTitle("Food label").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

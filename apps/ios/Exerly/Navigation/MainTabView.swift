@@ -32,7 +32,13 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack { HomeView(refreshToken: 0, initialDate: sync.today) }
+            NavigationStack {
+                if let account = auth.currentUser?.id {
+                    NutritionHostView(accountID: account,
+                                      unit: auth.currentUser?.unitSystem == "imperial" ? .pounds : .kilograms,
+                                      timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+                }
+            }
                 .tabItem { Label(MainTab.home.label, systemImage: MainTab.home.icon) }.tag(MainTab.home)
             NavigationStack {
                 if let account = auth.currentUser?.id {

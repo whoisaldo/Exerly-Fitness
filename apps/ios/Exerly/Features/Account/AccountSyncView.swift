@@ -6,7 +6,7 @@ struct AccountSyncView: View {
 
     var body: some View {
         List {
-            Section("Training backup") {
+            Section("Account backup") {
                 if let engine = workspace.sync {
                     status(engine)
                     if let date = engine.lastSyncedAt {
@@ -27,7 +27,7 @@ struct AccountSyncView: View {
                 }
             }
             Section {
-                Text("Workouts are saved on this device as you log. When connected, Exerly syncs workouts, custom exercises and agent proposals with your account.")
+                Text("Your workouts and food log are saved on this device. When connected, Exerly syncs them along with programs, foods, nutrition targets and agent proposals.")
                 Text("You can keep logging offline. Your saved changes sync when Exerly reconnects.")
             }
         }
@@ -41,12 +41,12 @@ struct AccountSyncView: View {
     @ViewBuilder
     private func status(_ engine: ExerlyCore.SyncEngine) -> some View {
         switch engine.state {
-        case .syncing: ProgressView("Syncing training…")
+        case .syncing: ProgressView("Syncing account…")
         case .idle:
-            Label(engine.lastSyncedAt == nil ? "Ready to sync" : "Training synced", systemImage: "checkmark.icloud")
+            Label(engine.lastSyncedAt == nil ? "Ready to sync" : "Account synced", systemImage: "checkmark.icloud")
                 .accessibilityIdentifier("account.syncStatus")
         case .offline:
-            Label("Offline. Your workouts are saved on this device.", systemImage: "wifi.slash")
+            Label("Offline. Your changes are saved on this device.", systemImage: "wifi.slash")
                 .accessibilityIdentifier("account.syncStatus")
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.icloud")

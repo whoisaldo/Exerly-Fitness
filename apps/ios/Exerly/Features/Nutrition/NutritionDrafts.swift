@@ -151,9 +151,10 @@ final class NutritionEntryDraft: ObservableObject {
     private let initialDate: LocalDate
     private let initialMeal: String
     private let initialTime: Date
+    private let initialPortion: FoodEntry?
 
     init(store: NutritionStore, food: ExerlyCore.Food, date: LocalDate, meal: String,
-         editing: FoodEntry? = nil, now: Date = Date()) {
+         editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date()) {
         self.store = store
         if let editing {
             let snapshot = editing.food
@@ -163,9 +164,11 @@ final class NutritionEntryDraft: ObservableObject {
         } else { self.food = food }
         original = editing
         entryID = editing?.id ?? UUID()
-        serving = editing?.serving
-        initialServing = editing?.serving
-        let field = NutritionNumberField(editing.map { $0.serving == nil ? $0.grams : ($0.quantity ?? 1) } ?? 100)
+        let previous = editing ?? repeating.flatMap { $0.food.foodID == food.id ? $0 : nil }
+        initialPortion = previous
+        serving = previous?.serving
+        initialServing = previous?.serving
+        let field = NutritionNumberField(previous.map { $0.serving == nil ? $0.grams : ($0.quantity ?? 1) } ?? 100)
         amount = field
         initialAmount = field
         self.date = editing?.date ?? date
@@ -184,8 +187,8 @@ final class NutritionEntryDraft: ObservableObject {
         guard let value = try amount.value(named: serving == nil ? "grams" : "quantity", locale: locale) else {
             throw NutritionDraftError.input("Enter an amount to log.")
         }
-        if let original, amount == initialAmount, serving == initialServing {
-            return try NutritionStore.preview(food, grams: original.grams, serving: original.serving, quantity: original.quantity)
+        if let initialPortion, amount == initialAmount, serving == initialServing {
+            return try NutritionStore.preview(food, grams: initialPortion.grams, serving: initialPortion.serving, quantity: initialPortion.quantity)
         }
         return try NutritionStore.preview(food, grams: serving == nil ? value : nil,
                                           serving: serving, quantity: serving == nil ? nil : value)
@@ -224,6 +227,24 @@ final class NutritionDiaryActions: ObservableObject {
 
     init(store: NutritionStore) { self.store = store }
 
+    func clearError() { error = nil }
+
+    @discardableResult
+    func setStatus(_ status: DayStatus, reviewed: NutritionDay, entries: [FoodEntry]) -> Bool {
+        error = nil
+        guard store.day(reviewed.date) == reviewed, store.entries(on: reviewed.date) == entries else {
+            error = "This day's log changed after you opened the review. Review the latest entries before changing its status."
+            return false
+        }
+        do {
+            try store.setStatus(status, on: reviewed.date)
+            return true
+        } catch {
+            self.error = "Could not change the logging status. Your saved status is unchanged. Try again."
+            return false
+        }
+    }
+
     @discardableResult
     func delete(_ reviewed: FoodEntry) -> Bool {
         error = nil
@@ -256,6 +277,81 @@ final class NutritionDiaryActions: ObservableObject {
         } catch {
             self.error = "Could not undo the deletion. Try again."
             return false
+        }
+    }
+}
+
+@MainActor
+final class NutritionDayNotesDraft: ObservableObject {
+    @Published var text: String
+    @Published private(set) var error: String?
+    private let store: NutritionStore
+    private let date: LocalDate
+    private var original: String
+
+    init(store: NutritionStore, date: LocalDate) {
+        self.store = store
+        self.date = date
+        original = store.day(date).notes
+        text = original
+    }
+
+    var hasChanges: Bool { text != original }
+
+    @discardableResult
+    func save() -> Bool {
+        error = nil
+        guard store.day(date).notes == original else {
+            error = "This note changed on another screen or device. Your draft is still here. Reopen the note to review the latest version."
+            return false
+        }
+        do {
+            try store.setNotes(text, on: date)
+            original = text
+            return true
+        } catch {
+            self.error = "Could not save the note. Your draft is still here. Try again."
+            return false
+        }
+    }
+}
+
+@MainActor
+final class NutritionCopyDraft: ObservableObject {
+    let source: LocalDate
+    let sourceMeal: String?
+    let entries: [FoodEntry]
+    @Published var target: LocalDate
+    @Published var targetMeal: String?
+    @Published private(set) var error: String?
+    @Published private(set) var completed = false
+    private let store: NutritionStore
+
+    init(store: NutritionStore, source: LocalDate, meal: String?, target: LocalDate) {
+        self.store = store
+        self.source = source
+        sourceMeal = meal
+        self.target = target
+        targetMeal = meal
+        entries = store.entries(on: source).filter { meal == nil || $0.meal == meal }
+    }
+
+    @discardableResult
+    func copy() -> [FoodEntry]? {
+        guard !completed else { return nil }
+        error = nil
+        guard store.entries(on: source).filter({ sourceMeal == nil || $0.meal == sourceMeal }) == entries else {
+            error = "The source log changed after you opened this review. Reopen Copy to review the latest entries."
+            return nil
+        }
+        guard !entries.isEmpty else { error = "There are no entries to copy."; return nil }
+        do {
+            let copied = try store.copy(from: source, meal: sourceMeal, to: target, meal: targetMeal)
+            completed = true
+            return copied
+        } catch {
+            self.error = "Could not copy these entries. No copies were saved. Try again."
+            return nil
         }
     }
 }

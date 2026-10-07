@@ -15,6 +15,235 @@ final class ProductionUITests: XCTestCase {
         }
     }
 
+    func testNutritionManualFoodKeepsUnknownsAndSurvivesOfflineEditing() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-manual")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Previous day"], in: app)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.createFood"], in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Synthetic oats", in: app)
+        replace(app.textFields["Energy (kcal)"], with: "380", in: app)
+        replace(app.textFields["Protein (g)"], with: "13.2", in: app)
+        replace(app.textFields["Carbohydrate (g)"], with: "62.5", in: app)
+        replace(app.textFields["Fat (g)"], with: "0", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-manual-label")
+        tap(app.buttons["nutrition.saveFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Log food"].waitForExistence(timeout: 10))
+        replace(app.textFields["Amount (g)"], with: "37.25", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.meal"], in: app)
+        XCTAssertTrue(app.buttons["Dinner"].waitForExistence(timeout: 5))
+        app.buttons["Dinner"].tap()
+        capture(app, "nutrition-manual-portion")
+        try await control(["offline": true])
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch
+        reveal(entry, in: app)
+        XCTAssertTrue(entry.exists)
+        capture(app, "nutrition-manual-offline-diary")
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        tap(app.buttons["Previous day"], in: app)
+        tap(entry, in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "37.25")
+        replace(app.textFields["Amount (g)"], with: "40.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        tap(app.buttons["Previous day"], in: app)
+        tap(entry, in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "40.5")
+        capture(app, "nutrition-manual-relaunched-entry")
+        tap(app.buttons["Cancel"], in: app)
+        try await control([:])
+        tap(app.buttons["Retry"].firstMatch, in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }
+            .compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 1)
+        let saved = try XCTUnwrap(entries.first)
+        XCTAssertEqual(saved["grams"] as? Double, 40.5)
+        XCTAssertEqual(saved["meal"] as? String, "Dinner")
+        let food = try XCTUnwrap(saved["food"] as? [String: Any])
+        XCTAssertEqual(food["name"] as? String, "Synthetic oats")
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 380)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertNil(nutrients["iron"])
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        XCTAssertEqual(saved["date"] as? String, formatter.string(from: yesterday))
+    }
+
+    func testNutritionSubmittedSearchBarcodeAndThreeTapRepeat() async throws {
+        try await control(["resetFoodDatabaseRequests": true])
+        let person = try await createAccount(prefix: "nutrition-search")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        let searchField = app.searchFields.firstMatch
+        replace(searchField, with: "oat", in: app)
+        let before = try await request("GET", "/__test/food-database-requests")
+        XCTAssertEqual((before["requests"] as? [[String: Any]])?.count, 0, "Typing must not query the food database")
+        XCTAssertTrue(app.keyboards.buttons["Search"].waitForExistence(timeout: 5))
+        app.keyboards.buttons["Search"].tap()
+        let food = app.buttons["nutrition.food.off:0012345678905"]
+        XCTAssertTrue(food.waitForExistence(timeout: 10))
+        capture(app, "nutrition-search-results")
+        tap(food, in: app)
+        replace(app.textFields["Amount (g)"], with: "35.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        // Exactly three taps from the diary. No typing or portion changes.
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(food, in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "35.5")
+        capture(app, "nutrition-repeat-previous-portion")
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.barcode"], in: app)
+        replace(app.textFields["nutrition.barcodeDigits"], with: "0000000000000", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.lookupBarcode"], in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.barcodeNotFound"].waitForExistence(timeout: 10))
+        capture(app, "nutrition-barcode-not-found")
+        replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.lookupBarcode"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.barcodeFood"].waitForExistence(timeout: 10))
+        capture(app, "nutrition-barcode-found")
+        tap(app.buttons["nutrition.barcodeFood"], in: app)
+        replace(app.textFields["Amount (g)"], with: "20", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 3)
+        XCTAssertEqual(entries.compactMap { $0["grams"] as? Double }.sorted(), [20, 35.5, 35.5])
+        XCTAssertTrue(entries.allSatisfy { ($0["food"] as? [String: Any])?["foodID"] as? String == "off:0012345678905" })
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "saved_food" }, "Database food logging must not require saving a library food")
+        let requests = try await request("GET", "/__test/food-database-requests")
+        let calls = try XCTUnwrap(requests["requests"] as? [[String: Any]])
+        XCTAssertEqual(calls.filter { $0["type"] as? String == "search" }.count, 1)
+        XCTAssertEqual(calls.filter { $0["type"] as? String == "barcode" }.count, 2)
+    }
+
+    func testNutritionDayNoteCopyAndDeletionUndoStayOfflineUntilReconnection() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-day")
+        let seeded = try await seedNutritionEntry(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        let original = app.buttons["nutrition.entry.\(seeded.id)"]
+        reveal(original, in: app)
+        XCTAssertTrue(original.waitForExistence(timeout: 15))
+        try await control(["offline": true])
+        revealAbove(app.buttons["nutrition.dayStatus"], in: app)
+        tap(app.buttons["nutrition.dayStatus"], in: app)
+        let partial = app.buttons["nutrition.status.partial"]
+        guard partial.waitForExistence(timeout: 5) else {
+            XCTFail("Logging status menu did not open: \(app.debugDescription)")
+            return
+        }
+        partial.tap()
+        capture(app, "nutrition-partial-review")
+        tap(app.buttons["nutrition.confirm"], in: app)
+        tap(app.buttons["nutrition.editNote"], in: app)
+        replace(app.textFields["nutrition.dayNote"], with: "Dinner after training", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-day-note")
+        tap(app.buttons["nutrition.saveNote"], in: app)
+        revealAbove(app.buttons["Copy Dinner"], in: app)
+        tap(app.buttons["Copy Dinner"], in: app)
+        capture(app, "nutrition-copy-review")
+        tap(app.buttons["nutrition.copyConfirm"], in: app)
+        revealAbove(app.buttons["Next day"], in: app)
+        tap(app.buttons["Next day"], in: app)
+        let copied = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch
+        reveal(copied, in: app)
+        let copiedID = copied.identifier
+        XCTAssertNotEqual(copiedID, "nutrition.entry.\(seeded.id)")
+        capture(app, "nutrition-copied-day")
+        tap(copied, in: app)
+        tap(app.buttons["Delete entry"], in: app)
+        capture(app, "nutrition-delete-review")
+        tap(app.buttons["nutrition.confirm"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        revealAbove(app.buttons["nutrition.undoDelete"], in: app)
+        capture(app, "nutrition-deleted-entry")
+        tap(app.buttons["nutrition.undoDelete"], in: app)
+        reveal(app.buttons[copiedID], in: app)
+        XCTAssertTrue(app.buttons[copiedID].exists)
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        reveal(app.buttons["nutrition.dayStatus"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.dayStatus"].label.contains("Partial log"))
+        reveal(app.staticTexts["Dinner after training"], in: app)
+        XCTAssertTrue(app.staticTexts["Dinner after training"].exists)
+        capture(app, "nutrition-note-after-relaunch")
+        try await control([:])
+        tap(app.buttons["Retry"].firstMatch, in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 2)
+        XCTAssertTrue(entries.allSatisfy { $0["grams"] as? Double == 123.25 })
+        XCTAssertEqual(Set(entries.compactMap { $0["id"] as? String }).count, 2)
+        let day = try XCTUnwrap(documents.first { $0["kind"] as? String == "nutrition_day" }?["payload"] as? [String: Any])
+        XCTAssertEqual(day["date"] as? String, seeded.date)
+        XCTAssertEqual(day["status"] as? String, "partial")
+        XCTAssertEqual(day["notes"] as? String, "Dinner after training")
+    }
+
+    private func seedNutritionEntry(token: String) async throws -> (id: String, date: String) {
+        let foodID = UUID().uuidString
+        let entryID = UUID().uuidString
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let date = formatter.string(from: Date())
+        let nutrients: [String: Double] = ["energy": 57, "sodium": 0]
+        let food: [String: Any] = ["id": foodID, "name": "Synthetic pear", "source": "custom", "per100g": nutrients,
+                                    "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
+        _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
+        let snapshot: [String: Any] = ["foodID": foodID, "name": "Synthetic pear", "source": "custom", "per100g": nutrients]
+        let entry: [String: Any] = ["id": entryID, "date": date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
+                                     "food": snapshot, "grams": 123.25]
+        _ = try await request("PUT", "/v1/documents/food_entry/\(entryID)", body: ["base_revision": 0, "payload": entry], token: token)
+        return (entryID, date)
+    }
+
     func testAccountDeletionRequiresConfirmationAndFailureKeepsTheAccount() throws {
         let app = launch(resetSession: true, accountControls: "delete-error")
         XCTAssertTrue(app.staticTexts["morgan@example.test"].waitForExistence(timeout: 10))
@@ -2282,11 +2511,23 @@ final class ProductionUITests: XCTestCase {
             // allowlist drag the content 48 times before tapping a visible tab.
             if visibleFrame(element) && element.isHittable,
                app.tabBars.buttons.allElementsBoundByIndex.contains(where: { $0.frame == element.frame }) { return }
+            // Stacked sheets expose the diary's navigation bar as well as
+            // their own. Find the control in any bar instead of assuming
+            // the last accessibility node is the frontmost navigation bar.
+            if visibleFrame(element) && element.isHittable,
+               app.navigationBars.buttons.allElementsBoundByIndex.contains(where: { $0.frame == element.frame }) { return }
             let lowerEdge = visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30
             let bar = app.navigationBars.allElementsBoundByIndex.last ?? app.navigationBars.firstMatch
+            // The saved-account notice is outside the navigation stack. Its
+            // Retry button is already visible above the bar; scrolling the
+            // diary cannot move it into the list's bounds.
+            if visibleFrame(element), element.isHittable, element.label == "Retry", bar.exists,
+               element.frame.maxY < bar.frame.minY { return }
             if visibleFrame(element) && element.isHittable && bar.exists,
-               app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", element.label)).firstMatch.exists { return }
-            let upperEdge = bar.exists ? bar.frame.maxY + 8 : 40
+               element.frame.minY >= bar.frame.minY, element.frame.maxY <= bar.frame.maxY { return }
+            // iOS 26's navigation blur extends below the bar's frame. Keep
+            // scrolling rows clear of that overlay before tapping them.
+            let upperEdge = bar.exists ? bar.frame.maxY + 56 : 40
             if visibleFrame(element) && element.frame.midY > upperEdge && element.frame.midY < lowerEdge && element.isHittable { return }
             // A full-screen swipe can jump from below the SE's tab bar to
             // above its navigation bar. Short drags avoid that oscillation.

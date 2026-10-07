@@ -181,6 +181,28 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(store.entries.count, 1)
     }
 
+    func testRepeatingAFoodPrefillsItsPrecisePortionButKeepsTheChosenDateAndMeal() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let oldDate = try XCTUnwrap(LocalDate("2026-10-05"))
+        let today = try XCTUnwrap(LocalDate("2026-10-06"))
+        var food = ExerlyCore.Food(name: "Synthetic cereal", per100g: NutrientAmounts([.energy: 370]),
+                                   servings: [Serving("bowl", grams: 41.123456789)])
+        let previous = try store.log(food, serving: food.servings[0], quantity: 1.123456789, on: oldDate, meal: "Breakfast")
+        food.per100g[.energy] = 380
+        let now = Date(timeIntervalSince1970: 1_791_326_400)
+        let draft = NutritionEntryDraft(store: store, food: food, date: today, meal: "Dinner", repeating: previous, now: now)
+        let entry = try XCTUnwrap(draft.save())
+        XCTAssertNotEqual(entry.id, previous.id)
+        XCTAssertEqual(entry.date, today)
+        XCTAssertEqual(entry.meal, "Dinner")
+        XCTAssertEqual(entry.loggedAt, now)
+        XCTAssertEqual(entry.grams, previous.grams)
+        XCTAssertEqual(entry.quantity, previous.quantity)
+        XCTAssertEqual(entry.serving, previous.serving)
+        XCTAssertEqual(entry.food.per100g[.energy], 380)
+        XCTAssertEqual(store.entries.first, previous)
+    }
+
     func testInvalidAndStaleEntryDraftsKeepTheirInputAndDoNotWrite() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))
@@ -243,5 +265,203 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(workspace.nutrition.entries.first, entry)
         XCTAssertNil(actions.deleted)
         XCTAssertNotNil(actions.error)
+    }
+}
+
+@MainActor
+final class NutritionDiaryPresentationTests: XCTestCase {
+    func testNotesSaveKeepsStatusAndRefusesToOverwriteANewerNote() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        try store.setNotes("Original note", on: date)
+        let draft = NutritionDayNotesDraft(store: store, date: date)
+        draft.text = "Lunch after training"
+        try store.setStatus(.partial, on: date)
+        XCTAssertTrue(draft.save())
+        XCTAssertEqual(store.day(date).notes, "Lunch after training")
+        XCTAssertEqual(store.day(date).status, .partial)
+        let stale = NutritionDayNotesDraft(store: store, date: date)
+        stale.text = "My unsaved note"
+        try store.setNotes("Note from another device", on: date)
+        XCTAssertFalse(stale.save())
+        XCTAssertEqual(stale.text, "My unsaved note")
+        XCTAssertEqual(store.day(date).notes, "Note from another device")
+    }
+
+    func testDayStatusRefusesAChangedReviewAndNeverDeletesFood() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic apple", per100g: NutrientAmounts([.energy: 52]))
+        let entry = try store.log(food, grams: 110, on: date, meal: "Lunch")
+        let actions = NutritionDiaryActions(store: store)
+        let reviewed = store.day(date)
+        XCTAssertTrue(actions.setStatus(.complete, reviewed: reviewed, entries: [entry]))
+        XCTAssertEqual(store.entries, [entry])
+        XCTAssertFalse(actions.setStatus(.fasting, reviewed: reviewed, entries: [entry]))
+        XCTAssertEqual(store.day(date).status, .complete)
+        let latest = store.day(date)
+        _ = try store.log(food, grams: 20, on: date, meal: "Dinner")
+        XCTAssertFalse(actions.setStatus(.fasting, reviewed: latest, entries: [entry]))
+        XCTAssertEqual(store.entries.count, 2)
+    }
+
+    func testCopyPreservesSnapshotsAndCannotDuplicateOnRepeatedConfirmation() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let source = try XCTUnwrap(LocalDate("2026-10-05"))
+        let target = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic cereal", per100g: NutrientAmounts([.energy: 360, .sodium: 0]))
+        let original = try store.log(food, grams: 42.123456789, on: source, meal: "Breakfast")
+        let draft = NutritionCopyDraft(store: store, source: source, meal: "Breakfast", target: target)
+        draft.targetMeal = "Dinner"
+        let copies = try XCTUnwrap(draft.copy())
+        XCTAssertEqual(copies.count, 1)
+        XCTAssertEqual(copies.first?.food, original.food)
+        XCTAssertEqual(copies.first?.grams, original.grams)
+        XCTAssertEqual(copies.first?.date, target)
+        XCTAssertEqual(copies.first?.meal, "Dinner")
+        XCTAssertNotEqual(copies.first?.id, original.id)
+        XCTAssertNil(draft.copy())
+        XCTAssertEqual(store.entries.count, 2)
+        XCTAssertEqual(store.entries(on: source), [original])
+    }
+
+    func testCopyRefusesChangedSourceEntriesAndKeepsTheDestination() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let source = try XCTUnwrap(LocalDate("2026-10-05"))
+        let target = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic cereal", per100g: NutrientAmounts([.energy: 360]))
+        var original = try store.log(food, grams: 40, on: source, meal: "Breakfast")
+        let existing = try store.log(food, grams: 80, on: target, meal: "Dinner")
+        let draft = NutritionCopyDraft(store: store, source: source, meal: nil, target: target)
+        original.grams = 50
+        try store.saveEntry(original)
+        XCTAssertNil(draft.copy())
+        XCTAssertNotNil(draft.error)
+        XCTAssertEqual(store.entries(on: target), [existing])
+        XCTAssertEqual(draft.entries.first?.grams, 40)
+    }
+}
+
+@MainActor
+final class NutritionSearchTests: XCTestCase {
+    func testSubmittedSearchKeepsSourceAndUnknownNutrientsAndSkipsBlankQueries() async throws {
+        let transport = NutritionSearchTransport()
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport))
+        await model.search("  \n ")
+        let emptyRequests = await transport.requests()
+        XCTAssertTrue(emptyRequests.isEmpty)
+        XCTAssertNil(model.request)
+        await model.search("  pear + oats  ")
+        let requests = await transport.requests()
+        XCTAssertEqual(requests.first?.accountID, "food-account")
+        XCTAssertEqual(requests.first?.path, "/v1/foods/search?q=pear%20%2B%20oats&limit=20")
+        XCTAssertEqual(model.result?.foods.first?.source, .openFoodFacts)
+        XCTAssertEqual(model.result?.foods.first?.per100g[.sodium], 0)
+        XCTAssertNil(model.result?.foods.first?.per100g[.iron])
+        XCTAssertEqual(model.result?.attribution, "Synthetic Open Food Facts attribution")
+        XCTAssertFalse(model.isLoading)
+        XCTAssertNil(model.error)
+    }
+
+    func testOlderSearchCannotReplaceANewerResult() async throws {
+        let began = expectation(description: "First search began")
+        let transport = NutritionSearchTransport(onFirstRequest: { began.fulfill() }, holdFirst: true)
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport))
+        let first = Task { await model.search("old") }
+        await fulfillment(of: [began], timeout: 3)
+        await model.search("new")
+        XCTAssertEqual(model.result?.foods.first?.name, "Synthetic new food")
+        await transport.finishFirst()
+        await first.value
+        XCTAssertEqual(model.result?.foods.first?.name, "Synthetic new food")
+        XCTAssertFalse(model.isLoading)
+    }
+
+    func testClosedSearchCannotRepopulateAfterAnAccountSwitch() async throws {
+        let began = expectation(description: "Search began")
+        let transport = NutritionSearchTransport(onFirstRequest: { began.fulfill() }, holdFirst: true)
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "old-account", transport: transport))
+        let pending = Task { await model.search("old") }
+        await fulfillment(of: [began], timeout: 3)
+        model.close()
+        await transport.finishFirst()
+        await pending.value
+        XCTAssertNil(model.result)
+        XCTAssertNil(model.error)
+        XCTAssertFalse(model.isLoading)
+        await model.search("new")
+        let requests = await transport.requests()
+        XCTAssertEqual(requests.count, 1)
+    }
+
+    func testBarcodeNotFoundIsDifferentFromUnavailableAndCanBeRetried() async throws {
+        let transport = NutritionSearchTransport()
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport))
+        await model.lookup("00000000")
+        XCTAssertNotNil(model.request)
+        XCTAssertNil(model.result)
+        XCTAssertNil(model.error)
+        XCTAssertFalse(model.isLoading)
+        await model.lookup("11111111")
+        XCTAssertNotNil(model.error)
+        XCTAssertNil(model.result)
+        await model.lookup("22222222")
+        XCTAssertNil(model.error)
+        XCTAssertEqual(model.result?.foods.count, 1)
+        model.clear()
+        XCTAssertNil(model.request)
+        XCTAssertNil(model.result)
+    }
+
+    func testInvalidBarcodeAndBusyProviderKeepTheirActionableMessages() async throws {
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: NutritionSearchTransport()))
+        await model.lookup("33333333")
+        XCTAssertEqual(model.error, "Choose EAN-8 or UPC-E for an eight-digit code.")
+        await model.lookup("44444444")
+        XCTAssertEqual(model.error, "Food lookups are busy. Try again shortly.")
+        XCTAssertFalse(model.isLoading)
+    }
+}
+
+private actor NutritionSearchTransport: SessionTransport {
+    struct Request: Sendable {
+        let accountID: String
+        let path: String
+    }
+    private var received: [Request] = []
+    private let onFirstRequest: @Sendable () -> Void
+    private var holdFirst: Bool
+    private var pending: CheckedContinuation<Void, Never>?
+
+    init(onFirstRequest: @escaping @Sendable () -> Void = {}, holdFirst: Bool = false) {
+        self.onFirstRequest = onFirstRequest
+        self.holdFirst = holdFirst
+    }
+    func requests() -> [Request] { received }
+    func finishFirst() { holdFirst = false; pending?.resume(); pending = nil }
+
+    func send(_ method: String, path: String, body: Data?, headers: [String: String],
+              as accountID: String) async throws -> (status: Int, data: Data) {
+        received.append(Request(accountID: accountID, path: path))
+        if received.count == 1 {
+            onFirstRequest()
+            if holdFirst { await withCheckedContinuation { pending = $0 } }
+        }
+        if path.hasSuffix("00000000") { return (404, Data("{}".utf8)) }
+        if path.hasSuffix("11111111") { throw URLError(.notConnectedToInternet) }
+        if path.hasSuffix("33333333") {
+            return (400, Data(#"{"message":"Choose EAN-8 or UPC-E for an eight-digit code."}"#.utf8))
+        }
+        if path.hasSuffix("44444444") {
+            return (429, Data(#"{"message":"Food lookups are busy. Try again shortly."}"#.utf8))
+        }
+        let name = path.contains("q=old") ? "Synthetic old food" : "Synthetic new food"
+        let food = ExerlyCore.Food(id: "off:22222222", name: name, source: .openFoodFacts,
+                                   per100g: NutrientAmounts([.energy: 55, .sodium: 0]))
+        let row = try JSONSerialization.jsonObject(with: ExerlyJSON.canonical(food))
+        let payload: [String: Any] = path.contains("/barcode/")
+            ? ["food": row, "attribution": "Synthetic Open Food Facts attribution"]
+            : ["foods": [row], "attribution": "Synthetic Open Food Facts attribution"]
+        return (200, try JSONSerialization.data(withJSONObject: payload))
     }
 }

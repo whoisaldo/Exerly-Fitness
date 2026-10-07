@@ -27,7 +27,7 @@ struct NutritionEntryEditor: View {
         self.editing = editing
         self.onSaved = onSaved
         _draft = StateObject(wrappedValue: NutritionEntryDraft(store: workspace.nutrition, food: food,
-                                                              date: date, meal: meal, editing: editing))
+            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id }))
     }
 
     var body: some View {
@@ -115,6 +115,7 @@ struct NutritionEntryEditor: View {
                     errorsFocused = true
                 }
             }
+            .scrollContentBackground(.hidden).background(Color.exBackground)
             .navigationTitle(editing == nil ? "Log food" : "Food entry").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -93,7 +93,73 @@ struct NutritionAmountsView: View {
     }
 }
 
+struct NutritionDailySummary: View {
+    let amounts: NutrientAmounts
+    let targets: DailyTargets?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(amounts[.energy].map { "\(TrainingFormat.number($0)) kcal" } ?? "No energy reported")
+                    .font(.title2.weight(.semibold)).monospacedDigit().foregroundStyle(Color.exPrimary)
+                if let targets { Text("Target \(TrainingFormat.number(targets.energy)) kcal").font(.caption).foregroundStyle(.secondary) }
+            }
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+            layout {
+                macro(.protein, target: targets?.protein)
+                macro(.carbohydrate, target: targets?.carbohydrate)
+                macro(.fat, target: targets?.fat)
+            }
+            if targets == nil {
+                Text("Nutrition targets have not been set for this date.").font(.footnote).foregroundStyle(.secondary)
+            }
+        }.fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func macro(_ nutrient: Nutrient, target: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(nutrient.name).font(.caption).foregroundStyle(.secondary)
+            Text(amounts[nutrient].map { "\(TrainingFormat.number($0)) g" } ?? "Not reported").monospacedDigit()
+            if let target { Text("Target \(TrainingFormat.number(target)) g").font(.caption).foregroundStyle(.secondary) }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+    }
+}
+
 enum NutritionFormat {
+    static func status(_ status: DayStatus) -> String {
+        switch status {
+        case .unlogged: "In progress"
+        case .partial: "Partial log"
+        case .complete: "Complete log"
+        case .fasting: "Fasting"
+        }
+    }
+
+    static func statusDescription(_ status: DayStatus) -> String {
+        switch status {
+        case .unlogged: "Keep logging. This day is not confirmed as a complete intake day."
+        case .partial: "Some food is missing. This day is excluded from expenditure estimates."
+        case .complete: "All food for this day is logged. It can inform expenditure estimates."
+        case .fasting: "Confirm that you fasted. An empty fasting day counts as zero energy intake."
+        }
+    }
+
+    static func portion(_ entry: FoodEntry) -> String {
+        if let serving = entry.serving, let quantity = entry.quantity {
+            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(TrainingFormat.number(entry.grams)) g"
+        }
+        return "\(TrainingFormat.number(entry.grams)) g"
+    }
+
+    static func day(_ date: LocalDate, timeZone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.timeZone = timeZone
+        formatter.setLocalizedDateFormatFromTemplate("EEE MMM d yyyy")
+        return formatter.string(from: pickerDate(date, timeZone: timeZone))
+    }
+
     static func group(_ group: Nutrient.Group) -> String {
         switch group {
         case .energy: "Energy"
