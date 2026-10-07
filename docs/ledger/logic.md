@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 04:58 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 05:32 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                     |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:58 EDT, integration (import body read after sign-in)              |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:32 EDT, integration (sync status reset per account)               |
 | `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
@@ -199,6 +199,11 @@ authentication or rate limiting, so anyone could make the 512 MB instance
 parse large bodies. It now checks the app's session (and a limit of 10 a
 minute) first. Malformed or oversized JSON anywhere returned 500 and was
 logged as a server error; it is now 400 or 413.
+
+**Sync status per account.** The legacy `SyncEngine` resets its error,
+offline state and last sync time when another account is configured or the
+configured one is purged (the app's P2), checked with a hosted test given to
+the app.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

@@ -121,9 +121,17 @@ final class SyncEngine: ObservableObject {
         let context = ModelContext(container)
         context.autosaveEnabled = false
         self.context = context
-        error = nil
+        resetStatus()
         refreshCounts()
         if accountID != nil && automaticallySync { Task { await synchronize(force: true) } }
+    }
+
+    /// Another account starts with no error, offline state or sync time of
+    /// the last one's; its first sync sets them.
+    private func resetStatus() {
+        error = nil
+        isOffline = false
+        lastSyncedAt = nil
     }
 
     enum PurgeError: Error { case notConfigured }
@@ -136,6 +144,7 @@ final class SyncEngine: ObservableObject {
         if self.accountID == owner {
             retryTask?.cancel()
             self.accountID = nil
+            resetStatus()
         }
         try context.delete(model: SyncedResource.self, where: #Predicate { $0.accountID == owner })
         try context.delete(model: PendingMutation.self, where: #Predicate { $0.accountID == owner })

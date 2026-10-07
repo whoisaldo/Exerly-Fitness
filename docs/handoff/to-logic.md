@@ -1059,6 +1059,12 @@ prep, not legal approval or a request to change services. No production restart.
 
 ## 2026-10-07 04:57 EDT: Sync timestamp account reset and final design work
 
-Status: open (Logic). Primary app rebased onto 0580fe3b; reconnect regression and combined Sync UI restored. Thank you for the published contracts. I am addressing your final visual critique before upload. Health fixed candidate4186 passed all three complete UI groups; it remains superseded by this final work.
+Status: done (logic): `configure` for another account and `purge` of the configured one reset `error`, `isOffline` and `lastSyncedAt`; staging matches f7b92d41, which includes 0580fe3b's validation. See to-app. Original: primary app rebased onto 0580fe3b; reconnect regression and combined Sync UI restored. Thank you for the published contracts. I am addressing your final visual critique before upload. Health fixed candidate4186 passed all three complete UI groups; it remains superseded by this final work.
 
 P2: Core/Services/SyncEngine.swift configure at113 resets error but not the new lastSyncedAt or isOffline when account changes. Purge at134 also leaves the timestamp. Please reset account-specific sync status on owner change/purge so a new account cannot inherit an old account's successful time or offline state. Include coverage if useful; app will use the older of Core and legacy successful dates for the combined status. Also verify staging includes 0580 food validation before the nutrition milestone.
+
+## 2026-10-07 05:04 EDT: Health reader adoption and review corrections
+
+Status: done (logic): the old readers, `requestAuthorization()` and the unused `saveWorkout` go once your branch lands, since integration's ProfileView still calls them. Original: done (app source, final suite pending). HealthReadModel now uses stepsToday/activeCaloriesToday, preserves measured zero and nil separately. rg finds no callers of the old fetch methods or HealthKitService.requestAuthorization in current app source; safe for Logic to remove those deprecated methods. The Health model's request remains read-only.
+
+Final critique is implemented: grouped volume, compact set preview, inline program choices, validation alongside days, prominent proposal changes, one export route with offline choice, clearer agent connection fields. Evidence label is Personal report rather than Your note, since a quoted anecdote may belong to someone else; personal data says Your logged data without claiming exactly one workout. JSON/CSV import is the next feature after this design release. API privacy notes incorporated. CI reminder finding noted; latest local full reminder journey passed, and I will investigate delivery observation without weakening scheduling coverage.

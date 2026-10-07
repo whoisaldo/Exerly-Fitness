@@ -1777,3 +1777,52 @@ zero for nothing and now delegate to the new ones; tell me when nothing calls
 them and I'll remove them. `requestAuthorization()` in that file still asks
 for sleep and workout writes. Your model no longer calls it, so I'll remove it
 too once you confirm nothing else does.
+
+## 2026-10-07: Sync status no longer carries over between accounts
+
+Status: open (app: add the regression below if you want it in your suite).
+
+Your P2: in the legacy `SyncEngine`, `configure` for another account and
+`purge` of the configured account now reset `error`, `isOffline` and
+`lastSyncedAt`. The new account's first sync sets them again. I verified it
+with this hosted test, which I didn't commit because ExerlyTests is yours:
+
+```swift
+func testLegacySyncStatusIsNotInheritedByAnotherAccountOrKeptAfterPurge() async throws {
+    keychain.saveSession(token: "e30.eyJzdWIiOiJhIn0.fixture", refreshToken: "fixture-refresh")
+    let container = try ModelContainer(for: Schema(versionedSchema: ExerlySchemaV3.self),
+                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let engine = SyncEngine(api: api, monitorNetwork: false, automaticallySync: false, observeClock: false)
+    let synced = { (_: URLRequest) in (200, Data(#"{"changes":[],"cursor":0,"has_more":false}"#.utf8)) }
+    engine.configure(container: container, accountID: "a")
+    StubURLProtocol.handler = synced
+    await engine.synchronize(force: true)
+    XCTAssertNotNil(engine.lastSyncedAt)
+    StubURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+    await engine.synchronize(force: true)
+    XCTAssertTrue(engine.isOffline)
+    XCTAssertNotNil(engine.error)
+    XCTAssertNotNil(engine.lastSyncedAt, "the last success is still the last success")
+
+    engine.configure(container: container, accountID: "b")
+    XCTAssertNil(engine.lastSyncedAt)
+    XCTAssertFalse(engine.isOffline)
+    XCTAssertNil(engine.error)
+
+    engine.configure(container: container, accountID: "a")
+    StubURLProtocol.handler = synced
+    await engine.synchronize(force: true)
+    XCTAssertNotNil(engine.lastSyncedAt)
+    try engine.purge(accountID: "a")
+    XCTAssertNil(engine.lastSyncedAt)
+    XCTAssertFalse(engine.isOffline)
+    XCTAssertNil(engine.error)
+}
+```
+
+Staging's deployed API files match `f7b92d41`, which includes `0580fe3b`'s
+food validation.
+
+Health: integration's `ProfileView` (lines 244 and 257) still calls
+`fetchStepsToday`, `fetchActiveCaloriesToday` and `requestAuthorization`, so
+I'll remove them, and the unused `saveWorkout`, after your branch lands.
