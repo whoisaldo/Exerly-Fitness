@@ -78,9 +78,10 @@ struct TrainingSetEditor: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Text(exercise.name).font(.headline)
+            ExScreen {
+                ExCard {
+                    ExEyebrow("Set \(number)", color: .exPrimary)
+                    Text(exercise.name).font(.exH2)
                     Picker("Set type", selection: $kind) {
                         ForEach(SetKind.allCases, id: \.self) { Text(TrainingFormat.kind($0)).tag($0) }
                     }
@@ -92,7 +93,8 @@ struct TrainingSetEditor: View {
                     }
                 }
                 ForEach(Array(efforts.enumerated()), id: \.element.id) { index, effort in
-                    Section(index == 0 ? "Set values" : "Continuation \(index)") {
+                    ExCard {
+                        ExEyebrow(index == 0 ? "Set values" : "Continuation \(index)")
                         if exercise.metric.tracksLoad {
                             numericField(loadLabel, text: $efforts[index].load, id: "training.load.\(index)")
                         }
@@ -100,10 +102,10 @@ struct TrainingSetEditor: View {
                             numericField("Reps", text: $efforts[index].reps, id: "training.reps.\(index)", integer: true)
                         }
                         if exercise.metric.tracksDuration {
-                            numericField("Duration (seconds)", text: $efforts[index].duration, id: "training.duration.\(index)")
+                            numericField("Duration (seconds)", text: $efforts[index].duration, id: "training.duration.\(index)", step: 5)
                         }
                         if exercise.metric.tracksDistance {
-                            numericField("Distance (metres)", text: $efforts[index].distance, id: "training.distance.\(index)")
+                            numericField("Distance (metres)", text: $efforts[index].distance, id: "training.distance.\(index)", step: 10)
                         }
                         if index > 0 {
                             Button("Remove continuation", role: .destructive) { efforts.removeAll { $0.id == effort.id } }
@@ -113,14 +115,14 @@ struct TrainingSetEditor: View {
                 if kind.allowsContinuations {
                     Button("Add continuation", systemImage: "plus") { efforts.append(EffortFields(Effort(), unit: unit)) }
                 }
-                Section {
-                    Picker("Reps in reserve", selection: $rir) {
-                        Text("Not recorded").tag(Double?.none)
-                        ForEach(0...6, id: \.self) { Text($0 == 6 ? "6+" : String($0)).tag(Optional(Double($0))) }
+                ExCard {
+                    ExSectionHeading("Reps in reserve")
+                    ExChoiceChips(values: [Double?.none] + (0...6).map { Optional(Double($0)) }, selection: $rir) {
+                        $0.map { $0 == 6 ? "6+" : String(Int($0)) } ?? "None"
                     }
                     Toggle("Apply edits to matching later sets", isOn: $propagate)
-                } footer: {
-                    Text("Reps in reserve (RIR) estimates how many more reps you could do. Later incomplete sets are updated only when their old values match.")
+                    Text("How many more reps could you do? Matching later sets update only when their old values match.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
                 if let error { Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("training.setError") }
             }
@@ -130,7 +132,10 @@ struct TrainingSetEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save set") { save() }.fontWeight(.semibold).accessibilityIdentifier("training.saveSet")
                 }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { editing = false } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") {
+                    editing = false
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                } }
             }
             .onChange(of: kind) { old, new in
                 if !new.allowsContinuations && efforts.count > 1 {
@@ -148,13 +153,9 @@ struct TrainingSetEditor: View {
         return "Weight (\(suffix))"
     }
 
-    private func numericField(_ label: String, text: Binding<String>, id: String, integer: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.subheadline).foregroundStyle(.secondary)
-            TextField(label, text: text).keyboardType(integer ? .numberPad : .decimalPad)
-                .focused($editing).monospacedDigit().accessibilityIdentifier(id)
-                .frame(minHeight: 44)
-        }
+    private func numericField(_ label: String, text: Binding<String>, id: String, integer: Bool = false, step: Double? = nil) -> some View {
+        ExQuantityControl(title: label, text: text, step: step ?? (integer ? 1 : (unit == .kilograms ? 2.5 : 5)),
+                          identifier: id, integer: integer).focused($editing)
     }
 
     private func save() {

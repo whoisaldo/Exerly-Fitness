@@ -30,9 +30,16 @@ struct TrainingProgramEditor: View {
         NavigationStack {
             ScrollViewReader { scroll in
                 Form {
-                    Section(isNew ? "New program" : "Edit program") {
-                        TextField("Program name", text: $draft.program.name, axis: .vertical)
-                            .focused($typing).accessibilityIdentifier("program.name")
+                    Section {
+                        ExCard(accent: true) {
+                            ExEyebrow(isNew ? "New program" : "Edit program", color: .exPrimary)
+                            TextField("Program name", text: $draft.program.name, axis: .vertical).font(.exH2)
+                                .focused($typing).accessibilityIdentifier("program.name")
+                            Text("Build a cycle of training and rest days. Completed sessions advance your plan.")
+                                .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                    }
+                    Section("Schedule") {
                         ProgramNumberField("Cycles", text: $draft.cycles, integer: true)
                             .focused($typing).accessibilityIdentifier("program.cycles")
                         ProgramChoiceField("Deload", value: TrainingProgramFormat.deload(draft.program.deload)) {
@@ -102,6 +109,7 @@ struct TrainingProgramEditor: View {
                         }.id("errors").accessibilityIdentifier("program.errors")
                     }
                 }
+                .exListStyle()
                 .environment(\.editMode, $editMode)
                 .onChange(of: draft.errors) { _, errors in
                     if !errors.isEmpty { scroll.scrollTo("errors", anchor: .bottom) }
@@ -179,7 +187,11 @@ private struct TrainingProgramDayEditor: View {
     var body: some View {
         Form {
             Section {
-                TextField("Day name", text: $day.name, axis: .vertical).focused($typing).accessibilityIdentifier("program.dayName")
+                ExCard(accent: true) {
+                    ExEyebrow(day.isRest ? "Rest day" : "Training day", color: .exPrimary)
+                    TextField("Day name", text: $day.name, axis: .vertical).font(.exH2).focused($typing).accessibilityIdentifier("program.dayName")
+                    Text(day.slots.count == 1 ? "1 exercise" : "\(day.slots.count) exercises").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             Section {
                 ForEach($day.slots) { $slot in
@@ -201,6 +213,7 @@ private struct TrainingProgramDayEditor: View {
                 if day.isRest { Text("This day is a rest day until you add an exercise.") }
             }
         }
+        .exListStyle()
         .navigationTitle(day.name.isEmpty ? "Program day" : day.name).navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) { EditButton().accessibilityLabel("Reorder or remove exercises") }
@@ -228,6 +241,13 @@ private struct TrainingProgramSlotEditor: View {
 
     var body: some View {
         Form {
+            Section {
+                ExCard(accent: true) {
+                    ExEyebrow("Exercise prescription", color: .exPrimary)
+                    Text(exercise?.name ?? "Exercise targets").font(.exH2)
+                    Text(TrainingProgramFormat.target(slot.target, exercise: exercise)).font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+            }
             Section("Default targets") {
                 NavigationLink {
                     ProgramTargetEditor(target: slot.target, exercise: exercise) { slot.target = $0 }
@@ -284,6 +304,7 @@ private struct TrainingProgramSlotEditor: View {
                 Text("These targets replace the defaults for that cycle, including its deload adjustment. Remove an override to use the defaults again.")
             }
         }
+        .exListStyle()
         .navigationTitle(exercise?.name ?? "Exercise targets").navigationBarTitleDisplayMode(.inline)
         .onChange(of: availableCycles, initial: true) { _, available in
             if !available.contains(selectedCycle), let first = available.first { selectedCycle = first }
@@ -311,6 +332,13 @@ private struct ProgramTargetEditor: View {
     var body: some View {
         Form {
             Section {
+                ExCard(accent: true) {
+                    ExEyebrow(title, color: .exPrimary)
+                    Text(exercise?.name ?? "Your prescription").font(.exH2)
+                    Text("Choose the work for each session.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+            }
+            Section {
                 ProgramNumberField("Sets", text: $fields.sets, integer: true).focused($typing)
                     .accessibilityIdentifier("program.targetSets")
                 if exercise?.metric.tracksReps == true {
@@ -333,6 +361,7 @@ private struct ProgramTargetEditor: View {
             } footer: { Text("Leave rest empty to use your usual timer. Targets are checked when you save the program.") }
             if let error { Text(error).foregroundStyle(Color.exError) }
         }
+        .exListStyle()
         .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -361,6 +390,8 @@ private struct ProgramNumberField: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.subheadline).foregroundStyle(.secondary)
             TextField(title, text: $text).keyboardType(integer ? .numberPad : .decimalPad)
+                .font(.exStatSmall).padding(ExSpacing.item)
+                .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .accessibilityLabel(title)
         }
     }

@@ -11,7 +11,9 @@ struct ExerciseLogView: View {
         List {
             if let exercise = store.library.exercise(exerciseID) {
                 if let stats = store.history.statistics(of: exerciseID) {
-                    Section("All saved working sets") {
+                    Section {
+                        ExCard(accent: true) {
+                        ExEyebrow("All saved working sets", color: .exPrimary)
                         metric("Sets", value: String(stats.totalSets))
                         if let estimate = stats.estimatedOneRepMax {
                             metric("Best estimated 1RM", value: TrainingFormat.mass(estimate, unit: unit))
@@ -21,6 +23,7 @@ struct ExerciseLogView: View {
                         }
                         Text("Estimates depend on the logged load, reps and effort. Warm-ups are excluded.")
                             .font(.footnote).foregroundStyle(.secondary)
+                        }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                 }
                 let records = store.history.sets(of: exerciseID)
@@ -31,7 +34,7 @@ struct ExerciseLogView: View {
                     Section("Completed working sets") {
                         ForEach(records.reversed(), id: \.set.id) { record in
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(TrainingFormat.set(record.set, unit: unit)).font(.headline).monospacedDigit()
+                                Text(TrainingFormat.set(record.set, unit: unit)).font(.exStatSmall)
                                 Text("\(TrainingFormat.kind(record.set.kind))\(record.set.side.map { " · " + $0.rawValue.capitalized } ?? "")")
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 if let rir = record.set.rir {
@@ -58,7 +61,7 @@ struct ExerciseLogView: View {
         }
         .navigationTitle(store.library.exercise(exerciseID)?.name ?? "Exercise log")
         .navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
     }
 
     @ViewBuilder

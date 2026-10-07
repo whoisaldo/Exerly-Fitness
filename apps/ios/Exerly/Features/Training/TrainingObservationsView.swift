@@ -37,6 +37,14 @@ struct TrainingObservationsView: View {
     var body: some View {
         List {
             Section {
+                ExCard(accent: true) {
+                    ExEyebrow("Training insights", color: .exPrimary)
+                    Text("Look at the pattern").font(.exH2)
+                    Text("Compare your recent working sets. Each observation links to the workouts behind it.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+            }
+            Section {
                 Text("Patterns in your saved workouts, with the numbers and limits behind each observation. Nothing here changes your training.")
                     .foregroundStyle(.secondary)
             }
@@ -68,7 +76,7 @@ struct TrainingObservationsView: View {
             EntryChecksSection(checks: workspace.entryChecks, workspace: workspace, unit: unit)
         }
         .navigationTitle("Observations").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
         .task(id: TrainingAnalysisInput(workspace.store.history)) { await refresh() }
         .onChange(of: timeZone) { _, _ in Task { await refresh() } }
         .onChange(of: scenePhase) { _, phase in
@@ -138,6 +146,6 @@ private struct TrainingObservationDetailView: View {
             }
         }
         .navigationTitle("Training observation").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
     }
 }

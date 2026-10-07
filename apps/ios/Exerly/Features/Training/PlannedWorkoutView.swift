@@ -7,16 +7,24 @@ struct NextTrainingWorkoutSection: View {
 
     var body: some View {
         if let program = workspace.programs.active {
-            Section("Next workout") {
-                Text(program.name).font(.headline)
+            ExCard(accent: true) {
+                ExEyebrow("Next up", color: .exPrimary)
                 if let next = ProgramSchedule.next(for: program, in: workspace.store.history) {
-                    Text("\(next.day.name) · Cycle \(next.cycle + 1) of \(program.cycles)")
-                    if next.isDeload { Label("Deload cycle", systemImage: "arrow.down.right") }
-                    Button("Review next workout", action: review)
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        Text(next.day.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
+                        Text(program.name).font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    }
+                    HStack {
+                        Label("Cycle \(next.cycle + 1) of \(program.cycles)", systemImage: "circle.lefthalf.filled")
+                        if next.isDeload { Label("Deload", systemImage: "arrow.down.right") }
+                    }.font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    Button("Review next workout", action: review).buttonStyle(ExActionStyle())
                         .accessibilityIdentifier("program.nextWorkout")
                 } else {
-                    Text("This program is complete. Duplicate it in Programs to start again with separate progress.")
-                        .foregroundStyle(.secondary)
+                    Text(program.name).font(.exH2)
+                    Text("Program complete").font(.exBodyMedium).foregroundStyle(Color.exPrimary)
+                    Text("Duplicate it in Programs to begin again with separate progress.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }
             }
         }
@@ -42,11 +50,13 @@ struct PlannedWorkoutView: View {
                     }
                 } else if let plan {
                     Section {
-                        Text(plan.name).font(.title2.weight(.semibold))
-                        if let reference = plan.program { Text("Cycle \(reference.cycle + 1)") }
-                        if plan.isDeload { Label("Deload cycle", systemImage: "arrow.down.right") }
-                        Text("Targets come from your saved program and completed sets. Review them before starting. You can change any set while logging.")
-                            .foregroundStyle(.secondary)
+                        ExCard(accent: true) {
+                            ExEyebrow(plan.isDeload ? "Deload session" : "Up next", color: .exPrimary)
+                            Text(plan.name).font(.exH2)
+                            if let reference = plan.program { Text("Cycle \(reference.cycle + 1) · \(plan.exercises.count) exercises").font(.exCaption) }
+                            Button("Start planned workout") { start(plan) }
+                                .buttonStyle(ExActionStyle()).accessibilityIdentifier("program.startPlanned")
+                        }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                     Section {
                         TextField("Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)
@@ -59,8 +69,6 @@ struct PlannedWorkoutView: View {
                         PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit)
                     }
                     Section {
-                        Button("Start planned workout") { start(plan) }
-                            .fontWeight(.semibold).accessibilityIdentifier("program.startPlanned")
                         Text("All sets start incomplete. The program advances only after you finish the workout.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
@@ -69,6 +77,7 @@ struct PlannedWorkoutView: View {
                 }
                 if let error { Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("program.planError") }
             }
+            .exListStyle()
             .navigationTitle("Next workout").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }

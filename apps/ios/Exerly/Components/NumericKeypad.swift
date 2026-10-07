@@ -96,7 +96,8 @@ struct ExNumericKeypad: View {
                     .lineLimit(1).accessibilityHidden(true)
                 Spacer()
                 Button("Done", action: done).font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.exPrimary).frame(minWidth: 60, minHeight: 40)
+                    .foregroundStyle(Color.exPrimary).frame(minWidth: 60, minHeight: 44)
+                    .accessibilityIdentifier("exerly.keypadDone")
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                 ForEach(1...9, id: \.self) { value in key(String(value)) { insert(String(value)) } }

@@ -24,15 +24,25 @@ struct ActiveWorkoutView: View {
     var body: some View {
         List {
             Section {
-                HStack(alignment: .firstTextBaseline) {
-                    Label("In progress", systemImage: "record.circle")
-                    Spacer()
-                    Text(session.startedAt, style: .timer).monospacedDigit()
-                        .accessibilityLabel("Workout elapsed time")
-                }.font(.subheadline).foregroundStyle(.secondary)
-                Button("Workout details", systemImage: "note.text") { details = true }
-                    .frame(minHeight: 44)
-                if !session.notes.isEmpty { Text(session.notes).font(.callout) }
+                ExCard(accent: true) {
+                    HStack {
+                        ExEyebrow("Session in progress", color: .exPrimary)
+                        Spacer()
+                        Text(session.startedAt, style: .timer).font(.exMono).foregroundStyle(Color.exTextSecondary)
+                            .accessibilityLabel("Workout elapsed time")
+                    }
+                    Text(session.name).font(.exH2).foregroundStyle(Color.exTextPrimary)
+                    let sets = session.exercises.flatMap(\.sets)
+                    let completed = sets.filter(\.isCompleted).count
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(completed)").font(.exStat)
+                        Text("of \(sets.count) sets").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    }
+                    ExProgressBar(value: Double(completed), total: Double(sets.count))
+                    Button("Workout details", systemImage: "note.text") { details = true }
+                        .font(.exLabel).frame(minHeight: 44)
+                    if !session.notes.isEmpty { Text(session.notes).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             if let error {
                 Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Color.exError) }
@@ -47,7 +57,10 @@ struct ActiveWorkoutView: View {
                                            edit: { editing = SetEditorTarget(performedID: performed.id, exercise: exercise, set: set, number: index + 1) },
                                            complete: {
                                 if set.isCompleted { save { try store.reopenSet(set.id) } }
-                                else if set.isLoggable(for: exercise) { save { try store.completeSet(set.id) } }
+                                else if set.isLoggable(for: exercise) {
+                                    save { try store.completeSet(set.id) }
+                                    if error == nil { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+                                }
                                 else { editing = SetEditorTarget(performedID: performed.id, exercise: exercise, set: set, number: index + 1) }
                             })
                             .swipeActions { Button("Delete set", role: .destructive) { save { try store.removeSet(set.id) } } }
@@ -72,6 +85,7 @@ struct ActiveWorkoutView: View {
                 Button("Discard workout", role: .destructive) { discarding = true }.frame(minHeight: 44)
             }
         }
+        .exListStyle()
         .navigationTitle(session.name).navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -94,7 +108,10 @@ struct ActiveWorkoutView: View {
         }
         .sheet(isPresented: $details) { WorkoutNotesView(store: store, session: session, unit: unit) }
         .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
-            Button("Save workout") { save { try store.finishSession() } }
+            Button("Save workout") {
+                save { try store.finishSession() }
+                if error == nil { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+            }
         } message: { Text("Completed sets will be saved in history. Uncompleted sets will be removed.") }
         .confirmationDialog("Discard this workout?", isPresented: $discarding, titleVisibility: .visible) {
             Button("Discard workout", role: .destructive) { save { try store.discardSession() } }
@@ -131,7 +148,7 @@ struct TrainingSetRow: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Set \(number) · \(TrainingFormat.kind(set.kind))\(set.side.map { " · " + $0.rawValue.capitalized } ?? "")")
                         .font(.caption).foregroundStyle(.secondary)
-                    Text(TrainingFormat.set(set, unit: unit)).font(.body.weight(.medium)).monospacedDigit()
+                    Text(TrainingFormat.set(set, unit: unit)).font(.exStatSmall)
                         .foregroundStyle(.primary)
                     if let rir = set.rir {
                         Text("\(rir == 6 ? "6+" : TrainingFormat.number(rir)) RIR").font(.caption).foregroundStyle(.secondary)
@@ -152,7 +169,9 @@ struct TrainingSetRow: View {
                     .frame(minHeight: 44)
             }
             .buttonStyle(.borderless)
-            .tint(set.isCompleted ? Color.exSuccess : Color.exPrimary)
+            .padding(.horizontal, 8)
+            .background(Color.exPrimary.opacity(set.isCompleted ? 0.15 : 0.06), in: RoundedRectangle(cornerRadius: ExRadius.control))
+            .tint(Color.exPrimary)
             .accessibilityLabel("\(set.isCompleted ? "Reopen" : "Complete") set \(number), \(exercise.name)")
         }.padding(.vertical, 4)
     }
@@ -200,10 +219,16 @@ private struct WorkoutNotesView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Workout name", text: $name)
-                TextField("Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $weight).keyboardType(.decimalPad)
-                Section("Notes") { TextField("Workout notes", text: $notes, axis: .vertical).lineLimit(3...8) }
+            ExScreen {
+                ExCard(accent: true) {
+                    ExEyebrow("This session", color: .exPrimary)
+                    TextField("Workout name", text: $name).font(.exH2)
+                    NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $weight)
+                }
+                ExCard {
+                    ExSectionHeading("Workout notes")
+                    TextField("Workout notes", text: $notes, axis: .vertical).lineLimit(3...8)
+                }
                 if let error { Text(error).foregroundStyle(Color.exError) }
             }
             .navigationTitle("Workout details").navigationBarTitleDisplayMode(.inline)

@@ -9,12 +9,26 @@ struct TrainingProgramsView: View {
 
     var body: some View {
         List {
-            if workspace.programs.programs.isEmpty {
-                Section {
-                    Text("Build your first program").font(.headline)
-                    Text("Arrange training days and rest days, then set targets for each exercise. You can still start a workout without a program.")
-                        .foregroundStyle(.secondary)
-                    Button("Create program") { creating = true }.accessibilityIdentifier("program.create")
+            Section {
+                if workspace.programs.programs.isEmpty {
+                    ExEmptyState(icon: "square.stack.3d.up", title: "Build your first program",
+                                 message: "Arrange your training days, choose exercises, and set the targets you want to repeat.",
+                                 action: "Create program", actionID: "program.create") { creating = true }
+                        .listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                } else {
+                    ExCard(accent: true) {
+                        ExEyebrow("Training plans", color: .exPrimary)
+                        Text(workspace.programs.active?.name ?? "Find your rhythm").font(.exH2)
+                        if let active = workspace.programs.active {
+                            let progress = ProgramSchedule.progress(of: active, in: workspace.store.history)
+                            Text("\(progress.done) of \(progress.total) sessions completed").font(.exCaption)
+                                .foregroundStyle(Color.exTextSecondary)
+                            ExProgressBar(value: Double(progress.done), total: Double(progress.total))
+                        } else {
+                            Text("Follow a saved program to see your next workout in Training.")
+                                .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                        }
+                    }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
             }
             programSection("Programs", archived: false)
@@ -25,7 +39,7 @@ struct TrainingProgramsView: View {
             }
         }
         .navigationTitle("Programs").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New program", systemImage: "plus") { creating = true }
@@ -77,7 +91,9 @@ private struct TrainingProgramDetailView: View {
         List {
             if let program = workspace.programs.program(programID) {
                 Section {
-                    Text(program.name).font(.title2.weight(.semibold))
+                    ExCard(accent: true) {
+                    ExEyebrow("Program", color: .exPrimary)
+                    Text(program.name).font(.exH1)
                     Text("\(program.cycles) cycles · \(TrainingProgramFormat.deload(program.deload))")
                     let progress = ProgramSchedule.progress(of: program, in: workspace.store.history)
                     Text("\(progress.done) of \(progress.total) workouts completed")
@@ -91,6 +107,7 @@ private struct TrainingProgramDetailView: View {
                         Text("Open Next workout in Training to review your targets and start.")
                             .foregroundStyle(.secondary)
                     }
+                    }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
                 TrainingProgramDays(program: program, library: workspace.store.library)
                 Section("Manage program") {
