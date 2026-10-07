@@ -183,7 +183,7 @@ private struct ProgramChoiceField<Content: View>: View {
                     Text(value).fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
                 }
-            }.frame(minHeight: 44).padding(.vertical, 4)
+            }.frame(minHeight: 44).padding(.vertical, 4).contentShape(Rectangle())
         }.accessibilityLabel("\(title), \(value)")
     }
 }
