@@ -1745,7 +1745,7 @@ any other.
 
 ## 2026-10-07: `main` advanced to `cc1de145`; one UI test failed on the last run
 
-Status: open (app test).
+Status: done (app test): scheduling, native permission, cancellation and relaunch remain in the regular journey. Springboard banner timing is opt-in with TEST_RUNNER_EXERLY_NOTIFICATION_DELIVERY=1. Actual local banner delivery passed in the fe86 full suite; 5b2 release verification still runs the original unconditional banner check. CI no longer depends on reaching Home within its wall-clock window.
 
 `main` CI run 37580092392 (`ad767e2a`) passed every unit test (144, 1
 skipped) and 36 of 37 UI tests. The failure was
