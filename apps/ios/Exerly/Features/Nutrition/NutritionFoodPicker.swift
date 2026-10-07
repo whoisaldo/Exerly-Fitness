@@ -20,6 +20,7 @@ struct NutritionFoodPicker: View {
     @State private var scanningLabel = false
     @State private var didLog = false
     @State private var buildingMeal = false
+    @State private var showingBarcode: Bool
     @State private var pickedCount: Int
     @State private var addedIDs: Set<String> = []
     @State private var selectionError: String?
@@ -28,7 +29,7 @@ struct NutritionFoodPicker: View {
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
          timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
-         pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
+         startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
          pickError: @escaping () -> String? = { nil }) {
         self.workspace = workspace
         self.api = api
@@ -40,6 +41,7 @@ struct NutritionFoodPicker: View {
         self.onLogged = onLogged
         self.onPick = onPick
         self.pickError = pickError
+        _showingBarcode = State(initialValue: startsWithBarcode)
         _pickedCount = State(initialValue: pickedCount)
         _addedIDs = State(initialValue: pickedFoodIDs)
         _search = StateObject(wrappedValue: NutritionSearchModel(api: api))
@@ -49,27 +51,24 @@ struct NutritionFoodPicker: View {
         NavigationStack {
             ExScreen {
                 if onPick == nil {
-                    ExCard {
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
                         ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
-                        Button { buildingMeal = true } label: { ExNavigationLabel(title: "Build a meal", icon: "fork.knife", detail: "Choose several foods, then log together") }
+                        Button { hideKeyboard(); showingBarcode = true } label: {
+                            Label("Scan barcode", systemImage: "barcode.viewfinder")
+                        }.buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.barcode")
+                        Button { buildingMeal = true } label: {
+                            Label("Build a meal with several foods", systemImage: "plus.rectangle.on.rectangle")
+                                .font(.exLabel).frame(minHeight: 44)
+                        }
                             .accessibilityIdentifier("nutrition.buildMeal")
-                        Button { creating = true } label: { ExNavigationLabel(title: "Create food", icon: "square.and.pencil") }
-                            .accessibilityIdentifier("nutrition.createFood")
-                        Button { scanningLabel = true } label: { ExNavigationLabel(title: "Scan label", icon: "text.viewfinder") }
-                            .accessibilityIdentifier("nutrition.scanLabel")
-                        NavigationLink {
-                            NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
-                                                 timeZone: timeZone, unit: unit, actions: actions) {
-                                onLogged()
-                                dismiss()
-                            }
-                        } label: { ExNavigationLabel(title: "Barcode", icon: "barcode.viewfinder") }
-                        .accessibilityIdentifier("nutrition.barcode")
                     }
                 } else {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
                         ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
                         Text("Add foods, then review portions.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        Button { hideKeyboard(); showingBarcode = true } label: {
+                            Label("Scan barcode", systemImage: "barcode.viewfinder")
+                        }.buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.plateBarcode")
                         if let selectionError { Text(selectionError).foregroundStyle(Color.exError) }
                     }
                 }
@@ -84,9 +83,11 @@ struct NutritionFoodPicker: View {
                 }
                 databaseResults
                 if query.isEmpty && favorites.isEmpty && recents.isEmpty && otherSaved.isEmpty {
-                    ExEmptyState(icon: "magnifyingglass", title: "Find your first food",
-                                 message: onPick == nil ? "Search above, scan a barcode, or enter the details from a label." : "Search above or enter the details from a label.",
-                                 action: "Enter a food label") { creating = true }
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        Text("Search by name").font(.exH2)
+                        Text("Try a food like banana or chicken, or a brand on the package. Foods you log will be ready to use again here.")
+                            .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    }
                 }
             }
             .scrollContentBackground(.hidden).background(Color.exBackground)
@@ -103,16 +104,21 @@ struct NutritionFoodPicker: View {
             .onChange(of: query) { _, _ in search.clear() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { search.close(); dismiss() } }
-                if onPick == nil {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Search") { hideKeyboard(); Task { await search.search(query) } }
-                            .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                } else {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Create food", systemImage: "square.and.pencil") { creating = true }
-                            .labelStyle(.iconOnly).accessibilityIdentifier("nutrition.createFood")
-                    }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu("More food options", systemImage: "ellipsis") {
+                        Button("Scan nutrition label", systemImage: "text.viewfinder") { scanningLabel = true }
+                            .accessibilityIdentifier("nutrition.scanLabel")
+                        Button("Enter food manually", systemImage: "square.and.pencil") { creating = true }
+                            .accessibilityIdentifier("nutrition.createFood")
+                    }.labelStyle(.iconOnly).accessibilityIdentifier("nutrition.moreFoodOptions")
+                }
+            }
+            .navigationDestination(isPresented: $showingBarcode) {
+                NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
+                                     timeZone: timeZone, unit: unit, actions: actions,
+                                     onPicked: onPick == nil ? nil : { select($0) }) {
+                    onLogged()
+                    dismiss()
                 }
             }
             .sheet(isPresented: $creating, onDismiss: {
