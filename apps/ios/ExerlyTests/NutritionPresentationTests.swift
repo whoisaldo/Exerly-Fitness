@@ -4,6 +4,22 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testEditingAnEntryKeepsItsVolumeLabelAndEstimatedDensity() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        var oil = ExerlyCore.Food(name: "Synthetic oil", source: .openFoodFacts,
+                                 per100g: NutrientAmounts([.energy: 900]))
+        oil.volume = VolumeBasis(density: 0.92, assumed: true, note: "Typical for oils")
+        let entry = try store.log(oil, grams: 13.8, on: date, meal: "Dinner")
+        let draft = NutritionEntryDraft(store: store, food: oil, date: date, meal: "Dinner", editing: entry)
+        XCTAssertEqual(draft.food.volume, oil.volume)
+        draft.amount.text = "27.6"
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.food.volume, oil.volume)
+        XCTAssertEqual(saved.food.per100g, entry.food.per100g)
+        XCTAssertEqual(saved.grams, 27.6)
+    }
+
     func testNutritionStaysInItsAccountAndClosedWorkspacesCannotWrite() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -451,6 +467,18 @@ final class NutritionSearchTests: XCTestCase {
         await model.search("new")
         let requests = await transport.requests()
         XCTAssertEqual(requests.count, 1)
+    }
+
+    func testCompactBarcodeKeepsTheCameraFormatAndDoesNotGuessManualDigits() async throws {
+        let transport = NutritionSearchTransport()
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport))
+        await model.lookup(" 04252614 ", symbology: .upcE)
+        await model.lookup("04252614", symbology: .ean8)
+        await model.lookup("04252614")
+        let paths = await transport.requests().map(\.path)
+        XCTAssertEqual(paths, ["/v1/foods/barcode/04252614?symbology=upce",
+                               "/v1/foods/barcode/04252614?symbology=ean8",
+                               "/v1/foods/barcode/04252614"])
     }
 
     func testBarcodeNotFoundIsDifferentFromUnavailableAndCanBeRetried() async throws {

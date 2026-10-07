@@ -158,9 +158,7 @@ final class NutritionEntryDraft: ObservableObject {
         self.store = store
         if let editing {
             let snapshot = editing.food
-            self.food = ExerlyCore.Food(id: snapshot.foodID, name: snapshot.name, brand: snapshot.brand,
-                                       source: snapshot.source, per100g: snapshot.per100g,
-                                       servings: editing.serving.map { [$0] } ?? [])
+            self.food = snapshot.foodForLogging(serving: editing.serving)
         } else { self.food = food }
         original = editing
         entryID = editing?.id ?? UUID()
@@ -409,5 +407,15 @@ final class NutritionCopyDraft: ObservableObject {
             self.error = "Could not copy these entries. No copies were saved. Try again."
             return nil
         }
+    }
+}
+
+extension ExerlyCore.FoodSnapshot {
+    /// Reconstruct the label for a portion editor without dropping its volume basis.
+    func foodForLogging(serving: Serving? = nil) -> ExerlyCore.Food {
+        var food = ExerlyCore.Food(id: foodID, name: name, brand: brand, source: source,
+                                  per100g: per100g, servings: serving.map { [$0] } ?? [])
+        food.volume = volume
+        return food
     }
 }

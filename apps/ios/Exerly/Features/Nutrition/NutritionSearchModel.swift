@@ -25,10 +25,10 @@ final class NutritionSearchModel: ObservableObject {
         await load(.search(query))
     }
 
-    func lookup(_ text: String) async {
+    func lookup(_ text: String, symbology: AccountAPI.BarcodeSymbology? = nil) async {
         let digits = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !digits.isEmpty else { clear(); return }
-        await load(.barcode(digits))
+        await load(.barcode(digits), symbology: symbology)
     }
 
     func clear() {
@@ -44,7 +44,7 @@ final class NutritionSearchModel: ObservableObject {
         clear()
     }
 
-    private func load(_ request: Request) async {
+    private func load(_ request: Request, symbology: AccountAPI.BarcodeSymbology? = nil) async {
         guard !closed else { return }
         generation += 1
         let current = generation
@@ -57,7 +57,7 @@ final class NutritionSearchModel: ObservableObject {
             let found: DatabaseFoods?
             switch request {
             case .search(let query): found = try await api.searchFoods(query)
-            case .barcode(let digits): found = try await api.food(barcode: digits)
+            case .barcode(let digits): found = try await api.food(barcode: digits, symbology: symbology)
             }
             guard !closed, generation == current, !Task.isCancelled else { return }
             result = found
