@@ -90,9 +90,21 @@ T3 Code thread and its own git worktree, which is that thread's working director
   3. Run `git -C ~/Desktop/Exerly-Fitness merge --ff-only <your-branch>`, then push the
      integration branch.
   4. If the fast-forward fails because the other agent landed first, rebase again.
-- Land small pieces, at least daily.
-- At the end of each milestone, the logic agent merges the integration branch into main
-  once the suite and the iOS build are green.
+- **Land small pieces, often.** No branch holds more than about 4 hours of finished,
+  passing work. Land it in pieces rather than one large batch.
+- **Don't freeze integration for long runs.** If a release needs a long test run, cut it
+  from a fixed commit or tag in a release worktree and let integration keep moving.
+  Holding the other agent's landing for hours is a bug.
+- **`main` stays current.** At every milestone end, and at least once a day, the logic
+  agent merges the integration branch into `main` once the suite and the iOS build are
+  green, pushes it, and checks CI on `main`.
+- **Clean up.**
+  - Delete branches whose work has fully landed (check with `git cherry`).
+  - Remove worktrees you no longer need. Keep your primary worktree plus at most one
+    release worktree.
+  - Never delete the other agent's branches.
+- **Merge status in every ledger.** A small table: each of your branches, its unlanded
+  commits, and when it last landed. Keep it current.
 
 **Review each other.**
 
@@ -131,6 +143,42 @@ M1 now belongs to the logic agent, which should keep that work where it holds up
   4. Build the training logging flow on a stub of ExerlyCore, switching to the real one
      as it lands.
   5. Upload a TestFlight build to Ali at every milestone.
+
+## Design quality (Ali's bar)
+
+On 2026-10-06, after a full day of work, Ali judged the UI not acceptable. Visual quality
+is now a release gate, equal to the tests.
+
+- **The bar:**
+  - Exerly should look and feel like a top-tier App Store app, at the level of MacroFactor,
+    Apple Fitness and Things 3.
+  - A screen that's a plain stock form or list, with no hierarchy, fails, however well
+    tested it is.
+- **Identity.**
+  - Exerly's original purple and pink on dark surfaces, and its original pulse logo.
+  - Never change the theme, palette or logo without Ali asking for it.
+- **One design system in code,** used by every screen:
+  - type scale, spacing scale, corner radii, surfaces and elevation, colour tokens, and
+    number styles. Rounded, proportional numbers by default; monospaced only where digits
+    must line up, such as timers.
+  - Shared components: cards, progress rings and bars, chips, steppers, segmented
+    controls, a numeric keypad, empty states.
+- **Every primary screen has a clear hierarchy.** One summary at the top (the diary opens
+  with today's calories and macros against targets, the logger with today's session),
+  then content.
+  - Empty states are designed and point to the next action. Repeated "Nothing logged" rows
+    fail.
+  - Frequent inputs use purpose-built controls, not stock pickers: meal chips, quantity
+    steppers with presets, set entry with prefilled values and one tap to complete.
+  - Haptics on completion; subtle, purposeful motion; nothing decorative.
+- **Review at every milestone, before uploading:**
+  - Capture each primary screen at the default text size in light and dark, as well as
+    the accessibility sizes.
+  - Compare them side by side with the reference apps' public App Store screenshots.
+  - Write a short critique in the ledger: what's worse than the reference and why. Fix it
+    before uploading.
+  - The logic agent also reviews those captures and adds a short critique to `to-app.md`.
+- **When Ali says a screen is bad, it becomes the top priority.**
 
 ## Product principles: agentic-first, done right
 
