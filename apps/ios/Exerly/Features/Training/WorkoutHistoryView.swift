@@ -65,7 +65,7 @@ struct WorkoutDetailView: View {
                         Text(session.timeZoneID).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         let summary = store.summary(of: session)
                         LabeledContent("Working sets", value: String(summary.workingSets))
-                        LabeledContent("Volume", value: "\(TrainingFormat.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb")·reps")
+                        LabeledContent("Volume", value: "\(summary.tonnage.total(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unit == .kilograms ? "kg" : "lb")·reps")
                         if !summary.tonnage.isComplete {
                             Text("Volume is incomplete because bodyweight was not recorded.")
                                 .font(.footnote).foregroundStyle(.secondary)

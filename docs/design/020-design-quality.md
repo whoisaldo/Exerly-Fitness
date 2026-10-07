@@ -129,3 +129,29 @@ now requests only the two displayed read types, scopes its preference by
 account/environment, and leaves denied or missing reads unavailable. It never
 infers read authorization from completion of Apple's permission sheet. Native
 physical Health authorization remains a separate verification requirement.
+
+## Final comparison review, 2026-10-07 04:29 EDT
+
+Eight before/after/reference sheets are in `artifacts/design/contact-review/final-*`.
+Reviewed diary, training, saved library and Progress in both default themes.
+The MacroFactor comparison now uses its actual logger screenshot, not the cover
+image; Workouts uses its schedule screenshot. Things supplies the dense-list
+reference and Fitness the summary reference. The original large-light before
+Diary has a system password prompt and is retained with that limitation; its
+small-phone before capture is the unobscured baseline.
+
+The old diary put date, explanation and logging status ahead of food. The new
+summary keeps target, remaining Calories and macro bars together, with meals
+immediately below. The library adds an explicit recently logged action while
+removing the repeated introductory paragraph. Progress no longer presents a
+single weigh-in as an empty chart surrounded by four equally weighted metrics.
+Training makes the next day and its action distinct from history and navigation.
+
+One remaining rough edge was a three-decimal total volume in Last session,
+4188.783 lb·reps. Display whole grouped totals in that card and history detail;
+stored sets keep their precision. Singular working set is corrected too.
+Health now puts its read switch before the explanation, including largest type.
+The native permission sheet exposes exactly two read types and no writes; its
+relaunch flow passes. Full iOS 26 light accessibility audit passes, 62.570s.
+Largest-type program builder completes offline/relaunch/advance in 596.150s.
+Photo import, comparison, detail and relaunch pass again at largest text.

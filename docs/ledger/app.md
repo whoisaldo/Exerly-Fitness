@@ -2,7 +2,7 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 04:14 EDT.
+milestone. Current date 2026-10-07, updated 04:29 EDT.
 
 ## Merge status
 
@@ -10,14 +10,36 @@ Integration is `87abfb67`, merged and pushed at 04:11 EDT after the complete
 native suite, Core 295, API 250 and device build passed. Primary plus one release
 worktree. No integration hold.
 
-| App branch                         | Unlanded work                                                                                                       | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                                            | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                                                            | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                                                            | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                                       | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | One Health commit cb6c9c92 plus final permission/capture checks; combined sync regressions preserved in named stash | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
-| `release/app-design`               | None, fixed 87abfb67 has landed                                                                                     | 47 UI methods accounted for, 38 active passes and nine opt-in skips; 162 active hosted pass                     |
+| App branch                         | Unlanded work                                                                                                      | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                                           | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                                                           | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                                                           | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                                      | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | Three Health/evidence commits through 4186a492; final volume formatting under review; combined sync in named stash | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
+| `release/app-design`               | Fixed 4186a492, Health delta beyond 87abfb67                                                                       | Previous 87 passed; complete 48-method Health suite now running in three groups                                 |
+
+## Final Health candidate and comparison, 2026-10-07 04:29 EDT
+
+Primary/release fix 4186a492 for the Health delta. Internal archive2610070818
+and IPA pass signed release checks, but are not uploaded. Complete 48-method
+suite runs as health-complete-{1,2,3}; 165 active hosted plus the real Health
+permission journey already pass. Groups 2/3 continue. Integration remains87.
+Native Health permission/relaunch passed separately44.522s, with two read types
+and no write types. iOS26 light full accessibility audit passes62.570s; large
+light/dark AX and default captures pass. Small AX photo import passes again.
+The repaired largest-type program builder passes596.150s, not the earlier red
+bundle. Its Target3RIR query is disambiguated and Start planned is scrolled back
+into view. Source/captures are retained in program-ax-repaired.
+
+Reviewed eight final before/after/reference sheets. One remaining display defect,
+4188.783lb·reps in the last-workout summary, is corrected to a whole grouped
+total, with no stored-data rounding. Singular working set is corrected too.
+These two formatting lines are outside4186 and need the final release to include
+them. Do not upload0818 while this newer design correction is outstanding.
+Logic has resumed and is implementing the stale-sync fix and requested food-unit
+helpers. Wait for the published commit, then apply the named sync stash, keeping
+one copy of the hosted regression if Logic lands it. Do not edit Core.
 
 ## U.S. and accessibility batch landed, 2026-10-07 04:14 EDT
 

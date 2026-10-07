@@ -69,7 +69,7 @@ struct TrainingView: View {
                                     WorkoutHistoryRow(session: session, library: store.library)
                                         .foregroundStyle(Color.exTextPrimary)
                                     let summary = store.summary(of: session)
-                                    Text("\(summary.workingSets) working sets · \(TrainingFormat.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb")·reps")
+                                    Text("\(summary.workingSets) \(summary.workingSets == 1 ? "working set" : "working sets") · \(summary.tonnage.total(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unit == .kilograms ? "kg" : "lb")·reps")
                                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                                     if !summary.tonnage.isComplete {
                                         Text("Volume excludes unrecorded bodyweight").font(.exSmall).foregroundStyle(Color.exTextMuted)
