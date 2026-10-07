@@ -36,10 +36,16 @@ test('search returns Foods ExerlyCore can save, with attribution, to sessions an
   const res = await api.get('/v1/foods/search?q=oat%20bar&limit=5', { token: user.token });
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.deepEqual(asked, { query: 'oat bar', limit: 5 });
+  // Up to half are generic foods, then the packaged ones.
   assert.deepEqual(
-    res.body.foods.map((food) => food.id),
-    ['off:0012345678905', 'off:5000000000017', 'off:76543210', 'off:3000000000013']
+    res.body.foods.map((food) => food.source),
+    ['usda', 'usda', 'usda', 'openFoodFacts', 'openFoodFacts']
   );
+  assert.deepEqual(
+    res.body.foods.slice(3).map((food) => food.id),
+    ['off:0012345678905', 'off:5000000000017']
+  );
+  assert.match(res.body.attribution, /^Generic foods from USDA FoodData Central.*public domain\./);
   assert.match(res.body.attribution, /Open Food Facts.*Open Database License/);
 
   const created = await api.post(
@@ -52,6 +58,27 @@ test('search returns Foods ExerlyCore can save, with attribution, to sessions an
 
   assert.equal((await api.get('/v1/foods/search?q=o', { token: user.token })).status, 400);
   assert.equal((await api.get('/v1/foods/search?q=oat')).status, 401);
+});
+
+test('generic foods are found without Open Food Facts, and credited only when shown', async () => {
+  const user = await signUp(api);
+  providers.searchOpenFoodFactsProducts = async () => [];
+  const offline = await api.get('/v1/foods/search?q=bananas', { token: user.token });
+  assert.equal(offline.status, 200);
+  assert.equal(offline.body.foods[0].name, 'Banana, raw');
+  assert.ok(offline.body.foods.length <= 10);
+  assert.ok(offline.body.foods.every((food) => food.source === 'usda'));
+  assert.doesNotMatch(offline.body.attribution, /Open Food Facts/);
+
+  providers.searchOpenFoodFactsProducts = async () => golden.products;
+  const packaged = await api.get('/v1/foods/search?q=zzqx', { token: user.token });
+  assert.ok(packaged.body.foods.every((food) => food.source === 'openFoodFacts'));
+  assert.doesNotMatch(packaged.body.attribution, /USDA/);
+
+  providers.searchOpenFoodFactsProducts = async () => [];
+  const nothing = await api.get('/v1/foods/search?q=zzqx', { token: user.token });
+  assert.deepEqual(nothing.body.foods, []);
+  assert.match(nothing.body.attribution, /Open Food Facts/);
 });
 
 test('a barcode is one Food, or a clear not found, busy or unavailable', async () => {

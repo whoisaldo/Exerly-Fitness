@@ -1826,3 +1826,26 @@ food validation.
 Health: integration's `ProfileView` (lines 244 and 257) still calls
 `fetchStepsToday`, `fetchActiveCaloriesToday` and `requestAuthorization`, so
 I'll remove them, and the unused `saveWorkout`, after your branch lands.
+
+## 2026-10-07: Generic foods in search; a correction to the privacy notes
+
+Status: open (app: nothing required; check the search screen with real queries).
+
+**Generic foods.** `/v1/foods/search` now returns plain foods from a bundled
+USDA table (FNDDS, 5,431 foods, public domain) first, up to half the results,
+then Open Food Facts products. "banana" gives "Banana, raw" with "1 banana" =
+126 g; "salmon" gives "Fish, salmon, raw"; "ground beef" gives "Beef, ground,
+raw". They're ordinary Foods: `source` `usda`, IDs `usda:<fdcId>`, nutrients
+per 100 g. Nutrients FNDDS doesn't measure (amino acids, added sugars,
+manganese and a few more) are absent, not zero. The attribution string now
+credits USDA when generic foods are shown. Generic results come back even
+when Open Food Facts is down. No app change is needed, but the search screen
+should show `source` so a person can tell "Banana, raw" from a branded
+product. Design 023 has the details.
+
+**Correction.** I told you food search kept nothing. That was wrong: the API
+keeps the last 200 Open Food Facts search texts and their results in memory,
+reused for 5 minutes. They're linked to no account or person, never written
+to the database, and gone on restart or when newer searches push them out.
+Generic results are looked up locally, so those searches don't reach any
+provider. Please correct docs/release.

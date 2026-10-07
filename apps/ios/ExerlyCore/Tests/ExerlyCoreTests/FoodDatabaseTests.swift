@@ -15,6 +15,28 @@ import Testing
         /// The server's mapping targets, as [name, factor from grams].
         var nutrients: [[JSONValue]]
         var foods: [Food?]
+        var generic: Generic
+    }
+
+    /// Generic foods from the server's bundled USDA table, and its units.
+    struct Generic: Decodable {
+        var units: [String: String]
+        var foods: [Food]
+    }
+
+    @Test func bundledUSDAFoodsDecodeInExerlyCoreUnitsWithTheirPortions() throws {
+        let generic = try ExerlyJSON.decoder.decode(Golden.self, from: Data(contentsOf: Self.url)).generic
+        for (name, unit) in generic.units {
+            let nutrient = try #require(Nutrient(rawValue: name), "\(name) isn't a nutrient the phone knows")
+            #expect(nutrient.unit.rawValue == unit, "\(name) is in \(nutrient.unit.rawValue)")
+        }
+        #expect(generic.foods.map(\.name) == ["Banana, raw", "Fish, salmon, raw", "Peanut butter"])
+        #expect(generic.foods.allSatisfy { $0.source == .usda && $0.id.hasPrefix("usda:") && $0.problems.isEmpty })
+        let banana = generic.foods[0]
+        #expect(banana.per100g[.energy] == 97 && banana.per100g[.leucine] == nil)
+        let one = try #require(banana.servings.first { $0.name == "1 banana" })
+        #expect(one.grams == 126)
+        #expect(try NutritionStore.preview(banana, serving: one).nutrients.energy == 97 * 1.26)
     }
 
     @Test func everyMappedFoodDecodesWithItsNutrientsInExerlyCoreUnits() throws {

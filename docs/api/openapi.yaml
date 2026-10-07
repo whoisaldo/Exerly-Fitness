@@ -564,12 +564,15 @@ paths:
     get:
       operationId: searchFoods
       tags: [Foods]
-      summary: Foods from Open Food Facts, as ExerlyCore Foods
+      summary: Generic and packaged foods, as ExerlyCore Foods
       description: |
-        Each result has the `saved_food` document shape, with nutrients per
-        100 g in ExerlyCore's units, so it can be saved or logged as it is.
-        Show the attribution with the results. Search runs on submit, not as
-        you type; the database's shared budget is small.
+        Generic foods from the bundled USDA FNDDS table come first, up to
+        half the results (`source` `usda`, IDs `usda:<fdcId>`), then
+        packaged foods from Open Food Facts. Each result has the `saved_food`
+        document shape, with nutrients per 100 g in ExerlyCore's units, so it
+        can be saved or logged as it is. Show the attribution with the
+        results. Search runs on submit, not as you type; Open Food Facts'
+        shared budget is small. See docs/design/023-generic-foods.md.
       parameters:
         - name: q
           in: query
@@ -580,7 +583,7 @@ paths:
           schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
       responses:
         '200':
-          description: Matching foods; empty when the database is busy.
+          description: Matching foods. Without packaged foods when Open Food Facts is busy.
           content:
             application/json:
               schema:

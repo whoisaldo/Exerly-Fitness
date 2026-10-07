@@ -359,5 +359,240 @@
         "note": "Typical for oils"
       }
     }
-  ]
+  ],
+  "generic": {
+    "units": {
+      "energy": "kcal",
+      "protein": "g",
+      "carbohydrate": "g",
+      "fat": "g",
+      "fiber": "g",
+      "sugars": "g",
+      "saturatedFat": "g",
+      "monounsaturatedFat": "g",
+      "polyunsaturatedFat": "g",
+      "omega3": "g",
+      "omega3ALA": "g",
+      "omega3EPA": "g",
+      "omega3DHA": "g",
+      "omega6": "g",
+      "cholesterol": "mg",
+      "sodium": "mg",
+      "potassium": "mg",
+      "calcium": "mg",
+      "iron": "mg",
+      "magnesium": "mg",
+      "phosphorus": "mg",
+      "zinc": "mg",
+      "copper": "mg",
+      "selenium": "mcg",
+      "vitaminA": "mcg",
+      "vitaminC": "mg",
+      "vitaminD": "mcg",
+      "vitaminE": "mg",
+      "vitaminK": "mcg",
+      "thiamin": "mg",
+      "riboflavin": "mg",
+      "niacin": "mg",
+      "vitaminB6": "mg",
+      "vitaminB12": "mcg",
+      "folate": "mcg",
+      "choline": "mg",
+      "alcohol": "g",
+      "caffeine": "mg",
+      "water": "g"
+    },
+    "foods": [
+      {
+        "id": "usda:2709224",
+        "name": "Banana, raw",
+        "source": "usda",
+        "per100g": {
+          "energy": 97,
+          "protein": 0.74,
+          "carbohydrate": 22.7,
+          "fat": 0.28,
+          "fiber": 1.7,
+          "sugars": 15.8,
+          "saturatedFat": 0.112,
+          "monounsaturatedFat": 0.032,
+          "polyunsaturatedFat": 0.073,
+          "omega3": 0.027,
+          "omega3ALA": 0.027,
+          "omega3EPA": 0,
+          "omega3DHA": 0,
+          "omega6": 0.046,
+          "cholesterol": 0,
+          "sodium": 0,
+          "potassium": 326,
+          "calcium": 5,
+          "iron": 0,
+          "magnesium": 28,
+          "phosphorus": 22,
+          "zinc": 0.16,
+          "copper": 0.101,
+          "selenium": 0,
+          "vitaminA": 1,
+          "vitaminC": 12,
+          "vitaminD": 0,
+          "vitaminE": 0.1,
+          "vitaminK": 0.1,
+          "thiamin": 0.054,
+          "riboflavin": 0,
+          "niacin": 0.653,
+          "vitaminB6": 0.212,
+          "vitaminB12": 0,
+          "folate": 15,
+          "choline": 9.8,
+          "alcohol": 0,
+          "caffeine": 0,
+          "water": 75.6
+        },
+        "servings": [
+          {
+            "name": "1 banana",
+            "grams": 126
+          },
+          {
+            "name": "1 slice",
+            "grams": 6
+          },
+          {
+            "name": "1 cup",
+            "grams": 150
+          },
+          {
+            "name": "1 cup, mashed",
+            "grams": 225
+          },
+          {
+            "name": "1 linear inch",
+            "grams": 15
+          }
+        ],
+        "favorite": false,
+        "createdAt": "2026-10-06T12:00:00.000Z"
+      },
+      {
+        "id": "usda:2706284",
+        "name": "Fish, salmon, raw",
+        "source": "usda",
+        "per100g": {
+          "energy": 188,
+          "protein": 20.4,
+          "carbohydrate": 0,
+          "fat": 11.2,
+          "fiber": 0,
+          "sugars": 0,
+          "saturatedFat": 2.49,
+          "monounsaturatedFat": 3.16,
+          "polyunsaturatedFat": 3.12,
+          "omega3": 2.046,
+          "omega3ALA": 0.137,
+          "omega3EPA": 0.692,
+          "omega3DHA": 0.911,
+          "omega6": 0.768,
+          "cholesterol": 53,
+          "sodium": 63,
+          "potassium": 364,
+          "calcium": 8,
+          "iron": 0.35,
+          "magnesium": 27,
+          "phosphorus": 245,
+          "zinc": 0.37,
+          "copper": 0.05,
+          "selenium": 25.8,
+          "vitaminA": 52,
+          "vitaminC": 2.9,
+          "vitaminD": 11,
+          "vitaminE": 2.76,
+          "vitaminK": 0.5,
+          "thiamin": 0.175,
+          "riboflavin": 0.143,
+          "niacin": 8.5,
+          "vitaminB6": 0.63,
+          "vitaminB12": 3.46,
+          "folate": 20,
+          "choline": 82.5,
+          "alcohol": 0,
+          "caffeine": 0,
+          "water": 67.6
+        },
+        "servings": [
+          {
+            "name": "1 cup",
+            "grams": 135
+          }
+        ],
+        "favorite": false,
+        "createdAt": "2026-10-06T12:00:00.000Z"
+      },
+      {
+        "id": "usda:2707537",
+        "name": "Peanut butter",
+        "source": "usda",
+        "per100g": {
+          "energy": 598,
+          "protein": 22.2,
+          "carbohydrate": 22.3,
+          "fat": 51.4,
+          "fiber": 5,
+          "sugars": 10.5,
+          "saturatedFat": 10.3,
+          "monounsaturatedFat": 25.9,
+          "polyunsaturatedFat": 12.5,
+          "omega3": 0.028,
+          "omega3ALA": 0.028,
+          "omega3EPA": 0,
+          "omega3DHA": 0,
+          "omega6": 12.318,
+          "cholesterol": 0,
+          "sodium": 426,
+          "potassium": 558,
+          "calcium": 49,
+          "iron": 1.74,
+          "magnesium": 168,
+          "phosphorus": 335,
+          "zinc": 2.51,
+          "copper": 0.422,
+          "selenium": 4.1,
+          "vitaminA": 0,
+          "vitaminC": 0,
+          "vitaminD": 0,
+          "vitaminE": 9.1,
+          "vitaminK": 0.3,
+          "thiamin": 0.15,
+          "riboflavin": 0.192,
+          "niacin": 13.1,
+          "vitaminB6": 0.441,
+          "vitaminB12": 0,
+          "folate": 87,
+          "choline": 63,
+          "alcohol": 0,
+          "caffeine": 0,
+          "water": 1.23
+        },
+        "servings": [
+          {
+            "name": "1 tablespoon",
+            "grams": 16
+          },
+          {
+            "name": "1 single serving",
+            "grams": 45
+          },
+          {
+            "name": "Guideline amount per slice of bread/roll",
+            "grams": 16
+          },
+          {
+            "name": "Guideline amount per sandwich",
+            "grams": 32
+          }
+        ],
+        "favorite": false,
+        "createdAt": "2026-10-06T12:00:00.000Z"
+      }
+    ]
+  }
 }

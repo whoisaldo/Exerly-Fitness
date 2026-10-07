@@ -31,3 +31,5 @@ docs/production-evidence/**/*.json
 
 # Ali's prose; formatters must not rewrite it
 docs/AGENT_BRIEF.md
+# Built from USDA FNDDS by scripts/build-generic-foods.js.
+apps/api/lib/genericFoods.json

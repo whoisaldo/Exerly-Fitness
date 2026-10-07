@@ -1,5 +1,6 @@
 // Food search and barcode lookup for ExerlyCore. Results are Foods in the
-// `saved_food` document shape, ready to save or log, from Open Food Facts.
+// `saved_food` document shape, ready to save or log: generic foods from the
+// bundled USDA table first, then packaged foods from Open Food Facts.
 // Personal tokens can use these too: searching reads no account data.
 
 const express = require('express');
@@ -9,6 +10,7 @@ const v = require('../lib/validate');
 const providers = require('../lib/foodProviders');
 const { normalizeBarcode } = require('../lib/barcodes');
 const coreFoods = require('../lib/coreFoods');
+const genericFoods = require('../lib/genericFoods');
 
 const router = express.Router();
 router.use(authenticate);
@@ -23,10 +25,19 @@ router.get(
       const query = v.str(req.query.q, 'q', { max: 100 });
       if (query.length < 2) throw badRequest('q needs at least two characters');
       const limit = v.int(req.query.limit ?? 20, 'limit', { min: 1, max: 50 });
+      // Up to half generic foods, so packaged ones always have room.
+      const generic = genericFoods.search(query, Math.ceil(limit / 2));
       const products = await providers.searchOpenFoodFactsProducts(query, limit);
+      const packaged = products
+        .map((product) => coreFoods.fromOpenFoodFacts(product))
+        .filter(Boolean);
+      const attribution = [
+        generic.length ? genericFoods.ATTRIBUTION : null,
+        packaged.length || !generic.length ? coreFoods.ATTRIBUTION.openFoodFacts : null,
+      ];
       res.json({
-        foods: products.map((product) => coreFoods.fromOpenFoodFacts(product)).filter(Boolean),
-        attribution: coreFoods.ATTRIBUTION.openFoodFacts,
+        foods: [...generic, ...packaged].slice(0, limit),
+        attribution: attribution.filter(Boolean).join(' '),
       });
     },
     { transactional: false }

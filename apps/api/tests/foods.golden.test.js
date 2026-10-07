@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { OFF_NUTRIENTS, fromOpenFoodFacts } = require('../lib/coreFoods');
+const genericFoods = require('../lib/genericFoods');
 
 const file = path.join(__dirname, '../../../docs/api/golden/foods-v1.json');
 const now = new Date('2026-10-06T12:00:00.000Z');
@@ -83,16 +84,24 @@ test('Open Food Facts products map to the Foods in the golden file', () => {
   // Every nutrient the mapper can write, with the factor from grams; ExerlyCore
   // checks each is one of its nutrients and the factor matches its unit.
   const nutrients = Object.values(OFF_NUTRIENTS);
+  // A few bundled USDA generic foods, with each nutrient's unit there.
+  const generic = {
+    units: genericFoods.table.units,
+    foods: ['banana', 'salmon', 'peanut butter'].map(
+      (query) => genericFoods.search(query, 1, { now })[0]
+    ),
+  };
   if (process.env.EXERLY_WRITE_FOODS_GOLDEN === '1') {
     fs.writeFileSync(
       file,
-      `${JSON.stringify({ version: 1, nutrients, products, foods }, null, 2)}\n`
+      `${JSON.stringify({ version: 1, nutrients, products, foods, generic }, null, 2)}\n`
     );
   }
   const golden = JSON.parse(fs.readFileSync(file, 'utf8'));
   assert.deepEqual(golden.products, products, 'The fixture products match the golden file');
   assert.deepEqual(golden.nutrients, nutrients);
   assert.deepEqual(foods, golden.foods);
+  assert.deepEqual(generic, golden.generic);
 });
 
 test('nutrients land in ExerlyCore units and bad values are left out', () => {

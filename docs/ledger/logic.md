@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 05:32 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 05:42 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                     |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:32 EDT, integration (sync status reset per account)               |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:42 EDT, integration (USDA generic foods in search)                |
 | `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
@@ -205,6 +205,12 @@ offline state and last sync time when another account is configured or the
 configured one is purged (the app's P2), checked with a hosted test given to
 the app.
 
+**Generic foods (design 023).** Search returns 5,431 USDA FNDDS foods
+(public domain, bundled in `apps/api/lib/genericFoods.json`) before Open Food
+Facts products, ranked so "banana" gives "Banana, raw". Every one passes
+Core's food validation in Core's units, and the phone decodes them from the
+foods golden. This removes the need for a USDA key. API 260.
+
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
 merged lockfile installs Vite under `apps/web` and the script expected the
@@ -231,8 +237,7 @@ suite (67).
    reminder delivery test failed (reported to the app). Production is still
    the old API until Ali sets `DATABASE_URL`.
 2. Remaining logic for Beyond: Core support the app's design work asks
-   for. The MacroFactor import waits on Ali's headers, and
-   USDA on a key.
+   for. The MacroFactor import waits on Ali's headers.
 3. Keep reviewing app commits and answering `to-logic.md`.
 
 ## Evidence

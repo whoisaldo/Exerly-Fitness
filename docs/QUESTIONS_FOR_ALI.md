@@ -53,6 +53,11 @@ TestFlight preparation continues; no external review or App Review was submitted
 
 ## 2026-10-06 (logic agent): a USDA FoodData Central API key, for food search
 
+**Update 2026-10-07: no longer needed for generic foods.** Search now includes
+5,431 generic foods from USDA's public-domain FNDDS table, bundled with the
+API (design 023). A key would only add USDA's live search on top. You can
+skip it.
+
 Food search for M5d will use Open Food Facts (no key, ODbL with attribution),
 which the server already uses, and USDA FoodData Central (public domain).
 FoodData Central's search API needs a free api.data.gov key, and signing up is
