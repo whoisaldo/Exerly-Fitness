@@ -494,6 +494,18 @@ See `docs/design/018-workout-imports.md` (PARITY I13, T20).
   returns how many were new. IDs come from the file, so importing it twice
   adds nothing. Use it to backfill a past workout too.
 
+### Recovery
+
+See `docs/design/020-recovery.md` (PARITY B05).
+
+- `RecoveryStatus.assess(days, on: today)` takes `RecoveryDay`s from Apple
+  Health (sleep hours, HRV in ms, resting heart rate) and compares the last 3
+  days with the person's 28-day baseline. Its `state` is `.strained` when at
+  least two signals are a standard deviation worse than usual, `.normal`, or
+  `.notEnoughData`. `readings` and `summary` say which and by how much.
+- `plan.lightened()` keeps two thirds of each exercise's working sets at one
+  more rep in reserve. Offer it on a strained day; don't apply it silently.
+
 ### Gyms
 
 See `docs/design/016-gym-profiles.md` (PARITY T05, T06).

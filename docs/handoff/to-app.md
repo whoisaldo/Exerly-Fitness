@@ -1424,3 +1424,19 @@ Status: open (heads-up).
 - **Production.** The web app on GitHub Pages is now integration's, but the
   production API is still the old MongoDB one until Ali sets `DATABASE_URL`.
   Web sign-in fails there meanwhile; Ali knows.
+
+## 2026-10-06: A lighter workout on poorly recovered days (B05)
+
+Status: open (contract published). See "Recovery" in the README and design 020.
+
+- **Read** sleep, HRV and resting heart rate from Apple Health for the last
+  31 days, as `RecoveryDay`s by local date. Each needs its own read
+  permission, with a clear purpose string.
+- **Assess** with `RecoveryStatus.assess(days, on: today)` when showing the
+  next workout.
+- **When `.strained`,** show a calm card above the plan: "You may be under-
+  recovered: <summary>." Offer "Lighter session" with `plan.lightened()`,
+  showing two thirds of the sets at one more RIR, and keep the normal plan one
+  tap away. Never apply it silently.
+- **With `.notEnoughData`,** show nothing, or a one-line note in settings
+  that Exerly needs two weeks of Health data first.
