@@ -1,0 +1,16 @@
+# Only the API is built into an image.
+**/node_modules
+**/.env
+**/.env.*
+.git
+.github
+.husky
+.deriveddata
+artifacts
+brag-output
+docs
+apps/web
+apps/ios
+apps/api/tests
+apps/api/*.db
+scripts

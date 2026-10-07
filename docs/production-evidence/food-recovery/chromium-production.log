@@ -1,0 +1,29 @@
+[WebServer] (node:14291) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:14335) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+Running 13 tests using 1 worker
+
+(node:14386) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 apps/web/e2e/offline-startup.spec.ts:15:1 › a saved home summary stays visible offline when its recent log list is empty (1.9s)
+  ✓   2 apps/web/e2e/offline-startup.spec.ts:31:1 › a cached diary and pending water addition survive an API outage and browser reload (4.4s)
+  ✓   3 apps/web/e2e/offline-startup.spec.ts:69:1 › an expired session opens its saved diary but a confirmed revocation ends offline access (3.6s)
+  ✓   4 apps/web/e2e/offline-startup.spec.ts:104:1 › another account cannot open the previous account copy when bootstrap is unavailable (5.6s)
+  ✓   5 apps/web/e2e/offline-startup.spec.ts:127:1 › a server outage uses the saved copy but a malformed successful bootstrap remains an error (5.3s)
+  ✓   6 apps/web/e2e/offline-startup.spec.ts:161:1 › unavailable browser storage leaves online reads and local pending changes usable (3.2s)
+  ✓   7 apps/web/e2e/offline-startup.spec.ts:189:1 › switching dates offline keeps each saved day separate and leaves an uncached day unknown (3.7s)
+  ✓   8 apps/web/e2e/offline-startup.spec.ts:224:1 › an unreadable saved diary stays intact and is not displayed as an empty day (3.5s)
+  ✓   9 apps/web/e2e/offline-startup.spec.ts:282:1 › returning to the app refreshes an offline copy without changing its pending addition (3.7s)
+  ✓  10 apps/web/e2e/offline-startup.spec.ts:310:1 › an accepted timezone change survives an immediate offline reload (3.1s)
+  ✓  11 apps/web/offline-e2e/shell.spec.ts:45:1 › the installed app reopens without any network and confirms its pending addition only after reconnecting (5.6s)
+  ✓  12 apps/web/offline-e2e/shell.spec.ts:118:1 › an app update waits for every old tab to close and keeps the pending operation (7.3s)
+  ✓  13 apps/web/offline-e2e/shell.spec.ts:205:1 › food drafts and queued portions survive closed tabs with both servers disconnected (5.7s)
+
+  13 passed (1.0m)

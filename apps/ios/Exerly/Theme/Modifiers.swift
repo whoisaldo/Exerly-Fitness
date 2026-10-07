@@ -30,8 +30,7 @@ struct PrimaryGlowModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .shadow(color: Color.black.opacity(0.35), radius: radius * 0.6, y: 4)
-            .shadow(color: Color.exPrimary.opacity(opacity * 0.4), radius: radius * 0.4, y: 2)
+            .shadow(color: Color.black.opacity(0.08), radius: 4, y: 2)
     }
 }
 

@@ -1,5 +1,9 @@
+import { signOutSession } from '../../lib/sessionNetwork';
+import { getToken, authenticatedFetch } from '../../lib/api';
+import { subscribeToReconnect } from '../../lib/offlineCache';
+import { useAccountCalendar } from '../../hooks/useAccountCalendar';
 // frontend/src/components/Dashboard/Dashboard.jsx
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_CONFIG from '../../config';
@@ -177,7 +181,9 @@ const entryTypeBg = {
 };
 
 export default function Dashboard() {
+  const { today, timeZone } = useAccountCalendar();
   const [stats, setStats] = useState([]);
+  const requestVersion = useRef(0);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -186,7 +192,7 @@ export default function Dashboard() {
   const [goalsProgress, setGoalsProgress] = useState(null);
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const payload = useMemo(() => (token ? decodeJWT(token) : null), [token]);
 
   const firstName = useMemo(() => {
@@ -229,18 +235,27 @@ export default function Dashboard() {
       }
 
       if (showRefreshing) setRefreshing(true);
+      const version = ++requestVersion.current;
 
       try {
         setError('');
         const headers = { Authorization: 'Bearer ' + token };
 
         const [dashRes, recentRes] = await Promise.all([
-          fetch(`${BASE_URL}/api/dashboard-data?t=${Date.now()}`, { headers, cache: 'no-store' }),
-          fetch(`${BASE_URL}/api/recent?t=${Date.now()}`, { headers, cache: 'no-store' }),
+          authenticatedFetch(`${BASE_URL}/api/dashboard-data?entry_date=${today}`, {
+            headers,
+            cache: 'no-store',
+            offlineFallback: true,
+          }),
+          authenticatedFetch(`${BASE_URL}/api/recent?entry_date=${today}`, {
+            headers,
+            cache: 'no-store',
+            offlineFallback: true,
+          }),
         ]);
 
         if (dashRes.status === 401 || recentRes.status === 401) {
-          localStorage.removeItem('token');
+          void signOutSession();
           navigate('/');
           return;
         }
@@ -290,7 +305,7 @@ export default function Dashboard() {
 
         // Process recent logs from backend
         let recentList = [];
-        if (Array.isArray(recentRaw) && recentRaw.length > 0) {
+        if (Array.isArray(recentRaw)) {
           // Process the data from /api/recent endpoint
           recentList = recentRaw
             .map((entry) => {
@@ -334,9 +349,9 @@ export default function Dashboard() {
         } else {
           // Fallback: fetch individual endpoints if /api/recent is empty
           const [actsRes, foodRes, sleepRes] = await Promise.all([
-            fetch(`${BASE_URL}/api/activities`, { headers, cache: 'no-store' }),
-            fetch(`${BASE_URL}/api/food`, { headers, cache: 'no-store' }),
-            fetch(`${BASE_URL}/api/sleep`, { headers, cache: 'no-store' }),
+            authenticatedFetch(`${BASE_URL}/api/activities`, { headers, cache: 'no-store' }),
+            authenticatedFetch(`${BASE_URL}/api/food`, { headers, cache: 'no-store' }),
+            authenticatedFetch(`${BASE_URL}/api/sleep`, { headers, cache: 'no-store' }),
           ]);
 
           const [acts, foods, sleeps] = await Promise.all([
@@ -344,8 +359,6 @@ export default function Dashboard() {
             foodRes.ok ? foodRes.json() : Promise.resolve([]),
             sleepRes.ok ? sleepRes.json() : Promise.resolve([]),
           ]);
-
-          const today = new Date().toISOString().slice(0, 10);
 
           const foodsToday = (Array.isArray(foods) ? foods : [])
             .filter((f) => f.entry_date === today)
@@ -382,6 +395,7 @@ export default function Dashboard() {
             .slice(0, 20);
         }
 
+        if (requestVersion.current !== version) return;
         setStats([
           {
             label: 'Total Workouts',
@@ -436,74 +450,30 @@ export default function Dashboard() {
 
         setRecent(recentList);
       } catch (err) {
+        if (requestVersion.current !== version) return;
         console.error('Dashboard fetch failed:', err);
         setError('Failed to load dashboard data. Please try again.');
-        setStats([
-          {
-            label: 'Total Workouts',
-            value: '0',
-            route: '/dashboard/activities',
-            icon: '💪',
-            color: 'workout',
-          },
-          {
-            label: 'Calories Burned',
-            value: '0 calories',
-            route: '/dashboard/activities',
-            icon: '🔥',
-            color: 'burned',
-          },
-          {
-            label: 'Calories Consumed',
-            value: '0 calories',
-            route: '/dashboard/food',
-            icon: '🍽️',
-            color: 'consumed',
-          },
-          {
-            label: 'Sleep (hrs)',
-            value: '0h',
-            route: '/dashboard/sleep',
-            icon: '😴',
-            color: 'sleep',
-          },
-          {
-            label: 'Goals',
-            value: 'Set & Track',
-            route: '/dashboard/goals',
-            icon: '🎯',
-            color: 'goals',
-          },
-          {
-            label: 'Maintenance',
-            value: '0 calories',
-            route: '/dashboard/profile',
-            icon: '⚖️',
-            color: 'maintenance',
-          },
-          {
-            label: 'Net vs. Maint.',
-            value: '+0 calories',
-            route: '/dashboard',
-            icon: '📊',
-            color: 'positive',
-          },
-        ]);
-        setRecent([]);
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (requestVersion.current === version) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
-    [navigate, token]
+    [navigate, token, today]
   );
 
   const fetchGoals = useCallback(async () => {
     if (!token) return;
     try {
       const [goalsRes, dashDataRes] = await Promise.all([
-        fetch(`${BASE_URL}/api/goals`, { headers: { Authorization: 'Bearer ' + token } }),
-        fetch(`${BASE_URL}/api/dashboard-data`, { headers: { Authorization: 'Bearer ' + token } }),
+        authenticatedFetch(`${BASE_URL}/api/goals`, {
+          headers: { Authorization: 'Bearer ' + token },
+        }),
+        authenticatedFetch(`${BASE_URL}/api/dashboard-data?entry_date=${today}`, {
+          headers: { Authorization: 'Bearer ' + token },
+          offlineFallback: true,
+        }),
       ]);
 
       if (goalsRes.ok) {
@@ -557,39 +527,32 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Error fetching goals:', err);
     }
-  }, [token]);
+  }, [token, today]);
 
   useEffect(() => {
+    setStats([]);
+    setRecent([]);
+    setLoading(true);
     fetchDashboard();
     fetchGoals();
+    return () => {
+      requestVersion.current += 1;
+    };
   }, [fetchDashboard, fetchGoals]);
 
-  useEffect(() => {
-    const onFocus = () => fetchDashboard();
-    const onVisibility = () => {
-      if (!document.hidden) fetchDashboard();
-    };
-
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [fetchDashboard]);
+  useEffect(() => subscribeToReconnect(() => fetchDashboard()), [fetchDashboard]);
 
   const handleResetToday = async () => {
     if (!window.confirm("Reset today's entries? This cannot be undone.")) {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return navigate('/');
 
     try {
       setRefreshing(true);
-      const res = await fetch(`${BASE_URL}/api/reset-today`, {
+      const res = await authenticatedFetch(`${BASE_URL}/api/reset-today`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       });
@@ -607,7 +570,7 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    void signOutSession();
     navigate('/');
   };
 
@@ -636,6 +599,7 @@ export default function Dashboard() {
   const burnedAnim = useCountUp(burned);
 
   const dateStr = new Date().toLocaleDateString('en-US', {
+    timeZone,
     weekday: 'long',
     month: 'long',
     day: 'numeric',

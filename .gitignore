@@ -42,9 +42,14 @@ DocumentLayout.json
 
 # Local native build outputs
 .deriveddata/
+artifacts/
 apps/ios/build/
 
 # Xcode user data
 apps/ios/**/*.xcuserstate
 apps/ios/**/xcuserdata/
 apps/ios/**/*.xcuserdatad/
+
+# Swift package build output
+apps/ios/ExerlyCore/.build/
+apps/ios/ExerlyCore/.swiftpm/

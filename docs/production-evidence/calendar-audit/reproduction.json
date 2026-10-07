@@ -1,0 +1,10 @@
+{
+  "recordedAt": "2026-09-22T17:51:42.164Z",
+  "accountTimeZone": "America/New_York",
+  "browserTimeZone": "Pacific/Kiritimati",
+  "serverDay": "2026-09-22",
+  "clientDay": "2026-09-23",
+  "waterStatus": 400,
+  "message": "Cannot log to a future date",
+  "reproduced": true
+}

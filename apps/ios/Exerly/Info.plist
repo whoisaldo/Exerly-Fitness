@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -54,7 +56,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Exerly needs photo access to save and view your progress photos.</string>
 	<key>EXERLY_API_BASE_URL</key>
-	<string>https://exerly-fitness-93dyl.ondigitalocean.app</string>
+	<string>$(EXERLY_API_BASE_URL)</string>
+	<key>EXERLY_BUILD_ENVIRONMENT</key>
+	<string>$(EXERLY_BUILD_ENVIRONMENT)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
@@ -63,6 +67,11 @@
 		<false/>
 		<key>NSExceptionDomains</key>
 		<dict>
+			<key>100.80.149.7</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
 			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>

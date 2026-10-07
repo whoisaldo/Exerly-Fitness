@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct CreateFoodView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
 
+    var initialBarcode: String = ""
+    var onCreated: ((OpenFoodItem) -> Void)? = nil
     @State private var name = ""
     @State private var brand = ""
     @State private var calories = ""
@@ -12,6 +12,8 @@ struct CreateFoodView: View {
     @State private var carbs = ""
     @State private var fat = ""
     @State private var servingSize = "100g"
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
     private var caloriesInt: Int { Int(calories) ?? 0 }
     private var proteinD: Double { Double(protein) ?? 0 }
@@ -37,12 +39,26 @@ struct CreateFoodView: View {
                 FloatingLabelTextField(label: "Brand (optional)", text: $brand)
                 FloatingLabelTextField(label: "Serving Size", text: $servingSize)
 
+                if !initialBarcode.isEmpty {
+                    LabeledContent("Barcode", value: initialBarcode).font(.callout)
+                }
                 macroInputs
                 sanityWarning
                 previewCard
 
-                ActionButton(title: "Create Food", isDisabled: !isValid) {
-                    save()
+                ActionButton(
+                    title: "Create Food",
+                    isLoading: isSaving,
+                    isDisabled: !isValid
+                ) {
+                    Task { await save() }
+                }
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.exCaption)
+                        .foregroundStyle(.exError)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding(20)
@@ -102,18 +118,28 @@ struct CreateFoodView: View {
         }
     }
 
-    private func save() {
-        let item = CachedFoodItem(
+    private func save() async {
+        isSaving = true
+        errorMessage = nil
+        var request = LibraryFoodRequest(
             name: name,
             brand: brand.isEmpty ? nil : brand,
             calories: caloriesInt,
             protein: proteinD,
             carbs: carbsD,
             fat: fatD,
-            servingSize: servingSize,
-            isCustom: true
+            fiber: nil,
+            sugar: nil,
+            servingSize: servingSize.isEmpty ? nil : servingSize
         )
-        modelContext.insert(item)
-        dismiss()
+        request.barcode = initialBarcode.isEmpty ? nil : initialBarcode
+        do {
+            let saved: LibraryFoodDTO = try await APIClient.shared.createLibraryFood(request)
+            onCreated?(saved.openFoodItem)
+            dismiss()
+        } catch {
+            isSaving = false
+            errorMessage = error.localizedDescription
+        }
     }
 }

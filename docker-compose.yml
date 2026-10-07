@@ -1,0 +1,42 @@
+# Self-hosted Exerly: PostgreSQL plus the API.
+#
+#   JWT_SECRET=$(openssl rand -hex 32) POSTGRES_PASSWORD=$(openssl rand -hex 16) docker compose up -d
+#
+# The API listens on EXERLY_API_PORT (default 8080). The database is reachable
+# only on the Compose network, so TLS to it is disabled.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: exerly
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: exerly
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U exerly -d exerly']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://exerly:${POSTGRES_PASSWORD}@db:5432/exerly
+      DATABASE_SSL: disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      NODE_ENV: production
+      PORT: '8080'
+    ports:
+      - '${EXERLY_API_PORT:-8080}:8080'
+    restart: unless-stopped
+
+volumes:
+  db-data:

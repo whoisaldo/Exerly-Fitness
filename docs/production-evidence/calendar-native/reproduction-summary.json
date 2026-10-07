@@ -1,0 +1,53 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "E88F4926-80CE-4C02-829A-B7116E6A3573",
+        "deviceName" : "Exerly QA iPhone SE",
+        "modelName" : "iPhone SE (3rd generation)",
+        "osBuildNumber" : "22G86",
+        "osVersion" : "18.6",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Exerly · Built with macOS 15.7.9",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1790102685.251,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1790102653.94,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(\"2026-09-22\")\") is not equal to (\"Optional(\"2026-09-23\")\")",
+      "targetName" : "ExerlyUITests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "ProductionUITests/testAccountCalendarTodayAgreesWithAPIWhenDeviceIsOnAnotherDay()",
+      "testIdentifierURL" : "test://com.apple.xcode/Exerly/ExerlyUITests/ProductionUITests/testAccountCalendarTodayAgreesWithAPIWhenDeviceIsOnAnotherDay",
+      "testName" : "testAccountCalendarTodayAgreesWithAPIWhenDeviceIsOnAnotherDay()"
+    }
+  ],
+  "title" : "Test - Exerly",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "100% of failures",
+      "text" : "2 runs of 1 test failed with XCTAssertEqual failed: (\"Optional(\"2026-09-22\")\") is not equal to (\"Optional(\"2026-09-23\")\")"
+    }
+  ],
+  "totalTestCount" : 1
+}

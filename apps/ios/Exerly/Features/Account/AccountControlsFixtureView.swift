@@ -1,0 +1,37 @@
+#if DEBUG
+import SwiftUI
+
+/// UI-only synthetic actions. Never compiled into a release build.
+struct AccountControlsFixtureView: View {
+    let mode: String
+    @State private var deleted = false
+    @State private var connected = false
+
+    var body: some View {
+        NavigationStack {
+            if deleted {
+                ContentUnavailableView("Account deleted", systemImage: "person.crop.circle.badge.checkmark")
+            } else {
+                AccountManagementView(accountID: "synthetic-account-controls", email: "morgan@example.test", actions: actions)
+            }
+        }
+    }
+
+    private var methods: AccountSignInMethods {
+        AccountSignInMethods(appleConnected: connected || mode == "apple-only", hasPassword: mode != "apple-only")
+    }
+
+    private var actions: AccountManagementActions {
+        AccountManagementActions(
+            signInMethods: { methods },
+            connectApple: { _ in connected = true; return methods },
+            disconnectApple: { connected = false; return methods },
+            exportAccount: { Data(#"{"account":{"name":"Morgan Example"},"workouts":[]}"#.utf8) },
+            deleteAccount: { _ in
+                if mode == "delete-error" { throw URLError(.cannotConnectToHost) }
+                deleted = true
+            }
+        )
+    }
+}
+#endif

@@ -1,78 +1,54 @@
 import SwiftUI
+import ExerlyCore
 
 enum MainTab: Int, CaseIterable {
-    case home, library, fab, progress, profile
+    case home, training, library, progress, profile
 
     var icon: String {
         switch self {
-        case .home: return "house.fill"
-        case .library: return "book.fill"
-        case .fab: return "plus"
-        case .progress: return "chart.line.uptrend.xyaxis"
-        case .profile: return "person.fill"
+        case .home: "house"
+        case .training: "dumbbell"
+        case .library: "book"
+        case .progress: "chart.line.uptrend.xyaxis"
+        case .profile: "person.crop.circle"
         }
     }
 
     var label: String {
         switch self {
-        case .home: return "Home"
-        case .library: return "Library"
-        case .fab: return ""
-        case .progress: return "Progress"
-        case .profile: return "Profile"
+        case .home: "Home"
+        case .training: "Train"
+        case .library: "Library"
+        case .progress: "Progress"
+        case .profile: "Profile"
         }
     }
 }
 
 struct MainTabView: View {
+    @EnvironmentObject private var sync: SyncEngine
+    @EnvironmentObject private var auth: AuthViewModel
     @State private var selectedTab: MainTab = .home
-    @State private var showFABMenu = false
-    @State private var showLogActivity = false
-    @State private var showLogFood = false
-    @State private var showLogSleep = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            CustomTabBar(
-                selectedTab: $selectedTab,
-                showFABMenu: $showFABMenu
-            )
-        }
-        .background(Color.exBackground)
-        .overlay { fabOverlay }
-        .sheet(isPresented: $showLogActivity) { LogActivityView() }
-        .sheet(isPresented: $showLogFood) { LogFoodView() }
-        .sheet(isPresented: $showLogSleep) { LogSleepView() }
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        switch selectedTab {
-        case .home:
-            NavigationStack { HomeView() }
-        case .library:
+        TabView(selection: $selectedTab) {
+            NavigationStack { HomeView(refreshToken: 0, initialDate: sync.today) }
+                .tabItem { Label(MainTab.home.label, systemImage: MainTab.home.icon) }.tag(MainTab.home)
+            NavigationStack {
+                if let account = auth.currentUser?.id {
+                    TrainingHostView(accountID: account,
+                                     unit: auth.currentUser?.unitSystem == "imperial" ? .pounds : .kilograms,
+                                     timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+                }
+            }
+            .tabItem { Label(MainTab.training.label, systemImage: MainTab.training.icon) }.tag(MainTab.training)
             NavigationStack { FoodLibraryView() }
-        case .fab:
-            EmptyView()
-        case .progress:
-            NavigationStack { ProgressView_() }
-        case .profile:
+                .tabItem { Label(MainTab.library.label, systemImage: MainTab.library.icon) }.tag(MainTab.library)
+            NavigationStack { ProgressView_(initialDate: sync.today) }
+                .tabItem { Label(MainTab.progress.label, systemImage: MainTab.progress.icon) }.tag(MainTab.progress)
             NavigationStack { ProfileView() }
+                .tabItem { Label(MainTab.profile.label, systemImage: MainTab.profile.icon) }.tag(MainTab.profile)
         }
-    }
-
-    @ViewBuilder
-    private var fabOverlay: some View {
-        if showFABMenu {
-            FABMenuOverlay(
-                onLogActivity: { showFABMenu = false; showLogActivity = true },
-                onLogFood: { showFABMenu = false; showLogFood = true },
-                onLogSleep: { showFABMenu = false; showLogSleep = true },
-                onDismiss: { showFABMenu = false }
-            )
-        }
+        .tint(Color.exPrimary)
     }
 }

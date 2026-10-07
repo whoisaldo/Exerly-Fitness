@@ -1,0 +1,108 @@
+# Questions for Ali
+
+These questions do not block local implementation.
+
+- Create the Neon project when ready and set the production `DATABASE_URL` in
+  DigitalOcean. The PostgreSQL change will be tested locally first. Do not post
+  credentials in this file or chat.
+- Before public release, review the privacy policy, terms and App Store legal
+  declarations. Drafts and the release checklist will be prepared here.
+- External TestFlight and App Review require your decision after the build,
+  screenshots and review notes are ready. Internal TestFlight is already authorized.
+
+The current license and repository visibility remain unchanged.
+
+## 2026-10-06 (logic agent): a Sign in with Apple key for token revocation
+
+App Store Review Guideline 5.1.1(v) requires apps with Sign in with Apple to
+revoke Apple's tokens when someone deletes their account. The API does this
+already, but only once it has a Sign in with Apple private key. The App Store
+Connect API key in `~/private_keys` is a different kind of key and can't be used.
+Until then, deleting an Apple-linked account removes all data but skips
+revocation.
+
+When you're ready:
+
+1. In Certificates, Identifiers & Profiles, under Keys, create a key with Sign in
+   with Apple enabled for `com.exerly.fitness`, on team 9X79V37Q89.
+2. In DigitalOcean, set these secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and
+   `APPLE_PRIVATE_KEY` (the `.p8` contents; `\n` escapes are fine).
+
+Don't paste the key in this file or in chat.
+
+## 2026-10-06: First App Store Connect record
+
+Open. Exerly's bundle ID com.exerly.fitness is registered with HealthKit on team
+9X79V37Q89. The existing distribution certificate was reused. Apple does not expose
+app-record creation through its REST API, and the available browser is signed out.
+Create the record at https://appstoreconnect.apple.com/apps with iOS, English US,
+name Exerly, and SKU sideband-exerly-ios. If the name is taken, use Exerly Training
+& Nutrition. Reply with the chosen name or app ID. No secrets are needed.
+
+This blocks upload only. The app agent continues signed archives, simulator checks
+and implementation. Internal TestFlight is already authorized; no extra release
+approval is requested. Apple's restriction is documented at
+https://developer.apple.com/documentation/appstoreconnectapi/apps.
+
+## 2026-10-06: App Store Connect creation resolved
+
+The app agent unlocked the authorized desktop session and created Exerly through
+Apple's website. App ID 6819776832; iOS, English (US), com.exerly.fitness, SKU
+sideband-exerly-ios. The earlier website-creation blocker is resolved. Internal
+TestFlight preparation continues; no external review or App Review was submitted.
+
+## 2026-10-06 (logic agent): a USDA FoodData Central API key, for food search
+
+Food search for M5d will use Open Food Facts (no key, ODbL with attribution),
+which the server already uses, and USDA FoodData Central (public domain).
+FoodData Central's search API needs a free api.data.gov key, and signing up is
+a new account, so it's your call. Without one, search uses Open Food Facts only:
+good for packaged foods, thinner for generic foods such as "chicken breast,
+cooked".
+
+If you want it:
+
+1. Sign up at https://fdc.nal.usda.gov/api-key-signup with an address you
+   choose. The key is free; its default limit is 1,000 requests an hour.
+2. In DigitalOcean, set the secret `USDA_FDC_API_KEY`. For staging on devbox1,
+   add a line `USDA_FDC_API_KEY=...` to `~/Services/exerly-staging/staging.env`,
+   which redeploys keep, and tell me so I can restart it.
+
+Don't paste the key in this file or in chat.
+
+## 2026-10-06 (logic agent): MacroFactor's export headers, for the import
+
+The MacroFactor import (M5e, PARITY I12) has to match MacroFactor's sheet and
+column names exactly, and its help centre doesn't list them. Tests must use
+synthetic data, so I need only the structure of a real export, never its
+values.
+
+If you're willing:
+
+1. In MacroFactor, make a granular export with every option selected.
+2. Save the file outside the repo, at `~/Private/macrofactor-export/` on
+   devbox1, and tell me.
+
+I'll read only sheet names, column headers and unit labels. From those I'll
+write a synthetic export, with made-up numbers, as the test fixture. Your file
+and its values never enter the repo, logs or chat, and you can delete it once
+the fixture exists. Until then the importer waits; nothing else is blocked.
+
+## 2026-10-06 (logic agent): merging the milestone into main
+
+The app agent asked for the milestone to be merged into `main`. `main` deploys
+production on every push, and production still runs the MongoDB API: its
+`/api/health` reports version 1.0.0 with a Mongo connection. Integration's API
+needs PostgreSQL through `DATABASE_URL`, the first question above. Merging
+first would take the live API down.
+
+When you're ready:
+
+1. Set `DATABASE_URL` (Neon) in DigitalOcean, or tell me you'd rather keep
+   `main` on the old API for now.
+2. Tell me. I'll merge with the full gates and check `/api/health` reports
+   PostgreSQL.
+
+`main` has also diverged from integration (Sideband commits with different
+SHAs), so the merge will be a reviewed merge commit, not a fast-forward.
+Integration, agent branches and staging are unaffected meanwhile.

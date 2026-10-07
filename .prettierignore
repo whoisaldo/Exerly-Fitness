@@ -8,9 +8,26 @@ apps/web/build
 **/*.tsbuildinfo
 .deriveddata
 coverage
+artifacts
 
 # Native iOS sources are handled by SwiftLint, not Prettier
 apps/ios
 
 # Generated / data
 *.db
+# Written by ExerlyCore GoldenTests; both test suites assert it.
+docs/api/golden
+# A byte-for-byte copy of ExerlyCore's library; a test keeps them identical.
+apps/api/lib/training/exercises.json
+
+# Hyperframes generates these compositions and validates them with its own checker.
+brag-output/composition
+brag-output/portrait
+brag-output/*.json
+brag-output/verification/*.json
+
+# Preserve exported native/browser verification reports.
+docs/production-evidence/**/*.json
+
+# Ali's prose; formatters must not rewrite it
+docs/AGENT_BRIEF.md

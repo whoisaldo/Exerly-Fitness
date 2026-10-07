@@ -9,7 +9,7 @@ struct ActionButton: View {
     var variant: ActionButtonVariant = .primary
     var isLoading: Bool = false
     var isDisabled: Bool = false
-    var icon: String? = nil
+    var icon: String?
     let action: () -> Void
 
     var body: some View {
@@ -23,13 +23,18 @@ struct ActionButton: View {
                     if let icon {
                         Image(systemName: icon)
                             .font(.system(size: 16, weight: .semibold))
+                            .accessibilityHidden(true)
                     }
                     Text(title)
                         .font(.exBodyMedium)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(minHeight: 52)
             .foregroundStyle(textColor)
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -37,6 +42,8 @@ struct ActionButton: View {
         }
         .disabled(isDisabled || isLoading)
         .opacity(isDisabled ? 0.5 : 1)
+        .accessibilityLabel(title)
+        .accessibilityValue(isLoading ? "In progress" : "")
         .modifier(GlowModifier(variant: variant))
     }
 

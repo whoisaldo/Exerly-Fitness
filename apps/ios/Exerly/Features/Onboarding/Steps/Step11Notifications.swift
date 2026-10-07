@@ -4,7 +4,6 @@ struct Step11Notifications: View {
     @ObservedObject var state: OnboardingState
     let onComplete: () -> Void
 
-    @State private var isCompleting = false
 
     var body: some View {
         ZStack {
@@ -14,7 +13,7 @@ struct Step11Notifications: View {
                         Text("Stay on Track")
                             .font(.exH2)
                             .foregroundStyle(.exTextPrimary)
-                        Text("Get reminders for your goals")
+                        Text("Choose reminder preferences. Enable notifications later in Settings.")
                             .font(.exBody)
                             .foregroundStyle(.exTextSecondary)
                     }
@@ -25,15 +24,9 @@ struct Step11Notifications: View {
 
                     ActionButton(
                         title: "Finish Setup",
-                        isLoading: isCompleting
+                        isLoading: state.isSubmitting
                     ) {
-                        isCompleting = true
-                        withAnimation(.spring(response: 0.4)) {
-                            state.showConfetti = true
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            onComplete()
-                        }
+                        onComplete()
                     }
                 }
                 .padding(24)
@@ -87,7 +80,7 @@ struct Step11Notifications: View {
 
                 Spacer()
 
-                Toggle("", isOn: isOn)
+                Toggle(title, isOn: isOn)
                     .tint(.exPrimary)
                     .labelsHidden()
             }

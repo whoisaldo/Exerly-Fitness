@@ -1,0 +1,17 @@
+
+/Users/aldo/Desktop/Exerly-Fitness/apps/web/src/components/Admin/Admin.jsx
+   37:10  warning  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                      @typescript-eslint/no-unused-vars
+   37:19  warning  'setLoading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                   @typescript-eslint/no-unused-vars
+   55:14  warning  'error' is defined but never used                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   62:6   warning  React Hook useCallback has an unnecessary dependency: 'BASE_URL'. Either exclude it or remove the dependency array. Outer scope values like 'BASE_URL' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+  120:6   warning  React Hook useEffect has missing dependencies: 'fetchApiHealth' and 'selectedEmail'. Either include them or remove the dependency array                                                                                                 react-hooks/exhaustive-deps
+
+/Users/aldo/Desktop/Exerly-Fitness/apps/web/src/components/Dashboard/Dashboard.jsx
+   12:3   warning  'PageHeader' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   59:10  warning  'AnimatedNumber' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  189:10  warning  'goals' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  872:72  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                   react/no-unescaped-entities
+  999:69  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                   react/no-unescaped-entities
+
+✖ 10 problems (0 errors, 10 warnings)
+

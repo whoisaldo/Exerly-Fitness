@@ -7,6 +7,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var shakeAttempts: CGFloat = 0
+    @AccessibilityFocusState private var errorFocused: Bool
 
     var body: some View {
         ZStack {
@@ -18,7 +19,12 @@ struct LoginView: View {
                     inputFields
                     errorMessage
                     loginButton
-                    socialPlaceholders
+                    if Bundle.main.object(forInfoDictionaryKey: "EXERLY_BUILD_ENVIRONMENT") as? String == "staging" {
+                        Text("Internal testing. Enable Tailscale to connect.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    appleSignIn
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 60)
@@ -32,7 +38,7 @@ struct LoginView: View {
             Text("Welcome back")
                 .font(.exH1)
                 .foregroundStyle(.exTextPrimary)
-            Text("Log in to continue your journey")
+            Text("Your training and nutrition, together.")
                 .font(.exBody)
                 .foregroundStyle(.exTextSecondary)
         }
@@ -54,6 +60,7 @@ struct LoginView: View {
                 .font(.exCaption)
                 .foregroundStyle(.exError)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityFocused($errorFocused)
         }
     }
 
@@ -66,6 +73,7 @@ struct LoginView: View {
             Task {
                 await authVM.login(email: email, password: password)
                 if authVM.error != nil {
+                    errorFocused = true
                     withAnimation(.spring(response: 0.3)) {
                         shakeAttempts += 1
                     }
@@ -74,15 +82,14 @@ struct LoginView: View {
         }
     }
 
-    private var socialPlaceholders: some View {
+    private var appleSignIn: some View {
         VStack(spacing: 12) {
             divider
-            ActionButton(title: "Continue with Apple", variant: .secondary, icon: "apple.logo") {}
-                .disabled(true)
-                .opacity(0.5)
-            ActionButton(title: "Continue with Google", variant: .secondary, icon: "globe") {}
-                .disabled(true)
-                .opacity(0.5)
+            AppleAuthorizationButton { payload in
+                await authVM.signInWithApple(identityToken: payload.identityToken, rawNonce: payload.rawNonce, name: payload.name)
+                if authVM.error != nil { errorFocused = true }
+            }
+            .disabled(authVM.isSubmitting)
         }
     }
 
@@ -100,8 +107,10 @@ struct LoginView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.exTextPrimary)
                 .frame(width: 44, height: 44)
+                .background(Color.exBackground, in: Circle())
         }
         .padding(.leading, 12)
         .padding(.top, 8)
+        .accessibilityLabel("Back")
     }
 }

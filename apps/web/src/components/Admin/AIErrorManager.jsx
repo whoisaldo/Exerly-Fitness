@@ -1,3 +1,4 @@
+import { getToken, authenticatedFetch } from '../../lib/api';
 import React, { useState, useEffect } from 'react';
 import API_CONFIG from '../../config';
 import {
@@ -41,14 +42,14 @@ const AIErrorManager = () => {
 
   const fetchErrors = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const queryParams = new URLSearchParams({
         page: pagination.page,
         limit: pagination.limit,
         ...filters,
       });
 
-      const response = await fetch(`${BASE_URL}/api/admin/ai-errors?${queryParams}`, {
+      const response = await authenticatedFetch(`${BASE_URL}/api/admin/ai-errors?${queryParams}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -69,8 +70,8 @@ const AIErrorManager = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/stats`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/admin/ai-errors/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -85,15 +86,18 @@ const AIErrorManager = () => {
 
   const updateErrorStatus = async (errorId, status, adminNotes = '') => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/${errorId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status, adminNotes }),
-      });
+      const token = getToken();
+      const response = await authenticatedFetch(
+        `${BASE_URL}/api/admin/ai-errors/${errorId}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status, adminNotes }),
+        }
+      );
 
       if (response.ok) {
         fetchErrors();
@@ -108,8 +112,8 @@ const AIErrorManager = () => {
     if (!window.confirm('Are you sure you want to delete this error?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/${errorId}`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/admin/ai-errors/${errorId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -130,8 +134,8 @@ const AIErrorManager = () => {
       return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE_URL}/api/admin/ai-errors/cleanup`, {
+      const token = getToken();
+      const response = await authenticatedFetch(`${BASE_URL}/api/admin/ai-errors/cleanup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,363 @@
+{
+  "version": 1,
+  "nutrients": [
+    [
+      "energy",
+      1
+    ],
+    [
+      "protein",
+      1
+    ],
+    [
+      "carbohydrate",
+      1
+    ],
+    [
+      "fat",
+      1
+    ],
+    [
+      "fiber",
+      1
+    ],
+    [
+      "sugars",
+      1
+    ],
+    [
+      "addedSugars",
+      1
+    ],
+    [
+      "starch",
+      1
+    ],
+    [
+      "saturatedFat",
+      1
+    ],
+    [
+      "monounsaturatedFat",
+      1
+    ],
+    [
+      "polyunsaturatedFat",
+      1
+    ],
+    [
+      "transFat",
+      1
+    ],
+    [
+      "omega3",
+      1
+    ],
+    [
+      "omega3ALA",
+      1
+    ],
+    [
+      "omega3EPA",
+      1
+    ],
+    [
+      "omega3DHA",
+      1
+    ],
+    [
+      "omega6",
+      1
+    ],
+    [
+      "cholesterol",
+      1000
+    ],
+    [
+      "sodium",
+      1000
+    ],
+    [
+      "potassium",
+      1000
+    ],
+    [
+      "calcium",
+      1000
+    ],
+    [
+      "iron",
+      1000
+    ],
+    [
+      "magnesium",
+      1000
+    ],
+    [
+      "phosphorus",
+      1000
+    ],
+    [
+      "zinc",
+      1000
+    ],
+    [
+      "copper",
+      1000
+    ],
+    [
+      "manganese",
+      1000
+    ],
+    [
+      "selenium",
+      1000000
+    ],
+    [
+      "vitaminA",
+      1000000
+    ],
+    [
+      "vitaminC",
+      1000
+    ],
+    [
+      "vitaminD",
+      1000000
+    ],
+    [
+      "vitaminE",
+      1000
+    ],
+    [
+      "vitaminK",
+      1000000
+    ],
+    [
+      "thiamin",
+      1000
+    ],
+    [
+      "riboflavin",
+      1000
+    ],
+    [
+      "niacin",
+      1000
+    ],
+    [
+      "pantothenicAcid",
+      1000
+    ],
+    [
+      "vitaminB6",
+      1000
+    ],
+    [
+      "vitaminB12",
+      1000000
+    ],
+    [
+      "folate",
+      1000000
+    ],
+    [
+      "choline",
+      1000
+    ],
+    [
+      "caffeine",
+      1000
+    ]
+  ],
+  "products": [
+    {
+      "code": "0012345678905",
+      "product_name": "Synthetic oat bar",
+      "brands": "Example Mills, Other Brand",
+      "serving_size": "1 bar (40 g)",
+      "serving_quantity": 40,
+      "serving_quantity_unit": "g",
+      "nutriments": {
+        "energy-kcal_100g": 412,
+        "proteins_100g": 9.5,
+        "carbohydrates_100g": 62,
+        "fat_100g": 13.2,
+        "fiber_100g": 7.1,
+        "sugars_100g": 21,
+        "added-sugars_100g": 18,
+        "saturated-fat_100g": 2.4,
+        "trans-fat_100g": 0,
+        "sodium_100g": 0.24,
+        "potassium_100g": 0.38,
+        "calcium_100g": 0.12,
+        "iron_100g": 0.0036,
+        "vitamin-a_100g": 0.00015,
+        "vitamin-c_100g": 0.012,
+        "vitamin-d_100g": 0.0000025,
+        "vitamin-b12_100g": 0.0000012,
+        "vitamin-b9_100g": 0.0001,
+        "vitamin-pp_100g": 0.0042,
+        "cholesterol_100g": 0,
+        "caffeine_100g": 0,
+        "omega-3-fat_100g": 0.4,
+        "alcohol_100g": 0
+      }
+    },
+    {
+      "code": "5000000000017",
+      "product_name_en": "Synthetic sparkling drink",
+      "nutrition_data_per": "100ml",
+      "serving_quantity": 330,
+      "serving_quantity_unit": "ml",
+      "nutriments": {
+        "energy_100g": 180,
+        "carbohydrates_100g": 10.6,
+        "sugars_100g": 10.6,
+        "sodium_100g": 0.01
+      }
+    },
+    {
+      "code": "4000000000016",
+      "nutriments": {
+        "energy-kcal_100g": 100
+      }
+    },
+    {
+      "code": "not-a-code",
+      "product_name": "No barcode",
+      "nutriments": {}
+    },
+    {
+      "code": "76543210",
+      "product_name": "Synthetic spread",
+      "nutriments": {
+        "energy-kcal_100g": -5,
+        "fat_100g": "lots",
+        "proteins_100g": 25.25
+      }
+    },
+    {
+      "code": "3000000000013",
+      "product_name": "Synthetic olive oil",
+      "categories_tags": [
+        "en:fats",
+        "en:vegetable-oils",
+        "en:olive-oils"
+      ],
+      "nutrition_data_per": "100ml",
+      "serving_size": "1 tbsp (15 ml)",
+      "serving_quantity": 15,
+      "serving_quantity_unit": "ml",
+      "nutriments": {
+        "energy-kcal_100g": 828,
+        "fat_100g": 92,
+        "saturated-fat_100g": 13.8
+      }
+    }
+  ],
+  "foods": [
+    {
+      "id": "off:0012345678905",
+      "name": "Synthetic oat bar",
+      "brand": "Example Mills",
+      "source": "openFoodFacts",
+      "per100g": {
+        "energy": 412,
+        "protein": 9.5,
+        "carbohydrate": 62,
+        "fat": 13.2,
+        "fiber": 7.1,
+        "sugars": 21,
+        "addedSugars": 18,
+        "saturatedFat": 2.4,
+        "transFat": 0,
+        "omega3": 0.4,
+        "cholesterol": 0,
+        "sodium": 240,
+        "potassium": 380,
+        "calcium": 120,
+        "iron": 3.6,
+        "vitaminA": 150,
+        "vitaminC": 12,
+        "vitaminD": 2.5,
+        "niacin": 4.2,
+        "vitaminB12": 1.2,
+        "folate": 100,
+        "caffeine": 0
+      },
+      "servings": [
+        {
+          "name": "1 bar (40 g)",
+          "grams": 40
+        }
+      ],
+      "barcode": "0012345678905",
+      "favorite": false,
+      "createdAt": "2026-10-06T12:00:00.000Z"
+    },
+    {
+      "id": "off:5000000000017",
+      "name": "Synthetic sparkling drink",
+      "source": "openFoodFacts",
+      "per100g": {
+        "carbohydrate": 10.6,
+        "sugars": 10.6,
+        "sodium": 10,
+        "energy": 43.021
+      },
+      "servings": [
+        {
+          "name": "330 ml",
+          "grams": 330
+        }
+      ],
+      "barcode": "5000000000017",
+      "favorite": false,
+      "createdAt": "2026-10-06T12:00:00.000Z",
+      "volume": {
+        "density": 1,
+        "assumed": true,
+        "note": "Water's density, assumed: not known for this product"
+      }
+    },
+    null,
+    null,
+    {
+      "id": "off:76543210",
+      "name": "Synthetic spread",
+      "source": "openFoodFacts",
+      "per100g": {
+        "protein": 25.25
+      },
+      "servings": [],
+      "barcode": "76543210",
+      "favorite": false,
+      "createdAt": "2026-10-06T12:00:00.000Z"
+    },
+    {
+      "id": "off:3000000000013",
+      "name": "Synthetic olive oil",
+      "source": "openFoodFacts",
+      "per100g": {
+        "energy": 900,
+        "fat": 100,
+        "saturatedFat": 15
+      },
+      "servings": [
+        {
+          "name": "1 tbsp (15 ml)",
+          "grams": 13.8
+        }
+      ],
+      "barcode": "3000000000013",
+      "favorite": false,
+      "createdAt": "2026-10-06T12:00:00.000Z",
+      "volume": {
+        "density": 0.92,
+        "assumed": true,
+        "note": "Typical for oils"
+      }
+    }
+  ]
+}

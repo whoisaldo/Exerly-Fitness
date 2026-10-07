@@ -7,6 +7,41 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        6751206B7FEC405595E09014 /* PlannedWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742DC8EEBEA54BF2A4C74E1A; };
+        526F2C1D49254927A2B1E1E7 /* TrainingProgramsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DABCD4CC3DD4382BCDBE410; };
+        D6CAD7BA67DA4B5FA06CE906 /* TrainingProgramEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6808DE00E33488E9530B0B8; };
+        486FCF0D4F60CBE1CC60056E /* TrainingProgramPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2074878F71D31A245ACA8736; };
+        370ABFA07E731E4D8972EF46 /* ProgramPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011E7B46AA3A63658E338D7A; };
+        00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E44FA7F87F9617606E66ECF; };
+        E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAD7DC52A9FFDB47C2DF6B7; };
+        86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = C745E4F12E1C1CC27ED04506; };
+        507A4C17BF35AB31025AF79B /* TrainingInsightsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 182FC2ED87CFD005403C330A; };
+        E60000000000000000000001 /* LegacyExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60000000000000000000002; };
+        EB83E4B93032858D58F6DB10 /* AgentConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A283ACAEA1575AB18FE087C; };
+        44739B74FA5CA1164C871DA2 /* AgentConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA9D36441A0250A099199C; };
+        C8E2ECE71B51A8DA0E1B03ED /* AgentConnectionsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF2CA0B808D305F6EE01BF1; };
+        4372126B70768FF5578B6DA8 /* AgentPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F01B7F30243FE14A293BCF; };
+        ABACE5D630A6F3175C8A0812 /* AgentReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F65E9834C31A806F58E8B00; };
+        86593338082A43D56B239D68 /* AgentPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52BB90CC9EF39DDCF29601F; };
+        E50000000000000000000007 /* AccountWorkspaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000008; };
+        E50000000000000000000005 /* SessionBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000006; };
+        E50000000000000000000003 /* AccountSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000004; };
+        E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000002; };
+        E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000008; };
+        E40000000000000000000005 /* AccountPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000006; };
+        E40000000000000000000003 /* AccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000004; };
+        E40000000000000000000001 /* AppleAuthorizationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000002; };
+        E30000000000000000000001 /* AccountInfrastructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30000000000000000000002; };
+        6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2B6F531BC1D8FC2035C04; };
+        8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B345BC97A55F08A3888B7E; };
+        C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19ABFEE6B9699ED88D168606; };
+        D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 197BDBF6142E2E0747117C81; };
+        F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7429876DBAB79E4AFF6411C; };
+        E20000000000000000000001 /* ExerlyCore in Frameworks */ = {isa = PBXBuildFile; productRef = E20000000000000000000002 /* ExerlyCore */; };
+        E20000000000000000000003 /* ExerlyCore in Test Frameworks */ = {isa = PBXBuildFile; productRef = E20000000000000000000002 /* ExerlyCore */; };
+        E20000000000000000000004 /* TrainingPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000005; };
+		E10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000002 /* PrivacyInfo.xcprivacy */; };
+		C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */; };
 		011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */; };
 		016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BF2340338FFC506848ED23 /* Components/ActionButton.swift */; };
 		0398AD8177D2F7C6E7F392A9 /* Theme/AnimatedOrbBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91DFDEDB7BD5A8B31C4D7A5E /* Theme/AnimatedOrbBackground.swift */; };
@@ -15,7 +50,6 @@
 		090F353EBA5463A7D8C833E4 /* Features/Welcome/WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE56724F6A27B1526FF91AF /* Features/Welcome/WelcomeView.swift */; };
 		0965E75A6ACBC768840B0291 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F4332E01185D898C4AF96654 /* Assets.xcassets */; };
 		0B86B118DCE41A3081A4BF34 /* Components/GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A13925BF048FB7DFE2A07C /* Components/GlassCard.swift */; };
-		10B1B66554C7527CE9A6C11D /* Navigation/FABMenuOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */; };
 		14A35F444B9D292D6866FD00 /* Features/Home/HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCCC3942EB1A138CC384579 /* Features/Home/HomeView.swift */; };
 		150D18E96FDAE78D736202FA /* Features/Onboarding/Steps/Step1Name.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B5CEA92C611B0263C51A76 /* Features/Onboarding/Steps/Step1Name.swift */; };
 		2683AC3C1DF8B691EBB36F67 /* Core/Auth/KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE204208CF7583133FF2F41 /* Core/Auth/KeychainService.swift */; };
@@ -46,7 +80,6 @@
 		805D2815B535322F18C940FD /* Core/Auth/AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CBD55885BB5018BAE023B7D /* Core/Auth/AuthViewModel.swift */; };
 		828822D350834FD5235AE326 /* Features/Progress/AchievementsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B20F5D973CA0B659035673E /* Features/Progress/AchievementsTab.swift */; };
 		88A8A19B5836F9F67480D8F7 /* Features/Home/HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F593CE01A203AFDE4DF045 /* Features/Home/HomeViewModel.swift */; };
-		9AEA98CAA76582ECE86506AD /* Navigation/CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */; };
 		9F585C1413DCFC8870BD62CF /* Core/Network/APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F47ECDB7E4B5F3FEEF66916 /* Core/Network/APIModels.swift */; };
 		A06848D4FA879A6A4E79C636 /* Features/FoodLibrary/FoodLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32F2BDB3BF7F253A2A63D2AC /* Features/FoodLibrary/FoodLibraryView.swift */; };
 		A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D294BE7AC438C5DDD9DBBC62 /* Components/CalorieRing.swift */; };
@@ -80,9 +113,48 @@
 		67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */; };
 		1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */; };
 		32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */; };
+		ADC76406B794B49B23AE476B /* ExerlyTests.build */ = { isa = PBXBuildFile; fileRef = 8E63857AD67CA375D711BD8E; };
+		CB9A26B47270E9F304D7C173 /* ExerlyUITests.build */ = { isa = PBXBuildFile; fileRef = 378A3EBCD0EE468791534C6F; };
+		CD508C36C38556FABF336EB9 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 207C8C31715A2D872CAD9F4C; };
+		589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */; };
+		33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAACDF4879A569D2277D0FB; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        742DC8EEBEA54BF2A4C74E1A /* PlannedWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/PlannedWorkoutView.swift; sourceTree = SOURCE_ROOT; };
+        8DABCD4CC3DD4382BCDBE410 /* TrainingProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingProgramsView.swift; sourceTree = SOURCE_ROOT; };
+        C6808DE00E33488E9530B0B8 /* TrainingProgramEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingProgramEditor.swift; sourceTree = SOURCE_ROOT; };
+        2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingProgramPresentation.swift; sourceTree = SOURCE_ROOT; };
+        011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/ProgramPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ExerciseLogView.swift; sourceTree = SOURCE_ROOT; };
+        2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingObservationsView.swift; sourceTree = SOURCE_ROOT; };
+        C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingEntryChecks.swift; sourceTree = SOURCE_ROOT; };
+        182FC2ED87CFD005403C330A /* TrainingInsightsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/TrainingInsightsTests.swift; sourceTree = SOURCE_ROOT; };
+        E60000000000000000000002 /* LegacyExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/LegacyExportTests.swift; sourceTree = SOURCE_ROOT; };
+        6A283ACAEA1575AB18FE087C /* AgentConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AgentConnectionTests.swift; sourceTree = SOURCE_ROOT; };
+        3FBA9D36441A0250A099199C /* AgentConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentConnectionsView.swift; sourceTree = SOURCE_ROOT; };
+        6CF2CA0B808D305F6EE01BF1 /* AgentConnectionsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentConnectionsModel.swift; sourceTree = SOURCE_ROOT; };
+        63F01B7F30243FE14A293BCF /* AgentPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AgentPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        1F65E9834C31A806F58E8B00 /* AgentReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentReviewView.swift; sourceTree = SOURCE_ROOT; };
+        A52BB90CC9EF39DDCF29601F /* AgentPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Agents/AgentPresentation.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000008 /* AccountWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountWorkspaceTests.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000006 /* SessionBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/SessionBridgeTests.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000004 /* AccountSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountSyncView.swift; sourceTree = SOURCE_ROOT; };
+        E50000000000000000000002 /* AppAccountWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AppAccountWorkspace.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000008 /* AccountControlsFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountControlsFixtureView.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000006 /* AccountPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000004 /* AccountManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AccountManagementView.swift; sourceTree = SOURCE_ROOT; };
+        E40000000000000000000002 /* AppleAuthorizationButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Account/AppleAuthorizationButton.swift; sourceTree = SOURCE_ROOT; };
+        E30000000000000000000002 /* AccountInfrastructureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/AccountInfrastructureTests.swift; sourceTree = SOURCE_ROOT; };
+        D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/WorkoutHistoryView.swift; sourceTree = SOURCE_ROOT; };
+        05B345BC97A55F08A3888B7E /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingView.swift; sourceTree = SOURCE_ROOT; };
+        19ABFEE6B9699ED88D168606 /* TrainingSetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingSetEditor.swift; sourceTree = SOURCE_ROOT; };
+        197BDBF6142E2E0747117C81 /* TrainingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingPresentation.swift; sourceTree = SOURCE_ROOT; };
+        E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ActiveWorkoutView.swift; sourceTree = SOURCE_ROOT; };
+        E20000000000000000000005 /* TrainingPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/TrainingPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E10000000000000000000003 /* Exerly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Exerly.entitlements; sourceTree = "<group>"; };
+		7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
 		06812EA8FB4EB2F7E611D262 /* Features/LogActivity/LogActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogActivityView.swift; sourceTree = "<group>"; };
 		0DCCC3942EB1A138CC384579 /* Features/Home/HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		0F571A4CF742B91113A23E9B /* Features/Onboarding/OnboardingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingState.swift; sourceTree = "<group>"; };
@@ -93,7 +165,6 @@
 		269AAAD9DD12DFE876814335 /* Theme/Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		302E6CD6D833180DF4A6B6DF /* Features/Onboarding/Steps/Step0Welcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Step0Welcome.swift; sourceTree = "<group>"; };
 		30FA694E08C8D528A3B9CED3 /* Features/Onboarding/Steps/Step4Goals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Step4Goals.swift; sourceTree = "<group>"; };
-		3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		32F2BDB3BF7F253A2A63D2AC /* Features/FoodLibrary/FoodLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodLibraryView.swift; sourceTree = "<group>"; };
 		33E4A6D39208DBE8B6F66EED /* Features/CreateFood/CreateFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFoodView.swift; sourceTree = "<group>"; };
 		38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialService.swift; sourceTree = "<group>"; };
@@ -114,7 +185,6 @@
 		6B20F5D973CA0B659035673E /* Features/Progress/AchievementsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsTab.swift; sourceTree = "<group>"; };
 		6B57B03678DF5E35DF78F5DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABMenuOverlay.swift; sourceTree = "<group>"; };
 
 		84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
 		8A28468EB84B00A331DBB5C9 /* Core/Services/ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
@@ -158,6 +228,13 @@
 		C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		664A5337F0841324DCF7B7BF /* Features/Admin/AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
+		8E63857AD67CA375D711BD8E /* ExerlyTests.source */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/ProductionTests.swift; sourceTree = SOURCE_ROOT; };
+		2F585D34A78C73A3CD1EDF06 /* ExerlyTests.product */ = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ExerlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		378A3EBCD0EE468791534C6F /* ExerlyUITests.source */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyUITests/ProductionUITests.swift; sourceTree = SOURCE_ROOT; };
+		B1BFF9D732518F4174D0EB25 /* ExerlyUITests.product */ = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ExerlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		207C8C31715A2D872CAD9F4C /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/SyncEngine.swift; sourceTree = SOURCE_ROOT; };
+		E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/AccountCalendar.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,9 +242,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                E20000000000000000000001 /* ExerlyCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3824914A82F455387C55860F /* ExerlyTests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (E20000000000000000000003,); runOnlyForDeploymentPostprocessing = 0; };
+		ED37F0A05CB99B035ED7C53C /* ExerlyUITests.frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -198,6 +278,8 @@
 				20C39A522651BB0A1DE6D596 /* Core/Services/FoodLibraryService.swift */,
 				F9AE47AB85ACBE1DF659BC84 /* Core/Services/HealthKitService.swift */,
 				9AA7482444A4F61A162F4752 /* Core/Services/LocalModels.swift */,
+				207C8C31715A2D872CAD9F4C /* SyncEngine.swift */,
+				3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */,
 				502E90DA9729506E9268FA70 /* Core/Services/NotificationService.swift */,
 				84F3B02BA9CDC6CE937EE461 /* Core/Services/OpenFoodFactsService.swift */,
 				38B7F530493F9DFA7CB31470 /* Core/Services/SocialService.swift */,
@@ -271,6 +353,7 @@
 			isa = PBXGroup;
 			children = (
 				2EC996C47A1DB7360A81BAC8 /* Features/Profile/ChangePasswordView.swift */,
+				E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */,
 				C0FA290EA8DF5154A1CCC96F /* Features/Profile/EditProfileView.swift */,
 				929DFD06CA28AC79F7198A4E /* Features/Profile/ProfileView.swift */,
 			);
@@ -329,12 +412,21 @@
 				2713A2379111C66E34BDE42C /* Login */,
 				4BA47F1A43AC469531D0BC78 /* Onboarding */,
 				544E99E4DCC16D9872B7AEEF /* Profile */,
+				F2B6D9A047C8431E9A5F7B20 /* Program */,
 				E3837CE9DF1CC48963AE6BAB /* Progress */,
 				55F3D78BAB3142C9953F231E /* Signup */,
 				F5DAC97A51BEC2537635B1D9 /* Social */,
 				2BF1969E3AC365DA01C2AC9E /* Welcome */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		F2B6D9A047C8431E9A5F7B20 /* Program */ = {
+			isa = PBXGroup;
+			children = (
+				7A91C3E5B2D84F60A1C9E723 /* Features/Program/ProgramView.swift */,
+			);
+			path = Program;
 			sourceTree = "<group>";
 		};
 		9F3588DAD5C02C033AE75E8B /* Network */ = {
@@ -358,6 +450,8 @@
 				06FF4E05B0BB211FCDBA270D /* Theme */,
 				6B57B03678DF5E35DF78F5DD /* Info.plist */,
 				F4332E01185D898C4AF96654 /* Assets.xcassets */,
+				E10000000000000000000002 /* PrivacyInfo.xcprivacy */,
+				E10000000000000000000003 /* Exerly.entitlements */,
 			);
 			path = Exerly;
 			sourceTree = "<group>";
@@ -408,8 +502,6 @@
 			isa = PBXGroup;
 			children = (
 				47057BA9619E14677AF4B3CD /* Navigation/AuthRouter.swift */,
-				3243A431A5E8AF5BDDC0351D /* Navigation/CustomTabBar.swift */,
-				7381B428D4B5E3333CCDB0CD /* Navigation/FABMenuOverlay.swift */,
 				6D3B31D7222B2CC5EEB3AD0A /* Navigation/MainTabView.swift */,
 				F0C93AFC5E60B76831F10378 /* Navigation/RootView.swift */,
 			);
@@ -419,8 +511,41 @@
 		BBBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
+                C6808DE00E33488E9530B0B8 /* TrainingProgramEditor.swift */,
+                8DABCD4CC3DD4382BCDBE410 /* TrainingProgramsView.swift */,
+                742DC8EEBEA54BF2A4C74E1A /* PlannedWorkoutView.swift */,
+                2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */,
+                011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */,
+                0E44FA7F87F9617606E66ECF /* ExerciseLogView.swift */,
+                2AAD7DC52A9FFDB47C2DF6B7 /* TrainingObservationsView.swift */,
+                C745E4F12E1C1CC27ED04506 /* TrainingEntryChecks.swift */,
+                182FC2ED87CFD005403C330A /* TrainingInsightsTests.swift */,
+                6A283ACAEA1575AB18FE087C /* AgentConnectionTests.swift */,
+                3FBA9D36441A0250A099199C /* AgentConnectionsView.swift */,
+                6CF2CA0B808D305F6EE01BF1 /* AgentConnectionsModel.swift */,
+                63F01B7F30243FE14A293BCF /* AgentPresentationTests.swift */,
+                1F65E9834C31A806F58E8B00 /* AgentReviewView.swift */,
+                A52BB90CC9EF39DDCF29601F /* AgentPresentation.swift */,
+                D4C2B6F531BC1D8FC2035C04 /* WorkoutHistoryView.swift */,
+                05B345BC97A55F08A3888B7E /* TrainingView.swift */,
+                19ABFEE6B9699ED88D168606 /* TrainingSetEditor.swift */,
+                197BDBF6142E2E0747117C81 /* TrainingPresentation.swift */,
+                E7429876DBAB79E4AFF6411C /* ActiveWorkoutView.swift */,
+                E20000000000000000000005 /* TrainingPresentationTests.swift */,
+                E30000000000000000000002 /* AccountInfrastructureTests.swift */,
+                E40000000000000000000008 /* AccountControlsFixtureView.swift */,
+                E50000000000000000000004 /* AccountSyncView.swift */,
+                E50000000000000000000002 /* AppAccountWorkspace.swift */,
+                E40000000000000000000006 /* AccountPresentationTests.swift */,
+                E50000000000000000000008 /* AccountWorkspaceTests.swift */,
+                E60000000000000000000002 /* LegacyExportTests.swift */,
+                E50000000000000000000006 /* SessionBridgeTests.swift */,
+                E40000000000000000000004 /* AccountManagementView.swift */,
+                E40000000000000000000002 /* AppleAuthorizationButton.swift */,
 				A28D6C2616E9E9E92A0553D4 /* Exerly */,
 				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
+				378A3EBCD0EE468791534C6F,
+				8E63857AD67CA375D711BD8E,
 			);
 			sourceTree = "<group>";
 		};
@@ -452,6 +577,8 @@
 			isa = PBXGroup;
 			children = (
 				EEEEEEEEEEEEEEEEEEEEEEEE /* Exerly.app */,
+				B1BFF9D732518F4174D0EB25,
+				2F585D34A78C73A3CD1EDF06,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -498,12 +625,25 @@
 			);
 			dependencies = (
 			);
+			packageProductDependencies = (E20000000000000000000002 /* ExerlyCore */,);
 			name = Exerly;
 			productName = Exerly;
 			productReference = EEEEEEEEEEEEEEEEEEEEEEEE /* Exerly.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A0E6FA1923445D8867717BE7 /* ExerlyTests */ = { isa = PBXNativeTarget; buildConfigurationList = 987ACB7A1F516B9955C89452; buildPhases = (236AF237E7B5966EB1668889,3824914A82F455387C55860F,); buildRules = (); dependencies = (444ACBCDF6D269B7B01A11AC,); packageProductDependencies = (E20000000000000000000002,); name = ExerlyTests; productName = ExerlyTests; productReference = 2F585D34A78C73A3CD1EDF06; productType = "com.apple.product-type.bundle.unit-test"; };
+		30D174250A13000CCCB5A9A1 /* ExerlyUITests */ = { isa = PBXNativeTarget; buildConfigurationList = 938052C86D8238B2307BB2E1; buildPhases = (B3EBD2453DCEFACEA20751A5,ED37F0A05CB99B035ED7C53C,); buildRules = (); dependencies = (4F9BBD54638BBBA531CD0335,); name = ExerlyUITests; productName = ExerlyUITests; productReference = B1BFF9D732518F4174D0EB25; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		F258C621C3231C4731E410A5 /* ExerlyTests.proxy */ = { isa = PBXContainerItemProxy; containerPortal = AAAAAAAAAAAAAAAAAAAAAAAA; proxyType = 1; remoteGlobalIDString = DDDDDDDDDDDDDDDDDDDDDDDD; remoteInfo = Exerly; };
+		96091D8BC292F73604CA7D4C /* ExerlyUITests.proxy */ = { isa = PBXContainerItemProxy; containerPortal = AAAAAAAAAAAAAAAAAAAAAAAA; proxyType = 1; remoteGlobalIDString = DDDDDDDDDDDDDDDDDDDDDDDD; remoteInfo = Exerly; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		444ACBCDF6D269B7B01A11AC /* ExerlyTests.dependency */ = { isa = PBXTargetDependency; target = DDDDDDDDDDDDDDDDDDDDDDDD; targetProxy = F258C621C3231C4731E410A5; };
+		4F9BBD54638BBBA531CD0335 /* ExerlyUITests.dependency */ = { isa = PBXTargetDependency; target = DDDDDDDDDDDDDDDDDDDDDDDD; targetProxy = 96091D8BC292F73604CA7D4C; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */ = {
@@ -520,10 +660,13 @@
 			);
 			mainGroup = BBBBBBBBBBBBBBBBBBBBBBBB;
 			productRefGroup = CCCCCCCCCCCCCCCCCCCCCCCC /* Products */;
+			packageReferences = (E20000000000000000000006 /* XCLocalSwiftPackageReference ExerlyCore */,);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				DDDDDDDDDDDDDDDDDDDDDDDD /* Exerly */,
+				30D174250A13000CCCB5A9A1,
+				A0E6FA1923445D8867717BE7,
 			);
 		};
 /* End PBXProject section */
@@ -534,6 +677,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0965E75A6ACBC768840B0291 /* Assets.xcassets in Resources */,
+				E10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -544,6 +688,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                D6CAD7BA67DA4B5FA06CE906 /* TrainingProgramEditor.swift in Sources */,
+                526F2C1D49254927A2B1E1E7 /* TrainingProgramsView.swift in Sources */,
+                6751206B7FEC405595E09014 /* PlannedWorkoutView.swift in Sources */,
+                486FCF0D4F60CBE1CC60056E /* TrainingProgramPresentation.swift in Sources */,
+                00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */,
+                E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */,
+                86DF16D555127A7C35F25A69 /* TrainingEntryChecks.swift in Sources */,
+                44739B74FA5CA1164C871DA2 /* AgentConnectionsView.swift in Sources */,
+                C8E2ECE71B51A8DA0E1B03ED /* AgentConnectionsModel.swift in Sources */,
+                ABACE5D630A6F3175C8A0812 /* AgentReviewView.swift in Sources */,
+                86593338082A43D56B239D68 /* AgentPresentation.swift in Sources */,
+                6CBBC6AC16BCB7ECC45C74D0 /* WorkoutHistoryView.swift in Sources */,
+                8D8FAC21F6DEE69997D3AA3C /* TrainingView.swift in Sources */,
+                C86438E3D336C8F703D0F446 /* TrainingSetEditor.swift in Sources */,
+                D510886E5DF776B29470D4C5 /* TrainingPresentation.swift in Sources */,
+                F61F5DD687AC141946F00DF7 /* ActiveWorkoutView.swift in Sources */,
+                E40000000000000000000007 /* AccountControlsFixtureView.swift in Sources */,
+                E50000000000000000000003 /* AccountSyncView.swift in Sources */,
+                E50000000000000000000001 /* AppAccountWorkspace.swift in Sources */,
+                E40000000000000000000003 /* AccountManagementView.swift in Sources */,
+                E40000000000000000000001 /* AppleAuthorizationButton.swift in Sources */,
 				016898B41F8704FD22FBB478 /* Components/ActionButton.swift in Sources */,
 				A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */,
 				5C6B7743D73F3AED57034C19 /* Components/ConfettiView.swift in Sources */,
@@ -562,6 +727,8 @@
 				E602C79CC780F2CE0B279E5F /* Core/Services/FoodLibraryService.swift in Sources */,
 				2B713A804C94DF0DA0399B3C /* Core/Services/HealthKitService.swift in Sources */,
 				C741399C860031DBFCF732CF /* Core/Services/LocalModels.swift in Sources */,
+				CD508C36C38556FABF336EB9 /* SyncEngine.swift in Sources */,
+				33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */,
 				011A7703A6B6C5AC96ABF9D1 /* Core/Services/NotificationService.swift in Sources */,
 				2D42A81719A115F00B3CF03A /* Core/Services/OpenFoodFactsService.swift in Sources */,
 				4FA783D2E13188AA8ED43117 /* Core/Services/SocialService.swift in Sources */,
@@ -596,8 +763,10 @@
 				D6B12B9395CF289E20683239 /* Features/Onboarding/Steps/Step8Sleep.swift in Sources */,
 				A4BD5DB5E0C8317E2067D23B /* Features/Onboarding/Steps/Step9Equipment.swift in Sources */,
 				1BD76D2F7E0013FE5EAD5002 /* Features/Profile/ChangePasswordView.swift in Sources */,
+				589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */,
 				67E06AC15FE70128E2CA680E /* Features/Profile/EditProfileView.swift in Sources */,
 				F2D8C631944BF9DA4843CA3F /* Features/Profile/ProfileView.swift in Sources */,
+				C4E08B7D19F24A63B5D1E902 /* Features/Program/ProgramView.swift in Sources */,
 				32DEE95D3679D1E5A85CD82D /* Features/Admin/AdminView.swift in Sources */,
 				828822D350834FD5235AE326 /* Features/Progress/AchievementsTab.swift in Sources */,
 				C5B2877639F29869465379EB /* Features/Progress/MeasurementsTab.swift in Sources */,
@@ -607,8 +776,6 @@
 				AE768DB5321B52A4A6140B24 /* Features/Social/SocialView.swift in Sources */,
 				090F353EBA5463A7D8C833E4 /* Features/Welcome/WelcomeView.swift in Sources */,
 				07FA0CE1569838FE41BC137D /* Navigation/AuthRouter.swift in Sources */,
-				9AEA98CAA76582ECE86506AD /* Navigation/CustomTabBar.swift in Sources */,
-				10B1B66554C7527CE9A6C11D /* Navigation/FABMenuOverlay.swift in Sources */,
 				45753D8549822D5F17F1FF8B /* Navigation/MainTabView.swift in Sources */,
 				2DB3B8BDB97A2646D9A14C74 /* Navigation/RootView.swift in Sources */,
 				0398AD8177D2F7C6E7F392A9 /* Theme/AnimatedOrbBackground.swift in Sources */,
@@ -618,7 +785,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCLocalSwiftPackageReference section */
+        E20000000000000000000006 /* XCLocalSwiftPackageReference ExerlyCore */ = {isa = XCLocalSwiftPackageReference; relativePath = ExerlyCore; };
+/* End XCLocalSwiftPackageReference section */
+/* Begin XCSwiftPackageProductDependency section */
+        E20000000000000000000002 /* ExerlyCore */ = {isa = XCSwiftPackageProductDependency; productName = ExerlyCore; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		111111111111111111111111 /* Debug */ = {
@@ -673,7 +849,10 @@
 		444444444444444444444444 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				EXERLY_API_BASE_URL = "http://100.80.149.7:39110";
+				EXERLY_BUILD_ENVIRONMENT = staging;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -702,7 +881,11 @@
 		555555555555555555555555 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				PROVISIONING_PROFILE_SPECIFIER = "$(EXERLY_PROVISIONING_PROFILE)";
+				EXERLY_API_BASE_URL = "https://exerly-fitness-93dyl.ondigitalocean.app";
+				EXERLY_BUILD_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Exerly/Exerly.entitlements;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -728,6 +911,10 @@
 			};
 			name = Release;
 		};
+		8F0B024763712287DE0BB060 /* ExerlyTests.Debug */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; BUNDLE_LOADER = "$(TEST_HOST)"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Exerly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Exerly"; }; name = Debug; };
+		3B924068246E279D4FBBE096 /* ExerlyTests.Release */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; BUNDLE_LOADER = "$(TEST_HOST)"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Exerly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Exerly"; }; name = Release; };
+		B09D1A0F6C64DCFB5DDCCC1D /* ExerlyUITests.Debug */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; TEST_TARGET_NAME = Exerly; }; name = Debug; };
+		6779C71847E907B0B39D12CE /* ExerlyUITests.Release */ = { isa = XCBuildConfiguration; buildSettings = { GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.ExerlyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; TEST_TARGET_NAME = Exerly; }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -749,6 +936,8 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		987ACB7A1F516B9955C89452 /* ExerlyTests.configs */ = { isa = XCConfigurationList; buildConfigurations = (8F0B024763712287DE0BB060,3B924068246E279D4FBBE096,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		938052C86D8238B2307BB2E1 /* ExerlyUITests.configs */ = { isa = XCConfigurationList; buildConfigurations = (B09D1A0F6C64DCFB5DDCCC1D,6779C71847E907B0B39D12CE,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */;

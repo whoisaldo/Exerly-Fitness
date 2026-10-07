@@ -1,3 +1,5 @@
+import { signOutSession } from '../../lib/sessionNetwork';
+import { getToken, authenticatedFetch } from '../../lib/api';
 // frontend/src/components/Admin/Admin.jsx
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -41,13 +43,13 @@ export default function Admin() {
   const [adminStats, setAdminStats] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
 
-  const token = localStorage.getItem('token') || '';
+  const token = getToken() || '';
   const me = useMemo(() => decodeJWT(token) || {}, [token]);
 
   // Fetch API health status
   const fetchApiHealth = useCallback(async () => {
     try {
-      const response = await fetch(`${BASE_URL}/api/health`);
+      const response = await authenticatedFetch(`${BASE_URL}/api/health`);
       const data = await response.json();
       setApiHealth(data);
     } catch (error) {
@@ -76,7 +78,7 @@ export default function Admin() {
 
     // Fetch API health status + admin stats
     fetchApiHealth();
-    fetch(`${BASE_URL}/api/admin/stats`, {
+    authenticatedFetch(`${BASE_URL}/api/admin/stats`, {
       headers: { Authorization: 'Bearer ' + token },
     })
       .then((r) => (r.ok ? r.json() : null))
@@ -85,12 +87,12 @@ export default function Admin() {
       })
       .catch(() => {});
 
-    fetch(`${BASE_URL}/api/admin/users`, {
+    authenticatedFetch(`${BASE_URL}/api/admin/users`, {
       headers: { Authorization: 'Bearer ' + token },
     })
       .then((r) => {
         if (r.status === 401) {
-          localStorage.removeItem('token');
+          void signOutSession();
           navigate('/');
           return Promise.reject('Unauthorized');
         }
@@ -127,7 +129,7 @@ export default function Admin() {
     setEntriesLoading(true);
     setError('');
 
-    fetch(`${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`, {
+    authenticatedFetch(`${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`, {
       headers: { Authorization: 'Bearer ' + token },
     })
       .then((r) => {
@@ -177,7 +179,7 @@ export default function Admin() {
       setError('');
       setSuccess('');
 
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/reset-today`,
         {
           method: 'POST',
@@ -193,7 +195,7 @@ export default function Admin() {
       );
 
       // Refresh entries
-      const entriesRes = await fetch(
+      const entriesRes = await authenticatedFetch(
         `${BASE_URL}/api/admin/user/${encodeURIComponent(selectedEmail)}/entries`,
         {
           headers: { Authorization: 'Bearer ' + token },
@@ -270,12 +272,12 @@ export default function Admin() {
           onClick={async (e) => {
             e.stopPropagation();
             try {
-              await fetch(`${BASE_URL}/api/admin/toggle-admin`, {
+              await authenticatedFetch(`${BASE_URL}/api/admin/toggle-admin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
                 body: JSON.stringify({ email: row.email, isAdmin: !row.is_admin }),
               });
-              const res = await fetch(`${BASE_URL}/api/admin/users`, {
+              const res = await authenticatedFetch(`${BASE_URL}/api/admin/users`, {
                 headers: { Authorization: 'Bearer ' + token },
               });
               if (res.ok) setUsers(await res.json());
@@ -673,7 +675,7 @@ export default function Admin() {
                             </p>
                           </div>
                           <span className="text-white/20 text-xs shrink-0">
-                            {new Date(activity.entry_date).toLocaleDateString()}
+                            {activity.entry_date}
                           </span>
                         </div>
                       ))}
@@ -708,9 +710,7 @@ export default function Admin() {
                               {food.calories} kcal / P: {food.protein}g / S: {food.sugar}g
                             </p>
                           </div>
-                          <span className="text-white/20 text-xs shrink-0">
-                            {new Date(food.entry_date).toLocaleDateString()}
-                          </span>
+                          <span className="text-white/20 text-xs shrink-0">{food.entry_date}</span>
                         </div>
                       ))}
                     </div>
@@ -744,9 +744,7 @@ export default function Admin() {
                             </p>
                             <p className="text-white/40 text-xs">{sleep.quality}</p>
                           </div>
-                          <span className="text-white/20 text-xs shrink-0">
-                            {new Date(sleep.entry_date).toLocaleDateString()}
-                          </span>
+                          <span className="text-white/20 text-xs shrink-0">{sleep.entry_date}</span>
                         </div>
                       ))}
                     </div>

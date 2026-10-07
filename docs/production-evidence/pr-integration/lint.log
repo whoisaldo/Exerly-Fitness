@@ -1,0 +1,37 @@
+
+> exerly-fitness@1.0.0 lint
+> eslint .
+
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/AICoach/AICoach.jsx
+   12:10  warning  'userProfile' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  183:14  warning  'error' is defined but never used                                                       @typescript-eslint/no-unused-vars
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/Admin/AIErrorManager.jsx
+  41:6  warning  React Hook useEffect has a missing dependency: 'fetchErrors'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/Admin/Admin.jsx
+   37:10  warning  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                      @typescript-eslint/no-unused-vars
+   37:19  warning  'setLoading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                   @typescript-eslint/no-unused-vars
+   55:14  warning  'error' is defined but never used                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   62:6   warning  React Hook useCallback has an unnecessary dependency: 'BASE_URL'. Either exclude it or remove the dependency array. Outer scope values like 'BASE_URL' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+  120:6   warning  React Hook useEffect has missing dependencies: 'fetchApiHealth' and 'selectedEmail'. Either include them or remove the dependency array                                                                                                 react-hooks/exhaustive-deps
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/AdminStatusChecker.jsx
+  34:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  94:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/Dashboard/Dashboard.jsx
+   13:3   warning  'PageHeader' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   60:10  warning  'AnimatedNumber' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  191:10  warning  'goals' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  823:72  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                   react/no-unescaped-entities
+  950:69  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                   react/no-unescaped-entities
+
+/Users/aldo/Desktop/Exerly-Fitness-pr/apps/web/src/components/Dashboard/Workouts.jsx
+   16:7  warning  'BASE_URL' is assigned a value but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+   86:6  warning  React Hook useEffect has a missing dependency: 'sampleWorkouts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  151:9  warning  'getDifficultyColor' is assigned a value but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+
+✖ 18 problems (0 errors, 18 warnings)
+

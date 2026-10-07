@@ -1,0 +1,5 @@
+# Retain test output verbatim and collapse generated logs in code review.
+docs/production-evidence/**/*.log linguist-generated=true -whitespace
+
+# Keep the vendored runtime unchanged.
+brag-output/composition/assets/gsap.min.js linguist-vendored=true -whitespace

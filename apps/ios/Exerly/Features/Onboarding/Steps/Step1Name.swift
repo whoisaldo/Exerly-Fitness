@@ -16,6 +16,12 @@ struct Step1Name: View {
                 }
 
                 FloatingLabelTextField(label: "Your name", text: $state.name)
+                Picker("Display units", selection: $state.useMetric) {
+                    Text("Metric").tag(true)
+                    Text("Imperial").tag(false)
+                }.pickerStyle(.segmented).frame(minHeight: 44)
+                Text("You can change units later without changing your measurements.")
+                    .font(.callout).foregroundStyle(.exTextSecondary)
 
                 Spacer()
 

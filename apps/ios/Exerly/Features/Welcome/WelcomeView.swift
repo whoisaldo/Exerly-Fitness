@@ -5,39 +5,49 @@ struct WelcomeView: View {
     let onSignup: () -> Void
 
     @State private var showContent = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
             PulseBackground()
 
-            VStack(spacing: 0) {
-                Spacer()
-                logoSection
-                Spacer()
-                ctaSection
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 24)
+                        logoSection
+                        Spacer(minLength: 32)
+                        ctaSection
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 32)
+                    .frame(minHeight: geometry.size.height)
+                }
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 48)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) { showContent = true }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.8)) { showContent = true }
         }
     }
 
     private var logoSection: some View {
         VStack(spacing: 16) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.exPrimary)
-                .primaryGlow(radius: 24, opacity: 0.6)
+            Image("ExerlyMark")
+                .resizable().scaledToFit()
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .accessibilityHidden(true)
 
             Text("Exerly")
                 .font(.exDisplay)
                 .foregroundStyle(.exTextPrimary)
 
-            Text("Your AI-powered fitness companion")
+            Text("Training and nutrition, on your terms.")
                 .font(.exBody)
                 .foregroundStyle(.exTextSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : 20)
@@ -55,6 +65,6 @@ struct WelcomeView: View {
         }
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : 30)
-        .animation(.easeOut(duration: 0.8).delay(0.3), value: showContent)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.8).delay(0.3), value: showContent)
     }
 }

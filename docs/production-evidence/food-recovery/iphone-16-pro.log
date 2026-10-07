@@ -1,0 +1,937 @@
+
+> exerly-fitness@1.0.0 ios:test
+> bash scripts/ios.sh test -only-testing:ExerlyUITests/ProductionUITests/testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits -resultBundlePath artifacts/food-precision-native-v3.xcresult
+
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project apps/ios/Exerly.xcodeproj -scheme Exerly -derivedDataPath .deriveddata -destination "platform=iOS Simulator,id=28A97E73-F20D-463A-BAAC-2550726030A5" CODE_SIGN_IDENTITY=- test "-only-testing:ExerlyUITests/ProductionUITests/testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits" -resultBundlePath artifacts/food-precision-native-v3.xcresult
+
+Build settings from command line:
+    CODE_SIGN_IDENTITY = -
+
+Writing result bundle at path:
+	/Users/aldo/Desktop/Exerly-Fitness/artifacts/food-precision-native-v3.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:28A97E73-F20D-463A-BAAC-2550726030A5, OS:18.6, name:iPhone 16 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:28A97E73-F20D-463A-BAAC-2550726030A5, OS:18.6, name:iPhone 16 Pro }
+note: Using codesigning identity override: -
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'ExerlyUITests' in project 'Exerly'
+        ➜ Explicit dependency on target 'Exerly' in project 'Exerly'
+    Target 'ExerlyTests' in project 'Exerly'
+        ➜ Explicit dependency on target 'Exerly' in project 'Exerly'
+    Target 'Exerly' in project 'Exerly' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/aldo/Desktop/Exerly-Fitness/apps/ios/Exerly/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 32446d4179111d9d7d41ecca74b7ad51
+Build description path: /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/XCBuildData/32446d4179111d9d7d41ecca74b7ad51.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios/Exerly.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache
+
+ProcessProductPackaging "" /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "9X79V37Q89.com.exerly.fitness";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent.der (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /usr/bin/derq query -f xml -i /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent.der --raw
+
+Ld /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib normal (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -filelist /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly.LinkFileList -install_name @rpath/Exerly.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib
+
+ProcessInfoPlistFile /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Info.plist /Users/aldo/Desktop/Exerly-Fitness/apps/ios/Exerly/Info.plist (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-infoPlistUtility /Users/aldo/Desktop/Exerly-Fitness/apps/ios/Exerly/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/assetcatalog_generated_info.plist -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Info.plist
+
+ConstructStubExecutorLinkFileList /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly-ExecutorLinkFileList-normal-arm64.txt (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    construct-stub-executor-link-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Exerly' from project 'Exerly')
+
+Ld /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly normal (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly-ExecutorLinkFileList-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.app-Simulated.xcent.der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly
+
+ExtractAppIntentsMetadata (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name Exerly --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.exerly.fitness --output /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly --dependency-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly_dependency_info.dat --stringsdata-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly.SwiftFileList --metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.DependencyMetadataFileList --static-metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Exerly.DependencyStaticMetadataFileList --swift-const-vals-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/Objects-normal/arm64/Exerly.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-22 22:45:22.318 appintentsmetadataprocessor[98378:31977701] Starting appintentsmetadataprocessor export
+2026-09-22 22:45:22.319 appintentsmetadataprocessor[98378:31977701] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Frameworks --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/SystemExtensions --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/Exerly.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+Ld /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/ExerlyTests normal (in target 'ExerlyTests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -filelist /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -bundle_loader /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly -Xlinker -object_path_lto -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests.swiftmodule -framework XCTest -lXCTestSwiftSupport /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/ExerlyTests
+
+ExtractAppIntentsMetadata (in target 'ExerlyTests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name ExerlyTests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.exerly.fitness.ExerlyTests --output /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/ExerlyTests --dependency-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests_dependency_info.dat --stringsdata-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests.SwiftFileList --metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/ExerlyTests.DependencyMetadataFileList --static-metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/ExerlyTests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/Objects-normal/arm64/ExerlyTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-22 22:45:22.587 appintentsmetadataprocessor[98446:31977870] Starting appintentsmetadataprocessor export
+2026-09-22 22:45:22.589 appintentsmetadataprocessor[98446:31977870] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest (in target 'ExerlyTests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/ExerlyTests --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/Frameworks --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/PlugIns --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/SystemExtensions --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ProcessProductPackaging "" /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "FAKETEAMID.com.exerly.fitness.ExerlyUITests.xctrunner";
+    "keychain-access-groups" =     (
+        "FAKETEAMID.com.exerly.fitness.ExerlyUITests.xctrunner"
+    );
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent
+
+ProcessInfoPlistFile /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/Info.plist /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/empty-ExerlyTests.plist (in target 'ExerlyTests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-infoPlistUtility /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyTests.build/empty-ExerlyTests.plist -producttype com.apple.product-type.bundle.unit-test -expandbuildsettings -format binary -platform iphonesimulator -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest/Info.plist
+
+ProcessProductPackagingDER /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent.der (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /usr/bin/derq query -f xml -i /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent.der --raw
+
+SwiftDriver ExerlyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExerlyUITests -Onone -enforce-exclusivity\=checked @/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Index.noindex/DataStore -swift-version 5 -I /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache -output-file-map /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-generated-files.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-own-target-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-project-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-Swift.h -working-directory /Users/aldo/Desktop/Exerly-Fitness/apps/ios -experimental-emit-module-separately -disable-cmo
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest (in target 'ExerlyTests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/PlugIns/ExerlyTests.xctest
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/Exerly.debug.dylib
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/__preview.dylib (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/__preview.dylib
+/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app/__preview.dylib: replacing existing signature
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app
+
+SwiftCompile normal arm64 Compiling\ ProductionUITests.swift /Users/aldo/Desktop/Exerly-Fitness/apps/ios/ExerlyUITests/ProductionUITests.swift (in target 'ExerlyUITests' from project 'Exerly')
+SwiftCompile normal arm64 /Users/aldo/Desktop/Exerly-Fitness/apps/ios/ExerlyUITests/ProductionUITests.swift (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ ExerlyUITests (in target 'ExerlyUITests' from project 'Exerly')
+
+SwiftCompile normal arm64 /Users/aldo/Desktop/Exerly-Fitness/apps/ios/ExerlyUITests/ProductionUITests.swift (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+
+Validate /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app (in target 'Exerly' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-validationUtility /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/Exerly.app -infoplist-subpath Info.plist
+
+ProcessInfoPlistFile /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/Info.plist /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/empty-ExerlyUITests.plist (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-infoPlistUtility /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/empty-ExerlyUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ProductTypeInfoPlistAdditions.plist -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/Info.plist
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for ExerlyUITests (in target 'ExerlyUITests' from project 'Exerly')
+
+SwiftDriver\ Compilation\ Requirements ExerlyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExerlyUITests -Onone -enforce-exclusivity\=checked @/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Index.noindex/DataStore -swift-version 5 -I /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache -output-file-map /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-generated-files.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-own-target-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-project-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-Swift.h -working-directory /Users/aldo/Desktop/Exerly-Fitness/apps/ios -experimental-emit-module-separately -disable-cmo
+
+Copy /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftsourceinfo (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftsourceinfo /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Copy /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.abi.json (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.abi.json /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProductionUITests.swift (in target 'ExerlyUITests' from project 'Exerly')
+
+SwiftDriver\ Compilation ExerlyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExerlyUITests -Onone -enforce-exclusivity\=checked @/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Index.noindex/DataStore -swift-version 5 -I /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache -output-file-map /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-generated-files.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-own-target-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests-project-headers.hmap -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources/arm64 -Xcc -I/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests-Swift.h -working-directory /Users/aldo/Desktop/Exerly-Fitness/apps/ios -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/ExerlyUITests normal (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -filelist /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.swiftmodule -framework XCTest -lXCTestSwiftSupport -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.xctest-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/ExerlyUITests
+
+CopySwiftLibs /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/ExerlyUITests --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/Frameworks --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/PlugIns --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/SystemExtensions --scan-folder /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name ExerlyUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.exerly.fitness.ExerlyUITests --output /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest/ExerlyUITests --dependency-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests_dependency_info.dat --stringsdata-file /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.SwiftFileList --metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.DependencyMetadataFileList --static-metadata-file-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/ExerlyUITests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Intermediates.noindex/Exerly.build/Debug-iphonesimulator/ExerlyUITests.build/Objects-normal/arm64/ExerlyUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-22 22:45:25.629 appintentsmetadataprocessor[98663:31978439] Starting appintentsmetadataprocessor export
+2026-09-22 22:45:25.630 appintentsmetadataprocessor[98663:31978439] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app/PlugIns/ExerlyUITests.xctest
+
+CodeSign /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app (in target 'ExerlyUITests' from project 'Exerly')
+    cd /Users/aldo/Desktop/Exerly-Fitness/apps/ios
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app
+/Users/aldo/Desktop/Exerly-Fitness/.deriveddata/Build/Products/Debug-iphonesimulator/ExerlyUITests-Runner.app: replacing existing signature
+
+2026-09-22 22:45:27.299557-0400 ExerlyUITests-Runner[98684:31978817] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-22 22:45:28.566.
+Test Suite 'ExerlyUITests.xctest' started at 2026-09-22 22:45:28.566.
+Test Suite 'ProductionUITests' started at 2026-09-22 22:45:28.566.
+Test Case '-[ExerlyUITests.ProductionUITests testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits]' started.
+    t =     0.00s Start Test at 2026-09-22 22:45:28.566
+    t =     0.02s Set Up
+    t =     0.37s Open com.exerly.fitness
+    t =     0.37s     Launch com.exerly.fitness
+    t =     0.37s         Terminate com.exerly.fitness:66578
+    t =     2.04s         Setting up automation session
+    t =     2.57s         Wait for com.exerly.fitness to idle
+    t =     3.74s Checking existence of `"I already have an account" Button`
+    t =     3.81s Checking existence of `Keyboard (First Match)`
+    t =     3.82s Checking existence of `"I already have an account" Button`
+    t =     3.82s Find the "I already have an account" Button
+    t =     3.83s Find the Target Application 'com.exerly.fitness'
+    t =     3.84s Find the "I already have an account" Button
+    t =     3.85s Checking existence of `"Home" Button`
+    t =     3.86s Checking existence of `"Home" Button`
+    t =     3.86s Find the Target Application 'com.exerly.fitness'
+    t =     3.87s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =     3.87s Checking existence of `"I already have an account" Button`
+    t =     3.88s Find the "I already have an account" Button
+    t =     3.89s Find the Target Application 'com.exerly.fitness'
+    t =     3.89s Find the "I already have an account" Button
+    t =     3.91s Checking existence of `NavigationBar (First Match)`
+    t =     3.91s Checking existence of `NavigationBar (First Match)`
+    t =     3.92s Checking existence of `"I already have an account" Button`
+    t =     3.93s Find the "I already have an account" Button
+    t =     3.93s Find the Target Application 'com.exerly.fitness'
+    t =     3.94s Find the "I already have an account" Button
+    t =     3.95s Find the "I already have an account" Button
+    t =     3.96s Find the "I already have an account" Button
+    t =     3.97s Checking existence of `"I already have an account" Button`
+    t =     3.98s Find the "I already have an account" Button
+    t =     3.99s Tap "I already have an account" Button
+    t =     3.99s     Wait for com.exerly.fitness to idle
+    t =     3.99s     Find the "I already have an account" Button
+    t =     4.00s     Check for interrupting elements affecting "I already have an account" Button
+    t =     4.01s     Synthesize event
+    t =     4.30s     Wait for com.exerly.fitness to idle
+    t =     4.30s Checking existence of `"Email" TextField`
+    t =     4.32s Checking existence of `Keyboard (First Match)`
+    t =     4.33s Checking existence of `"Email" TextField`
+    t =     4.34s Find the "Email" TextField
+    t =     4.35s Find the Target Application 'com.exerly.fitness'
+    t =     4.36s Find the "Email" TextField
+    t =     4.37s Checking existence of `"Home" Button`
+    t =     4.38s Checking existence of `"Home" Button`
+    t =     4.39s Find the Target Application 'com.exerly.fitness'
+    t =     4.39s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =     4.40s Checking existence of `"Email" TextField`
+    t =     4.41s Find the "Email" TextField
+    t =     4.42s Find the Target Application 'com.exerly.fitness'
+    t =     4.42s Find the "Email" TextField
+    t =     4.44s Checking existence of `NavigationBar (First Match)`
+    t =     4.45s Checking existence of `NavigationBar (First Match)`
+    t =     4.47s Checking existence of `"Email" TextField`
+    t =     4.48s Find the "Email" TextField
+    t =     4.49s Find the Target Application 'com.exerly.fitness'
+    t =     4.49s Find the "Email" TextField
+    t =     4.50s Find the "Email" TextField
+    t =     4.51s Find the "Email" TextField
+    t =     4.53s Checking existence of `"Email" TextField`
+    t =     4.54s Find the "Email" TextField
+    t =     4.55s Tap "Email" TextField
+    t =     4.55s     Wait for com.exerly.fitness to idle
+    t =     4.56s     Find the "Email" TextField
+    t =     4.57s     Check for interrupting elements affecting "Email" TextField
+    t =     4.58s     Synthesize event
+    t =     4.87s     Wait for com.exerly.fitness to idle
+    t =     5.05s Find the "Email" TextField
+    t =     5.09s Type 'food-precision-...' into "Email" TextField
+    t =     5.09s     Wait for com.exerly.fitness to idle
+    t =     5.46s     Find the "Email" TextField
+    t =     5.50s     Check for interrupting elements affecting "Email" TextField
+    t =     5.52s     Synthesize event
+2026-09-22 22:45:34.935944-0400 ExerlyUITests-Runner[98684:31978889] [connection] nw_protocol_socket_set_no_wake_from_sleep [C1:2] setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
+2026-09-22 22:45:34.936005-0400 ExerlyUITests-Runner[98684:31978889] [] nw_protocol_socket_set_no_wake_from_sleep setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
+    t =     6.82s     Wait for com.exerly.fitness to idle
+    t =     6.83s Find the "Email" TextField
+    t =     6.85s Find the "Email" TextField
+    t =     6.87s Checking existence of `"Password" SecureTextField`
+    t =     6.89s Checking existence of `Keyboard (First Match)`
+    t =     6.91s Checking existence of `"Password" SecureTextField`
+    t =     6.93s Find the "Password" SecureTextField
+    t =     6.96s Find the Target Application 'com.exerly.fitness'
+    t =     6.97s Find the "Password" SecureTextField
+    t =     7.00s Checking existence of `"Password" SecureTextField`
+    t =     7.02s Find the "Password" SecureTextField
+    t =     7.04s Find the Target Application 'com.exerly.fitness'
+    t =     7.06s Find the "Password" SecureTextField
+    t =     7.09s Checking existence of `"Home" Button`
+    t =     7.11s Checking existence of `"Home" Button`
+    t =     7.13s Find the Target Application 'com.exerly.fitness'
+    t =     7.14s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =     7.16s Checking existence of `"Password" SecureTextField`
+    t =     7.18s Find the "Password" SecureTextField
+    t =     7.21s Find the Target Application 'com.exerly.fitness'
+    t =     7.22s Find the "Password" SecureTextField
+    t =     7.25s Checking existence of `NavigationBar (First Match)`
+    t =     7.30s Checking existence of `NavigationBar (First Match)`
+    t =     7.35s Checking existence of `"Password" SecureTextField`
+    t =     7.38s Find the "Password" SecureTextField
+    t =     7.41s Find the Target Application 'com.exerly.fitness'
+    t =     7.42s Find the "Password" SecureTextField
+    t =     7.44s Find the "Password" SecureTextField
+    t =     7.53s Find the "Password" SecureTextField
+    t =     7.63s Checking existence of `"Password" SecureTextField`
+    t =     7.66s Find the "Password" SecureTextField
+    t =     7.69s Tap "Password" SecureTextField
+    t =     7.69s     Wait for com.exerly.fitness to idle
+    t =     7.69s     Find the "Password" SecureTextField
+    t =     7.72s     Check for interrupting elements affecting "Password" SecureTextField
+    t =     7.74s     Synthesize event
+    t =     8.03s     Wait for com.exerly.fitness to idle
+    t =     8.03s Find the "Password" SecureTextField
+    t =     8.05s Type 'Simulator-Test-...' into "Password" SecureTextField
+    t =     8.05s     Wait for com.exerly.fitness to idle
+    t =     8.06s     Find the "Password" SecureTextField
+    t =     8.08s     Check for interrupting elements affecting "Password" SecureTextField
+    t =     8.10s     Synthesize event
+    t =     8.67s     Wait for com.exerly.fitness to idle
+    t =     8.67s Find the "Password" SecureTextField
+    t =     8.69s Checking existence of `"Hide keyboard" Button`
+    t =     8.76s Checking existence of `"Done" Button`
+    t =     8.82s Tap "Done" Button
+    t =     8.82s     Wait for com.exerly.fitness to idle
+    t =     8.82s     Find the "Done" Button
+    t =     8.88s     Check for interrupting elements affecting "Done" Button
+    t =     8.90s     Synthesize event
+    t =     9.19s     Wait for com.exerly.fitness to idle
+    t =     9.53s Checking existence of `"Log In" Button`
+    t =     9.54s Checking existence of `Keyboard (First Match)`
+    t =     9.56s Checking existence of `"Log In" Button`
+    t =     9.57s Find the "Log In" Button
+    t =     9.58s Find the Target Application 'com.exerly.fitness'
+    t =     9.59s Find the "Log In" Button
+    t =     9.61s Checking existence of `"Home" Button`
+    t =     9.62s Checking existence of `"Home" Button`
+    t =     9.62s Find the Target Application 'com.exerly.fitness'
+    t =     9.63s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =     9.64s Checking existence of `"Log In" Button`
+    t =     9.65s Find the "Log In" Button
+    t =     9.66s Find the Target Application 'com.exerly.fitness'
+    t =     9.67s Find the "Log In" Button
+    t =     9.68s Checking existence of `NavigationBar (First Match)`
+    t =     9.70s Checking existence of `NavigationBar (First Match)`
+    t =     9.72s Checking existence of `"Log In" Button`
+    t =     9.73s Find the "Log In" Button
+    t =     9.74s Find the Target Application 'com.exerly.fitness'
+    t =     9.75s Find the "Log In" Button
+    t =     9.76s Find the "Log In" Button
+    t =     9.77s Find the "Log In" Button
+    t =     9.79s Checking existence of `"Log In" Button`
+    t =     9.80s Find the "Log In" Button
+    t =     9.82s Tap "Log In" Button
+    t =     9.82s     Wait for com.exerly.fitness to idle
+    t =     9.82s     Find the "Log In" Button
+    t =     9.83s     Check for interrupting elements affecting "Log In" Button
+    t =     9.85s     Synthesize event
+    t =    10.13s     Wait for com.exerly.fitness to idle
+    t =    10.13s Waiting 20.0s for "Diary" NavigationBar to exist
+    t =    11.15s     Checking `Expect predicate `existsNoRetry == 1` for object "Diary" NavigationBar`
+    t =    11.15s         Checking existence of `"Diary" NavigationBar`
+    t =    11.20s Checking existence of `"Edit Precise oats" Button`
+    t =    11.23s Waiting 5.0s for "Edit Precise oats" Button to exist
+    t =    12.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Edit Precise oats" Button`
+    t =    12.27s         Checking existence of `"Edit Precise oats" Button`
+    t =    12.30s         Capturing element debug description
+    t =    13.31s     Checking `Expect predicate `existsNoRetry == 1` for object "Edit Precise oats" Button`
+    t =    13.31s         Checking existence of `"Edit Precise oats" Button`
+    t =    13.34s         Capturing element debug description
+    t =    14.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Edit Precise oats" Button`
+    t =    14.26s         Checking existence of `"Edit Precise oats" Button`
+    t =    14.30s         Capturing element debug description
+    t =    15.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Edit Precise oats" Button`
+    t =    15.24s         Checking existence of `"Edit Precise oats" Button`
+    t =    15.28s         Capturing element debug description
+    t =    16.23s     Checking `Expect predicate `existsNoRetry == 1` for object "Edit Precise oats" Button`
+    t =    16.24s         Checking existence of `"Edit Precise oats" Button`
+    t =    16.27s         Capturing element debug description
+    t =    16.27s     Checking existence of `"Edit Precise oats" Button`
+    t =    16.30s Collecting debug information to assist test failure triage
+    t =    16.30s     Requesting snapshot of accessibility hierarchy for app with pid 98689
+    t =    16.35s Checking existence of `Keyboard (First Match)`
+    t =    16.41s Checking existence of `"Edit Precise oats" Button`
+    t =    16.43s Checking existence of `"Home" Button`
+    t =    16.46s Find the "Home" Button
+    t =    16.49s Find the Target Application 'com.exerly.fitness'
+    t =    16.50s Find the "Home" Button
+    t =    16.54s Find the "Home" Button
+    t =    16.56s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    16.58s Checking existence of `"Edit Precise oats" Button`
+    t =    16.60s Checking existence of `NavigationBar (Element at index 0)`
+    t =    16.62s Find the NavigationBar (Element at index 0)
+    t =    16.64s Checking existence of `"Edit Precise oats" Button`
+    t =    16.67s Checking existence of `"Edit Precise oats" Button`
+    t =    16.69s Press Target Application 'com.exerly.fitness'[0.50, 0.60] for 0.1 seconds, then drag to Target Application 'com.exerly.fitness'[0.50, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    16.69s     Wait for com.exerly.fitness to idle
+    t =    16.70s     Find the Target Application 'com.exerly.fitness'
+    t =    16.71s     Check for interrupting elements affecting "Exerly" Application
+    t =    16.74s     Synthesize event
+    t =    16.74s         Find the Target Application 'com.exerly.fitness'
+    t =    16.76s         Find the Target Application 'com.exerly.fitness'
+    t =    16.77s         Find the Target Application 'com.exerly.fitness'
+    t =    16.79s         Find the Target Application 'com.exerly.fitness'
+    t =    16.81s         Find the Target Application 'com.exerly.fitness'
+    t =    17.91s     Wait for com.exerly.fitness to idle
+    t =    17.91s Checking existence of `"Edit Precise oats" Button`
+    t =    17.95s Find the "Edit Precise oats" Button
+    t =    17.99s Find the Target Application 'com.exerly.fitness'
+    t =    18.01s Find the "Edit Precise oats" Button
+    t =    18.05s Checking existence of `"Home" Button`
+    t =    18.08s Find the "Edit Precise oats" Button
+    t =    18.11s Checking existence of `"Home" Button`
+    t =    18.15s Find the "Home" Button
+    t =    18.18s Find the Target Application 'com.exerly.fitness'
+    t =    18.20s Find the "Home" Button
+    t =    18.24s Find the "Home" Button
+    t =    18.28s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    18.31s Checking existence of `"Edit Precise oats" Button`
+    t =    18.34s Find the "Edit Precise oats" Button
+    t =    18.38s Find the Target Application 'com.exerly.fitness'
+    t =    18.40s Find the "Edit Precise oats" Button
+    t =    18.44s Checking existence of `NavigationBar (Element at index 0)`
+    t =    18.47s Find the "Edit Precise oats" Button
+    t =    18.50s Checking existence of `Button (First Match)`
+    t =    18.58s Checking existence of `NavigationBar (Element at index 0)`
+    t =    18.60s Find the NavigationBar (Element at index 0)
+    t =    18.63s Checking existence of `"Edit Precise oats" Button`
+    t =    18.66s Find the "Edit Precise oats" Button
+    t =    18.70s Find the Target Application 'com.exerly.fitness'
+    t =    18.72s Find the "Edit Precise oats" Button
+    t =    18.75s Find the "Edit Precise oats" Button
+    t =    18.79s Checking existence of `"Edit Precise oats" Button`
+    t =    18.82s Find the "Edit Precise oats" Button
+    t =    18.86s Find the "Edit Precise oats" Button
+    t =    18.89s Press Target Application 'com.exerly.fitness'[0.50, 0.60] for 0.1 seconds, then drag to Target Application 'com.exerly.fitness'[0.50, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    18.89s     Wait for com.exerly.fitness to idle
+    t =    18.97s     Find the Target Application 'com.exerly.fitness'
+    t =    18.99s     Check for interrupting elements affecting "Exerly" Application
+    t =    19.03s     Synthesize event
+    t =    19.03s         Find the Target Application 'com.exerly.fitness'
+    t =    19.05s         Find the Target Application 'com.exerly.fitness'
+    t =    19.07s         Find the Target Application 'com.exerly.fitness'
+    t =    19.09s         Find the Target Application 'com.exerly.fitness'
+    t =    19.11s         Find the Target Application 'com.exerly.fitness'
+    t =    20.22s     Wait for com.exerly.fitness to idle
+    t =    20.23s Checking existence of `"Edit Precise oats" Button`
+    t =    20.27s Find the "Edit Precise oats" Button
+    t =    20.31s Find the Target Application 'com.exerly.fitness'
+    t =    20.33s Find the "Edit Precise oats" Button
+    t =    20.37s Checking existence of `"Home" Button`
+    t =    20.41s Find the "Edit Precise oats" Button
+    t =    20.45s Checking existence of `"Home" Button`
+    t =    20.48s Find the "Home" Button
+    t =    20.52s Find the Target Application 'com.exerly.fitness'
+    t =    20.54s Find the "Home" Button
+    t =    20.58s Find the "Home" Button
+    t =    20.62s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    20.65s Checking existence of `"Edit Precise oats" Button`
+    t =    20.68s Find the "Edit Precise oats" Button
+    t =    20.71s Find the Target Application 'com.exerly.fitness'
+    t =    20.74s Find the "Edit Precise oats" Button
+    t =    20.78s Checking existence of `NavigationBar (Element at index 0)`
+    t =    20.81s Find the "Edit Precise oats" Button
+    t =    20.84s Checking existence of `Button (First Match)`
+    t =    20.93s Checking existence of `NavigationBar (Element at index 0)`
+    t =    20.96s Find the NavigationBar (Element at index 0)
+    t =    20.99s Checking existence of `"Edit Precise oats" Button`
+    t =    21.02s Find the "Edit Precise oats" Button
+    t =    21.06s Find the Target Application 'com.exerly.fitness'
+    t =    21.08s Find the "Edit Precise oats" Button
+    t =    21.12s Find the "Edit Precise oats" Button
+    t =    21.15s Find the "Edit Precise oats" Button
+    t =    21.20s Checking existence of `"Edit Precise oats" Button`
+    t =    21.23s Find the "Edit Precise oats" Button
+    t =    21.27s Tap "Edit Precise oats" Button
+    t =    21.27s     Wait for com.exerly.fitness to idle
+    t =    21.30s     Find the "Edit Precise oats" Button
+    t =    21.33s     Check for interrupting elements affecting "Edit Precise oats" Button
+    t =    21.36s     Synthesize event
+    t =    21.65s     Wait for com.exerly.fitness to idle
+    t =    22.11s Checking existence of `"Number of servings" TextField`
+    t =    22.18s Checking existence of `Keyboard (First Match)`
+    t =    22.30s Checking existence of `"Number of servings" TextField`
+    t =    22.34s Find the "Number of servings" TextField
+    t =    22.39s Find the Target Application 'com.exerly.fitness'
+    t =    22.41s Find the "Number of servings" TextField
+    t =    22.47s Checking existence of `"Home" Button`
+    t =    22.51s Find the "Number of servings" TextField
+    t =    22.56s Checking existence of `"Home" Button`
+    t =    22.60s Find the "Home" Button
+    t =    22.65s Find the Target Application 'com.exerly.fitness'
+    t =    22.68s Find the "Home" Button
+    t =    22.78s Find the Target Application 'com.exerly.fitness'
+    t =    22.81s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    22.86s Checking existence of `"Number of servings" TextField`
+    t =    22.90s Find the "Number of servings" TextField
+    t =    22.96s Find the Target Application 'com.exerly.fitness'
+    t =    22.98s Find the "Number of servings" TextField
+    t =    23.04s Checking existence of `NavigationBar (Element at index 1)`
+    t =    23.08s Find the "Number of servings" TextField
+    t =    23.13s Checking existence of `Button (First Match)`
+    t =    23.25s Checking existence of `NavigationBar (Element at index 1)`
+    t =    23.28s Find the NavigationBar (Element at index 1)
+    t =    23.32s Checking existence of `"Number of servings" TextField`
+    t =    23.36s Find the "Number of servings" TextField
+    t =    23.41s Find the Target Application 'com.exerly.fitness'
+    t =    23.44s Find the "Number of servings" TextField
+    t =    23.49s Find the "Number of servings" TextField
+    t =    23.54s Find the "Number of servings" TextField
+    t =    23.59s Checking existence of `"Number of servings" TextField`
+    t =    23.64s Find the "Number of servings" TextField
+    t =    23.70s Tap "Number of servings" TextField
+    t =    23.70s     Wait for com.exerly.fitness to idle
+    t =    23.70s     Find the "Number of servings" TextField
+    t =    23.75s     Check for interrupting elements affecting "Number of servings" TextField
+    t =    23.80s     Synthesize event
+    t =    24.09s     Wait for com.exerly.fitness to idle
+    t =    24.49s Find the "Number of servings" TextField
+    t =    24.57s Type '0.75' into "Number of servings" TextField
+    t =    24.57s     Wait for com.exerly.fitness to idle
+    t =    24.57s     Find the "Number of servings" TextField
+    t =    24.63s     Check for interrupting elements affecting "Number of servings" TextField
+    t =    24.68s     Synthesize event
+    t =    25.05s     Wait for com.exerly.fitness to idle
+    t =    25.05s Find the "Number of servings" TextField
+    t =    25.11s Find the "Number of servings" TextField
+    t =    25.16s Checking existence of `"Hide keyboard" Button`
+    t =    25.33s Checking existence of `"Done" Button`
+    t =    25.40s Tap "Done" Button
+    t =    25.40s     Wait for com.exerly.fitness to idle
+    t =    25.40s     Find the "Done" Button
+    t =    25.48s     Check for interrupting elements affecting "Done" Button
+    t =    25.53s     Synthesize event
+    t =    25.82s     Wait for com.exerly.fitness to idle
+    t =    26.16s Checking existence of `"75 kcal" StaticText`
+    t =    26.25s Checking existence of `Keyboard (First Match)`
+    t =    26.37s Checking existence of `"75 kcal" StaticText`
+    t =    26.45s Find the "75 kcal" StaticText
+    t =    26.53s Find the Target Application 'com.exerly.fitness'
+    t =    26.56s Find the "75 kcal" StaticText
+    t =    26.65s Checking existence of `"Home" Button`
+    t =    26.70s Find the "75 kcal" StaticText
+    t =    26.80s Checking existence of `"Home" Button`
+    t =    26.86s Find the "Home" Button
+    t =    26.91s Find the Target Application 'com.exerly.fitness'
+    t =    26.94s Find the "Home" Button
+    t =    27.04s Find the Target Application 'com.exerly.fitness'
+    t =    27.07s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    27.11s Checking existence of `"75 kcal" StaticText`
+    t =    27.20s Find the "75 kcal" StaticText
+    t =    27.29s Find the Target Application 'com.exerly.fitness'
+    t =    27.32s Find the "75 kcal" StaticText
+    t =    27.42s Checking existence of `NavigationBar (Element at index 1)`
+    t =    27.47s Find the "75 kcal" StaticText
+    t =    27.56s Checking existence of `Button (First Match)`
+    t =    27.69s Checking existence of `NavigationBar (Element at index 1)`
+    t =    27.73s Find the NavigationBar (Element at index 1)
+    t =    27.78s Checking existence of `"75 kcal" StaticText`
+    t =    27.87s Find the "75 kcal" StaticText
+    t =    28.16s Find the Target Application 'com.exerly.fitness'
+    t =    28.19s Find the "75 kcal" StaticText
+    t =    28.28s Find the "75 kcal" StaticText
+    t =    28.37s Find the "75 kcal" StaticText
+    t =    28.46s Checking existence of `"75 kcal" StaticText`
+    t =    28.54s Find the Target Application 'com.exerly.fitness'
+    t =    28.65s Added attachment named 'food-native-three-quarter-portion'
+    t =    28.65s Checking existence of `"Save changes" Button`
+    t =    28.71s Checking existence of `Keyboard (First Match)`
+    t =    28.83s Checking existence of `"Save changes" Button`
+    t =    28.88s Find the "Save changes" Button
+    t =    28.93s Find the Target Application 'com.exerly.fitness'
+    t =    28.96s Checking existence of `"Home" Button`
+    t =    29.01s Find the "Home" Button
+    t =    29.06s Find the Target Application 'com.exerly.fitness'
+    t =    29.10s Find the "Home" Button
+    t =    29.20s Find the Target Application 'com.exerly.fitness'
+    t =    29.23s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    29.27s Checking existence of `"Save changes" Button`
+    t =    29.31s Find the "Save changes" Button
+    t =    29.36s Find the Target Application 'com.exerly.fitness'
+    t =    29.39s Checking existence of `NavigationBar (Element at index 1)`
+    t =    29.43s Find the NavigationBar (Element at index 1)
+    t =    29.47s Checking existence of `"Save changes" Button`
+    t =    29.52s Find the "Save changes" Button
+    t =    29.57s Find the Target Application 'com.exerly.fitness'
+    t =    29.61s Checking existence of `"Save changes" Button`
+    t =    29.66s Find the "Save changes" Button
+    t =    29.71s Find the "Save changes" Button
+    t =    29.76s Press Target Application 'com.exerly.fitness'[0.50, 0.60] for 0.1 seconds, then drag to Target Application 'com.exerly.fitness'[0.50, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    29.76s     Wait for com.exerly.fitness to idle
+    t =    29.76s     Find the Target Application 'com.exerly.fitness'
+    t =    29.80s     Check for interrupting elements affecting "Exerly" Application
+    t =    29.84s     Synthesize event
+    t =    29.84s         Find the Target Application 'com.exerly.fitness'
+    t =    29.87s         Find the Target Application 'com.exerly.fitness'
+    t =    29.91s         Find the Target Application 'com.exerly.fitness'
+    t =    29.94s         Find the Target Application 'com.exerly.fitness'
+    t =    29.97s         Find the Target Application 'com.exerly.fitness'
+    t =    31.09s     Wait for com.exerly.fitness to idle
+    t =    31.10s Checking existence of `"Save changes" Button`
+    t =    31.15s Find the "Save changes" Button
+    t =    31.20s Find the Target Application 'com.exerly.fitness'
+    t =    31.23s Find the "Save changes" Button
+    t =    31.29s Checking existence of `"Home" Button`
+    t =    31.36s Find the "Save changes" Button
+    t =    31.42s Checking existence of `"Home" Button`
+    t =    31.47s Find the "Home" Button
+    t =    31.52s Find the Target Application 'com.exerly.fitness'
+    t =    31.56s Find the "Home" Button
+    t =    31.65s Find the Target Application 'com.exerly.fitness'
+    t =    31.68s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    31.72s Checking existence of `"Save changes" Button`
+    t =    31.78s Find the "Save changes" Button
+    t =    31.83s Find the Target Application 'com.exerly.fitness'
+    t =    31.86s Find the "Save changes" Button
+    t =    31.93s Checking existence of `NavigationBar (Element at index 1)`
+    t =    31.97s Find the "Save changes" Button
+    t =    32.02s Checking existence of `Button (First Match)`
+    t =    32.14s Checking existence of `NavigationBar (Element at index 1)`
+    t =    32.18s Find the NavigationBar (Element at index 1)
+    t =    32.22s Checking existence of `"Save changes" Button`
+    t =    32.27s Find the "Save changes" Button
+    t =    32.31s Find the Target Application 'com.exerly.fitness'
+    t =    32.35s Find the "Save changes" Button
+    t =    32.40s Find the "Save changes" Button
+    t =    32.45s Find the "Save changes" Button
+    t =    32.51s Checking existence of `"Save changes" Button`
+    t =    32.56s Find the "Save changes" Button
+    t =    32.63s Tap "Save changes" Button
+    t =    32.63s     Wait for com.exerly.fitness to idle
+    t =    32.63s     Find the "Save changes" Button
+    t =    32.69s     Check for interrupting elements affecting "Save changes" Button
+    t =    32.73s     Synthesize event
+    t =    33.03s     Wait for com.exerly.fitness to idle
+    t =    33.45s Waiting 10.0s for "Diary" NavigationBar to exist
+    t =    34.46s     Checking `Expect predicate `existsNoRetry == 1` for object "Diary" NavigationBar`
+    t =    34.46s         Checking existence of `"Diary" NavigationBar`
+    t =    34.53s Checking existence of `"Edit Precise oats" Button`
+    t =    34.57s Checking existence of `Keyboard (First Match)`
+    t =    34.65s Checking existence of `"Edit Precise oats" Button`
+    t =    34.68s Find the "Edit Precise oats" Button
+    t =    34.72s Find the Target Application 'com.exerly.fitness'
+    t =    34.74s Find the "Edit Precise oats" Button
+    t =    34.78s Checking existence of `"Home" Button`
+    t =    34.81s Find the "Edit Precise oats" Button
+    t =    34.84s Checking existence of `"Home" Button`
+    t =    34.88s Find the "Home" Button
+    t =    34.91s Find the Target Application 'com.exerly.fitness'
+    t =    34.93s Find the "Home" Button
+    t =    34.97s Find the "Home" Button
+    t =    35.01s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    35.03s Checking existence of `"Edit Precise oats" Button`
+    t =    35.07s Find the "Edit Precise oats" Button
+    t =    35.10s Find the Target Application 'com.exerly.fitness'
+    t =    35.13s Find the "Edit Precise oats" Button
+    t =    35.17s Checking existence of `NavigationBar (Element at index 0)`
+    t =    35.20s Find the "Edit Precise oats" Button
+    t =    35.23s Checking existence of `Button (First Match)`
+    t =    35.32s Checking existence of `NavigationBar (Element at index 0)`
+    t =    35.35s Find the NavigationBar (Element at index 0)
+    t =    35.39s Checking existence of `"Edit Precise oats" Button`
+    t =    35.43s Find the "Edit Precise oats" Button
+    t =    35.47s Find the Target Application 'com.exerly.fitness'
+    t =    35.50s Find the "Edit Precise oats" Button
+    t =    35.54s Find the "Edit Precise oats" Button
+    t =    35.58s Find the "Edit Precise oats" Button
+    t =    35.63s Checking existence of `"Edit Precise oats" Button`
+    t =    35.67s Find the "Edit Precise oats" Button
+    t =    35.71s Tap "Edit Precise oats" Button
+    t =    35.71s     Wait for com.exerly.fitness to idle
+    t =    35.72s     Find the "Edit Precise oats" Button
+    t =    35.75s     Check for interrupting elements affecting "Edit Precise oats" Button
+    t =    35.79s     Synthesize event
+    t =    36.08s     Wait for com.exerly.fitness to idle
+    t =    36.48s Checking existence of `"Correct nutrition per serving" Button`
+    t =    36.53s Checking existence of `Keyboard (First Match)`
+    t =    36.65s Checking existence of `"Correct nutrition per serving" Button`
+    t =    36.70s Find the "Correct nutrition per serving" Button
+    t =    36.74s Find the Target Application 'com.exerly.fitness'
+    t =    36.77s Checking existence of `"Home" Button`
+    t =    36.82s Find the "Home" Button
+    t =    36.86s Find the Target Application 'com.exerly.fitness'
+    t =    36.90s Find the "Home" Button
+    t =    36.99s Find the Target Application 'com.exerly.fitness'
+    t =    37.02s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    37.06s Checking existence of `"Correct nutrition per serving" Button`
+    t =    37.11s Find the "Correct nutrition per serving" Button
+    t =    37.16s Find the Target Application 'com.exerly.fitness'
+    t =    37.19s Checking existence of `NavigationBar (Element at index 1)`
+    t =    37.23s Find the NavigationBar (Element at index 1)
+    t =    37.27s Checking existence of `"Correct nutrition per serving" Button`
+    t =    37.32s Find the "Correct nutrition per serving" Button
+    t =    37.37s Find the Target Application 'com.exerly.fitness'
+    t =    37.40s Checking existence of `"Correct nutrition per serving" Button`
+    t =    37.44s Find the "Correct nutrition per serving" Button
+    t =    37.49s Find the "Correct nutrition per serving" Button
+    t =    37.55s Press Target Application 'com.exerly.fitness'[0.50, 0.60] for 0.1 seconds, then drag to Target Application 'com.exerly.fitness'[0.50, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    37.55s     Wait for com.exerly.fitness to idle
+    t =    37.55s     Find the Target Application 'com.exerly.fitness'
+    t =    37.58s     Check for interrupting elements affecting "Exerly" Application
+    t =    37.62s     Synthesize event
+    t =    37.63s         Find the Target Application 'com.exerly.fitness'
+    t =    37.66s         Find the Target Application 'com.exerly.fitness'
+    t =    37.69s         Find the Target Application 'com.exerly.fitness'
+    t =    37.72s         Find the Target Application 'com.exerly.fitness'
+    t =    37.75s         Find the Target Application 'com.exerly.fitness'
+    t =    38.86s     Wait for com.exerly.fitness to idle
+    t =    38.87s Checking existence of `"Correct nutrition per serving" Button`
+    t =    38.91s Find the "Correct nutrition per serving" Button
+    t =    38.96s Find the Target Application 'com.exerly.fitness'
+    t =    39.00s Find the "Correct nutrition per serving" Button
+    t =    39.06s Checking existence of `"Home" Button`
+    t =    39.11s Find the "Correct nutrition per serving" Button
+    t =    39.16s Checking existence of `"Home" Button`
+    t =    39.20s Find the "Home" Button
+    t =    39.25s Find the Target Application 'com.exerly.fitness'
+    t =    39.28s Find the "Home" Button
+    t =    39.38s Find the Target Application 'com.exerly.fitness'
+    t =    39.41s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    39.45s Checking existence of `"Correct nutrition per serving" Button`
+    t =    39.50s Find the "Correct nutrition per serving" Button
+    t =    39.55s Find the Target Application 'com.exerly.fitness'
+    t =    39.58s Find the "Correct nutrition per serving" Button
+    t =    39.63s Checking existence of `NavigationBar (Element at index 1)`
+    t =    39.67s Find the "Correct nutrition per serving" Button
+    t =    39.73s Checking existence of `Button (First Match)`
+    t =    39.86s Checking existence of `NavigationBar (Element at index 1)`
+    t =    39.90s Find the NavigationBar (Element at index 1)
+    t =    39.94s Checking existence of `"Correct nutrition per serving" Button`
+    t =    39.99s Find the "Correct nutrition per serving" Button
+    t =    40.04s Find the Target Application 'com.exerly.fitness'
+    t =    40.07s Find the "Correct nutrition per serving" Button
+    t =    40.12s Find the "Correct nutrition per serving" Button
+    t =    40.17s Find the "Correct nutrition per serving" Button
+    t =    40.23s Checking existence of `"Correct nutrition per serving" Button`
+    t =    40.27s Find the "Correct nutrition per serving" Button
+    t =    40.33s Tap "Correct nutrition per serving" Button
+    t =    40.33s     Wait for com.exerly.fitness to idle
+    t =    40.33s     Find the "Correct nutrition per serving" Button
+    t =    40.38s     Check for interrupting elements affecting "Correct nutrition per serving" Button
+    t =    40.43s     Synthesize event
+2026-09-22 22:46:09.075914-0400 ExerlyUITests-Runner[98684:31978877] [connection] nw_protocol_socket_set_no_wake_from_sleep [C2:2] setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
+2026-09-22 22:46:09.076011-0400 ExerlyUITests-Runner[98684:31978877] [] nw_protocol_socket_set_no_wake_from_sleep setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
+    t =    40.72s     Wait for com.exerly.fitness to idle
+    t =    40.73s Checking existence of `"Calories" TextField`
+    t =    40.78s Checking existence of `Keyboard (First Match)`
+    t =    40.92s Checking existence of `"Calories" TextField`
+    t =    40.97s Find the "Calories" TextField
+    t =    41.02s Find the Target Application 'com.exerly.fitness'
+    t =    41.06s Find the "99.5" TextField
+    t =    41.12s Checking existence of `"Home" Button`
+    t =    41.17s Find the "99.5" TextField
+    t =    41.22s Checking existence of `"Home" Button`
+    t =    41.28s Find the "Home" Button
+    t =    41.33s Find the Target Application 'com.exerly.fitness'
+    t =    41.37s Find the "Home" Button
+    t =    41.48s Find the Target Application 'com.exerly.fitness'
+    t =    41.51s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    41.55s Checking existence of `"99.5" TextField`
+    t =    41.60s Find the "99.5" TextField
+    t =    41.65s Find the Target Application 'com.exerly.fitness'
+    t =    41.68s Find the "99.5" TextField
+    t =    41.75s Checking existence of `NavigationBar (Element at index 1)`
+    t =    41.79s Find the "99.5" TextField
+    t =    41.83s Checking existence of `Button (First Match)`
+    t =    41.96s Checking existence of `NavigationBar (Element at index 1)`
+    t =    42.00s Find the NavigationBar (Element at index 1)
+    t =    42.04s Checking existence of `"99.5" TextField`
+    t =    42.09s Find the "99.5" TextField
+    t =    42.14s Find the Target Application 'com.exerly.fitness'
+    t =    42.18s Find the "99.5" TextField
+    t =    42.23s Find the "99.5" TextField
+    t =    42.29s Find the "99.5" TextField
+    t =    42.35s Checking existence of `"99.5" TextField`
+    t =    42.40s Find the "99.5" TextField
+    t =    42.46s Tap "99.5" TextField
+    t =    42.47s     Wait for com.exerly.fitness to idle
+    t =    42.47s     Find the "99.5" TextField
+    t =    42.52s     Check for interrupting elements affecting "99.5" TextField
+    t =    42.57s     Synthesize event
+    t =    42.87s     Wait for com.exerly.fitness to idle
+    t =    43.26s Find the "99.5" TextField
+    t =    43.32s Type '200.5' into "99.5" TextField
+    t =    43.32s     Wait for com.exerly.fitness to idle
+    t =    43.33s     Find the "99.5" TextField
+    t =    43.38s     Check for interrupting elements affecting "99.5" TextField
+    t =    43.43s     Synthesize event
+    t =    43.84s     Wait for com.exerly.fitness to idle
+    t =    43.84s Find the "99.5" TextField
+    t =    43.90s Find the "200.5" TextField
+    t =    43.95s Checking existence of `"Hide keyboard" Button`
+    t =    44.13s Checking existence of `"Done" Button`
+    t =    44.22s Tap "Done" Button
+    t =    44.22s     Wait for com.exerly.fitness to idle
+    t =    44.22s     Find the "Done" Button
+    t =    44.30s     Check for interrupting elements affecting "Done" Button
+    t =    44.35s     Synthesize event
+    t =    44.64s     Wait for com.exerly.fitness to idle
+    t =    44.96s Checking existence of `"Save changes" Button`
+    t =    45.02s Checking existence of `Keyboard (First Match)`
+    t =    45.15s Checking existence of `"Save changes" Button`
+    t =    45.20s Find the "Save changes" Button
+    t =    45.25s Find the Target Application 'com.exerly.fitness'
+    t =    45.28s Find the "Save changes" Button
+    t =    45.35s Checking existence of `"Home" Button`
+    t =    45.40s Find the "Save changes" Button
+    t =    45.45s Checking existence of `"Home" Button`
+    t =    45.50s Find the "Home" Button
+    t =    45.55s Find the Target Application 'com.exerly.fitness'
+    t =    45.58s Find the "Home" Button
+    t =    45.70s Find the Target Application 'com.exerly.fitness'
+    t =    45.73s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    45.77s Checking existence of `"Save changes" Button`
+    t =    45.82s Find the "Save changes" Button
+    t =    45.88s Find the Target Application 'com.exerly.fitness'
+    t =    45.91s Find the "Save changes" Button
+    t =    45.97s Checking existence of `NavigationBar (Element at index 1)`
+    t =    46.01s Find the "Save changes" Button
+    t =    46.06s Checking existence of `Button (First Match)`
+    t =    46.18s Checking existence of `NavigationBar (Element at index 1)`
+    t =    46.22s Find the NavigationBar (Element at index 1)
+    t =    46.26s Checking existence of `"Save changes" Button`
+    t =    46.31s Find the "Save changes" Button
+    t =    46.37s Find the Target Application 'com.exerly.fitness'
+    t =    46.40s Find the "Save changes" Button
+    t =    46.46s Find the "Save changes" Button
+    t =    46.51s Checking existence of `"Save changes" Button`
+    t =    46.56s Find the "Save changes" Button
+    t =    46.61s Find the "Save changes" Button
+    t =    46.66s Press Target Application 'com.exerly.fitness'[0.50, 0.60] for 0.1 seconds, then drag to Target Application 'com.exerly.fitness'[0.50, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    46.66s     Wait for com.exerly.fitness to idle
+    t =    46.67s     Find the Target Application 'com.exerly.fitness'
+    t =    46.70s     Check for interrupting elements affecting "Exerly" Application
+    t =    46.74s     Synthesize event
+    t =    46.74s         Find the Target Application 'com.exerly.fitness'
+    t =    46.77s         Find the Target Application 'com.exerly.fitness'
+    t =    46.81s         Find the Target Application 'com.exerly.fitness'
+    t =    46.84s         Find the Target Application 'com.exerly.fitness'
+    t =    46.87s         Find the Target Application 'com.exerly.fitness'
+    t =    47.98s     Wait for com.exerly.fitness to idle
+    t =    48.33s Checking existence of `"Save changes" Button`
+    t =    48.41s Find the "Save changes" Button
+    t =    48.51s Find the Target Application 'com.exerly.fitness'
+    t =    48.56s Find the "Save changes" Button
+    t =    48.67s Checking existence of `"Home" Button`
+    t =    48.72s Find the "Save changes" Button
+    t =    48.77s Checking existence of `"Home" Button`
+    t =    48.82s Find the "Home" Button
+    t =    48.87s Find the Target Application 'com.exerly.fitness'
+    t =    48.90s Find the "Home" Button
+    t =    49.00s Find the Target Application 'com.exerly.fitness'
+    t =    49.03s Get all elements bound by index for: Descendants matching type NavigationBar
+    t =    49.07s Checking existence of `"Save changes" Button`
+    t =    49.12s Find the "Save changes" Button
+    t =    49.17s Find the Target Application 'com.exerly.fitness'
+    t =    49.20s Find the "Save changes" Button
+    t =    49.26s Checking existence of `NavigationBar (Element at index 1)`
+    t =    49.30s Find the "Save changes" Button
+    t =    49.35s Checking existence of `Button (First Match)`
+    t =    49.49s Checking existence of `NavigationBar (Element at index 1)`
+    t =    49.53s Find the NavigationBar (Element at index 1)
+    t =    49.57s Checking existence of `"Save changes" Button`
+    t =    49.62s Find the "Save changes" Button
+    t =    49.68s Find the Target Application 'com.exerly.fitness'
+    t =    49.72s Find the "Save changes" Button
+    t =    49.77s Find the "Save changes" Button
+    t =    49.82s Find the "Save changes" Button
+    t =    49.89s Checking existence of `"Save changes" Button`
+    t =    49.94s Find the "Save changes" Button
+    t =    50.02s Tap "Save changes" Button
+    t =    50.02s     Wait for com.exerly.fitness to idle
+    t =    50.02s     Find the "Save changes" Button
+    t =    50.08s     Check for interrupting elements affecting "Save changes" Button
+    t =    50.13s     Synthesize event
+    t =    50.43s     Wait for com.exerly.fitness to idle
+    t =    50.87s Waiting 10.0s for "Diary" NavigationBar to exist
+    t =    51.89s     Checking `Expect predicate `existsNoRetry == 1` for object "Diary" NavigationBar`
+    t =    51.89s         Checking existence of `"Diary" NavigationBar`
+    t =    51.94s Tear Down
+Test Case '-[ExerlyUITests.ProductionUITests testFractionalFoodSnapshotSurvivesNativePortionAndNutritionEdits]' passed (52.176 seconds).
+Test Suite 'ProductionUITests' passed at 2026-09-22 22:46:20.743.
+	 Executed 1 test, with 0 failures (0 unexpected) in 52.176 (52.177) seconds
+Test Suite 'ExerlyUITests.xctest' passed at 2026-09-22 22:46:20.743.
+	 Executed 1 test, with 0 failures (0 unexpected) in 52.176 (52.177) seconds
+Test Suite 'Selected tests' passed at 2026-09-22 22:46:20.744.
+	 Executed 1 test, with 0 failures (0 unexpected) in 52.176 (52.178) seconds
+2026-09-22 22:46:21.052 xcodebuild[98273:31977365] [MT] IDETestOperationsObserverDebug: 55.314 elapsed -- Testing started completed.
+2026-09-22 22:46:21.052 xcodebuild[98273:31977365] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-22 22:46:21.052 xcodebuild[98273:31977365] [MT] IDETestOperationsObserverDebug: 55.314 sec, +55.314 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/aldo/Desktop/Exerly-Fitness/artifacts/food-precision-native-v3.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

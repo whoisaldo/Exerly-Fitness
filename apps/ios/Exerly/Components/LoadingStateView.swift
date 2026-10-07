@@ -20,9 +20,9 @@ struct LoadingStateView: View {
 struct EmptyStateView: View {
     let icon: String
     let title: String
-    var message: String? = nil
-    var actionTitle: String? = nil
-    var action: (() -> Void)? = nil
+    var message: String?
+    var actionTitle: String?
+    var action: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -51,7 +51,7 @@ struct EmptyStateView: View {
 
 struct ErrorStateView: View {
     let message: String
-    var retryAction: (() -> Void)? = nil
+    var retryAction: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 16) {

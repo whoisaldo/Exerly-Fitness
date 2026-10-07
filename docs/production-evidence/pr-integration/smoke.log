@@ -1,0 +1,18 @@
+
+> exerly-fitness@1.0.0 smoke:api
+> bash scripts/smoke-api.sh
+
+▶ Starting API (DB_MODE=local) on http://127.0.0.1:3001 ...
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+  Exerly API
+  Listening   http://localhost:3001
+  Storage     sqlite (/var/folders/zv/30ttjgdn7d3gckx1m9vwqf940000gn/T/exerly-smoke-XXXXXX.db.AuRh3dsD7Y)
+  AI          mock responses
+
+▶ Checking /ping ...
+▶ Checking /api/health ...
+▶ Exercising the daily loop (signup, weigh-in, food, summary) ...
+✓ API smoke test passed
+
+SIGTERM received, shutting down.

@@ -1,0 +1,12 @@
+# Raw simulator takes and Xcode result bundles stay local.
+phone-20*.mp4
+phone-20*.log
+phone-20*.json
+*.xcresult/
+phone-capture-attempt-*.json
+composition/.hyperframes/
+composition/renders/
+portrait/.hyperframes/
+portrait/renders/
+brag.render.mp4
+brag-portrait.render.mp4

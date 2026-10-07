@@ -70,8 +70,11 @@ struct Step7Diet: View {
                     let selected = state.allergies.contains(allergy)
                     Button {
                         withAnimation(.spring(response: 0.3)) {
-                            if selected { state.allergies.remove(allergy) }
-                            else { state.allergies.insert(allergy) }
+                            if selected {
+                                state.allergies.remove(allergy)
+                            } else {
+                                state.allergies.insert(allergy)
+                            }
                         }
                     } label: {
                         Text(allergy.label)

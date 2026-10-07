@@ -2,183 +2,47 @@ import SwiftUI
 
 struct Step10Results: View {
     @ObservedObject var state: OnboardingState
-    @State private var showResults = false
+    var onComplete: (() -> Void)?
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                header
-
-                if let r = state.results {
-                    calorieCard(r)
-                    macroCard(r)
-                    weeklyCalendar(r)
-                    sleepCard(r)
-                    bodyCard(r)
-                }
-
-                Spacer(minLength: 24)
-
-                ActionButton(title: "Continue") { state.nextStep() }
-            }
-            .padding(24)
-            .padding(.top, 16)
-            .opacity(showResults ? 1 : 0)
-            .offset(y: showResults ? 0 : 20)
-        }
-        .onAppear {
-            if state.results == nil { state.computeResults() }
-            withAnimation(.easeOut(duration: 0.6).delay(0.2)) { showResults = true }
-        }
-    }
-
-    private var header: some View {
-        VStack(spacing: 8) {
-            Text("Your Plan")
-                .font(.exH1)
-                .foregroundStyle(.exTextPrimary)
-            Text("Here's what we've built for you, \(state.name)")
-                .font(.exBody)
-                .foregroundStyle(.exTextSecondary)
-        }
-    }
-
-    private func calorieCard(_ r: WizardResults) -> some View {
-        GlassCard {
-            VStack(spacing: 8) {
-                Text("Daily Calorie Target")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                Text("\(r.calorieTarget)")
-                    .font(.exStat)
-                    .foregroundStyle(.exPrimary)
-                Text("kcal / day")
-                    .font(.exCaption)
-                    .foregroundStyle(.exTextMuted)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func macroCard(_ r: WizardResults) -> some View {
-        GlassCard {
-            VStack(spacing: 12) {
-                Text("Macro Breakdown")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                HStack(spacing: 16) {
-                    macroItem("Protein", value: r.proteinGrams, color: .exPrimary)
-                    macroItem("Fat", value: r.fatGrams, color: .exWarning)
-                    macroItem("Carbs", value: r.carbGrams, color: .exSuccess)
-                }
-            }
-        }
-    }
-
-    private func macroItem(_ label: String, value: Int, color: Color) -> some View {
-        VStack(spacing: 4) {
-            Text("\(value)g")
-                .font(.exStatSmall)
-                .foregroundStyle(color)
-            Text(label)
-                .font(.exCaption)
-                .foregroundStyle(.exTextSecondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func weeklyCalendar(_ r: WizardResults) -> some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Weekly Schedule")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                ForEach(r.weeklyPlan) { day in
-                    HStack(spacing: 12) {
-                        Text(String(day.day.prefix(3)))
-                            .font(.exMono)
-                            .foregroundStyle(.exTextMuted)
-                            .frame(width: 36)
-                        if day.isRestDay {
-                            Text("Rest Day")
-                                .font(.exCaption)
-                                .foregroundStyle(.exTextMuted)
-                        } else {
-                            Text(day.workoutType ?? "Workout")
-                                .font(.exCaption)
-                                .foregroundStyle(.exTextPrimary)
-                            Spacer()
-                            Text("\(day.durationMinutes) min")
-                                .font(.exCaption)
-                                .foregroundStyle(.exTextSecondary)
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Review your targets").font(.exH2)
+                Text(state.manualTargetMode ? "These are the targets you entered." : "These initial estimates use your measurements and activity level. You can review and change them in Program.")
+                    .font(.body).foregroundStyle(.exTextSecondary)
+                if let preview = state.serverPreview {
+                    GlassCard {
+                        VStack(spacing: 16) {
+                            targetRow("Calories", value: preview.targets.calories, unit: "kcal")
+                            targetRow("Protein", value: preview.targets.protein_g, unit: "g")
+                            targetRow("Carbohydrate", value: preview.targets.carbs_g, unit: "g")
+                            targetRow("Fat", value: preview.targets.fat_g, unit: "g")
                         }
                     }
+                    Text("The same targets will appear in Today, Program, and your web diary.")
+                        .font(.callout).foregroundStyle(.exTextSecondary)
+                    ActionButton(title: "Finish setup", isLoading: state.isSubmitting) {
+                        onComplete?()
+                    }
+                } else if let error = state.previewError {
+                    Text(error).foregroundStyle(.exError)
+                    Button("Retry target calculation") { Task { await state.loadPreview() } }
+                        .buttonStyle(.borderedProminent).frame(minHeight: 44)
+                    Text("Your answers are saved on this device.").font(.callout)
+                } else {
+                    ProgressView("Calculating targets")
                 }
-            }
+            }.padding(24)
         }
+        .task(id: state.previewIdentity) { await state.loadPreview() }
     }
 
-    private func sleepCard(_ r: WizardResults) -> some View {
-        GlassCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Sleep Schedule")
-                        .font(.exLabel)
-                        .foregroundStyle(.exTextSecondary)
-                    Text("\(r.sleepSchedule.bedtime) → \(r.sleepSchedule.wakeTime)")
-                        .font(.exBodyMedium)
-                        .foregroundStyle(.exTextPrimary)
-                }
-                Spacer()
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.exInfo)
-            }
-        }
-    }
-
-    private func bodyCard(_ r: WizardResults) -> some View {
-        let low: Double
-        let high: Double
-        let unit: String
-        if state.useMetric {
-            low = r.healthyWeightRange.lowerBound
-            high = r.healthyWeightRange.upperBound
-            unit = "kg"
-        } else {
-            low = WizardService.kgToLbs(r.healthyWeightRange.lowerBound)
-            high = WizardService.kgToLbs(r.healthyWeightRange.upperBound)
-            unit = "lbs"
-        }
-
-        return GlassCard {
-            HStack(spacing: 20) {
-                VStack(spacing: 2) {
-                    Text(String(format: "%.1f", r.bmi))
-                        .font(.exStatSmall)
-                        .foregroundStyle(.exTextPrimary)
-                    Text("BMI")
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextMuted)
-                }
-                VStack(spacing: 2) {
-                    Text(String(format: "%.0f%%", r.bodyFatEstimate))
-                        .font(.exStatSmall)
-                        .foregroundStyle(.exTextPrimary)
-                    Text("Est. Body Fat")
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextMuted)
-                }
-                VStack(spacing: 2) {
-                    Text("\(Int(low))-\(Int(high))")
-                        .font(.exStatSmall)
-                        .foregroundStyle(.exTextPrimary)
-                    Text("Healthy \(unit)")
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextMuted)
-                }
-            }
-            .frame(maxWidth: .infinity)
-        }
+    private func targetRow(_ title: String, value: Double, unit: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text("\(value, format: .number.precision(.fractionLength(0))) \(unit)")
+                .monospacedDigit().fontWeight(.semibold)
+        }.accessibilityElement(children: .combine)
     }
 }

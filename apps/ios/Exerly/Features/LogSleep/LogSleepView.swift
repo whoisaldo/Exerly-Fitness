@@ -1,180 +1,84 @@
 import SwiftUI
 
 struct LogSleepView: View {
+    let editing: SleepDTO?
+    let onDeleted: (String) -> Void
+    let onSaved: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var hours: Double = 7.5
-    @State private var quality = 3
-    @State private var bedtime = Calendar.current.date(
-        bySettingHour: 23, minute: 0, second: 0, of: Date()
-    ) ?? Date()
-    @State private var wakeTime = Calendar.current.date(
-        bySettingHour: 7, minute: 0, second: 0, of: Date()
-    ) ?? Date()
-    @State private var isSubmitting = false
+    @EnvironmentObject private var sync: SyncEngine
+    @State private var hours: String
+    @State private var quality: String
+    @State private var bedtime: String
+    @State private var wakeTime: String
+    @State private var selectedDate: CalendarDay
+    @State private var isSaving = false
+    @State private var confirmingDelete = false
+    @State private var error: String?
+    @FocusState private var focused: Bool
 
-    private let tips = [
-        "Avoid screens 30 min before bed",
-        "Keep your bedroom cool (65-68°F)",
-        "Stick to a consistent sleep schedule",
-        "Limit caffeine after 2 PM",
-        "Try a relaxation technique before bed",
-    ]
-
-    @State private var tipIndex = 0
-
+    init(initialDate: CalendarDay, editing: SleepDTO? = nil, onDeleted: @escaping (String) -> Void = { _ in }, onSaved: @escaping () -> Void = {}) {
+        self.editing = editing; self.onDeleted = onDeleted; self.onSaved = onSaved
+        _hours = State(initialValue: editing.map { $0.hours.formatted(.number.grouping(.never)) } ?? "")
+        _quality = State(initialValue: editing?.qualityLabel ?? "")
+        _bedtime = State(initialValue: editing?.bedtime ?? "")
+        _wakeTime = State(initialValue: editing?.wakeTime ?? "")
+        _selectedDate = State(initialValue: editing?.date.flatMap { CalendarDay(rawValue: $0) } ?? initialDate)
+    }
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    durationSection
-                    qualitySection
-                    timeSection
-                    tipCard
-                    submitButton
+            Form {
+                Section("Sleep entry") {
+                    LabeledContent("Hours slept") {
+                        TextField("Hours slept", text: $hours).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("sleep.hours")
+                    }
+                    Picker("Quality", selection: $quality) {
+                        Text("Not recorded").tag("")
+                        ForEach(["poor", "fair", "good", "great", "excellent"], id: \.self) { Text($0.capitalized).tag($0) }
+                        if !["", "poor", "fair", "good", "great", "excellent"].contains(quality) { Text(quality.capitalized).tag(quality) }
+                    }.accessibilityIdentifier("sleep.quality")
+                    LabeledContent("Bedtime") {
+                        TextField("Not recorded", text: $bedtime).focused($focused).accessibilityIdentifier("sleep.bedtime")
+                    }
+                    LabeledContent("Wake time") {
+                        TextField("Not recorded", text: $wakeTime).focused($focused).accessibilityIdentifier("sleep.wake-time")
+                    }
+                    CalendarDayPicker("Wake date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
+                    Text("Log overnight sleep on the day you woke up. Add naps separately. Hours are entered separately from the optional times.").font(.callout).foregroundStyle(.secondary)
                 }
-                .padding(20)
+                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.") }
+                if editing?.syncState == "attention" { NavigationLink("Review sleep changes") { SyncIssuesView() } }
+                if editing != nil {
+                    Section { Button("Delete sleep entry", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44) }
+                }
+                if let error { Text(error).foregroundStyle(.red) }
             }
-            .background(Color.exBackground)
-            .navigationTitle("Log Sleep")
+            .navigationTitle(editing == nil ? "Log sleep" : "Edit sleep")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(.exTextSecondary)
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save sleep") { save() }.disabled(isSaving) }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
+            }
+            .alert("Delete this sleep entry?", isPresented: $confirmingDelete) {
+                Button("Delete sleep entry", role: .destructive) {
+                    guard let editing else { return }
+                    do { onDeleted(try sync.deleteSleep(editing)); onSaved(); dismiss() }
+                    catch { self.error = error.localizedDescription }
                 }
-            }
-            .onAppear { tipIndex = Int.random(in: 0..<tips.count) }
+                Button("Cancel", role: .cancel) {}
+            } message: { Text("You can undo this after closing the form.") }
         }
     }
-
-    private var durationSection: some View {
-        GlassCard {
-            VStack(spacing: 16) {
-                Text("Duration")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-
-                arcSlider
-
-                Text(String(format: "%.1f hours", hours))
-                    .font(.exStatMedium)
-                    .foregroundStyle(.exPrimary)
-            }
+    private func save() {
+        guard !isSaving else { return }
+        guard let duration = UserEnteredNumber.parse(hours) else {
+            error = "Enter how many hours you slept."; return
         }
-    }
-
-    private var arcSlider: some View {
-        ZStack {
-            Circle()
-                .trim(from: 0, to: 0.75)
-                .stroke(Color.white.opacity(0.08), lineWidth: 10)
-                .rotationEffect(.degrees(135))
-            Circle()
-                .trim(from: 0, to: min(0.75, max(0, hours / 16 * 0.75)))
-                .stroke(
-                    Color.exPrimary,
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                )
-                .rotationEffect(.degrees(135))
-                .animation(.spring(response: 0.3), value: hours)
-
-            Image(systemName: "moon.zzz.fill")
-                .font(.system(size: 32))
-                .foregroundStyle(.exPrimary)
-        }
-        .frame(width: 160, height: 160)
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    let center = CGPoint(x: 80, y: 80)
-                    let angle = atan2(value.location.y - center.y, value.location.x - center.x)
-                    let normalized = (angle + .pi) / (2 * .pi)
-                    hours = max(1, min(14, normalized * 16))
-                }
-        )
-    }
-
-    private var qualitySection: some View {
-        GlassCard {
-            VStack(spacing: 10) {
-                Text("Sleep Quality")
-                    .font(.exLabel)
-                    .foregroundStyle(.exTextSecondary)
-                HStack(spacing: 8) {
-                    ForEach(1...5, id: \.self) { star in
-                        Button {
-                            withAnimation(.spring(response: 0.3)) { quality = star }
-                        } label: {
-                            Image(systemName: star <= quality ? "star.fill" : "star")
-                                .font(.system(size: 28))
-                                .foregroundStyle(star <= quality ? .exWarning : .exTextMuted)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var timeSection: some View {
-        HStack(spacing: 12) {
-            GlassCard {
-                VStack(spacing: 6) {
-                    Text("Bedtime")
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextSecondary)
-                    DatePicker("", selection: $bedtime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .colorScheme(.dark)
-                }
-            }
-            GlassCard {
-                VStack(spacing: 6) {
-                    Text("Wake Time")
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextSecondary)
-                    DatePicker("", selection: $wakeTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .colorScheme(.dark)
-                }
-            }
-        }
-    }
-
-    private var tipCard: some View {
-        GlassCard {
-            HStack(spacing: 12) {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundStyle(.exWarning)
-                Text(tips[tipIndex])
-                    .font(.exCaption)
-                    .foregroundStyle(.exTextSecondary)
-            }
-        }
-    }
-
-    private var submitButton: some View {
-        ActionButton(
-            title: "Log Sleep",
-            isLoading: isSubmitting
-        ) {
-            Task { await submit() }
-        }
-    }
-
-    private func submit() async {
-        isSubmitting = true
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        let req = SleepRequest(
-            hours: hours, quality: quality,
-            bedtime: formatter.string(from: bedtime),
-            wakeTime: formatter.string(from: wakeTime)
-        )
-        do {
-            let _: SleepDTO = try await APIClient.shared.createSleepLog(req)
-            dismiss()
-        } catch {
-            isSubmitting = false
-        }
+        isSaving = true; error = nil
+        let request = SleepRequest(hours: duration, quality: quality.isEmpty ? nil : quality,
+            bedtime: bedtime.isEmpty ? nil : bedtime, wakeTime: wakeTime.isEmpty ? nil : wakeTime,
+            entryDate: selectedDate.rawValue)
+        do { try sync.saveSleep(request, editing: editing); onSaved(); dismiss() }
+        catch { self.error = error.localizedDescription; isSaving = false }
     }
 }

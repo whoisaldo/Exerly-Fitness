@@ -115,7 +115,7 @@ struct PhotosTab: View {
 
     private func fetchPhotos() {
         let userEmail = authVM.currentUser?.email ?? ""
-        var descriptor = FetchDescriptor<ProgressPhoto>(
+        let descriptor = FetchDescriptor<ProgressPhoto>(
             predicate: #Predicate { $0.userId == userEmail },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )

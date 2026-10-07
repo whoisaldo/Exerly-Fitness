@@ -7,6 +7,7 @@ enum ProgressTab: String, CaseIterable {
 }
 
 struct ProgressView_: View {
+    let initialDate: CalendarDay
     @State private var selectedTab: ProgressTab = .measurements
 
     var body: some View {
@@ -46,7 +47,7 @@ struct ProgressView_: View {
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
-        case .measurements: MeasurementsTab()
+        case .measurements: MeasurementsTab(initialDate: initialDate)
         case .photos: PhotosTab()
         case .achievements: AchievementsTab()
         }

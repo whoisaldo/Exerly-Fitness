@@ -2,8 +2,8 @@ import SwiftUI
 
 struct SelectionCard: View {
     let title: String
-    var subtitle: String? = nil
-    var icon: String? = nil
+    var subtitle: String?
+    var icon: String?
     let isSelected: Bool
     let action: () -> Void
 

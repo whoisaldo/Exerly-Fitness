@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  title: Exerly API
+  version: 1.0.0
+  summary: Accounts, sessions and document sync for Exerly clients and your own agents.
+  description: |
+    The contract the iPhone app and ExerlyCore use. Legacy `/api/*` endpoints used
+    by the current app are not described here and will be retired as ExerlyCore
+    replaces them.
+
+    - Authenticate with `Authorization: Bearer <token>`. Access tokens last 15
+      minutes; refresh them with `POST /auth/token`.
+    - Writes accept `Idempotency-Key` (8 to 128 of `[A-Za-z0-9._:-]`). Retrying
+      with the same key and body returns the first response with
+      `Idempotency-Replayed: true` and changes nothing.
+    - Dates are ISO 8601 in UTC with milliseconds. Calendar dates are `YYYY-MM-DD`.
+  contact:
+    name: Sideband
+    url: https://sideband.studio
+    email: hello@sideband.studio
+servers:
+  - url: https://exerly-fitness-93dyl.ondigitalocean.app
+    description: Production on DigitalOcean App Platform
+security:
+  - bearer: []
+
+tags:
+  - name: Sessions
+    description: Signing in and keeping a session fresh.
+  - name: Account
+    description: Linked identities, the data export and account deletion.
+  - name: Sync
+    description: ExerlyCore documents and the change feed.
+
+paths:
+  /auth/apple:
+    post:
+      operationId: signInWithApple
+      tags: [Sessions]
+      summary: Sign in with Apple
+      description: |
+        Request Apple's credential with `nonce = sha256(raw)` (hex) and send the raw
+        nonce here. Each identity token works once.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identityToken, nonce]
+              properties:
+                identityToken: { type: string, description: The JWT from Apple's credential. }
+                nonce: { type: string, minLength: 16, maxLength: 256 }
+                name:
+                  {
+                    type: string,
+                    maxLength: 80,
+                    description: Sent by Apple on first authorization only.,
+                  }
+                timezone: { type: string, example: America/New_York }
+                unitSystem: { type: string, enum: [metric, imperial] }
+      responses:
+        '200': { $ref: '#/components/responses/SignedIn' }
+        '201': { $ref: '#/components/responses/SignedIn' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: |
+            An Exerly password account already uses this email
+            (`details.code = link_required`). Sign in with the password and link Apple.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /login:
+    post:
+      operationId: signInWithPassword
+      tags: [Sessions]
+      summary: Sign in with email and password
+      security: []
+      parameters:
+        - name: X-Session-Protocol
+          in: header
+          required: true
+          schema: { const: '2' }
+          description: Selects 15-minute access tokens with a rotating refresh credential.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/SignedIn' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /auth/token:
+    post:
+      operationId: refreshSession
+      tags: [Sessions]
+      summary: Rotate the refresh credential and get a new access token
+      description: |
+        Keep the `Idempotency-Key` until the new refresh credential is stored. A
+        retry after a lost response returns the same credential.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/SignedIn' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /auth/logout:
+    post:
+      operationId: signOut
+      tags: [Sessions]
+      summary: Revoke the current session
+      responses:
+        '200': { description: Signed out }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /api/account/identities/apple:
+    post:
+      operationId: connectApple
+      tags: [Account]
+      summary: Connect Sign in with Apple to the signed-in account
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identityToken, nonce]
+              properties:
+                identityToken: { type: string }
+                nonce: { type: string }
+      responses:
+        '200': { description: Already connected }
+        '201': { description: Connected }
+        '409': { $ref: '#/components/responses/Problem' }
+    delete:
+      operationId: disconnectApple
+      tags: [Account]
+      summary: Disconnect Sign in with Apple
+      description: Refused when the account has no password, because the person could not sign in again.
+      responses:
+        '200': { description: Disconnected }
+        '400': { $ref: '#/components/responses/Problem' }
+
+  /api/account:
+    delete:
+      operationId: deleteAccount
+      tags: [Account]
+      summary: Delete the account and all of its data
+      description: |
+        Removes every row the account owns in one transaction. When the account
+        uses Sign in with Apple and the server can revoke Apple tokens, send
+        `appleAuthorizationCode` from a fresh Apple sign-in; revocation happens
+        first, and if it fails nothing is deleted (`502`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm: { const: true }
+                appleAuthorizationCode: { type: string }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { const: true }
+                  apple_revoked: { type: boolean }
+                  removed: { type: object, additionalProperties: { type: integer } }
+        '400':
+          description: Missing confirmation, or `details.code = apple_reauthorization_required`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '502': { $ref: '#/components/responses/Problem' }
+
+  /api/export:
+    get:
+      operationId: exportAccount
+      tags: [Account]
+      summary: Everything the account owns, as one JSON document
+      description: |
+        Version 3. Each table the account owns appears as an array named after the
+        table (`documents`, `food`, `weights` and so on), plus `account`, `goals`
+        and `program` objects. Credentials, receipts and the change feed are
+        omitted.
+      responses:
+        '200':
+          description: The export, served as an attachment.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [exported_at, version, account]
+                properties:
+                  exported_at: { type: string, format: date-time }
+                  version: { const: 3 }
+                  account: { type: object }
+                  documents:
+                    type: array
+                    items: { type: object }
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /v1/tokens:
+    get:
+      tags: [Account]
+      operationId: listTokens
+      summary: Active personal access tokens (signed-in session only)
+      responses:
+        '200':
+          description: Tokens, without their secrets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Token' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Account]
+      operationId: createToken
+      summary: Create a personal access token for your own agent
+      description: |
+        The secret is returned once. Scopes: `read` (every token), `propose`
+        (file pending proposals) and `write` (change documents directly). A
+        token reaches only `/v1/*` and `/mcp`, never token management or
+        the account, and can never decide a proposal. Every token write and
+        filed proposal adds an audit event.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name: { type: string, maxLength: 60 }
+                scopes:
+                  type: array
+                  minItems: 1
+                  items: { type: string, enum: [read, propose, write] }
+                expires_in_days: { type: integer, minimum: 1, maximum: 3650 }
+      responses:
+        '201':
+          description: The token, including its secret, shown only now.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Token'
+                  - type: object
+                    required: [token]
+                    properties:
+                      token: { type: string, example: exr_... }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /v1/tokens/{id}:
+    delete:
+      tags: [Account]
+      operationId: revokeToken
+      summary: Revoke a personal access token
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': { description: Revoked }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /v1/webhooks:
+    get:
+      tags: [Account]
+      operationId: listWebhooks
+      summary: Your webhooks (a token sees only those it created)
+      responses:
+        '200':
+          description: Webhooks, without their secrets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Webhook' }
+        '401': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Account]
+      operationId: createWebhook
+      summary: Be told when your change feed moves on
+      description: |
+        Exerly POSTs `{"type":"changes","webhook_id":…,"sequence":…,"sent_at":…}`
+        to the URL after changes, coalesced to the latest sequence. It carries
+        no data: read `/v1/changes?after=` with your own token. Check the
+        `Exerly-Signature` header, `t=<unix seconds>,v1=<hex>`, where the hex
+        is HMAC-SHA256 of `<t>.<raw body>` with the secret, which is returned
+        once. Failures retry after 30 s, doubling up to 6 h; 15 in a row
+        disable the webhook. The URL must be https and reach a public
+        address. A webhook made with a token stops when the token is revoked.
+        At most 5 an account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, maxLength: 2000 }
+      responses:
+        '201':
+          description: The webhook, with its signing secret, shown once.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Webhook'
+                  - type: object
+                    required: [secret]
+                    properties:
+                      secret: { type: string, example: whsec_… }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /v1/webhooks/{id}:
+    delete:
+      tags: [Account]
+      operationId: deleteWebhook
+      summary: Delete a webhook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /v1/webhooks/{id}/enable:
+    post:
+      tags: [Account]
+      operationId: enableWebhook
+      summary: Resume a disabled webhook from where it left off
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The webhook, enabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /v1/documents/{kind}/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Kind'
+      - $ref: '#/components/parameters/DocumentID'
+    get:
+      operationId: getDocument
+      tags: [Sync]
+      summary: Read a document
+      responses:
+        '200':
+          description: The document, or its tombstone.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '404': { $ref: '#/components/responses/Problem' }
+    put:
+      operationId: putDocument
+      tags: [Sync]
+      summary: Create or replace a document
+      description: |
+        `base_revision` is the revision the client last saw (0 to create). A stale
+        base returns `409` with the current document in `details.document`; merge
+        and retry.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payload, base_revision]
+              properties:
+                base_revision: { type: integer, minimum: 0 }
+                payload:
+                  type: object
+                  required: [id]
+                  description: The ExerlyCore entity. `payload.id` must equal the path ID.
+                  properties:
+                    id: { type: string }
+                  additionalProperties: true
+      responses:
+        '200': { $ref: '#/components/responses/Acknowledged' }
+        '201': { $ref: '#/components/responses/Acknowledged' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      operationId: deleteDocument
+      tags: [Sync]
+      summary: Delete a document, leaving a tombstone
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: base_revision
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Acknowledged' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /v1/changes:
+    get:
+      operationId: listChanges
+      tags: [Sync]
+      summary: Document changes after a cursor, oldest first
+      parameters:
+        - name: after
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 500 }
+      responses:
+        '200':
+          description: |
+            Changes and the next cursor. The cursor can advance past entries this
+            API doesn't return. Keep reading while `has_more` is true.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [changes, cursor, has_more]
+                properties:
+                  changes:
+                    type: array
+                    items: { $ref: '#/components/schemas/Change' }
+                  cursor: { type: integer }
+                  has_more: { type: boolean }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /v1/foods/search:
+    get:
+      operationId: searchFoods
+      tags: [Foods]
+      summary: Foods from Open Food Facts, as ExerlyCore Foods
+      description: |
+        Each result has the `saved_food` document shape, with nutrients per
+        100 g in ExerlyCore's units, so it can be saved or logged as it is.
+        Show the attribution with the results. Search runs on submit, not as
+        you type; the database's shared budget is small.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Matching foods; empty when the database is busy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [foods, attribution]
+                properties:
+                  foods:
+                    type: array
+                    items: { $ref: '#/components/schemas/DatabaseFood' }
+                  attribution: { type: string }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /v1/foods/barcode/{code}:
+    get:
+      operationId: lookupBarcode
+      tags: [Foods]
+      summary: The food with a UPC or EAN barcode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[0-9]{8,14}$' }
+        - name: symbology
+          in: query
+          schema: { type: string, enum: [upca, upce, ean8, ean13, gtin14, itf14] }
+      responses:
+        '200':
+          description: The food and the attribution to show with it.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [food, attribution]
+                properties:
+                  food: { $ref: '#/components/schemas/DatabaseFood' }
+                  attribution: { type: string }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: The database is busy; retry after `Retry-After` seconds.
+          headers:
+            Retry-After: { schema: { type: integer } }
+        '503': { $ref: '#/components/responses/Problem' }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: A session access token (JWT), or a personal access token (`exr_...`) on `/v1/*` and `/mcp`.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema: { type: string, pattern: '^[a-zA-Z0-9._:-]{8,128}$' }
+    IdempotencyKeyRequired:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, pattern: '^[a-zA-Z0-9._:-]{8,128}$' }
+    Kind:
+      name: kind
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - workout_session
+          - custom_exercise
+          - program
+          - saved_food
+          - food_entry
+          - nutrition_day
+          - weight_entry
+          - nutrition_plan
+          - custom_metric
+          - metric_entry
+          - experiment
+          - gym_profile
+          - proposal
+          - audit_event
+      description: |
+        `audit_event` documents are append-only: they can be created, and
+        re-sent unchanged, but never changed or deleted.
+    DocumentID:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$' }
+      description: |
+        A UUID is one document whatever its letter case. The server stores and
+        returns it in uppercase, the form ExerlyCore writes, and does the same
+        for the IDs a proposal or audit event refers to.
+
+  responses:
+    SignedIn:
+      description: A session.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Session' }
+    Acknowledged:
+      description: The write was applied.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Acknowledgement' }
+    Conflict:
+      description: The base revision is stale. `details.document` is the current document, or null.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Problem:
+      description: An error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    DatabaseFood:
+      type: object
+      description: |
+        An ExerlyCore `Food` from a public database. `per100g` is keyed by
+        ExerlyCore's nutrient names (energy in kcal; others in g, mg or µg as
+        ExerlyCore's `Nutrient.unit` says). A label per 100 ml, or servings in
+        millilitres, are converted to grams with a typical density for the
+        product's category, recorded in `volume`: the label per 100 ml is
+        `per100g` times the density. docs/api/golden/foods-v1.json has examples.
+      required: [id, name, source, per100g, servings, favorite, createdAt]
+      properties:
+        id: { type: string, example: 'off:0012345678905' }
+        name: { type: string }
+        brand: { type: string }
+        source: { type: string, enum: [openFoodFacts] }
+        per100g: { type: object, additionalProperties: { type: number, minimum: 0 } }
+        servings:
+          type: array
+          items:
+            type: object
+            required: [name, grams]
+            properties:
+              name: { type: string }
+              grams: { type: number, exclusiveMinimum: 0 }
+        barcode: { type: string }
+        favorite: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        volume:
+          type: object
+          description: Present for a product labelled per volume.
+          required: [density, assumed]
+          properties:
+            density: { type: number, description: Grams per millilitre, between 0.3 and 3 }
+            assumed:
+              { type: boolean, description: True when typical for the category, not measured }
+            note:
+              { type: string, description: Where the density came from, to show beside the food }
+    Session:
+      type: object
+      required: [token, expiresIn, sessionId, user]
+      properties:
+        created: { type: boolean, description: Present on Sign in with Apple. }
+        token:
+          type: string
+          description: Access token, valid for `expiresIn` seconds.
+        refreshToken: { type: string }
+        expiresIn: { type: integer, example: 900 }
+        sessionId: { type: string, format: uuid }
+        user: { type: object }
+    Document:
+      type: object
+      required: [kind, id, revision, deleted, payload, updated_at]
+      properties:
+        kind: { type: string }
+        id: { type: string }
+        revision: { type: integer, minimum: 1 }
+        deleted: { type: boolean }
+        payload: { type: [object, 'null'] }
+        updated_at: { type: string, format: date-time }
+    Acknowledgement:
+      type: object
+      required: [kind, id, revision, deleted, updated_at]
+      properties:
+        kind: { type: string }
+        id: { type: string }
+        revision: { type: integer }
+        deleted: { type: boolean }
+        updated_at: { type: string, format: date-time }
+    Change:
+      type: object
+      required: [sequence, kind, id, revision, deleted, payload]
+      properties:
+        sequence: { type: integer }
+        kind: { type: string }
+        id: { type: string }
+        revision: { type: integer }
+        deleted: { type: boolean }
+        payload: { type: [object, 'null'] }
+        updated_at: { type: string, format: date-time }
+    Webhook:
+      type: object
+      required: [id, url, created_at, delivered_sequence, failures]
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        created_at: { type: string, format: date-time }
+        created_by_token: { type: string, format: uuid, nullable: true }
+        delivered_sequence: { type: number }
+        last_delivery_at: { type: string, format: date-time, nullable: true }
+        failures: { type: integer }
+        last_error: { type: string, nullable: true }
+        disabled_at: { type: string, format: date-time, nullable: true }
+    Token:
+      type: object
+      required: [id, name, prefix, scopes, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        prefix: { type: string, description: 'The first 12 characters, to recognise it.' }
+        scopes:
+          type: array
+          items: { type: string, enum: [read, propose, write] }
+        created_at: { type: string, format: date-time }
+        last_used_at: { type: [string, 'null'], format: date-time }
+        expires_at: { type: [string, 'null'], format: date-time }
+    Problem:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        details: { type: object }

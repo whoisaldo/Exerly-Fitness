@@ -1,0 +1,359 @@
+# Exerly parity and Beyond
+
+Inventory checked against public primary sources on 2026-10-06. This file is the
+acceptance backlog. It does not certify parity. No row is device-verified yet.
+
+## Evidence rules
+
+`Missing` means no complete implementation identified. `Partial` means existing
+code covers part of the row. `Built` requires passing automated checks. `Verified`
+requires current simulator journeys and a physical-device check using the recorded
+internal TestFlight build. Record the build, test name, screenshot paths and device
+for every verified row. An old screenshot or a passing API test alone is insufficient.
+
+Every row also requires offline save/relaunch, explicit errors, account isolation,
+correct locale/units/timezone, VoiceOver and largest Dynamic Type. Capture light
+and dark on small and large phones. Shared requirements need their own evidence.
+
+Acceptance criteria below are Exerly's requirements, not quotations of competitor
+behavior. `[Export]` refers to the October 2026 export field inventory supplied in
+[the brief](AGENT_BRIEF.md#ground-truth-macrofactors-own-export-oct-2026). It is
+user-provided evidence, not a claim that we inspected real personal data. Public
+sources confirm the feature families; field-level details remain export-derived.
+
+`B` names a proposed improvement that must be measured. `Parity` means the feature
+already exists in the cited competitor. No superiority claim is currently proven.
+
+## Nutrition logging and food library
+
+| ID  | Feature and primary source                                                | Status  | Acceptance criteria                                                                                               | Beyond                             | Evidence                                      |
+| --- | ------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------- |
+| N01 | Calories and macros [MF nutrition][nutrition]                             | Partial | Log/edit energy, protein, carbohydrate and fat with preserved input precision and source.                         | Parity                             | Existing LogFoodView; no current device proof |
+| N02 | Search and barcode lookup [MF nutrition][nutrition]                       | Partial | Search branded/common foods; barcode hit/miss; show source, serving basis and unknown values.                     | B: coverage benchmark in B10       | BarcodeScannerView; historical tests          |
+| N03 | Fractional portions and unit preferences [MF logger][logger]              | Partial | Change grams, millilitres and servings without cumulative rounding; metric/imperial and comma decimals.           | Parity                             | ProductionTests portion fixtures              |
+| N04 | Multi-add and plate editing [MF logger][logger]                           | Missing | Add several foods, edit portions, review meal totals, save once atomically.                                       | Parity                             | None                                          |
+| N05 | Quick calories/macros [MF nutrition][nutrition]                           | Partial | Log totals without creating a reusable food; edit and remove later.                                               | Parity                             | Manual food form only                         |
+| N06 | Past/future dates and hourly timeline [MF help][nutrition-index]          | Partial | Log to selected calendar day and hour, including DST transitions; future food stays out of historical coaching.   | Parity                             | AccountCalendar tests; no hourly UI           |
+| N07 | Copy/move foods, meals and days [MF nutrition][nutrition]                 | Missing | Copy selected entries to another day; move time; retain nutrients and stable provenance without duplicate replay. | Parity                             | None                                          |
+| N08 | Edit/delete/undo logged entries [MF help][nutrition-index]                | Partial | Edit quantity/nutrition, delete and restore across relaunch; show conflicts before overwriting.                   | B: audited changes                 | Existing diary queue and tests                |
+| N09 | History, favorites and hourly suggestions [MF logger][logger]             | Partial | Search recents/favorites; rank by selected time; remove an hourly suggestion.                                     | B: repeat food in <=3 taps         | FoodLibraryView; no tap-count proof           |
+| N10 | Custom food create/edit/duplicate [MF help][nutrition-index]              | Partial | All nutrients and serving definitions editable; prior log snapshots stay unchanged.                               | Parity                             | CreateFoodView; snapshot tests                |
+| N11 | Recipes, yield and preparation [MF help][nutrition-index]                 | Partial | Ingredient CRUD/reorder, cooked weight, serving count, preparation notes and accurate per-serving totals.         | Parity                             | API recipe path; native flow incomplete       |
+| N12 | Recipe reuse, explode and sharing [MF help][nutrition-index]              | Missing | Build recipe from meal, duplicate/share/import, expand ingredients into a meal without changing old logs.         | Parity                             | None                                          |
+| N13 | Recipe URL/photo import [MF nutrition][nutrition]                         | Missing | User supplies URL or photo; review parsed ingredients and source before creating recipe; manual fallback.         | Parity                             | None                                          |
+| N14 | Barcode camera permission/fallback [MF label scanner][label]              | Partial | Denial/restricted/no camera offer manual entry; a missing barcode opens label/manual flow.                        | Parity                             | Existing barcode sheet                        |
+| N15 | Nutrition label OCR [MF label scanner][label]                             | Missing | Scan synthetic US/Canadian labels; review units, serving basis and uncertain text before saving.                  | B: entirely on device              | None                                          |
+| N16 | Photo and text meal logging [MF AI food][ai-food]                         | Missing | Editable ingredient proposal with source/confidence; confirmation required; AI-off manual path.                   | B: local inference where supported | None                                          |
+| N17 | Food corrections [MF label scanner][label]                                | Missing | Personal correction retains provenance; sharing has explicit consent and provider attribution.                    | Parity                             | None                                          |
+| N18 | Consumed/remaining and overages [MF help][nutrition-index]                | Partial | Toggle consumed/remaining; overage visible as a signed amount; goals for selected day.                            | Parity                             | Diary consumed summary                        |
+| N19 | Food notes, fasting and partial logging [MF coaching][coaching], [Export] | Partial | Each flag and note survives offline edits; zero/unknown/fasted differ in analysis.                                | Parity                             | Diary status tests                            |
+| N20 | Water [Export], [MF shortcuts][shortcuts]                                 | Partial | Quick/custom volume, removal and undo; food water and drinks have explicit totals without double counting.        | Parity                             | Water queue tests                             |
+
+## Nutrients and analytics
+
+The following nutrient rows retain missing values as unknown. Each requires storage,
+manual entry, food detail, totals, goals, history and export. Target bars expose the
+same values to VoiceOver. Completeness is separate from nutrient intake.
+
+| ID  | Feature and primary source                                                                                                             | Status  | Acceptance criteria                                                                                                                 | Beyond                     | Evidence                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------- |
+| N21 | B1, B2, B3, B5, B6, B12 and folate [MF nutrient explorer][nutrients], [Export]                                                         | Missing | Preserve all seven independently with correct units.                                                                                | Parity                     | None                               |
+| N22 | Vitamins A, C, D, E, K [MF nutrient explorer][nutrients], [Export]                                                                     | Missing | Support source units and documented conversions; no invented zeros.                                                                 | Parity                     | None                               |
+| N23 | Calcium, copper, iron, magnesium, manganese, phosphorus, potassium, selenium, sodium, zinc [MF nutrient explorer][nutrients], [Export] | Partial | All ten fields survive entry, aggregation and export.                                                                               | Parity                     | Sodium only in existing food model |
+| N24 | Essential amino acids and related export fields [MF nutrients][nutrition-index], [Export]                                              | Missing | Histidine, isoleucine, leucine, lysine, methionine, phenylalanine, threonine, tryptophan, valine, cysteine and tyrosine round-trip. | Parity                     | None                               |
+| N25 | Mono/poly/saturated/trans fats; omega-3 total, ALA, DHA, EPA; omega-6 [MF nutrient explorer][nutrients], [Export]                      | Partial | Keep individual fields and total definitions; prevent double counting.                                                              | Parity                     | Saturated fat only                 |
+| N26 | Fiber, starch, sugars, added sugars, net carbs [MF nutrients][nutrition-index], [Export]                                               | Partial | Show components and calculation method; keep missing separate from zero.                                                            | Parity                     | Fiber/sugar only                   |
+| N27 | Alcohol, caffeine, cholesterol, choline, water [MF nutrients][nutrition-index], [Export]                                               | Partial | All five support explicit units, goals and export.                                                                                  | Parity                     | Water only                         |
+| N28 | Daily/week/month/quarter/year nutrient overview [MF overview][overview]                                                                | Missing | Yesterday, 7/30/90/365 days; target marker, percentage and observation count per nutrient.                                          | B: missing-data disclosure | None                               |
+| N29 | Nutrient goal floor/target/ceiling and history [MF nutrient explorer][nutrients]                                                       | Missing | Edit individual/range goals; validate ordering; historical views use historical goals.                                              | Parity                     | None                               |
+| N30 | Nutrient contributors [MF overview][overview]                                                                                          | Missing | Ranked food shares for chosen nutrient/window link to editable logs.                                                                | Parity                     | None                               |
+| N31 | Nutrient timing [MF nutrition][nutrition]                                                                                              | Missing | Plot intake by recorded local hour; explain entries without exact times.                                                            | Parity                     | None                               |
+| N32 | Nutrient completeness and pinned nutrients [MF nutrient explorer][nutrients]                                                           | Missing | Explain completeness denominator; pinned metrics persist and remain readable at large text.                                         | Parity                     | None                               |
+| N33 | Nutrition/weight habits and customizable dashboard [MF nutrition][nutrition]                                                           | Partial | Calendar shows recorded/missing/fasted days; reorder/hide metrics; no confetti.                                                     | Parity                     | Existing streak UI needs redesign  |
+
+## Nutrition strategy and body
+
+| ID  | Feature and primary source                                                     | Status  | Acceptance criteria                                                                                                    | Beyond                          | Evidence                                  |
+| --- | ------------------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------------------- |
+| S01 | Coached, collaborative and manual targets [MF program styles][styles]          | Partial | Switch mode without history loss; manual targets work with AI off.                                                     | B: proposals/undo               | Existing ProgramView                      |
+| S02 | Balanced, high-carb, low-carb and keto preferences [MF program styles][styles] | Partial | Core computes targets; show inputs, constraints and overrides.                                                         | Parity                          | Existing onboarding                       |
+| S03 | Weekly budget and per-weekday targets [MF program styles][styles], [Export]    | Missing | Seven day-specific targets sum to displayed budget; fasting day can differ.                                            | Parity                          | None                                      |
+| S04 | Adaptive expenditure and static override [MF nutrition][nutrition], [Export]   | Partial | Tested estimator with missing/partial data; manual initial value, start date and mode; error evidence.                 | B: auditable calculation inputs | Backend algorithm, not device-verified    |
+| S05 | Weekly review and configurable check-in day [MF coaching][coaching]            | Partial | Review target diff, accept/decline; recognize partial logging, fasting, weigh-in and breaks.                           | B: evidence and falsifiers      | Existing check-in, no full proposal model |
+| S06 | Weight gain/loss/maintenance goals [MF nutrition][nutrition], [Export]         | Partial | Goal weight, %/week rate, ETA, start/end, checkpoints and historical goals; reopen safely.                             | Parity                          | Existing basic goal                       |
+| S07 | Scale weight, fat percent and trend [MF nutrition][nutrition], [Export]        | Partial | Edit/delete/undo readings; gaps distinct; trend links to source data with estimator error.                             | Parity                          | Weight queue/trend tests                  |
+| S08 | Profile fields [Export]                                                        | Partial | Sex, birthday, height, activity, weekly sessions, lifting/cardio experience, pursuits and prediction style round-trip. | Parity                          | Basic onboarding fields                   |
+| S09 | Body measurements [MF body tracking][nutrition-index], [Export]                | Partial | Bust/chest/hips/neck/shoulders/waist plus left/right ankle/bicep/calf/forearm/thigh/wrist and visual fat assessment.   | Parity                          | MeasurementsTab supports subset           |
+| S10 | Progress photos and comparison [MF nutrition][nutrition]                       | Partial | Local front/side/back photos, dates, delete, compare and explicit share; account isolation.                            | Parity                          | PhotosTab                                 |
+| S11 | Steps [MF workouts dashboard][workouts-dashboard]                              | Partial | Import authorized step totals, historical chart and source; no fabricated expenditure contribution.                    | Parity                          | Basic HealthKit read                      |
+| S12 | Period calendar [MF workouts dashboard][workouts-dashboard]                    | Missing | Optional dates, edit/delete and export; no medical or causal claims.                                                   | Parity                          | None                                      |
+
+## Training library and session logging
+
+| ID  | Feature and primary source                                                                                 | Status  | Acceptance criteria                                                                                                       | Beyond                         | Evidence                                                                                |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------- |
+| T01 | Exercise search/filter [MF exercise help][workouts-index]                                                  | Partial | Search name/alias, muscles, equipment and joint actions offline; original descriptions.                                   | Parity                         | A2: Core library, name/alias search and muscle picker; equipment/action filters pending |
+| T02 | Exercise instructions and demos [MF exercise options][exercise-options]                                    | Missing | Clear setup/execution, accessible imagery/video from licensed or original assets.                                         | Parity                         | None                                                                                    |
+| T03 | Custom exercises [MF custom exercises][custom-exercise], [Export]                                          | Missing | Type, metric, laterality, muscles, joint actions, resistance/support equipment, bodyweight %, ROM, stability and aliases. | Parity                         | None                                                                                    |
+| T04 | Duplicate/edit/exclude exercises [MF exercise help][workouts-index]                                        | Missing | Change defaults, duplicate/archive custom entries, exclude suggestions; old session snapshot remains intact.              | Parity                         | None                                                                                    |
+| T05 | Gym profiles [MF gym profiles][gyms]                                                                       | Missing | Named/icon gyms, default, equipment and allow/disallow lists; override per workout.                                       | Parity                         | None                                                                                    |
+| T06 | Equipment weights and stacks [MF equipment][equipment], [Export]                                           | Missing | Bumper/mixed-unit plates, bar offset, dumbbell increments and stack ranges restrict recommendations.                      | Parity                         | None                                                                                    |
+| T07 | Empty session and add exercises [MF logging][workout-log]                                                  | Partial | Start offline, find exercise and add several; one active session can reopen after termination.                            | Parity                         | A2: logging/relaunch UI passes; TestFlight 2610061633; physical install pending         |
+| T08 | Load/reps/RIR/set types [MF logging][workout-log], [MF build program][program-build]                       | Partial | Completed/uncompleted, warm-up/working/drop/myo/failure, validation and edit after logging.                               | B: <=1 tap for a prefilled set | A2: set editor, kinds and RIR; one-tap prefill completion UI passed                     |
+| T09 | Duration, partial reps and unilateral sets [MF exercise options][exercise-options], [Export]               | Partial | Duration exercises, full/partial reps and independent left/right values round-trip.                                       | Parity                         | A2: duration/distance and side fields; partial reps pending                             |
+| T10 | Previous performance reference [MF logging][workout-log], [Hevy logging][hevy-log]                         | Partial | Show last eligible session or same-template reference with date; copy without overwriting later edits.                    | Parity                         | A2: previous values and prefill UI passed; reference selection/date pending             |
+| T11 | Exercise/session/program notes [MF exercise options][exercise-options]                                     | Partial | Separate note scopes with clear persistence and export.                                                                   | Parity                         | A2: session notes; exercise/program editors pending                                     |
+| T12 | Rest timer [MF timer defaults][timers], [Hevy timer][hevy-timer]                                           | Partial | Starts on set completion, adjustable/skippable; deadline survives background/relaunch; optional sound/haptics.            | Parity                         | A2: deadline/skip relaunch tests pass; four largest-text variants inspected             |
+| T13 | Rest timer preferences [MF timer defaults][timers], [Export]                                               | Missing | Per exercise, compound/isolation upper/lower, sides and between exercises; reset defaults.                                | Parity                         | None                                                                                    |
+| T14 | Session duration, pause, resume, minimize [MF logging][workout-log]                                        | Partial | Active session remains reachable from other tabs; timer excludes pauses and survives restart.                             | Parity                         | A2: elapsed timer and tab navigation; pause pending                                     |
+| T15 | Reorder/swap/skip/remove movements [MF exercise options][exercise-options]                                 | Missing | Change live exercise list with reviewed effects on logged sets and program; no silent loss.                               | Parity                         | None                                                                                    |
+| T16 | Supersets and auto-next [MF exercise options][exercise-options], [Strong supersets][strong-supersets]      | Missing | Group exercises, alternate sets, control auto-scroll and rest, support ungroup.                                           | Parity                         | None                                                                                    |
+| T17 | Warm-ups and configurable schemes [Strong warm-up][strong-warmup], [MF exercise options][exercise-options] | Missing | Core calculates feasible weights, preview then add; distinguish warm-up analytics.                                        | Parity                         | None                                                                                    |
+| T18 | Plate calculator [MF workout help][workouts-index], [Export]                                               | Missing | Show per-side plates, bar/offset and achievable total; kg/lb mixed plates and unavailable load.                           | Parity                         | None                                                                                    |
+| T19 | Finish/discard and summary [MF logging][workout-log]                                                       | Partial | Confirm discard; finish retains performed sets, duration, volume and PRs; empty states honest.                            | Parity                         | A2: finish/discard/history; Core volume summary; PR presentation pending                |
+| T20 | History and backfill [MF history help][workouts-index]                                                     | Missing | Browse dates; edit date/duration/sets, delete/undo and backfill with stable IDs.                                          | Parity                         | None                                                                                    |
+| T21 | Workout display preferences [MF settings][workout-settings], [Export]                                      | Missing | RIR, keep-awake, timers, hide completed sets, auto-next/scroll, sound/haptics and reference choice.                       | Parity                         | None                                                                                    |
+| T22 | Bodyweight contribution [MF muscles][muscles], [Export]                                                    | Missing | Explain effective load; separate bodyweight and external volume; missing bodyweight stays unknown.                        | Parity                         | None                                                                                    |
+
+## Programs, progression and training analytics
+
+| ID  | Feature and primary source                                                                    | Status  | Acceptance criteria                                                                                             | Beyond                                    | Evidence                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| P01 | Manual program builder [MF build program][program-build]                                      | Built   | Named/icon/color program, cycles, workouts/rest days, sets/rep ranges/RIR/rest; save and activate.              | Parity                                    | A6: manual builder, offline relaunch, source plan and four largest-type variants pass; physical check pending  |
+| P02 | Program generation [MF smart generation][program-generate]                                    | Missing | Goal, experience, days/time, gym, split, emphasis/exclusions and deload preferences create reviewable proposal. | B: every change reviewable/undoable       | None                                                                                                           |
+| P03 | Scheduling and periodization [MF build program][program-build], [MF schedule][schedule]       | Built   | Reorder training/rest days, variable cycle length, per-cycle sets/reps/RIR and first/last deload.               | Parity                                    | A6: ordered training/rest days, cycles, per-cycle targets and deload controls verified in simulator            |
+| P04 | Program/workout lifecycle [MF program help][workouts-index]                                   | Partial | Duplicate, rename, activate/switch, archive/restore, complete/restart and skip; keep history.                   | Parity                                    | A6: rename, duplicate, follow/switch, archive/restore preserve history; explicit restart/skip controls pending |
+| P05 | Workout library sections and sharing [MF workout sections][sections]                          | Missing | Organize templates/programs; share and preview import without proprietary formats.                              | Parity                                    | None                                                                                                           |
+| P06 | Apply live changes to program [MF program help][workouts-index], [Export]                     | Missing | Explicit choice for current session versus future cycles; show changed targets and retain old sessions.         | Parity                                    | None                                                                                                           |
+| P07 | RIR autoregulated progression [MF overload][overload]                                         | Partial | Tested pure functions propose reps/load; explain inputs, rounding, stalls and unavailable equipment.            | Parity                                    | A6: next-workout target and source-set explanation; available-equipment progression waits for gym UI           |
+| P08 | Assessment, expanded rep ranges and weight matching [Export], [MF equipment][equipment]       | Partial | Exercise-specific controls affect recommendations predictably; old data unchanged.                              | Parity; exact controls export-derived     | A6: expanded rep-range control; weight-match reserved by Core and omitted; assessment UI pending               |
+| A01 | Estimated 1/3/10 RM [MF exercise overview][exercise-stats]                                    | Partial | Metric/window selector, low-rep constraints, estimate label and link to source set.                             | B: transparent formula/error              | A5: best estimated 1RM links to saved working sets and source workouts; 3/10RM selector pending                |
+| A02 | Volume, best set, load, reps, duration, sets [MF exercise overview][exercise-stats], [Export] | Partial | Total/best-set volume, heaviest load, total/best reps/duration and set counts match reference fixtures.         | Parity                                    | A5: exercise-log best 1RM and raw completed sets; complete metric/window comparison pending                    |
+| A03 | Muscle sets and volume [MF muscles][muscles], [Export]                                        | Missing | All 22 export muscle groups; per-session and time series; direct/indirect contribution documented.              | B: fractional accounting with assumptions | None                                                                                                           |
+| A04 | Training dashboard and records [MF workouts dashboard][workouts-dashboard]                    | Missing | Compare cycles, recent records, session volume/duration; customize displayed metrics.                           | Parity                                    | None                                                                                                           |
+| A05 | Training frequency/calendar and levels [MF workouts dashboard][workouts-dashboard]            | Missing | Calendar and workload history; explain derived performance levels without motivational scoring.                 | Parity                                    | None                                                                                                           |
+
+## Platform, migration and public product
+
+| ID  | Feature and primary source                                                               | Status  | Acceptance criteria                                                                                             | Beyond                            | Evidence                                                                                                          |
+| --- | ---------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| I01 | Email and Sign in with Apple [brief][brief]                                              | Partial | Secure signup/sign-in/recovery, session rotation, expiry and offline reopen; no cross-account data.             | Product requirement               | A3: native Apple/account UI, session isolation and offline reopen pass; physical Apple authorization pending      |
+| I02 | In-app deletion and export [MF export][export], [brief][brief]                           | Partial | Reauth, clear consequences, revoke sessions; export before deletion; remove local account cache.                | Product requirement               | A4: export includes queued entries; deletion, lost response and local cleanup pass; physical Apple reauth pending |
+| I03 | Offline logging and conflict review [brief][brief]                                       | Partial | Relaunch without network; idempotent retries; compare conflicts; interruption never drops an accepted save.     | B: all domains including training | A3: real-server training sync, offline/relaunch/reconnect and account separation pass                             |
+| I04 | Health integration permissions [MF Health integration][health]                           | Partial | Explain each type; read/write toggles, denied/revoked/partial authorization, deduplication and source priority. | Parity                            | Existing steps/calories/workout service                                                                           |
+| I05 | Health nutrients, weight, workouts and history [MF Health integration][health], [Export] | Missing | Authorized types synchronize and reconcile edits/deletes; history imports with preview and duplicate detection. | B: full supported type coverage   | None                                                                                                              |
+| I06 | Sleep, HRV and resting HR [brief][brief]                                                 | Partial | Separate permission controls; missing data visible; manual sleep path; timezone-safe overnight values.          | B: recovery context in B05        | Manual sleep exists                                                                                               |
+| I07 | Home/lock widgets [MF widgets][widgets]                                                  | Missing | Current account/day nutrient totals and quick logging; stale state/timezone clear; private lock-screen option.  | Parity                            | None                                                                                                              |
+| I08 | Log-by-JSON, recent food, today summary [MF Shortcuts][shortcuts]                        | Missing | Typed validated schema, source ID, consumed and remaining min/target/max; user review where required.           | B: broader agent actions          | None                                                                                                              |
+| I09 | Rest timer Live Activity [Hevy features][hevy-features]                                  | Missing | Lock screen/Dynamic Island deadline, adjust/end; expired session never appears active.                          | Parity versus Hevy                | None                                                                                                              |
+| I10 | Watch food/weight/overview [MF Watch help][nutrition-index]                              | Missing | Log recent foods/weight, portion/copy/delete, totals/trend, notes, complications and sync.                      | Parity                            | None                                                                                                              |
+| I11 | Watch workout with heart rate [brief][brief]                                             | Missing | Start/log/pause/finish, heart-rate permission, phone reconciliation and disconnected queue.                     | B: unified training/nutrition     | None                                                                                                              |
+| I12 | MacroFactor full export import [MF export][export], [Export]                             | Missing | Preview every brief sheet, unknown columns and units; stable source IDs; repeat import idempotent; rollback.    | B: migration fidelity             | None                                                                                                              |
+| I13 | Hevy/Strong imports [brief][brief]                                                       | Missing | Synthetic public-format fixtures; preview mappings, timezone/units, duplicates and errors; atomic commit/undo.  | B: migration                      | None                                                                                                              |
+| I14 | JSON/CSV/xlsx full export [MF export][export], [brief][brief]                            | Partial | All entities, IDs, revisions, UTC/timezone, provenance and nutrient unknowns; import round-trip.                | B: machine-readable fidelity      | JSON subset only                                                                                                  |
+| I15 | Appearance, accessibility and units [MF settings][workout-settings], [brief][brief]      | Partial | System/light/dark, kg/lb and distance; accessible controls, largest text, reduced motion and contrast.          | Product requirement               | Currently forced dark                                                                                             |
+| I16 | Privacy, support, release metadata [brief][brief]                                        | Missing | RELEASE.md completed, manifests and labels match behavior, approved legal text and working Sideband support.    | Product requirement               | A1 underway                                                                                                       |
+
+## Beyond commitments
+
+These are Exerly commitments from the brief, not claims that competitors lack them.
+Scanners, meal AI, copy, suggestions, progression, PRs, warm-ups, plates, supersets,
+widgets and Watch support were removed from the exclusivity list after source review.
+Their parity rows remain required. Unmeasured coverage or speed is not a shipped claim.
+
+| ID  | Feature and source                                                              | Status  | Acceptance criteria                                                                                                                  | Beyond                    | Evidence                                                                                                           |
+| --- | ------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| B01 | Fast repeat food [brief][brief]; competitor [MF logger][logger]                 | Missing | <=3 taps from diary to saved prior portion; counted UI test plus physical-device timing.                                             | Measured speed            | None                                                                                                               |
+| B02 | One-tap set [brief][brief]; competitor [Hevy logging][hevy-log]                 | Missing | Last eligible values prefilled; one completion tap persists offline and starts rest.                                                 | Measured speed            | None                                                                                                               |
+| B03 | Cold launch to logging [brief][brief]                                           | Missing | <1 s on supported physical phone with local account, measured p50/p95 over 20 cold launches; document device/OS.                     | Measured speed            | None                                                                                                               |
+| B04 | Local intelligence and AI off [brief][brief]                                    | Missing | Scanning/text use local capabilities when available; cloud is explicit opt-in; every action retains manual path.                     | Privacy/cost              | None                                                                                                               |
+| B05 | Recovery-aware training [brief][brief]                                          | Missing | Explain sleep/HRV/RHR window and missingness; core calculates suggestion; user accepts a session diff.                               | Evidence with limitations | None                                                                                                               |
+| B06 | Propose/review/accept/undo/audit [brief][brief]                                 | Partial | Program, target, meal, swap and deload proposals show diff, evidence, confidence, falsifier; safe undo after later edits.            | Agent foundation          | A5: recent entry-error proposals, Off/manual path, source evidence and offline decisions; programs/meal UI follows |
+| B07 | Weekly review, stalls and deloads [brief][brief]                                | Partial | <=3 ranked suggestions with source logs, data window, uncertainty and disconfirming conditions; no medical claims.                   | Structured agent work     | A5: stall/deload observations with source logs, uncertainty and missing-data labels; ranked weekly review pending  |
+| B08 | n=1 experiments [brief][brief]                                                  | Missing | Preselect baseline/test windows and metrics; freeze protocol; track adherence/confounders and results without causal overclaim.      | Optimizer tools           | None                                                                                                               |
+| B09 | Custom metrics, tags and correlations [brief][brief]                            | Missing | Typed metrics/tags, export, time-aligned plots, sample size/missingness/confounding and no causal wording.                           | Optimizer tools           | None                                                                                                               |
+| B10 | Food coverage and accuracy [brief][brief]; competitor [MF nutrition][nutrition] | Missing | Licensed FDC/OFF/FatSecret sources displayed; consented corrections; published representative benchmark with regional misses/errors. | No claim until measured   | None                                                                                                               |
+| B11 | MCP, scoped tokens, webhooks and OpenAPI [brief][brief]                         | Partial | Read/write/propose scopes, revocation, signed retries, audit; own-agent read/analyze/propose journey on device.                      | Developer platform        | A4: scoped creation, explicit direct-write consent, masked secret and revoke pass; webhooks/device audit remain    |
+| B12 | Code computes, models explain [brief][brief]                                    | Missing | Every displayed computed metric comes from tested Core; explanations carry source IDs; simulations document algorithm error.         | Traceable computation     | Legacy UI still calls API directly                                                                                 |
+
+## Source notes and priorities
+
+MacroFactor's public help centers include newer features absent from the seed list,
+including nutrition on Watch, photo recipe imports and program sharing. Those are
+included above. The supplied export is the authority for exact field inventories.
+No app binaries, private APIs or proprietary food data were accessed.
+
+Hevy prefills prior values, has automatic per-exercise rest and configurable
+superset scrolling. Strong separates warm-up sets from performance charts and
+supports grouped navigation. Exerly should expose previous values, completion and
+rest together, with an explicit analytics policy for set types.
+
+Work order follows the brief: account/backend contracts, T01/T07/T08/T10/T12/T19/T20,
+B06/B11, programs/progression, nutrition depth, integrations, analytics and release.
+The app agent prepares release infrastructure alongside the first training slice.
+
+Full audits completed: 0. Consecutive audits with no worthwhile fixes: 0.
+
+[brief]: AGENT_BRIEF.md
+[nutrition]: https://macrofactor.com/macrofactor/
+[nutrition-index]: https://help.macrofactorapp.com/en/collections/18-macrofactor-nutrition
+[logger]: https://macrofactor.com/new-food-logger/
+[nutrients]: https://macrofactor.com/micronutrients-nutrient-explorer/
+[overview]: https://help.macrofactorapp.com/en/articles/139-view-a-summary-of-your-nutrient-intake-with-the-nutrition-overview
+[styles]: https://help.macrofactorapp.com/en/articles/91-program-styles
+[coaching]: https://help.macrofactorapp.com/en/articles/247-introduction-to-check-ins-and-coaching-modules
+[label]: https://help.macrofactorapp.com/en/articles/213-label-scanner
+[ai-food]: https://help.macrofactorapp.com/en/articles/258-ai-food-logging
+[export]: https://help.macrofactorapp.com/en/articles/68-export-your-data
+[health]: https://help.macrofactorapp.com/en/articles/65-connect-health-connect-or-apple-health
+[shortcuts]: https://github.com/MacroFactor/apple-shortcuts
+[widgets]: https://help.macrofactorapp.com/en/articles/211-iphone-widgets
+[workouts-index]: https://help.macrofactorapp.com/en/collections/20-macrofactor-workouts
+[workouts-dashboard]: https://help.macrofactorapp.com/en/articles/275-getting-to-know-your-workouts-dashboard
+[workout-log]: https://help.macrofactorapp.com/en/articles/310-how-to-log-a-workout
+[workout-settings]: https://help.macrofactorapp.com/en/articles/352-feature-setting-overview-workouts
+[exercise-options]: https://help.macrofactorapp.com/en/articles/333-accessing-exercise-options-during-a-workout
+[custom-exercise]: https://help.macrofactorapp.com/en/articles/328-how-to-create-a-custom-exercise
+[gyms]: https://help.macrofactorapp.com/en/articles/300-set-up-your-gym-profiles
+[equipment]: https://help.macrofactorapp.com/en/articles/390-how-to-change-equipment-settings-to-simplify-weight-recommendations
+[timers]: https://help.macrofactorapp.com/en/articles/303-change-default-rest-timers
+[program-build]: https://help.macrofactorapp.com/en/articles/286-create-a-new-program-via-build-from-scratch
+[program-generate]: https://help.macrofactorapp.com/en/articles/285-create-a-new-program-via-smart-generation
+[schedule]: https://help.macrofactorapp.com/en/articles/301-change-program-schedule
+[sections]: https://help.macrofactorapp.com/en/articles/322-customizing-workout-sections
+[overload]: https://help.macrofactorapp.com/en/articles/372-what-does-progressive-overload-mean-in-macrofactor-workouts
+[exercise-stats]: https://help.macrofactorapp.com/en/articles/281-exercises-overview
+[muscles]: https://help.macrofactorapp.com/en/articles/280-muscle-groups
+[hevy-log]: https://www.hevyapp.com/features/track-workouts/
+[hevy-timer]: https://www.hevyapp.com/features/workout-rest-timer/
+[hevy-features]: https://www.hevyapp.com/features/
+[strong-warmup]: https://help.strongapp.io/article/171-warm-up-calculator
+[strong-supersets]: https://help.strongapp.io/article/98-supersets-and-circuits
+
+### A2 device evidence, 2026-10-06
+
+Training logging, relaunch, finish and prefill pass on the SE 3 (iOS 18.6) and
+17 Pro Max (iOS 26.2). Largest text screenshots in light and dark were inspected
+in `artifacts/app-training/{small-light-final,small-dark-final,large-light-final,large-dark-final}`.
+The rest bar no longer covers the logger at accessibility sizes. The full native
+run on a4eeba40 passed 75 hosted unit tests and 14 UI journeys, with 7 opt-in
+cross-client skips. API 182, Core 129 and the device build also pass.
+
+After Ali requested the original brand, all four largest-text variants passed
+again with purple accents. All eight screenshots were inspected in
+`artifacts/app-brand/{small-light,small-dark,large-light,large-dark}`.
+Hosted Core Keychain and native staging login/bootstrap both pass in
+`artifacts/app-brand/account-smoke.xcresult`. TestFlight 1.0 (2610061654) is
+valid, internal only and assigned to Ali. It replaces 2610061633, which could
+not log in to the old production API. Replacement physical-device installation,
+VoiceOver and performance measurements remain open; no complete row is Verified.
+
+Final A2 integration check on 3cba5eae: API192, Core147, 77 hosted native tests,
+14 UI journeys and the iOS device build pass. Seven cross-client cases remain
+opt-in/skipped. Native result: artifacts/app-brand/integration-native-retry.xcresult.
+The first attempt was aborted because SpringBoard refused to launch the app;
+restarting only the app simulator restored launch. No functional test failed in
+the completed retry. The test account smoke is included in these 77 hosted tests.
+
+### A3 account evidence, 2026-10-06
+
+The final full native run on ba627bb3 plus the migrated UUID fix700cdc0d
+passed100 hosted tests and19 UI journeys, with eight deliberate opt-in skips.
+Result: `artifacts/account/full-a3-canonical.xcresult`. API219, Core183, the
+iOS device build, lint, formatting, typecheck and release checks pass.
+
+Native Apple authorization, account methods, export/share and deletion are
+implemented. Real API tests cover offline workout persistence and sync, account
+separation, lost deletion acknowledgements and local cleanup. Four final largest
+text light/dark variants on SE3 and17ProMax pass; all36 captures were inspected
+in `artifacts/account/{small-light-final,small-dark-final,large-light-final,large-dark-final}`.
+Welcome, auth and workout actions wrap at accessibility text sizes.
+
+Signed internal build2610061942 passed archive/IPA validation and uploaded
+successfully. Apple reports VALID and IN_BETA_TESTING. The Ali-only group
+contains exactly this build, with English test notes verified. Its account export
+includes unsynced training/proposals; pending legacy food and other entries are
+explicitly excluded until A4 adopts the new Core queue export. Physical Apple
+sign-in/reauthorization, installation, VoiceOver and performance remain open.
+I01-I03 remain Partial, not device-verified parity.
+
+### A4 agent review and export evidence, 2026-10-06
+
+Internal TestFlight 1.0 (2610062038), VALID and IN_BETA_TESTING, only Ali in the
+internal group and only this build assigned. Final source bd6225eb is based on
+integration 69fac1e4. `artifacts/agents/full-a4-canonical.xcresult` passed 112
+hosted and 22 UI tests, with eight optional skips and zero failures. Core 220,
+API 226 and device build passed in `canonical-{core,api,device}.log`.
+
+Three real-server journeys cover offline accept/relaunch/sync/undo/reject,
+stale proposal refusal without overwriting a later workout edit, and token
+creation/masking/revocation with explicit direct-write confirmation. Small
+light/dark and large light/dark at largest text passed across
+`small-light-final`, `small-dark-final`, `large-dark-final`,
+`large-light-canonical` and `large-light-permission-final`. All named captures
+were inspected. Four `export-{small,large}-{light,dark}` journeys also passed;
+all 24 new export captures were inspected. Artifacts are in app-next's
+`artifacts/agents`. No physical-device or VoiceOver certification is claimed.
+
+Proposal decisions currently support workout and custom-exercise records.
+Programs remain inspectable only in A4; A5 adds an explicit unsupported-record
+message, and A6 wires program storage. Export includes queued legacy records
+and deletion overlays. Physical Apple authorization remains unverified.
+
+### A5 entry checks and training evidence, 2026-10-06
+
+Final source 2b258b8a, based on integration 707c815b. Signed build 2610062144
+is VALID and IN_BETA_TESTING, only Ali and only this build assigned, with English
+notes verified. The full native
+suite in `artifacts/insights/full-a5-final.xcresult` passed 123 hosted tests and
+25 UI journeys; eight optional tests skipped, zero failures. Core 233/API 226 and
+final device build pass in `canonical-{core,api}.log` and `final-device.log`.
+The release archive passes signing, profile, entitlements, privacy, icon and
+endpoint validation. Physical installation/Apple authorization remain unverified.
+
+Eleven insight hosted tests cover account preference isolation, cancellation,
+rejection persistence, recent-only detection and continued filing after a bad
+proposal. Real-server journeys finish a suspicious workout and reject its
+suggestion offline, verify the explicit Off/manual path after relaunch, and
+open observations through exercise logs to source workouts. Deleting the source
+records changes evidence to unavailable. No observation silently changes a log.
+
+Small/large and light/dark at largest text passed the entry, sparse-history and
+corrected metric-label journeys. All 36 entry/sparse and 32 metric captures were
+inspected, along with 20 normal captures. The metric stacks retain their full
+height after source deletion. Result bundles and images are under
+`artifacts/insights`; final metric bundles end in `-metrics`. No physical-device,
+VoiceOver or full parity certification is claimed. Ranked weekly review, program
+proposals and nutrition proposals remain separate milestones.
+
+### A6 program evidence and release, 2026-10-06
+
+Product source de8dd16a (author-only amend of f041bb30) is based on integration
+778540cf. Manual programs, training/rest days, cycle targets and deloads now
+compose through the account's ProgramStore, sync, proposals and export.
+Lifecycle review rechecks the saved program and active selection before acting.
+The next-workout screen explains estimates and missing RIR, links source sets,
+and starts every set incomplete. Finishing advances to the next training day.
+
+Core259 tests in52 suites and API238 pass. Device build and SwiftLint pass.
+Four final program largest-type variants passed, with all66 named captures
+inspected. Program field names and choice labels grow and wrap. Evidence is
+in Exerly-Fitness-app-programs/artifacts/programs, bundles ending
+small-dark-wrapped-final, small-light-wrapped-final, large-dark-wrapped-final
+and large-light-wrapped-final. Earlier proposal/source/lifecycle evidence and
+inspected images are recorded in visual-review.md in the same directory.
+
+The first full gate found a legacy food picker bug: scrolling over Lunch
+changed a reviewed Dinner selection. A wrapping native meal menu fixes it.
+meal-menu-normal passes the explicit-choice journey and complete signup,
+offline edit/relaunch/reconnect journey, including server values. All four
+meal-menu-{small,large}-{light,dark} journeys pass at largest type. All12 named
+variant images and10 normal images were inspected. The old diary's meal and
+food rows still truncate at largest type; A7 replaces those rows.
+
+Final full-a6-meal-final passed132 hosted tests and30 UI journeys, eight opt-in
+skips and zero failures. Signed build2610070024 is VALID/IN_BETA_TESTING and
+the only Ali internal build, with English notes verified. Build2610062322 was
+never uploaded; A5 build2610062144 was detached after0024 became available.
+Physical installation and VoiceOver verification remain outstanding; these
+rows are not certified parity.

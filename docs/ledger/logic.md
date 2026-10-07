@@ -1,0 +1,294 @@
+# Logic agent ledger (Claude)
+
+Owned by the logic agent; see "Two agents" in `docs/AGENT_BRIEF.md`. Records observed
+results, not planned completion. Astra's pre-split M1 notes are kept at the end.
+
+## Current milestone
+
+**L1: ExerlyCore training domain.** Done on 2026-10-06 and landed (`55903a9d`).
+
+- `apps/ios/ExerlyCore` holds units, a 119-exercise library, sessions, e1RM, volume,
+  statistics, records, rest, session editing and `TrainingStore`.
+- The interface is published in `docs/handoff/to-app.md` and documented in
+  `apps/ios/ExerlyCore/README.md`.
+
+**L1b: on-device SQLite persistence.** Done on 2026-10-06 and landed (`4d10d8dc`).
+
+**M1a: PostgreSQL foundation.** Done on 2026-10-06 and landed (`5278f84b`).
+
+- A Postgres driver, SQL migrations, a throwaway test cluster, docker-compose, CI,
+  and the DigitalOcean spec on the Dockerfile.
+
+**M1b: accounts.** Done on 2026-10-06 and landed (`51f67e57`).
+
+- Sign in with Apple, account linking, and account deletion and export from one
+  ownership map.
+- Apple token revocation waits for a key from Ali (QUESTIONS_FOR_ALI.md).
+
+**Review fixes.** Landed (`55935632`): validation at the store boundary, rest
+state that persists, a database per account, and `WorkoutSummary`.
+
+**M1c: document sync.** Server landed (`3c5ea561`); the Swift client is landing
+now.
+
+- Server: `/v1/documents` and `/v1/changes`, plus `docs/api/openapi.yaml`.
+- ExerlyCore: `ExerlyAPI` (sessions with refresh rotation), the credential
+  stores, `ExerlyJSON`, `Merge` and `SyncEngine`, with sync state in SQLite
+  schema v3.
+
+**M1 status.** M1 is complete in code. Two things are outside my control:
+
+- **Production cutover** waits on Ali's Neon `DATABASE_URL`. The integration
+  branch must not merge to `main` before that, or the live API breaks.
+- **Keychain verification** needs the app agent's hosted tests.
+
+**Staging.** Running on devbox1 at `http://100.80.149.7:39110` (`37bc7710`).
+Redeploy with `apps/api/deploy/staging/install.sh` after API changes. Internal
+TestFlight builds now use it by default (the app agent's `release.sh`), so keep
+it current and healthy.
+
+**M2: agent core.** In progress (`docs/design/004-agent-core.md`).
+
+- **Done, `ce3aa2ce`.** ExerlyCore has proposals, accept/undo/stale, the audit
+  log, metric references and `DocumentHost`; proposals and audit events sync, and
+  the server accepts both kinds.
+- **Done, `db6fbecd`.** Personal access tokens with scopes, server-written audit
+  events, and the OpenAPI file updated.
+- **Also done.** `a4eeba40`: atomic multi-write changes, and Apple link and
+  unlink in the client.
+- **Done, M2c (landing with the app's A2).** The MCP server at `/mcp`
+  (`routes/mcp.js`, `lib/agentTools.js`, guide `docs/api/mcp.md`). The training
+  maths are ported to `apps/api/lib/training/` and asserted against
+  `docs/api/golden/training-v1.json`, which ExerlyCore's `GoldenTests` writes
+  (regenerate with `EXERLY_WRITE_GOLDEN=1 swift test --filter GoldenTests`).
+- **Landed, `3685dbf2` to `67c8db44`.**
+  - M2c, the bridge and the review fixes.
+  - M2d detectors: `EntryErrorDetector` and `TrainingSignals`, with rates in
+    `docs/design/005-training-detectors.md`.
+  - Deleted accounts are recognised (`account_deleted`), with
+    `accountsAwaitingLocalCleanup`.
+  - `AccountExport` merges unsynced documents.
+  - The SQLite driver is removed. iOS CI installs PostgreSQL. Concurrent
+    Apple sign-ins no longer race. Staging is redeployed.
+- **Done, session bridge and review fixes (same landing).**
+  - Legacy `APIClient` implements `SessionTransport`; `AuthViewModel` has Apple
+    sign-in, `accountAPI`, `signInMethods`, link, unlink, export and delete.
+    `SyncEngine.shared.purge(accountID:)` clears legacy data.
+  - The app agent's hosted tests for it are in
+    `docs/handoff/attachments/SessionBridgeTests.swift`, waiting for them to add
+    to ExerlyTests.
+  - Session generations in `ExerlyAPI`, and `SyncEngine.shutdown()`.
+  - `AccountAPI` binds requests to an account. The Keychain updates in place.
+  - Proposals are validated at accept and undo, as a batch. Custom exercises
+    publish safely.
+  - Unreadable server documents are set aside (`SyncEngine.rejected`).
+  - The server refuses agent documents ExerlyCore can't decode.
+
+**UUID identity.** Landed (`4f026b47`, `700cdc0d`).
+
+- UUID document IDs, and the IDs inside payloads (proposal changes and their
+  documents, evidence, audit targets, a session's program, an entry's food), are
+  uppercase on the server. Migrations 0005 (ID columns) and 0006 (payloads,
+  mirroring `canonicalPayload`) convert old rows. ExerlyCore's `SyncEngine`,
+  `ProposedChange` and `DataRef` read IDs in the same form.
+- `shell-quote` is pinned to 1.12.0 by an npm override (Dependabot 60). Alerts
+  58 to 60 close when integration reaches `main`.
+
+**M4 and M5a/M5b.** Landed (`785917ef`), with the app agent's reviews
+answered: `saved_food` (not `food`, which legacy food logs use in
+`sync_changes`), name-based entry-check IDs, `weightMatch` reserved,
+`SQLiteTrainingPersistence.close()`, and `AccountExport.merging(pending:)` for
+the legacy queue. The plate search fix landed in `69fac1e4`.
+
+**M5c: targets and check-ins.** Landed (`707c815b`): `NutritionPlan`
+versions, `NutritionTargets`, `NutritionCheckIn`, the `nutrition_plan` kind,
+design 011, and `EnergyBalance` coupling expenditure to weight.
+
+**Landed after A5 (`df84650c`):**
+
+- M5d: `/v1/foods` search and barcode lookup from Open Food Facts as
+  ExerlyCore Foods, with the golden contract `docs/api/golden/foods-v1.json`.
+  Labels per 100 ml keep a `volume` basis with a category density
+  (`12d356af`, from the app agent's review).
+- M6a/M6b: nutrition through MCP, and agents proposing meals as food entries.
+- M5f: nutrient goals, overview, timing and goal ETA. Apple Health weigh-ins,
+  MacroFactor Shortcuts JSON, the weekly review (B07 Core half).
+- M7: custom metrics, day tags, correlations and n=1 experiments (design
+  014, measured error rates).
+- A7: `NutritionStore.preview` and `Food.per100g(fromLabel:)`. The legacy
+  diary is retired rather than bridged, as the brief says nobody uses Exerly
+  yet. If Ali wants test entries carried over, build a server-side
+  idempotent import.
+- A6 review: `ProgramSchedule.next` no longer restarts a program when its
+  last day done is removed (`2f1f3844`).
+
+The API gained kinds and routes (`custom_metric`, `metric_entry`,
+`experiment`, `/v1/foods`, nutrition MCP tools), so redeploy staging when
+this lands.
+
+**On `agent/logic` after `778540cf`, waiting for A6 to land** (the app agent
+asked at 18:41 for integration to stay put until A6 is released):
+
+- Snapshots keep a food's volume basis (`FoodSnapshot.volume`), the first
+  nutrition plan from the onboarding profile (`PlanBasis.formula`), and faster
+  logging: plates, copy and move, recipe ingredients, suggestions by time of
+  day (N04, N07, N09, N12, B01).
+- M8 gym profiles (`gym_profile`, design 016): progression recommends weights
+  the gym has.
+- T15 swap and P06 keeping a workout's changes as a proposal.
+- M9 program generation as a proposal (design 017, P02).
+- M10 Hevy and Strong imports, and `importSessions` for backfill (design 018,
+  I13, T20).
+- `food(barcode:symbology:)` for EAN-8 and UPC-E scans (app agent, 20:23).
+- M11 webhooks for agents (migration 0007, design 019, B11).
+
+The API gained `gym_profile`, session `slotID` checks and webhooks (migration
+0007), so redeploy staging when this lands.
+
+**Merging into `main` is blocked on Ali** (QUESTIONS_FOR_ALI.md, 2026-10-06):
+production still runs the MongoDB API, and integration's needs
+`DATABASE_URL`.
+
+## Next three steps
+
+1. When A6 lands: rebase `logic/next`, run API, ExerlyCore, ExerlyTests, the
+   iOS build and live sync, land, redeploy staging, and mark the 18:32, 18:36,
+   18:41 and 20:23 inbox notes done.
+2. Remaining logic for Beyond: recovery-aware weekly volume from sleep, HRV
+   and resting heart rate (B05), and an MCP tool for program generation. The MacroFactor import waits on Ali's headers, and
+   USDA on a key.
+3. Keep reviewing app commits and answering `to-logic.md`.
+
+## Evidence
+
+2026-10-06 baseline on `agent/logic`, from the logs in
+`artifacts/agent-baseline/`:
+
+- API: `npm test` in `apps/api` (SQLite mode, Node 22.22.2) passed 153 of 153.
+- iOS: `scripts/ios.sh build` with Xcode 26.2, unsigned, for a generic iOS device:
+  BUILD SUCCEEDED. The one warning is pre-existing, at `MeasurementsTab.swift:148`
+  (the app agent's file).
+- ExerlyCore: `swift test` passed 75 of 75 with no warnings.
+  `xcodebuild -scheme ExerlyCore -destination generic/platform=iOS` succeeded with
+  warnings treated as errors.
+- SwiftLint, with the repo rules, is clean on ExerlyCore. Run it from the package
+  directory with the `included` block removed:
+
+  ```sh
+  sed '/^included:/,/^$/d; /^excluded:/,/^$/d' ../../../.swiftlint.yml > /tmp/x.yml
+  swiftlint lint --quiet --config /tmp/x.yml Sources Tests
+  ```
+
+- L1b, 2026-10-06: `swift test` passed 81 of 81. On devbox1's M1 Max,
+  `SQLiteTrainingPersistence` loads 1,000 sessions (25,000 sets) in 0.20 s, and
+  `TrainingHistory` indexes them in 0.01 to 0.03 s. Not yet measured on a phone.
+
+Nothing is on TestFlight from the logic side. The app does not link ExerlyCore yet;
+the app agent adds it to the project.
+
+- M1a, 2026-10-06:
+  - `npm test -w apps/api` passed 166 of 166 on a throwaway PostgreSQL 16.13
+    cluster.
+  - `bash scripts/smoke-api.sh` passed on PostgreSQL.
+  - docker-compose on devbox1 (colima): the API was healthy on port 39100,
+    signup, food write and read worked, the container runs as `node`, and the logs
+    hold no password or URL. A restart re-ran migrations as a no-op.
+  - Backup: a `pg_dump` of a synthetic schema restored into a new database with
+    identical rows (`tests/db.backup.test.js`).
+
+- M1c, 2026-10-06:
+  - `npm test -w apps/api` passed 182 of 182.
+  - ExerlyCore `swift test` passed 124 of 124 on macOS.
+  - The ExerlyCore suite also passed on the "Exerly Logic iPhone 17" simulator
+    (iOS 26.2, UDID `4FAB7031-A3BD-4298-A75C-F1259ACDAE6B`); log in
+    `artifacts/logic/`.
+  - `apps/ios/ExerlyCore/scripts/live-sync.sh` passed: the Swift client and
+    engine against the real API and PostgreSQL.
+  - The OpenAPI file passes `redocly lint`, except for its licence warning
+    (licence is Ali's decision).
+  - GitHub CI for `5278f84b`: the API (PostgreSQL), ExerlyCore, SwiftLint and
+    actionlint jobs passed.
+
+- M2, 2026-10-06:
+  - `npm test -w apps/api` passed 192 of 192.
+  - ExerlyCore `swift test` passed 147 of 147.
+  - The staging redeploy is healthy.
+- 2026-10-06, after the deletion and export batch (`67c8db44`):
+  - API: 214 of 214.
+  - ExerlyCore: 179 of 179, including the simulator-scored detector bounds.
+  - ExerlyTests: 92 executed with the 15 bridge tests temporarily included,
+    0 failures.
+  - iOS build: succeeded.
+  - Staging: healthy.
+- M2c, the bridge and the review fixes, 2026-10-06. Results from `logic/landing`,
+  which is `agent/app` `f38e4b87` plus this batch:
+  - `npm test -w apps/api` passed 213 of 213.
+  - ExerlyCore `swift test` passed 164 of 164.
+  - `live-sync.sh` passed 2 of 2. One of them is MCP to phone: an agent's
+    correction, verified, diffed, accepted and synced back through the real API.
+  - `scripts/ios.sh build` succeeded.
+  - ExerlyTests on "Exerly Logic iPhone 17": 88 executed with the bridge tests
+    temporarily included, 0 failures. The 1 skip is the app agent's private
+    TestFlight smoke check.
+  - Mutation checks: removing the session-generation guard, the sync shutdown
+    guard, or a JS rule (Brzycki constant, record ties, week start, local date,
+    search order) fails the matching tests.
+
+- 2026-10-06, M5c batch on `agent/logic` (`589d5c5b`):
+  - API: 226 of 226. ExerlyCore: 230 of 230, with the coaching and energy
+    balance simulations inside their bounds.
+  - ExerlyTests: 101 executed, 1 skipped (the app agent's private TestFlight
+    check). iOS build: succeeded. Live sync: 4 of 4, three runs.
+
+## Risks and external dependencies
+
+- Xcode 26.2 has no watchOS 26.2 platform installed, so watch builds need that
+  component.
+- The repo is **public** on GitHub (`sidebandstudio/Exerly-Fitness`). No secrets
+  and no personal data, ever.
+- Neon and DigitalOcean `DATABASE_URL` need Ali. Local Postgres work proceeds
+  without them.
+- `main` has diverged from the integration branch: origin/main has Sideband
+  migration commits that the integration branch carries as different SHAs. A merge
+  to main needs care at the end of a milestone. Every push to main redeploys the
+  API, and production still runs Mongo, so don't merge a Postgres-only API to main
+  before Ali sets `DATABASE_URL`.
+- Production runs MongoDB on `main` today. The integration branch has no Mongo
+  driver, so merging it to `main` breaks the live API until Ali sets
+  `DATABASE_URL` (Neon) in DigitalOcean. Merge to main only after that, then check
+  `/api/health`.
+- Colima's default VM was started for container checks. Stop it with
+  `colima stop default` when you're done.
+- Mapping MacroFactor's 22 muscle columns to Exerly's 21 regions needs a synthetic
+  export with the real column names (import milestone).
+
+## Resume exactly
+
+1. Read the brief, this ledger and `docs/handoff/to-logic.md`, and check
+   `git status` in `~/Desktop/Exerly-Fitness-logic` (branch `agent/logic`).
+2. Run `gh repo view sidebandstudio/Exerly-Fitness`.
+3. Review the app agent's commits since `55903a9d`:
+   `git log 55903a9d..feat/mobile-production-foundations`.
+4. Toolchains:
+   - Node 22: `PATH="$HOME/.local/share/fnm/node-versions/v22.22.2/installation/bin:$PATH"`.
+   - Xcode: `DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer`.
+   - ExerlyCore tests: `cd apps/ios/ExerlyCore && swift test`.
+   - API tests: `npm test` in `apps/api`.
+   - iOS build: `bash scripts/ios.sh build`.
+5. To land:
+   - Rebase onto `feat/mobile-production-foundations`.
+   - Run `git -C ~/Desktop/Exerly-Fitness merge --ff-only agent/logic`.
+   - Push with `DEVELOPER_DIR=... git push origin feat/mobile-production-foundations agent/logic`.
+     The pre-push hook runs eslint, prettier, the web typecheck, API tests and SwiftLint.
+6. Use only Logic scratch ports 39100-39199 and "Exerly Logic" simulators.
+
+---
+
+## Pre-split notes (Astra, 2026-10-06)
+
+M1, PostgreSQL and account foundation, starting at revision `9a8e0dbe` on
+`feat/mobile-production-foundations`. The existing implementation uses MongoDB in
+production and SQLite in tests, with native offline queues, revision checks, session
+rotation and mutation replay. The plan is in `docs/design/001-postgres-foundation.md`.
+Existing reports in `docs/MOBILE_PRODUCTION_STATUS.md` are historical evidence. They
+don't establish current device parity or TestFlight availability.

@@ -23,6 +23,10 @@ module.exports = tseslint.config(
       '.deriveddata/**',
       'apps/ios/**',
       'coverage/**',
+      'artifacts/**',
+      // Hyperframes has its own composition checker; includes vendored GSAP.
+      'brag-output/composition/**',
+      'brag-output/portrait/**',
     ],
   },
 
@@ -31,7 +35,7 @@ module.exports = tseslint.config(
 
   // ---- API: Node.js + CommonJS ----
   {
-    files: ['apps/api/**/*.js'],
+    files: ['apps/api/**/*.js', 'scripts/**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
       ecmaVersion: 2022,

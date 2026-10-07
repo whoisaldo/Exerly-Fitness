@@ -2,7 +2,10 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
-    @State private var showImagePicker = false
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("exerlyAppearance") private var appearance = "dark"
     @State private var showEditProfile = false
     @State private var showChangePassword = false
 
@@ -31,23 +34,10 @@ struct ProfileView: View {
 
     private var avatarSection: some View {
         VStack(spacing: 12) {
-            Button { showImagePicker = true } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.exSurface2)
-                        .frame(width: 90, height: 90)
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.exTextMuted)
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white)
-                        .padding(6)
-                        .background(Color.exPrimary)
-                        .clipShape(Circle())
-                        .offset(x: 30, y: 30)
-                }
-            }
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 72))
+                .foregroundStyle(.exTextMuted)
+                .accessibilityHidden(true)
 
             Text(authVM.currentUser?.name ?? "Athlete")
                 .font(.exH2)
@@ -59,10 +49,11 @@ struct ProfileView: View {
     }
 
     private var statsRow: some View {
-        HStack(spacing: 12) {
-            profileStat("Age", value: "\(authVM.currentUser?.age ?? 0)")
-            profileStat("Weight", value: String(format: "%.0f kg", authVM.currentUser?.weight ?? 0))
-            profileStat("Height", value: String(format: "%.0f cm", authVM.currentUser?.height ?? 0))
+        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
+            profileStat("Age", value: authVM.currentUser?.age.map(String.init) ?? "Not set")
+            profileStat("Weight", value: displayWeight(authVM.currentUser?.weight))
+            profileStat("Height", value: displayHeight(authVM.currentUser?.height))
         }
     }
 
@@ -82,20 +73,57 @@ struct ProfileView: View {
 
     private var settingsSections: some View {
         VStack(spacing: 16) {
-            settingsGroup("Account") {
-                Button { showEditProfile = true } label: {
-                    settingsRowContent(icon: "person.circle", title: "Edit Profile")
+            settingsGroup("Nutrition") {
+                NavigationLink(destination: ProgramView()) {
+                    settingsRowContent(icon: "target", title: "Nutrition Program")
                 }
-                Button { showChangePassword = true } label: {
-                    settingsRowContent(icon: "lock.shield", title: "Change Password")
-                }
-                settingsRow(icon: "envelope", title: "Email Preferences")
             }
-            settingsGroup("Notifications") {
-                settingsRow(icon: "bell", title: "Push Notifications")
-                settingsRow(icon: "clock", title: "Reminder Schedule")
+            settingsGroup("Preferences") {
+                Button { showEditProfile = true } label: {
+                    settingsRowContent(icon: "slider.horizontal.3", title: "Profile and Preferences")
+                }
+                .accessibilityIdentifier("profile.preferences")
+                Picker("Appearance", selection: $appearance) {
+                    Text("Dark").tag("dark")
+                    Text("Light").tag("light")
+                    Text("System").tag("system")
+                }
+                .pickerStyle(.menu)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .accessibilityIdentifier("profile.appearance")
+            }
+            settingsGroup("Account") {
+                if let id = authVM.currentUser?.id {
+                    NavigationLink {
+                        AccountManagementView(accountID: id, email: authVM.currentUser?.email ?? "",
+                                              actions: account.actions(auth: authVM, accountID: id))
+                    } label: {
+                        settingsRowContent(icon: "person.badge.key", title: "Account settings")
+                    }
+                    .accessibilityIdentifier("profile.account")
+                }
+                if authVM.signInMethods?.password != false {
+                    Button { showChangePassword = true } label: {
+                        settingsRowContent(icon: "lock.shield", title: "Change Password")
+                    }
+                }
+                if let workspace = account.training, workspace.accountID == authVM.currentUser?.id {
+                    NavigationLink {
+                        AccountSyncView(workspace: workspace)
+                    } label: {
+                        settingsRowContent(icon: "arrow.triangle.2.circlepath", title: "Sync")
+                    }
+                    .accessibilityIdentifier("profile.sync")
+                }
             }
             settingsGroup("Integrations") {
+                if let api = authVM.accountAPI {
+                    NavigationLink {
+                        AgentConnectionsView(api: api).id(api.accountID)
+                    } label: { settingsRowContent(icon: "key", title: "Connected agents") }
+                    .accessibilityIdentifier("profile.agents")
+                }
                 NavigationLink(destination: HealthKitSettingsView()) {
                     settingsRowContent(icon: "heart.circle", title: "Apple Health")
                 }
@@ -106,10 +134,6 @@ struct ProfileView: View {
                         settingsRowContent(icon: "shield.checkered", title: "Admin Panel")
                     }
                 }
-            }
-            settingsGroup("Data") {
-                settingsRow(icon: "square.and.arrow.up", title: "Export Data")
-                settingsRow(icon: "trash", title: "Delete Account", isDestructive: true)
             }
         }
     }
@@ -123,12 +147,6 @@ struct ProfileView: View {
                 content()
             }
             .glassCard(cornerRadius: 14)
-        }
-    }
-
-    private func settingsRow(icon: String, title: String, isDestructive: Bool = false) -> some View {
-        Button {} label: {
-            settingsRowContent(icon: icon, title: title, isDestructive: isDestructive)
         }
     }
 
@@ -152,8 +170,27 @@ struct ProfileView: View {
 
     private var logoutButton: some View {
         ActionButton(title: "Log Out", variant: .ghost) {
-            authVM.logout()
+            Task { await account.signOut(auth: authVM) }
         }
+        .disabled(account.isChangingAccount)
+        .accessibilityIdentifier("profile.logout")
+    }
+
+    private func displayWeight(_ kilograms: Double?) -> String {
+        guard let kilograms else { return "—" }
+        if unitSystem == "imperial" {
+            return "\((kilograms * 2.20462262).formatted(.number.precision(.fractionLength(0)))) lb"
+        }
+        return "\(kilograms.formatted(.number.precision(.fractionLength(0)))) kg"
+    }
+
+    private func displayHeight(_ centimeters: Double?) -> String {
+        guard let centimeters else { return "—" }
+        guard unitSystem == "imperial" else {
+            return "\(centimeters.formatted(.number.precision(.fractionLength(0)))) cm"
+        }
+        let totalInches = Int((centimeters / 2.54).rounded())
+        return "\(totalInches / 12)′ \(totalInches % 12)″"
     }
 }
 
@@ -210,7 +247,7 @@ struct HealthKitSettingsView: View {
             UserDefaults.standard.set(enabled, forKey: "healthKitSync")
             if enabled {
                 Task {
-                    await HealthKitService.shared.requestAuthorization()
+                    _ = await HealthKitService.shared.requestAuthorization()
                     await fetchHealthData()
                 }
             }

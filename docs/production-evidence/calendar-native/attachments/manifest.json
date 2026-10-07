@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "E88F4926-80CE-4C02-829A-B7116E6A3573",
+        "deviceName" : "Exerly QA iPhone SE",
+        "exportedFileName" : "50A657DC-DE3C-4E80-A0CC-25C3D9083431.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "calendar-account-today_0_1F8A6D85-A776-4B11-A556-7CA88657E660.png",
+        "timestamp" : 1790103509.361
+      }
+    ],
+    "testIdentifier" : "ProductionUITests/testAccountCalendarTodayAgreesWithAPIWhenDeviceIsOnAnotherDay()",
+    "testIdentifierURL" : "test://com.apple.xcode/Exerly/ExerlyUITests/ProductionUITests/testAccountCalendarTodayAgreesWithAPIWhenDeviceIsOnAnotherDay"
+  }
+]
