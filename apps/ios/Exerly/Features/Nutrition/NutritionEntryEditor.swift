@@ -2,12 +2,13 @@ import ExerlyCore
 import SwiftUI
 
 struct NutritionEntryEditor: View {
-    let workspace: TrainingWorkspace
+    @ObservedObject var workspace: TrainingWorkspace
     let timeZone: TimeZone
     let editing: FoodEntry?
     let onSaved: (FoodEntry) -> Void
     @ObservedObject var actions: NutritionDiaryActions
     @StateObject private var draft: NutritionEntryDraft
+    @StateObject private var libraryActions: NutritionLibraryActions
     @State private var confirmation: Confirmation?
     @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
@@ -26,6 +27,7 @@ struct NutritionEntryEditor: View {
         self.actions = actions
         self.editing = editing
         self.onSaved = onSaved
+        _libraryActions = StateObject(wrappedValue: NutritionLibraryActions(store: workspace.nutrition))
         _draft = StateObject(wrappedValue: NutritionEntryDraft(store: workspace.nutrition, food: food,
             date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id }))
     }
@@ -90,6 +92,18 @@ struct NutritionEntryEditor: View {
                             Text("This entry keeps the food name and nutrition saved when you logged it.")
                                 .foregroundStyle(.secondary)
                         }
+                        let saved = workspace.nutrition.food(draft.food.id)
+                        if saved?.favorite == true {
+                            Label("Saved in favorites", systemImage: "star.fill")
+                                .accessibilityIdentifier("nutrition.entryFavoriteSaved")
+                        } else if saved?.archivedAt == nil {
+                            Button("Add to favorites", systemImage: "star") {
+                                if libraryActions.keepFavorite(draft.food, reviewed: saved) {
+                                    Task { await workspace.synchronize() }
+                                }
+                            }.accessibilityIdentifier("nutrition.entryFavorite")
+                        }
+                        if let error = libraryActions.error { Text(error).foregroundStyle(Color.exError) }
                     }
                     if !draft.errors.isEmpty || actions.error != nil {
                         Section("Could not save") {

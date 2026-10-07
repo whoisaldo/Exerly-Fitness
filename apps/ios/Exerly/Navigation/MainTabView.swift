@@ -48,7 +48,12 @@ struct MainTabView: View {
                 }
             }
             .tabItem { Label(MainTab.training.label, systemImage: MainTab.training.icon) }.tag(MainTab.training)
-            NavigationStack { FoodLibraryView() }
+            NavigationStack {
+                if let account = auth.currentUser?.id {
+                    NutritionLibraryHostView(accountID: account,
+                        timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+                }
+            }
                 .tabItem { Label(MainTab.library.label, systemImage: MainTab.library.icon) }.tag(MainTab.library)
             NavigationStack { ProgressView_(initialDate: sync.today) }
                 .tabItem { Label(MainTab.progress.label, systemImage: MainTab.progress.icon) }.tag(MainTab.progress)

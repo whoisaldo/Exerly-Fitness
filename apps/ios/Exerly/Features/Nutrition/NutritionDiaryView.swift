@@ -222,7 +222,7 @@ struct NutritionDiaryView: View {
         case .copy(let date, let meal): NutritionCopyView(workspace: workspace, source: date, meal: meal, timeZone: timeZone)
         case .status(let review):
             NutritionConfirmation(title: "Mark this day as \(NutritionFormat.status(review.desired).lowercased())?",
-                                  message: "\(review.day.date) has \(review.entries.count) food entries. \(NutritionFormat.statusDescription(review.desired)) Logged foods stay unchanged.",
+                                  message: "\(review.day.date) has \(review.entries.count) food \(review.entries.count == 1 ? "entry" : "entries"). \(NutritionFormat.statusDescription(review.desired)) Logged foods stay unchanged.",
                                   confirm: "Set logging status") {
                 self.destination = nil
                 if actions.setStatus(review.desired, reviewed: review.day, entries: review.entries) {

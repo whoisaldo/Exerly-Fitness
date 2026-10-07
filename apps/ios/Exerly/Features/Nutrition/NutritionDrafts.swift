@@ -220,6 +220,62 @@ final class NutritionEntryDraft: ObservableObject {
 }
 
 @MainActor
+final class NutritionLibraryActions: ObservableObject {
+    @Published private(set) var error: String?
+    private let store: NutritionStore
+
+    init(store: NutritionStore) { self.store = store }
+
+    func clearError() { error = nil }
+
+    @discardableResult
+    func keepFavorite(_ food: ExerlyCore.Food, reviewed saved: ExerlyCore.Food?) -> Bool {
+        error = nil
+        guard saved == nil || saved?.id == food.id, store.food(food.id) == saved else {
+            error = "This food changed. Review the saved label before changing its favorite status."
+            return false
+        }
+        do {
+            var favorite = saved ?? food
+            favorite.favorite = true
+            try store.saveFood(favorite)
+            return true
+        } catch { self.error = NutritionDraftError.messages(error).joined(separator: " "); return false }
+    }
+
+    @discardableResult
+    func setFavorite(_ favorite: Bool, reviewed food: ExerlyCore.Food) -> Bool {
+        perform(reviewed: food) { try store.setFavorite(food.id, favorite) }
+    }
+
+    @discardableResult
+    func archive(reviewed food: ExerlyCore.Food) -> Bool {
+        perform(reviewed: food) { try store.archiveFood(food.id) }
+    }
+
+    @discardableResult
+    func restore(reviewed food: ExerlyCore.Food) -> Bool {
+        perform(reviewed: food) {
+            var restored = food
+            restored.archivedAt = nil
+            try store.saveFood(restored)
+        }
+    }
+
+    private func perform(reviewed food: ExerlyCore.Food, action: () throws -> Void) -> Bool {
+        error = nil
+        guard store.food(food.id) == food else {
+            error = "This food changed after you opened the review. Review the latest label before trying again."
+            return false
+        }
+        do { try action(); return true } catch {
+            self.error = NutritionDraftError.messages(error).joined(separator: " ")
+            return false
+        }
+    }
+}
+
+@MainActor
 final class NutritionDiaryActions: ObservableObject {
     @Published private(set) var deleted: FoodEntry?
     @Published private(set) var error: String?

@@ -225,7 +225,82 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(day["notes"] as? String, "Dinner after training")
     }
 
-    private func seedNutritionEntry(token: String) async throws -> (id: String, date: String) {
+    func testNutritionLibraryEditingFavoritesAndArchiveKeepHistoricalEntries() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-library")
+        let seeded = try await seedNutritionEntry(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        try await control(["offline": true])
+        tap(app.buttons["Library"], in: app)
+        let food = app.buttons["nutrition.libraryFood.\(seeded.foodID)"]
+        tap(food, in: app)
+        tap(app.buttons["nutrition.libraryFavorite"], in: app)
+        XCTAssertTrue(app.buttons["Remove from favorites"].exists)
+        tap(app.buttons["nutrition.libraryEdit"], in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Synthetic ripe pear", in: app)
+        replace(app.textFields["Energy (kcal)"], with: "60", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-library-label-edit")
+        tap(app.buttons["nutrition.saveFood"], in: app)
+        XCTAssertTrue(app.staticTexts["Synthetic ripe pear"].waitForExistence(timeout: 10))
+        tap(app.buttons["nutrition.libraryLog"], in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "123.25")
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.libraryLogged"].waitForExistence(timeout: 10))
+        capture(app, "nutrition-library-new-entry")
+        tap(app.buttons["nutrition.libraryArchive"], in: app)
+        capture(app, "nutrition-library-archive-review")
+        tap(app.buttons["nutrition.confirmCancel"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.libraryLog"].exists)
+        tap(app.buttons["nutrition.libraryArchive"], in: app)
+        tap(app.buttons["nutrition.confirm"], in: app)
+        XCTAssertTrue(app.staticTexts["Archived"].waitForExistence(timeout: 10))
+        tap(app.navigationBars.buttons["Food library"], in: app)
+        XCTAssertFalse(food.exists)
+        let archivedFilter = app.switches["nutrition.showArchived"]
+        reveal(archivedFilter, in: app)
+        archivedFilter.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        XCTAssertEqual(archivedFilter.value as? String, "1")
+        tap(food, in: app)
+        capture(app, "nutrition-library-archived-food")
+        tap(app.buttons["nutrition.libraryArchive"], in: app)
+        capture(app, "nutrition-library-restore-review")
+        tap(app.buttons["nutrition.confirm"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.libraryLog"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        tap(app.buttons["Library"], in: app)
+        tap(food, in: app)
+        XCTAssertTrue(app.staticTexts["Synthetic ripe pear"].exists)
+        XCTAssertTrue(app.buttons["Remove from favorites"].exists)
+        capture(app, "nutrition-library-restored-after-relaunch")
+        try await control([:])
+        tap(app.buttons["Retry"].firstMatch, in: app)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let saved = try XCTUnwrap(documents.first { $0["kind"] as? String == "saved_food" }?["payload"] as? [String: Any])
+        XCTAssertEqual(saved["name"] as? String, "Synthetic ripe pear")
+        XCTAssertEqual(saved["favorite"] as? Bool, true)
+        XCTAssertTrue(saved["archivedAt"] == nil || saved["archivedAt"] is NSNull)
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 2)
+        XCTAssertTrue(entries.allSatisfy { $0["grams"] as? Double == 123.25 })
+        let old = try XCTUnwrap(entries.first { $0["id"] as? String == seeded.id })
+        XCTAssertEqual((old["food"] as? [String: Any])?["name"] as? String, "Synthetic pear")
+        XCTAssertEqual(((old["food"] as? [String: Any])?["per100g"] as? [String: Any])?["energy"] as? Double, 57)
+        let new = try XCTUnwrap(entries.first { $0["id"] as? String != seeded.id })
+        XCTAssertEqual((new["food"] as? [String: Any])?["name"] as? String, "Synthetic ripe pear")
+        XCTAssertEqual(((new["food"] as? [String: Any])?["per100g"] as? [String: Any])?["energy"] as? Double, 60)
+    }
+
+    private func seedNutritionEntry(token: String) async throws -> (id: String, date: String, foodID: String) {
         let foodID = UUID().uuidString
         let entryID = UUID().uuidString
         let formatter = DateFormatter()
@@ -241,7 +316,7 @@ final class ProductionUITests: XCTestCase {
         let entry: [String: Any] = ["id": entryID, "date": date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
                                      "food": snapshot, "grams": 123.25]
         _ = try await request("PUT", "/v1/documents/food_entry/\(entryID)", body: ["base_revision": 0, "payload": entry], token: token)
-        return (entryID, date)
+        return (entryID, date, foodID)
     }
 
     func testAccountDeletionRequiresConfirmationAndFailureKeepsTheAccount() throws {
@@ -2559,7 +2634,9 @@ final class ProductionUITests: XCTestCase {
     private func replace(_ field: XCUIElement, with text: String, in app: XCUIApplication) {
         tap(field, in: app)
         let existing = field.value as? String ?? ""
-        if ["program.name", "program.dayName"].contains(field.identifier), !existing.isEmpty {
+        // A tap in a multiline SwiftUI field can put the caret at its start.
+        // Select the existing paragraph before replacing these name fields.
+        if ["program.name", "program.dayName", "nutrition.foodName"].contains(field.identifier), !existing.isEmpty {
             field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         }
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)

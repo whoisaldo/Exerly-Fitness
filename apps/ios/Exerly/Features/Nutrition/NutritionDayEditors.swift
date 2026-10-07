@@ -87,14 +87,14 @@ struct NutritionCopyView: View {
                             ForEach(meals, id: \.self) { Text($0).tag(Optional($0)) }
                         }
                     }.accessibilityIdentifier("nutrition.copyMeal")
-                    Text("Add \(draft.entries.count) new food entries. Existing entries stay unchanged. The copies keep the original food nutrition.")
+                    Text("Add \(draft.entries.count) new food \(draft.entries.count == 1 ? "entry" : "entries"). Existing entries stay unchanged. The copies keep the original food nutrition.")
                         .foregroundStyle(.secondary)
                 }
                 if let error = draft.error {
                     Section { Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("nutrition.copyError") }
                 }
                 Section {
-                    Button("Copy \(draft.entries.count) entries") {
+                    Button("Copy \(draft.entries.count) \(draft.entries.count == 1 ? "entry" : "entries")") {
                         if draft.copy() != nil { Task { await workspace.synchronize() }; dismiss() }
                     }.disabled(draft.entries.isEmpty || draft.completed)
                     .accessibilityIdentifier("nutrition.copyConfirm")

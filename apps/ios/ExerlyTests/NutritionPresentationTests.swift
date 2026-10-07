@@ -270,6 +270,65 @@ final class NutritionPresentationTests: XCTestCase {
 
 @MainActor
 final class NutritionDiaryPresentationTests: XCTestCase {
+    func testKeepingADatabaseFavoriteDoesNotOverwriteANewerSavedLabel() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let food = ExerlyCore.Food(id: "off:0012345678905", name: "Synthetic oat bar", source: .openFoodFacts,
+                                  per100g: NutrientAmounts([.energy: 410, .sodium: 0]))
+        let actions = NutritionLibraryActions(store: store)
+        XCTAssertTrue(actions.keepFavorite(food, reviewed: nil))
+        var saved = try XCTUnwrap(store.food(food.id))
+        XCTAssertTrue(saved.favorite)
+        XCTAssertEqual(saved.source, .openFoodFacts)
+        XCTAssertEqual(saved.per100g, food.per100g)
+        let reviewed = saved
+        saved.name = "Newer saved label"
+        try store.saveFood(saved)
+        XCTAssertFalse(actions.keepFavorite(food, reviewed: nil))
+        XCTAssertFalse(actions.keepFavorite(food, reviewed: reviewed))
+        XCTAssertEqual(store.food(food.id), saved)
+    }
+
+    func testLibraryActionsPreserveLoggedSnapshotsAndCanRestoreAnArchivedFood() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic pear", per100g: NutrientAmounts([.energy: 57, .sodium: 0]))
+        try store.saveFood(food)
+        let entry = try store.log(food, grams: 123.25, on: date, meal: "Dinner")
+        let actions = NutritionLibraryActions(store: store)
+        XCTAssertTrue(actions.setFavorite(true, reviewed: food))
+        let favorite = try XCTUnwrap(store.food(food.id))
+        XCTAssertTrue(favorite.favorite)
+        XCTAssertTrue(actions.archive(reviewed: favorite))
+        let archived = try XCTUnwrap(store.food(food.id))
+        XCTAssertNotNil(archived.archivedAt)
+        XCTAssertEqual(store.entries, [entry])
+        XCTAssertTrue(actions.restore(reviewed: archived))
+        XCTAssertNil(store.food(food.id)?.archivedAt)
+        XCTAssertEqual(store.entries, [entry])
+    }
+
+    func testLibraryActionsRefuseStaleFavoriteArchiveAndRestoreReviews() throws {
+        let persistence = InMemoryTrainingPersistence()
+        let store = try NutritionStore(persistence: persistence)
+        let food = ExerlyCore.Food(name: "Synthetic pear", per100g: NutrientAmounts([.energy: 57]))
+        try store.saveFood(food)
+        let actions = NutritionLibraryActions(store: store)
+        var updated = food
+        updated.name = "Updated pear label"
+        try store.saveFood(updated)
+        XCTAssertFalse(actions.archive(reviewed: food))
+        XCTAssertFalse(actions.setFavorite(true, reviewed: food))
+        XCTAssertEqual(store.food(food.id), updated)
+        XCTAssertNotNil(actions.error)
+        try store.archiveFood(food.id)
+        let archived = try XCTUnwrap(store.food(food.id))
+        var newer = archived
+        newer.name = "New archived label"
+        try store.saveFood(newer)
+        XCTAssertFalse(actions.restore(reviewed: archived))
+        XCTAssertEqual(store.food(food.id), newer)
+    }
+
     func testNotesSaveKeepsStatusAndRefusesToOverwriteANewerNote() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))

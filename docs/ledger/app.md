@@ -4,46 +4,87 @@ Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
 milestone. Current date 2026-10-06, updated 18:44 EDT.
 
+## Merge status
+
+Updated2026-10-06 21:27 EDT. Integration is3a010060, including Ali's brief6b908a24
+and Logic's published batch. No integration hold is permitted.
+
+| App branch          | Unlanded work                                                               | Last landed / cleanup                                                                       |
+| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| agent/app           | None;481694ec note is already preserved verbatim in3a010060                 | Rebased to integration, verified with git cherry, deleted locally21:27                      |
+| agent/app-next      | None; git cherry empty                                                      | A4 already landed; preserve captures and remove worktree/branch now                         |
+| agent/app-programs  | None; git cherry empty                                                      | A6 landed19925b28 at21:13; retain one fixed release worktree, detach/delete branch          |
+| agent/app-nutrition | c4b13fbf,b83a896f,7537a596,29b39648,bdd52966 plus library commit being made | Land the tested foundation first, then diary/library after affected native regressions pass |
+
 ## Current work and next steps
 
-2026-10-06 21:12 EDT. A6 release complete; Done is not met. Continue A7 in
-/Users/aldo/Desktop/Exerly-Fitness-app-nutrition (agent/app-nutrition). Its ledger
-is current. Do not restart A6 or upload another archive without a code change.
+Ali's21:17 steering is the top priority. Read updated Integration and Design
+quality sections ofAGENT_BRIEF at6b908a24. New features are paused. Finish landing
+existing nutrition work in passing pieces; consolidate into the primary
+Exerly-Fitness-app plus one release worktree. Keep this merge table current.
+Then do a full design pass on every existing screen before resuming nutrition.
+Default-size light/dark before/after captures and public App Store comparisons
+are a release gate, alongside accessibility captures. Logic must critique the
+captures. Do not freeze integration for release tests; use a fixed commit.
 
-A6 product source de8dd16a has passed the full suite. Signed2610070024 uploaded
-21:08 and is VALID/IN_BETA_TESTING. Only Ali, only0024, English notes verified.
-BuildUUIDdae77dd7-57c6-4922-9a34-c9ee016cf201; artifacts/programs/internal-final.json.
-2144 detached only after0024 available. Obsolete2322 never uploaded.
-This branch is ready for ff landing onto integration778540cf and push, followed
-by release of Logic's integration hold in its inbox.
+A6 is released as2610070024, VALID/IN_BETA_TESTING, only Ali/only build, notes
+verified. Full132 hosted+30 UI pass,8 skips,0 failures; Core259/API238/device pass.
+Original purple/pink and E/pulse mark retained. All4 program and4 meal AX
+variants reviewed. A6 archive and evidence remain in app-programs.
 
-Final evidence:
+A7 current implementation: NutritionStore account sync/proposal/export hosts,
+manual label and amount editors, submitted search and barcode, diary/status/
+notes/copy, guarded deleteundo, recent previous portions and native food library.
+No new feature work until the design release. Do not edit Core/API.
 
-- full-a6-meal-final: PASS21:07.132 hosted+30 UI,8 opt-in skips,0 failures.
-- Core259 tests/52 suites, API238, device build and SwiftLint pass.
-- Lint/typecheck/format pass with existing warnings. Release lint repeated21:08.
-- All4 program AXXXL variants pass, all66 captures inspected. All4 meal menu
-  variants pass, all12 captures inspected. meal-menu-normal2 journeys pass,
-  all10 captures inspected. Prior program source/lifecycle/proposal captures
-  are recorded in artifacts/programs/visual-review.md.
-- First full-a6-wrapped-final failed because scrolling began on inline Lunch
-  and changed Dinner. meal-scroll-diagnosis reproduced it. Wrapping native
-  Menu/Picker now protects the choice; strict date/server/offline checks kept.
-- Legacy diary rows still truncate atAXXXL; A7 replaces them. Not full parity.
-- Xcode's post-test diagnostic collector uses broken global simctl. This is
-  an existing warning after passing tests; project commands use Xcode26.2.
+A7 evidence under artifacts/nutrition:
 
-A6 SE39B20FBF/39211 and its other program test sims are free. A7 currently uses
-SE45D463AE/39212 and Large02A671D3/39213. Verify its ledger before using them.
-A7 atbdd52966 plus library work: new NutritionStore diary, manual food labels,
-submitted search/barcode, precise repeat portions, notes/copy/status/deleteundo.
-Three real-server journeys pass; current library actions6 hosted pass. It still
-needs incoming Logic volume/formula/symbology contracts, targets, library and
-food proposal review, four AX variants and full gates before a release.
+- Composition12, food drafts9, guarded delete11, repeat/search16, day/search21
+  hosted tests pass; meaningful regressions failed first.
+- library-actions-green6 and favorite-green7 pass, missing interfaces failed
+  first. Actions preserve snapshots and refuse changed reviews.
+- manual-first real-API journey PASS253s: create380kcal oats/fat0/ironunknown,
+  37.25gDinner yesterday offline, relaunch/edit40.5/relaunch/sync; exact server
+  record checked. All4 named captures reviewed.
+- search-barcode-first PASS805s: submitted search only, barcode hit/miss,
+  3tap35.5g repeat, server3entries [20,35.5,35.5], provider counts. All4 reviewed.
+- day-actions-hitarea PASS216s: partial/note/copy/deleteundo/relaunch/sync with
+  exact records. All7 captures reviewed. Earlier failures exposed narrow Menu
+  hit area; fixed full-width44pt target. Earlier first/toolbar bundles fail.
+- library-name-fixed PASS89s: favorite, label edit, new log, archive cancellation,
+  archive/restore, offline relaunch/sync; historical57kcal label stays unchanged,
+  new60kcal label used only for new entry.6 named captures await visual review.
+  library-first interrupted; library-inputs-fixed failed name replacement.
+  Helper now triple-taps existing multiline names as A6 already did for programs.
+- diary-current-device and library-device pass. Library SwiftLint found one
+  catch positioning warning; fixed, recheck before commit/landing.
 
-Phone credentials already sent, only in private_keys; phone needs Tailscale.
-Preserve original purple/pink and E/pulse mark. Never edit Core/API. Commit as
-Ali Younes. Always DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer.
+Design critique before work: the new diary/library and training screens lean on
+stock rows. Diary date/settings/explanations compete with the totals; empty meals
+repeat the same blank message and Add action. Library opens with explanatory
+copy and a stock toggle, not recognizable foods. Numeric fields and selectors
+have no consistent hierarchy. Purple tint alone does not make these screens
+Exerly. Current mono number fonts also contradict the new proportional-rounded
+requirement. These all must be fixed before the design TestFlight release.
+
+Reference images downloaded from official Apple lookup/App Store pages under
+artifacts/design/references for MacroFactor, MacroFactor Workouts, Apple Fitness
+and Things3. Not yet inspected. Record comparison after viewing them; no copying
+of assets or private interfaces. frontend-design skill read; native constraints
+and Ali's purple/pink identity take precedence over its generic web defaults.
+
+Next: rebase/land tested pieces; finish cleanup; capture current primary and
+secondary screens; implement shared design system and redesign all visible
+flows; test/compare/review/release design, then resume unfinished nutrition.
+Incoming snapshot volume and barcode symbology correctness fixes may be adopted
+while reconciling; new target/coaching/import features wait for design release.
+
+Resources: A7SE45D463AE-8D3E-4D8F-BD35-CE70128BF962/39212,a7-drafts;
+Large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19/39213,a7-large. Both free after tests.
+Fixture39212/session81882 and39213/session91661 will restart from primary after
+worktree consolidation. Do not touch Logic sims or protected devbox services.
+Credentials already sent, only private_keys; phone requires Tailscale.
+Use DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer and author Ali.
 
 ## A3 final evidence and release
 
