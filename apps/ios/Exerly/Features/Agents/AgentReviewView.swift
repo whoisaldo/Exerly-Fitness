@@ -6,22 +6,24 @@ struct AgentReviewView: View {
     let unit: MassUnit
 
     var body: some View {
-        List {
+        ExList {
             Section {
-                Text("Review the changes and evidence before deciding. You can keep logging with no agent connected.")
-                    .foregroundStyle(.secondary)
-                NavigationLink {
-                    AgentAuditView(workspace: workspace, unit: unit)
-                } label: { Label("Activity history", systemImage: "clock.arrow.circlepath") }
-                .accessibilityIdentifier("suggestions.audit")
+                ExCard(accent: true) {
+                    ExEyebrow("Your review", color: .exPrimary)
+                    let count = workspace.agent.proposals.filter { $0.status == .pending }.count
+                    Text(count == 0 ? "You're up to date" : "\(count) to review").font(.exH1)
+                    Text(count == 0 ? "New suggestions will appear here. Your training and food log work with or without an agent." :
+                         "See the changes and evidence. You decide what gets applied.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    NavigationLink {
+                        AgentAuditView(workspace: workspace, unit: unit)
+                    } label: { ExNavigationLabel(title: "Activity history", icon: "clock.arrow.circlepath") }
+                        .accessibilityIdentifier("suggestions.audit")
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             let pending = workspace.agent.proposals.filter { $0.status == .pending }
-            Section("Awaiting review") {
-                if pending.isEmpty {
-                    Text("No suggestions to review").foregroundStyle(.secondary)
-                } else {
-                    ForEach(pending) { proposal in row(proposal) }
-                }
+            if !pending.isEmpty {
+                Section("Awaiting review") { ForEach(pending) { proposal in row(proposal) } }
             }
             let decisions = workspace.agent.proposals.filter { $0.status != .pending }
             if !decisions.isEmpty {
@@ -31,7 +33,7 @@ struct AgentReviewView: View {
             }
         }
         .navigationTitle("Suggestions").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
         .refreshable { await workspace.synchronize() }
     }
 
@@ -66,9 +68,10 @@ struct ProposalDetailView: View {
 
     var body: some View {
         ScrollViewReader { scroll in
-            List {
+            ExList {
                 if let proposal = workspace.agent.proposal(proposalID) {
                     Section {
+                        ExCard(accent: true) {
                         Text(proposal.title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
                         Text(proposal.summary)
                         Text("From \(proposal.author.name)").foregroundStyle(.secondary)
@@ -76,6 +79,7 @@ struct ProposalDetailView: View {
                             .font(.caption).foregroundStyle(.secondary)
                         Label(AgentFormat.status(proposal.status), systemImage: statusIcon(proposal.status))
                             .accessibilityIdentifier("suggestions.status")
+                        }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                     Section("Proposed changes") {
                         ForEach(Array(workspace.agent.diff(proposalID).enumerated()), id: \.offset) { _, diff in
@@ -107,7 +111,7 @@ struct ProposalDetailView: View {
                         if proposal.status == .pending {
                             if workspace.supportsChanges(in: proposal) {
                                 Button("Accept suggestion", systemImage: "checkmark") { decide(.accept) }
-                                    .accessibilityIdentifier("suggestions.accept")
+                                    .accessibilityIdentifier("suggestions.accept").buttonStyle(ExActionStyle())
                             } else {
                                 Text("This build cannot apply all the records in this suggestion. You can inspect its changes and evidence, or reject it.")
                                     .foregroundStyle(.secondary).accessibilityIdentifier("suggestions.unsupported")
@@ -137,7 +141,7 @@ struct ProposalDetailView: View {
                 }
             }
             .navigationTitle("Review suggestion").navigationBarTitleDisplayMode(.inline)
-            .scrollContentBackground(.hidden).background(Color.exBackground)
+            .exListStyle()
             .onChange(of: review.error) { _, message in
                 guard message != nil else { return }
                 Task { @MainActor in
@@ -224,7 +228,7 @@ private struct ProposalProgramView: View {
     let title: String
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 Text(program.name).font(.title2.weight(.semibold))
                 Text("\(program.cycles) cycles · \(TrainingProgramFormat.deload(program.deload))")
@@ -242,7 +246,7 @@ private struct ProposalProgramView: View {
             }
         }
         .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
     }
 }
 
@@ -252,10 +256,10 @@ private struct ProposalRawChangeView: View {
     let after: ExerlyCore.JSONValue?
 
     var body: some View {
-        List {
+        ExList {
             Section("Before") { Text(AgentFormat.value(before)).font(.body.monospaced()).textSelection(.enabled) }
             Section("After") { Text(AgentFormat.value(after)).font(.body.monospaced()).textSelection(.enabled) }
-        }.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        }.exListStyle().navigationTitle(title).navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -338,7 +342,14 @@ struct AgentAuditView: View {
     let unit: MassUnit
 
     var body: some View {
-        List {
+        ExList {
+            Section {
+                ExCard(accent: true) {
+                    ExEyebrow("Agent record", color: .exPrimary)
+                    Text("Every decision, recorded").font(.exH2)
+                    Text("\(workspace.agent.auditLog.count) events").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+            }
             if workspace.agent.auditLog.isEmpty {
                 ContentUnavailableView("No agent activity yet", systemImage: "clock",
                                        description: Text("Suggestions, decisions and connected-agent activity appear here."))
@@ -362,6 +373,6 @@ struct AgentAuditView: View {
             }
         }
         .navigationTitle("Activity history").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
     }
 }

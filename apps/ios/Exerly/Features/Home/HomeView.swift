@@ -94,7 +94,7 @@ struct HomeView: View {
     }
 
     private func healthDiary(_ summary: DaySummaryDTO) -> some View {
-        List {
+        ExList {
             dateNavigation.diaryListRow()
             if let error = viewModel.error { errorBanner(error).diaryListRow() }
             if sync.pendingCount > 0 || sync.attentionCount > 0 || sync.isOffline {
@@ -110,12 +110,12 @@ struct HomeView: View {
                 Task { await viewModel.load(for: selectedDate) }
             }.diaryListRow()
         }
-        .listStyle(.plain).scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
         .refreshable { await viewModel.load(for: selectedDate) }
     }
 
     private func diary(_ summary: DaySummaryDTO) -> some View {
-        List {
+        ExList {
             dateNavigation
                 .diaryListRow()
 
@@ -665,7 +665,7 @@ private struct DiaryDayEditor: View {
     }
     var body: some View {
         NavigationStack {
-            Form {
+            ExForm {
                 Section {
                     Text(current.entry_date).monospacedDigit()
                     Picker("Logging status", selection: $status) {
@@ -721,20 +721,15 @@ private struct WaterEntryView: View {
     @FocusState private var focused: Bool
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Water for \(current.entry_date)") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Amount (ml)").font(.callout)
-                        TextField("Amount (ml)", text: $amount)
-                            .keyboardType(.numberPad)
-                            .accessibilityIdentifier("water.amount")
-                            .focused($focused)
-                            .onChange(of: amount) { _, _ in error = nil }
-                    }
-                    Text("Enter 1 to 5,000 ml. This adds to your day's total.")
-                        .font(.callout)
+            ExScreen {
+                ExCard(accent: true) {
+                    ExEyebrow("Hydration", color: .exPrimary)
+                    ExQuantityControl(title: "Amount (ml)", text: $amount, step: 50, presets: [250, 500, 750], unit: "ml", identifier: "water.amount", integer: true)
+                        .onChange(of: amount) { _, _ in error = nil }
+                    Text("Adds to your day's total. Enter 1 to 5,000 ml.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
+                if let error { Text(error).foregroundStyle(Color.exError) }
             }
             .navigationTitle("Add water")
             .toolbar {
@@ -775,7 +770,7 @@ private struct ActivitySleepRows: View {
                 Spacer()
                 Button { addingActivity = true } label: { Text("Log activity").frame(minHeight: 44) }
             }
-            if summary.activities.isEmpty { Text("No saved activities for this day.").font(.callout).foregroundStyle(.secondary) }
+            if summary.activities.isEmpty { Text("Log a walk, ride or other movement.").font(.exCaption).foregroundStyle(Color.exTextSecondary) }
             ForEach(summary.activities, id: \.clientID) { row in
                 Button { editingActivity = row } label: {
                     VStack(alignment: .leading, spacing: 6) {
@@ -800,7 +795,7 @@ private struct ActivitySleepRows: View {
                 Button { addingSleep = true } label: { Text("Log sleep").frame(minHeight: 44) }
             }
             let sleep = summary.sleepEntries ?? summary.sleep.map { [$0] } ?? []
-            if sleep.isEmpty { Text("No saved sleep entries for this day.").font(.callout).foregroundStyle(.secondary) }
+            if sleep.isEmpty { Text("Add last night’s sleep or a nap.").font(.exCaption).foregroundStyle(Color.exTextSecondary) }
             ForEach(sleep, id: \.clientID) { row in
                 Button { editingSleep = row } label: {
                     VStack(alignment: .leading, spacing: 6) {

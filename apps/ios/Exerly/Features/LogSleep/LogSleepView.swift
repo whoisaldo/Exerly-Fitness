@@ -26,38 +26,42 @@ struct LogSleepView: View {
     }
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Sleep entry") {
-                    LabeledContent("Hours slept") {
-                        TextField("Hours slept", text: $hours).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("sleep.hours")
-                    }
-                    Picker("Quality", selection: $quality) {
-                        Text("Not recorded").tag("")
-                        ForEach(["poor", "fair", "good", "great", "excellent"], id: \.self) { Text($0.capitalized).tag($0) }
-                        if !["", "poor", "fair", "good", "great", "excellent"].contains(quality) { Text(quality.capitalized).tag(quality) }
-                    }.accessibilityIdentifier("sleep.quality")
-                    LabeledContent("Bedtime") {
-                        TextField("Not recorded", text: $bedtime).focused($focused).accessibilityIdentifier("sleep.bedtime")
-                    }
-                    LabeledContent("Wake time") {
-                        TextField("Not recorded", text: $wakeTime).focused($focused).accessibilityIdentifier("sleep.wake-time")
-                    }
-                    CalendarDayPicker("Wake date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
-                    Text("Log overnight sleep on the day you woke up. Add naps separately. Hours are entered separately from the optional times.").font(.callout).foregroundStyle(.secondary)
+            ExScreen {
+                ExCard(accent: true) {
+                    ExEyebrow("Rest & recovery", color: .exPrimary)
+                    ExQuantityControl(title: "Hours slept", text: $hours, step: 0.25, presets: [6, 7, 8], unit: "h", identifier: "sleep.hours")
+                    Text("Log overnight sleep on the day you woke up. Add naps separately.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
-                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.") }
+                ExCard {
+                    ExSectionHeading("How was your sleep?")
+                    ExChoiceChips(values: qualityChoices, selection: $quality) { $0.isEmpty ? "Not recorded" : $0.capitalized }
+                }
+                ExCard {
+                    ExSectionHeading("Sleep times", detail: "Optional")
+                    LabeledContent("Bedtime") {
+                        TextField("23:00", text: $bedtime).keyboardType(.numbersAndPunctuation).focused($focused).accessibilityIdentifier("sleep.bedtime")
+                    }
+                    Divider()
+                    LabeledContent("Wake time") {
+                        TextField("07:00", text: $wakeTime).keyboardType(.numbersAndPunctuation).focused($focused).accessibilityIdentifier("sleep.wake-time")
+                    }
+                    Text("Times describe your sleep. Hours are recorded separately.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    CalendarDayPicker("Wake date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
+                }
+                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.").font(.exCaption) }
                 if editing?.syncState == "attention" { NavigationLink("Review sleep changes") { SyncIssuesView() } }
                 if editing != nil {
-                    Section { Button("Delete sleep entry", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44) }
+                    Button("Delete sleep entry", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                 }
-                if let error { Text(error).foregroundStyle(.red) }
+                if let error { Text(error).foregroundStyle(Color.exError) }
             }
             .navigationTitle(editing == nil ? "Log sleep" : "Edit sleep")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save sleep") { save() }.disabled(isSaving) }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
             }
             .alert("Delete this sleep entry?", isPresented: $confirmingDelete) {
                 Button("Delete sleep entry", role: .destructive) {
@@ -69,6 +73,11 @@ struct LogSleepView: View {
             } message: { Text("You can undo this after closing the form.") }
         }
     }
+    private var qualityChoices: [String] {
+        let choices = ["", "poor", "fair", "good", "great", "excellent"]
+        return choices.contains(quality) ? choices : choices + [quality]
+    }
+
     private func save() {
         guard !isSaving else { return }
         guard let duration = UserEnteredNumber.parse(hours) else {

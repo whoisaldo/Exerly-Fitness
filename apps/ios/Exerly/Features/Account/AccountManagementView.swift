@@ -31,10 +31,14 @@ struct AccountManagementView: View {
     @AccessibilityFocusState private var errorFocused: Bool
 
     var body: some View {
-        List {
-            Section("Signed in as") {
-                Text(email).textSelection(.enabled)
-                    .accessibilityIdentifier("account.email")
+        ExList {
+            Section {
+                ExCard(accent: true) {
+                    ExEyebrow("Your account", color: .exPrimary)
+                    Image(systemName: "person.crop.circle.badge.checkmark").font(.system(size: 32, weight: .light))
+                        .foregroundStyle(Color.exPrimary).accessibilityHidden(true)
+                    Text(email).font(.exH3).textSelection(.enabled).accessibilityIdentifier("account.email")
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             Section("Sign-in methods") {
                 if let methods {
@@ -76,7 +80,7 @@ struct AccountManagementView: View {
                     }
                 }
                 .disabled(busy != nil)
-                .accessibilityIdentifier("account.export")
+                .accessibilityIdentifier("account.export").buttonStyle(ExActionStyle())
             } header: {
                 Text("Your data")
             } footer: {
@@ -121,8 +125,7 @@ struct AccountManagementView: View {
         }
         .navigationTitle("Account")
         .navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden)
-        .background(Color.exBackground)
+        .exListStyle()
         .task(id: accountID) {
             do { try await loadMethods() }
             catch is CancellationError { }
@@ -189,7 +192,7 @@ private struct DeleteAccountView: View {
     @AccessibilityFocusState private var errorFocused: Bool
 
     var body: some View {
-        List {
+        ExList {
             Section {
                 Text(email).textSelection(.enabled)
                 Text("Deleting your account removes its training, food, body measurements and other saved records from Exerly and this device. This cannot be undone.")
@@ -224,8 +227,7 @@ private struct DeleteAccountView: View {
         }
         .navigationTitle("Delete account")
         .navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden)
-        .background(Color.exBackground)
+        .exListStyle()
         .interactiveDismissDisabled(deleting)
         .navigationBarBackButtonHidden(deleting)
         .alert("Delete this account?", isPresented: $confirm) {

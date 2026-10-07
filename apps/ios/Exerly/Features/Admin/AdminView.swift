@@ -77,64 +77,48 @@ struct AdminView: View {
     }
 
     private var picker: some View {
-        Picker("", selection: $selectedTab) {
-            Text("Overview").tag(0)
-            Text("Users").tag(1)
-        }
-        .pickerStyle(.segmented)
-        .padding(16)
+        ExSegmentedControl(values: [0, 1], selection: $selectedTab) { $0 == 0 ? "Overview" : "Users" }
+            .padding(ExSpacing.content)
     }
-
-    // MARK: - Stats
 
     private var statsView: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if let stats {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        statCard("Total Users", value: "\(stats.totalUsers)", icon: "person.3.fill", color: .exPrimary)
-                        statCard("Active Today", value: "\(stats.activeToday)", icon: "bolt.fill", color: .exWarning)
-                        statCard("Total Entries", value: "\(stats.totalEntries)", icon: "list.bullet", color: .exSuccess)
-                        statCard("Activities", value: "\(stats.breakdown?.activities ?? 0)", icon: "figure.run", color: .orange)
-                        statCard("Food Logs", value: "\(stats.breakdown?.food ?? 0)", icon: "fork.knife", color: .green)
-                        statCard("Sleep Logs", value: "\(stats.breakdown?.sleep ?? 0)", icon: "bed.double.fill", color: .indigo)
-                    }
+        ExScreen {
+            if let stats {
+                ExCard(accent: true) {
+                    ExEyebrow("Active today", color: .exPrimary)
+                    Text(stats.activeToday.formatted()).font(.exStat)
+                    Text("of \(stats.totalUsers.formatted()) accounts").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }
+                ExCard {
+                    ExSectionHeading("Recorded entries", detail: stats.totalEntries.formatted())
+                    LabeledContent("Activities", value: (stats.breakdown?.activities ?? 0).formatted())
+                    Divider()
+                    LabeledContent("Food logs", value: (stats.breakdown?.food ?? 0).formatted())
+                    Divider()
+                    LabeledContent("Sleep logs", value: (stats.breakdown?.sleep ?? 0).formatted())
+                }
+            } else {
+                ExEmptyState(icon: "chart.bar", title: "Statistics unavailable",
+                             message: "Connect to Exerly to load account activity.", action: "Try again") {
+                    Task { await loadData() }
                 }
             }
-            .padding(16)
-            .padding(.bottom, 100)
-        }
-    }
-
-    private func statCard(_ title: String, value: String, icon: String, color: Color) -> some View {
-        GlassCard {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundStyle(color)
-                Text(value)
-                    .font(.exH2)
-                    .foregroundStyle(.exTextPrimary)
-                Text(title)
-                    .font(.exCaption)
-                    .foregroundStyle(.exTextSecondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 4)
         }
     }
 
     // MARK: - Users
 
     private var usersView: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(users) { user in
-                    userRow(user)
+        ExScreen {
+            ExSectionHeading("Accounts", detail: users.count.formatted())
+            if users.isEmpty {
+                ExEmptyState(icon: "person.2", title: "No accounts loaded",
+                             message: "Refresh to load the current account list.", action: "Refresh") {
+                    Task { await loadData() }
                 }
+            } else {
+                LazyVStack(spacing: ExSpacing.item) { ForEach(users) { user in userRow(user) } }
             }
-            .padding(16)
-            .padding(.bottom, 100)
         }
     }
 

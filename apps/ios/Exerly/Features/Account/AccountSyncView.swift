@@ -5,10 +5,13 @@ struct AccountSyncView: View {
     @ObservedObject var workspace: TrainingWorkspace
 
     var body: some View {
-        List {
-            Section("Account backup") {
+        ExScreen {
+            ExCard(accent: true) {
+                Image(systemName: statusSymbol).font(.system(size: 36, weight: .light)).foregroundStyle(Color.exPrimary)
+                    .accessibilityHidden(true)
+                ExEyebrow("Account backup", color: .exPrimary)
                 if let engine = workspace.sync {
-                    status(engine)
+                    status(engine).font(.exH2)
                     if let date = engine.lastSyncedAt {
                         LabeledContent("Last synced") {
                             Text(date, format: .dateTime.month().day().hour().minute())
@@ -18,6 +21,7 @@ struct AccountSyncView: View {
                     Button("Sync now", systemImage: "arrow.triangle.2.circlepath") {
                         Task { await workspace.synchronize() }
                     }
+                    .buttonStyle(ExActionStyle())
                     .disabled(engine.state == .syncing)
                     .accessibilityIdentifier("account.syncNow")
                     if !engine.rejected.isEmpty {
@@ -26,9 +30,11 @@ struct AccountSyncView: View {
                     }
                 }
             }
-            Section {
-                Text("Your workouts and food log are saved on this device. When connected, Exerly syncs them along with programs, foods, nutrition targets and agent proposals.")
-                Text("You can keep logging offline. Your saved changes sync when Exerly reconnects.")
+            ExCard {
+                ExSectionHeading("Saved as you go")
+                Text("Workouts, food and changes are saved on this device, even offline.")
+                Text("When connected, your programs, foods, targets and agent proposals sync with your account.")
+                    .foregroundStyle(Color.exTextSecondary)
             }
         }
         .navigationTitle("Sync")
@@ -36,6 +42,15 @@ struct AccountSyncView: View {
         .scrollContentBackground(.hidden)
         .background(Color.exBackground)
         .task { await workspace.synchronize() }
+    }
+
+    private var statusSymbol: String {
+        switch workspace.sync?.state {
+        case .offline: "icloud.slash"
+        case .failed: "exclamationmark.icloud"
+        case .syncing: "arrow.triangle.2.circlepath.icloud"
+        default: "checkmark.icloud"
+        }
     }
 
     @ViewBuilder

@@ -100,11 +100,14 @@ struct RootView: View {
             }.padding().frame(maxWidth: .infinity).background(.regularMaterial)
         }
         if authVM.isOffline && authVM.currentUser != nil {
-            HStack {
-                Image(systemName: "clock.arrow.circlepath")
-                Text("Showing saved account details.").font(.caption)
+            HStack(spacing: ExSpacing.small) {
+                Label("Offline", systemImage: "icloud.slash").font(.exCaption)
+                    .foregroundStyle(Color.exTextSecondary)
+                    .accessibilityLabel("Offline. Showing saved account details.")
+                Spacer(minLength: ExSpacing.small)
                 Button("Retry") { Task { await authVM.checkAuth() } }
-            }.padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
+                    .font(.exCaption.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
+            }.padding(.horizontal, ExSpacing.page).background(Color.exBackground)
         }
     }
 }

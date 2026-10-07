@@ -26,38 +26,34 @@ struct LogActivityView: View {
     }
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Activity") {
-                    LabeledContent("Name") {
-                        TextField("Activity name", text: $name).focused($focused).accessibilityIdentifier("activity.name")
-                    }
-                    LabeledContent("Minutes") {
-                        TextField("Duration in minutes", text: $duration).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("activity.minutes")
-                    }
-                    LabeledContent("Calories") {
-                        TextField("Not recorded", text: $calories).keyboardType(.decimalPad).focused($focused).accessibilityIdentifier("activity.calories")
-                    }
-                    Text("Leave calories blank if you did not record them.").font(.callout).foregroundStyle(.secondary)
-                    Picker("Intensity", selection: $intensity) {
-                        Text("Not recorded").tag("")
-                        ForEach(["light", "moderate", "intense"], id: \.self) { Text($0.capitalized).tag($0) }
-                        if !["", "light", "moderate", "intense"].contains(intensity) { Text(intensity.capitalized).tag(intensity) }
-                    }.accessibilityIdentifier("activity.intensity")
+            ExScreen {
+                ExCard(accent: true) {
+                    ExEyebrow("Movement", color: .exPrimary)
+                    TextField("Activity name", text: $name).font(.exH2).focused($focused).accessibilityIdentifier("activity.name")
+                    ExQuantityControl(title: "Minutes", text: $duration, step: 5, presets: [15, 30, 60], unit: "min", identifier: "activity.minutes")
+                }
+                ExCard {
+                    ExSectionHeading("Effort")
+                    ExChoiceChips(values: intensityChoices, selection: $intensity) { $0.isEmpty ? "Not recorded" : $0.capitalized }
+                    NutritionNumberInput(title: "Calories, optional", text: $calories, identifier: "activity.calories").focused($focused)
+                    Text("Leave calories blank if you did not record them.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                ExCard {
                     CalendarDayPicker("Activity date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                 }
-                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.") }
+                if editing?.syncState == "pending" { Text("Saved on this device. Waiting to sync.").font(.exCaption) }
                 if editing?.syncState == "attention" { NavigationLink("Review activity changes") { SyncIssuesView() } }
                 if editing != nil {
-                    Section { Button("Delete activity", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44) }
+                    Button("Delete activity", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                 }
-                if let error { Text(error).foregroundStyle(.red) }
+                if let error { Text(error).foregroundStyle(Color.exError) }
             }
             .navigationTitle(editing == nil ? "Log activity" : "Edit activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save activity") { save() }.disabled(isSaving) }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
             }
             .alert("Delete this activity?", isPresented: $confirmingDelete) {
                 Button("Delete activity", role: .destructive) {
@@ -69,6 +65,11 @@ struct LogActivityView: View {
             } message: { Text("You can undo this after closing the form.") }
         }
     }
+    private var intensityChoices: [String] {
+        let choices = ["", "light", "moderate", "intense"]
+        return choices.contains(intensity) ? choices : choices + [intensity]
+    }
+
     private func save() {
         guard !isSaving else { return }
         guard let minutes = UserEnteredNumber.parse(duration) else {

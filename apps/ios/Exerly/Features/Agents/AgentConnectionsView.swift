@@ -11,11 +11,16 @@ struct AgentConnectionsView: View {
     init(api: AccountAPI) { _model = StateObject(wrappedValue: AgentConnectionsModel(api: api)) }
 
     var body: some View {
-        List {
+        ExList {
             Section {
-                Text("Connect an agent you trust to read your Exerly records and suggest changes. You choose its access and can revoke it here.")
-                Button("Connect an agent", systemImage: "plus") { creating = true }
-                    .accessibilityIdentifier("agents.create")
+                ExCard(accent: true) {
+                    ExEyebrow("Connected agents", color: .exPrimary)
+                    Text(model.tokens.isEmpty ? "Bring your own agent" : "\(model.tokens.count) connected").font(.exH2)
+                    Text("Give an agent access to read your logs and propose changes. You choose its permissions.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    Button("Connect an agent", systemImage: "plus") { creating = true }
+                        .buttonStyle(ExActionStyle()).accessibilityIdentifier("agents.create")
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             Section("Connection details") {
                 if let endpoint = AgentConnectionInfo.endpoint {
@@ -63,7 +68,7 @@ struct AgentConnectionsView: View {
             }
         }
         .navigationTitle("Connected agents").navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden).background(Color.exBackground)
+        .exListStyle()
         .task { await model.refresh() }
         .refreshable { await model.refresh() }
         .onChange(of: model.error) { _, value in errorFocused = value != nil }
@@ -105,7 +110,7 @@ private struct NewAgentConnectionView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            ExForm {
                 if let created = model.created {
                     Section("Access token created") {
                         Text(created.token.name).font(.headline)
@@ -130,10 +135,14 @@ private struct NewAgentConnectionView: View {
                         Button("Done") { close() }.accessibilityIdentifier("agents.tokenDone")
                     }
                 } else {
-                    Section("Agent") {
-                        TextField("Name", text: $name).textInputAutocapitalization(.words)
-                            .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
-                            .accessibilityIdentifier("agents.name")
+                    Section {
+                        ExCard(accent: true) {
+                            ExEyebrow("New connection", color: .exPrimary)
+                            TextField("Name", text: $name).font(.exH2).textInputAutocapitalization(.words)
+                                .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
+                                .accessibilityIdentifier("agents.name")
+                            Text("Name the agent so you can recognize its access later.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                     Section("Permissions") {
                         Menu {
