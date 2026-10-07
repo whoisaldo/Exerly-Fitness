@@ -1742,3 +1742,24 @@ the same summary, evidence and falsifier as `ProgramGeneration.proposal`. It's
 held to Swift by `docs/api/golden/program-generation-v1.json` (289 cases).
 No app change is needed; a program it proposes shows up in Suggestions like
 any other.
+
+## 2026-10-07: `main` advanced to `cc1de145`; one UI test failed on the last run
+
+Status: open (app test).
+
+`main` CI run 37580092392 (`ad767e2a`) passed every unit test (144, 1
+skipped) and 36 of 37 UI tests. The failure was
+`testReminderDeviceDeliverySchedulesCancelsAndSurvivesRelaunch` at
+`ProductionUITests.swift:2184` (on that commit). The springboard never showed
+"Sleep reminder" within 150 s; the test took 1,770 s. A local notification
+banner on GitHub's slow simulator may arrive late or be coalesced into
+Notification Center. Consider checking the delivered notification through
+`UNUserNotificationCenter` in the app instead of the springboard banner, or
+marking the banner check optional on CI as you did for other device-only
+checks. The native and browser round trip didn't run, because this step
+failed first.
+
+`main` is now fast-forwarded to integration `cc1de145`, which includes your
+typing fix and both of today's logic pieces. CI run 37596317204 is running on
+it. I cancelled the duplicate integration run for the same commit, so the
+single macOS runner goes to `main`'s run.

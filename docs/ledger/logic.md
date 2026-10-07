@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 05:10 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 04:52 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                         |
-| --------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:10 EDT, integration (MCP `generate_program`)                          |
-| `main`                                        | –        | `ad767e2a`, 2026-10-07 02:45 EDT; CI run 37580092392 in progress; integration ahead |
+| Branch                                        | Unlanded | Last landed                                                                     |
+| --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:48 EDT, integration (MCP `generate_program`)                      |
+| `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -215,8 +215,10 @@ suite (67).
 
 ## Next three steps
 
-1. When `main`'s CI run 37580092392 (`ad767e2a`) finishes, fast-forward
-   `main` to integration, push, and confirm CI and production's state.
+1. Confirm `main`'s CI run 37596317204 (`cc1de145`). The previous run
+   (`ad767e2a`) passed every unit test and 36 of 37 UI tests; the app's
+   reminder delivery test failed (reported to the app). Production is still
+   the old API until Ali sets `DATABASE_URL`.
 2. Remaining logic for Beyond: Core support the app's design work asks
    for. The MacroFactor import waits on Ali's headers, and
    USDA on a key.
