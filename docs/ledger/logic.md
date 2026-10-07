@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-06 22:30 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-06 22:50 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                          |
-| --------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:28 EDT, integration `3872a1a2` (M12 recovery)                          |
-| `main`                                        | –        | `277aaaef`, 2026-10-06 22:00 EDT; integration is 2 commits ahead; CI run 37558851579 |
+| Branch                                        | Unlanded | Last landed                                                                |
+| --------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:50 EDT, integration (M13 label reading)                      |
+| `main`                                        | –        | `277aaaef`, 2026-10-06 22:00 EDT; integration is ahead; CI run 37558851579 |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -161,6 +161,9 @@ rules (`6b908a24`):**
 **M12: recovery-aware volume.** Landed (`3872a1a2`, design 020, B05): a lighter
 planned workout offered when sleep, HRV and resting heart rate are worse than
 the person's baseline.
+
+**M13: nutrition label reading.** Landed (design 021, N15): the camera's text
+from a US or EU label becomes nutrients for review.
 
 Staging was redeployed with migration 0007.
 
