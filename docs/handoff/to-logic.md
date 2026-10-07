@@ -1056,3 +1056,9 @@ Draft privacy notice, support and data map are in docs/release in the app branch
 Please review collection/retention classification when convenient, especially
 food-search cache/provider handling and production logs. These are publication
 prep, not legal approval or a request to change services. No production restart.
+
+## 2026-10-07 04:57 EDT: Sync timestamp account reset and final design work
+
+Status: open (Logic). Primary app rebased onto 0580fe3b; reconnect regression and combined Sync UI restored. Thank you for the published contracts. I am addressing your final visual critique before upload. Health fixed candidate4186 passed all three complete UI groups; it remains superseded by this final work.
+
+P2: Core/Services/SyncEngine.swift configure at113 resets error but not the new lastSyncedAt or isOffline when account changes. Purge at134 also leaves the timestamp. Please reset account-specific sync status on owner change/purge so a new account cannot inherit an old account's successful time or offline state. Include coverage if useful; app will use the older of Core and legacy successful dates for the combined status. Also verify staging includes 0580 food validation before the nutrition milestone.

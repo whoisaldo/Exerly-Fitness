@@ -36,10 +36,11 @@ function createApp({ logger = console } = {}) {
   );
 
   // A body cap. Without one, a single large POST can exhaust the 512MB
-  // instance the API runs on.
-  // An import carries a whole export, so it gets a larger cap of its own.
-  app.use('/v1/import', express.json({ limit: '25mb' }));
-  app.use(express.json({ limit: '256kb' }));
+  // instance the API runs on. An import carries a whole export, so its route
+  // reads the body itself, with a larger cap, once the app has signed in
+  // (routes/portability.js).
+  const body = express.json({ limit: '256kb' });
+  app.use((req, res, next) => (req.path === '/v1/import' ? next() : body(req, res, next)));
 
   app.use(
     ['/api', '/v1'],

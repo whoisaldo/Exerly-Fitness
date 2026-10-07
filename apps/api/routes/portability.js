@@ -4,6 +4,7 @@
 const express = require('express');
 const { asyncHandler, badRequest, forbidden, notFound } = require('../lib/errors');
 const { authenticate } = require('../lib/auth');
+const { rateLimit } = require('../lib/ratelimit');
 const { FILES, exportCSV, importExport } = require('../lib/portability');
 
 const router = express.Router();
@@ -27,12 +28,16 @@ router.get(
   })
 );
 
-// Only the person's own app may import into the account.
+// Only the person's own app may import into the account. The body, up to
+// 25 MB, is read only after that is checked.
 router.post(
   '/import',
+  rateLimit({ name: 'import', max: 10, windowMs: 60 * 1000 }),
   authenticate,
+  (req, _res, next) =>
+    next(req.pat ? forbidden('Only the Exerly app can import an export.') : null),
+  express.json({ limit: '25mb' }),
   asyncHandler(async (req, res) => {
-    if (req.pat) throw forbidden('Only the Exerly app can import an export.');
     const result = await importExport(req.account, req.body);
     if (result.error) throw badRequest(result.error);
     res.json(result);

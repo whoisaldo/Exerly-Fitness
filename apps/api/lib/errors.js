@@ -47,9 +47,16 @@ function notFoundHandler(req, res) {
   res.status(404).json({ message: `No route for ${req.method} ${req.path}` });
 }
 
+// A request body Express couldn't read is the client's error, not ours.
+const BODY_ERRORS = {
+  'entity.parse.failed': 'The request body is not valid JSON.',
+  'entity.too.large': 'The request body is too large.',
+};
+
 function errorHandler(logger = console) {
   // eslint-disable-next-line no-unused-vars -- Express identifies error middleware by arity
   return (err, req, res, next) => {
+    if (BODY_ERRORS[err.type]) err = new ApiError(err.status, BODY_ERRORS[err.type]);
     const status = err.expected ? err.status : 500;
 
     if (!err.expected) {

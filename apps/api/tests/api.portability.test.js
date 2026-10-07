@@ -196,3 +196,37 @@ test('an export imports into another account whole, and twice changes nothing', 
   assert.equal((await api.post('/v1/import', exported, { token: minted.body.token })).status, 403);
   assert.equal((await api.get('/v1/export/sets.csv', { token: minted.body.token })).status, 200);
 });
+
+test("an import's body is read only for the signed-in app", async () => {
+  // Malformed JSON shows whether the body was parsed: a parse error is 400.
+  const raw = (headers) =>
+    fetch(`${api.base}/v1/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: `{"documents": [${'1,'.repeat(200_000)}`,
+    });
+  assert.equal((await raw({})).status, 401, 'refused before reading it');
+  const user = await signUp(api);
+  const minted = await api.post(
+    '/v1/tokens',
+    { name: 'Synthetic agent', scopes: ['read', 'write'] },
+    { token: user.token, headers: key() }
+  );
+  assert.equal((await raw({ Authorization: `Bearer ${minted.body.token}` })).status, 403);
+  assert.equal((await raw({ Authorization: `Bearer ${user.token}` })).status, 400);
+
+  // An export bigger than the usual 256 kB cap still imports.
+  const notes = 'n'.repeat(1000);
+  const documents = Array.from({ length: 400 }, (_, i) => {
+    const date = new Date(Date.UTC(2025, 0, 1 + i)).toISOString().slice(0, 10);
+    return {
+      kind: 'nutrition_day',
+      document_id: date,
+      revision: 1,
+      payload: { id: date, date, status: 'complete', notes, tags: [] },
+    };
+  });
+  const big = await api.post('/v1/import', { documents }, { token: user.token });
+  assert.equal(big.status, 200, JSON.stringify(big.body).slice(0, 300));
+  assert.equal(big.body.imported, 400);
+});

@@ -173,3 +173,18 @@ test('health reports the driver and a connected database', async () => {
   assert.equal(res.body.status, 'healthy');
   assert.equal(res.body.database.driver, 'postgres');
 });
+
+test('a body that is not JSON, or too large, is the client error it is', async () => {
+  const send = (body) =>
+    fetch(`${api.base}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+  const malformed = await send('{"email": ');
+  assert.equal(malformed.status, 400);
+  assert.equal((await malformed.json()).message, 'The request body is not valid JSON.');
+  const large = await send(JSON.stringify({ email: 'x'.repeat(300_000) }));
+  assert.equal(large.status, 413);
+  assert.equal((await large.json()).message, 'The request body is too large.');
+});

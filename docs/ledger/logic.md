@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 04:55 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 04:58 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                     |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:55 EDT, integration (optional Health readers)                     |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:58 EDT, integration (import body read after sign-in)              |
 | `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
@@ -193,6 +193,12 @@ generator is ported to `apps/api/lib/training/generation.js` and held to
 the proposal the app would file. The server data flows for the app's privacy
 review are in `to-app.md`, and the legacy AI coach question is in
 QUESTIONS_FOR_ALI.md. Core 299, API 254.
+
+**Audit: request bodies.** `/v1/import` parsed its 25 MB body before
+authentication or rate limiting, so anyone could make the 512 MB instance
+parse large bodies. It now checks the app's session (and a limit of 10 a
+minute) first. Malformed or oversized JSON anywhere returned 500 and was
+logged as a server error; it is now 400 or 413.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
