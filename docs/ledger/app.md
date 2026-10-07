@@ -2,21 +2,102 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 01:44 EDT.
+milestone. Current date 2026-10-07, updated 03:08 EDT.
 
 ## Merge status
 
-Integration landed at `60e83cf9`, including Ali's brief `6b908a24` and Logic's
+Integration is `e0bce0e7`, app foundation landed at `60e83cf9`, including Ali's brief `6b908a24` and Logic's
 M13 contracts. No integration hold. Primary plus one release worktree.
 
-| App branch                         | Unlanded work                                                             | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped  | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                  | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                  | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                             | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | 17 source/test commits through 67ed9442, plus this design evidence commit | Foundation landed 01:00; latest device and targeted journeys pass                                               |
-| `release/app-design`               | Fixed candidate 67ed9442, same 17 source/test commits                     | Reuses the only release worktree; full native running, integration open                                         |
+| App branch                         | Unlanded work                                                                      | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped           | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                           | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                           | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                      | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | 21 implementation commits through 5dc7ae91, plus ledger; U.S./sync working changes | Foundation landed 01:00; Core 295/API 250/device pass after M14 rebase                                          |
+| `release/app-design`               | Fixed candidate b7b082b7, 20 commits beyond integration                            | Full hosted plus all 46 UI methods split into three isolated fixture/simulator runs; no failures so far         |
+
+## Passing accessibility and fixed integration candidate, 2026-10-07 03:08 EDT
+
+Committed b7b082b7 for verified/retried test input and 5dc7ae91 for accessible
+controls, readable placeholders, shared button contrast, compact Progress
+navigation, and rounded weight entry that preserves the exact saved value.
+Primary retains one U.S./target/sync group in progress. Release now fixes
+b7b082b7 after git cherry confirmed all original 67ed9442 patches are present.
+The previous full 67ed9442 suite finished with one failing UI test, program
+input typed 32 instead of 3. All other active tests passed. The exact program
+journey passes 332.761s with the new helper, reminder 141.628s, and all 160
+active hosted tests pass. These replace the failure, but do not call the old
+full bundle green. A fresh complete run now partitions all 46 UI methods
+exactly once across three separate fixtures, with every hosted test in group 1.
+Manifest and logs are in release artifacts/design/complete-*. Integration is open.
+
+Small-light native audit passes with all audit types. Eight hosted training
+presentation tests, including exact weight preservation, and weight offline/
+conflict/deletion/undo 86.735s pass. Small-dark audit 39.479s, empty captures
+31.885s, and secondary captures 75.475s pass. Both themes now pass after exposing
+and rechecking rows that were under system chrome. The iOS 26 large-dark audit
+found one further potential inaccessible-text issue with no element attached.
+Macro VoiceOver values now include targets, and the visible Today label is
+included in its accessible name. The exact large audit is rerunning. Do not
+claim the entire matrix is clear yet. Latest device and 61 owned Swift files pass.
+
+Reviewed 36 secondary images in contact-review, small light and large dark,
+covering account, sync, agents, health, activity, sleep, weight, measurements,
+milestones, nutrition program, password, Health permission, preferences, food
+label/picker, new workout, training empty, and photos empty. Against Things 3,
+our faint default placeholders made the inputs seem disabled. They now use the
+readable secondary text token. Repeated password placeholders were removed.
+Against MacroFactor, 159.284 lb and eight-decimal height read as raw storage;
+weight and height now show at most two decimals without resaving rounded data.
+Against Workouts, the new-session introduction displaced the fields; removed
+the filler heading and combined the name and explanation into the first card.
+Activity/sleep presets, weight controls and food nutrient fields retain the
+shared layout. Primary summaries retain Fitness-like emphasis, with Exerly's
+purple/pink rather than new colors or branding.
+
+P1 remains in Logic's inbox at 02:44: legacy SyncEngine never clears error after
+a successful pull and leaves isOffline set when reconnecting with no pending
+mutation. The combined app Sync action now uploads water correctly, verified
+607 ml after offline U.S. entry and relaunch, but the honest combined status
+continues displaying that stale error. No Core source workaround or exclusion.
+This is the remaining failing U.S. regression assertion. Continue owned design
+review and integration while Logic fixes the status. No new nutrition features
+before the design TestFlight release and its final independent critique.
+
+## Final U.S., sync and accessibility work, 2026-10-07 02:38 EDT
+
+Ali explicitly requested continued autonomous work for several hours and major
+completed improvements. Continue through the brief, not just this release.
+Primary rebased on Logic's e0bce0e7, preserving Logic's inbox status updates.
+Core 295, API 250, device and 61 owned Swift files pass. Full hosted and
+program/reminder journeys are running on current source. The fixed older full
+run has a program numeric-entry failure, 32 instead of 3, with later tests
+continuing. The helper now verifies and retries real input through selection.
+The previous full-focus-dark run was interrupted, not completed or green.
+
+Water now uses fluid ounces through USUnits, setup/profile feet and inches use
+Core, and the diary adopts preserved target plans and displays kcal left.
+A new real-API U.S. water journey passed entry/validation/offline/relaunch but
+caught a real sync-screen gap: Core reported synced before legacy water was
+uploaded. AccountSyncView now asks both engines to sync and reports pending or
+review states. The regression is rerunning. Metric remains an explicit choice.
+
+The native audit caught undersized tap regions, unreadable email naming, and
+caption2 Dynamic Type scaling. Those are fixed. A custom saved-food search field
+now passes its search/clear/edit/archive/offline journey, 168.221s. Remaining
+contrast findings were rows under system chrome. The audit now scrolls those
+rows into full view and audits them again, with no label exclusions. Both
+appearances are running. Token contrast alone was insufficient evidence.
+
+Photo import, compare, detail and relaunch pass at largest text, 65.851s, plus
+secondary capture 133.613s. The fixed three-row Progress choice was taking too
+much vertical space on SE, so it becomes one labeled menu at accessibility
+sizes. Inspect photo-menu-ax-dark for the corrected result. Rounded preferences
+passes five hosted invariants and the real-API recovery/conflict journey.
+Gallery includes latest default small-light and large-light/dark plus these
+accessibility captures. Final Logic critique and design TestFlight still pending.
 
 ## Fixed design candidate, 2026-10-07 01:44 EDT
 

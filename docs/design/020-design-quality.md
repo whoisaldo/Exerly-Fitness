@@ -93,3 +93,19 @@ All 74 audited token pairs meet 4.5:1, minimum 4.51. The final source compiles f
 iPhone and has zero SwiftLint violations in the 59 changed app files. Final
 matrix review, Logic critique and the full fixed-commit native suite remain
 release gates. The current gallery is a review artifact, not a release claim.
+
+## Final review refinements
+
+The small-phone native accessibility audit now passes in light and dark.
+Full-size contact reviews of 36 secondary captures found faint placeholders,
+raw weight precision, a repeated new-workout introduction, and dark primary
+buttons using the chart purple. Shared input hints and action colors now use
+the readable roles. Weight display preserves the exact stored measurement when
+only a note changes. The large iOS 26 audit and refreshed final matrix remain
+in progress. Native audits scroll content clear of system chrome before
+rechecking a contrast finding; no element label is ignored.
+
+Capture review sheets are in `artifacts/design/contact-review`. They reference
+the unchanged original captures rather than editing them. The gallery records
+the source run for each image. Passing tests, visual review, Logic critique,
+and internal TestFlight remain separate evidence.

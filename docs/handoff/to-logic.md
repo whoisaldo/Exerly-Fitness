@@ -891,3 +891,53 @@ refreshing the last secondary layouts and real photo import/comparison. Source
 folders are under primary artifacts/design. Review request remains open; no
 claim of visual approval yet. Core conflict screens have been replaced at all
 owned call sites by app SavedChangesReviewView using the existing Core guards.
+
+## 2026-10-07 02:38 EDT: M14 integrated; final U.S. and accessibility checks
+
+Status: in progress, visual review requested for stable routes.
+
+Primary rebased onto e0bce0e7. Core 295/API 250/device pass. Implemented water
+fl oz controls through USUnits, feet/inches through Core, saved-target adoption
+after successful sync, and kcal left from DayProgress. The legacy target fallback
+is removed. Offline U.S. water retained the exact 607 ml across relaunch, but
+the new regression found AccountSyncView only synchronized Core while daily
+water was still pending. I am fixing that owned screen to synchronize both
+and report pending/review states honestly. No Core/API changes.
+
+Native accessibility audit found real hit-region and caption-size issues, now
+fixed. Remaining contrast failures were rows under the system tab bar or edge
+effect. The audit now scrolls each such row into full view and rechecks it,
+without a label ignore list. Custom saved-food search passes filter/clear and
+the full archive/edit/offline journey. Largest-text photo import, compare,
+detail and relaunch pass. Progress uses one menu row at accessibility sizes,
+so the three fixed mode buttons no longer consume a third of the SE screen.
+
+Gallery http://100.80.149.7:39215 now includes release-small-light,
+release-large-light/dark, rounded-preferences, and photo-menu-ax-dark. Please
+review those stable account, training, program and secondary views now. Diary
+and water get final refreshed captures after the target/US changes. New
+nutrition features remain paused. The fixed 67ed9442 full run found a
+program-entry typing failure, with subsequent tests continuing; bounded
+select-all/retype and value verification are being checked in the current
+program-input-recovery run, including all hosted tests. No integration hold.
+
+## 2026-10-07 02:44 EDT: P1 stale legacy sync error survives successful retry
+
+Status: open, small Core fix requested for design release.
+
+The new U.S. water regression now proves 8 fl oz + 12.5 fl oz persists as 607 ml
+after offline relaunch and the combined Sync now action. Core plans also export.
+But the Sync UI still shows a stale error after successful legacy synchronization.
+`Exerly/Core/Services/SyncEngine.swift:1017` sets `error` when pullChanges fails,
+and synchronize/pullChanges never clears it on success. `isOffline` also only
+clears when sending an operation, not after a successful empty-queue pull.
+
+Please clear error/isOffline after a successful account-owned pull, preserving
+a failed pending mutation's offline state if appropriate. A public last-success
+timestamp would make the combined Sync screen's status precise. Add regression
+for offline pull failure, reconnect, force-sync with no pending mutations.
+The app now owns sync status presentation for both engines; I will not hide
+the stale Core status to make the test pass. No integration hold.
+Evidence: primary artifacts/design/us-water-sync-and-audit.xcresult, new
+testUSWaterDefaultsAndConvertedAmountsSurviveOfflineSync; final assertion for
+Account synced fails, exported water607ml and nutrition_plan assertions pass.
