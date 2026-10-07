@@ -520,6 +520,25 @@ const collections = {
     indexes: [{ keys: { token_hash: 1 }, unique: true }, { keys: { account_id: 1 } }],
   },
 
+  // Webhooks. Migration 0007.
+  webhooks: {
+    collection: 'webhooks',
+    fields: {
+      account_id: t.str,
+      token_id: t.str,
+      url: t.str,
+      secret: t.str,
+      created_at: t.date,
+      delivered_sequence: t.num,
+      next_attempt_at: t.date,
+      failures: t.num,
+      last_delivery_at: t.date,
+      last_error: t.str,
+      disabled_at: t.date,
+    },
+    indexes: [{ keys: { account_id: 1 } }],
+  },
+
   barcode_cache: {
     collection: 'barcodecaches',
     fields: {

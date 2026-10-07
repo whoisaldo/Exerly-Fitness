@@ -40,6 +40,8 @@ async function seedEverything(user) {
       if (collection === 'sync_changes') row.sequence = Math.random();
       // A live document has a payload and no tombstone.
       if (collection === 'documents') row.deleted_at = null;
+      // A webhook made from a session belongs to no token.
+      if (collection === 'webhooks') row.token_id = null;
       try {
         await api.store.insert(collection, { ...row, ...filter });
       } catch (error) {
@@ -77,6 +79,15 @@ test('the export holds every exportable table, only the owner rows, and no secre
   await api.post('/api/food', { name: 'Exported oats', calories: 300 }, { token: owner.token });
   await api.post('/api/food', { name: 'Not mine', calories: 1 }, { token: other.token });
   await api.post('/api/weight', { weight: 80.4 }, { token: owner.token });
+  await api.store.insert('webhooks', {
+    account_id: (await api.store.findOne('users', { email: owner.email })).id,
+    url: 'https://example.com/synthetic-hook',
+    secret: 'whsec_synthetic',
+    created_at: new Date(),
+    delivered_sequence: 0,
+    next_attempt_at: new Date(),
+    failures: 0,
+  });
 
   const res = await api.get('/api/export', { token: owner.token });
   assert.equal(res.status, 200);
@@ -95,7 +106,11 @@ test('the export holds every exportable table, only the owner rows, and no secre
   assert.equal(res.body.food[0]._id, res.body.food[0].id, 'rows keep the _id clients read');
   assert.equal(res.body.weights[0].weight_kg, 80.4);
   const text = JSON.stringify(res.body);
-  for (const secret of ['"hash"', 'refresh_hash', 'Not mine', other.email]) {
+  assert.deepEqual(
+    res.body.webhooks.map((w) => w.url),
+    ['https://example.com/synthetic-hook']
+  );
+  for (const secret of ['"hash"', 'refresh_hash', 'whsec_', 'Not mine', other.email]) {
     assert.ok(!text.includes(secret), `export contains ${secret}`);
   }
 });

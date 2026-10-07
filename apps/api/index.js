@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const store = require('./data');
 const { createApp } = require('./app');
+const webhooks = require('./lib/webhooks');
 
 const PORT = Number(process.env.PORT) || 3001;
 // Binding to all interfaces so a phone on the same network, or another machine
@@ -65,6 +66,9 @@ async function main() {
     });
     setTimeout(() => process.exit(1), 10000).unref();
   };
+
+  // Tells the person's webhooks when their change feed moves on.
+  webhooks.start();
 
   process.on('SIGTERM', shutdown('SIGTERM'));
   process.on('SIGINT', shutdown('SIGINT'));

@@ -248,6 +248,10 @@ try await api.signOut()
     `revokeAccessToken(id:)` for the person's own agents. Every token can read;
     `.propose` files proposals, and `.write` changes data. The secret in
     `CreatedAccessToken.secret` is shown once and never again.
+  - `webhooks()`, `deleteWebhook(id:)` and `enableWebhook(id:)` show and
+    control the endpoints the person's agents registered to hear about
+    changes (design 019). A `Webhook` says which token created it, its
+    failures and last error, and whether it is disabled.
   - `searchFoods(_:limit:)` and `food(barcode:)` look foods up in Open Food
     Facts and return `DatabaseFoods`: unsaved `Food`s, ready for
     `NutritionStore.saveFood` or `log`, and the attribution to show with them.

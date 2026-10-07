@@ -299,6 +299,90 @@ paths:
         '200': { description: Revoked }
         '404': { $ref: '#/components/responses/Problem' }
 
+  /v1/webhooks:
+    get:
+      tags: [Account]
+      operationId: listWebhooks
+      summary: Your webhooks (a token sees only those it created)
+      responses:
+        '200':
+          description: Webhooks, without their secrets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Webhook' }
+        '401': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Account]
+      operationId: createWebhook
+      summary: Be told when your change feed moves on
+      description: |
+        Exerly POSTs `{"type":"changes","webhook_id":…,"sequence":…,"sent_at":…}`
+        to the URL after changes, coalesced to the latest sequence. It carries
+        no data: read `/v1/changes?after=` with your own token. Check the
+        `Exerly-Signature` header, `t=<unix seconds>,v1=<hex>`, where the hex
+        is HMAC-SHA256 of `<t>.<raw body>` with the secret, which is returned
+        once. Failures retry after 30 s, doubling up to 6 h; 15 in a row
+        disable the webhook. The URL must be https and reach a public
+        address. A webhook made with a token stops when the token is revoked.
+        At most 5 an account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, maxLength: 2000 }
+      responses:
+        '201':
+          description: The webhook, with its signing secret, shown once.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Webhook'
+                  - type: object
+                    required: [secret]
+                    properties:
+                      secret: { type: string, example: whsec_… }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /v1/webhooks/{id}:
+    delete:
+      tags: [Account]
+      operationId: deleteWebhook
+      summary: Delete a webhook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /v1/webhooks/{id}/enable:
+    post:
+      tags: [Account]
+      operationId: enableWebhook
+      summary: Resume a disabled webhook from where it left off
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The webhook, enabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+        '404': { $ref: '#/components/responses/Problem' }
+
   /v1/documents/{kind}/{id}:
     parameters:
       - $ref: '#/components/parameters/Kind'
@@ -610,6 +694,19 @@ components:
         deleted: { type: boolean }
         payload: { type: [object, 'null'] }
         updated_at: { type: string, format: date-time }
+    Webhook:
+      type: object
+      required: [id, url, created_at, delivered_sequence, failures]
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        created_at: { type: string, format: date-time }
+        created_by_token: { type: string, format: uuid, nullable: true }
+        delivered_sequence: { type: number }
+        last_delivery_at: { type: string, format: date-time, nullable: true }
+        failures: { type: integer }
+        last_error: { type: string, nullable: true }
+        disabled_at: { type: string, format: date-time, nullable: true }
     Token:
       type: object
       required: [id, name, prefix, scopes, created_at]

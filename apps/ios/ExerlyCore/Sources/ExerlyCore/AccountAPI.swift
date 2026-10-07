@@ -127,6 +127,28 @@ public struct AccountAPI: DocumentAPI {
         guard status == 200 else { throw Wire.failure(status, json) }
     }
 
+    /// The account's webhooks, including those its agents' tokens created, so
+    /// the person can see and stop them. They carry no data; see design 019.
+    public func webhooks() async throws -> [Webhook] {
+        let (status, data) = try await send("GET", "/v1/webhooks")
+        guard status == 200, let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data))
+        }
+        return try rows.map(Webhook.init(json:))
+    }
+
+    public func deleteWebhook(id: String) async throws {
+        let (status, json) = try await sendJSON("DELETE", "/v1/webhooks/\(id)", body: nil)
+        guard status == 204 else { throw Wire.failure(status, json) }
+    }
+
+    /// Resumes a disabled webhook from where it left off.
+    public func enableWebhook(id: String) async throws -> Webhook {
+        let (status, json) = try await sendJSON("POST", "/v1/webhooks/\(id)/enable", body: [:])
+        guard status == 200, let row = json as? [String: Any] else { throw Wire.failure(status, json) }
+        return try Webhook(json: row)
+    }
+
     // MARK: Food database
 
     /// Foods matching a search, from a public food database (Open Food Facts),
@@ -208,6 +230,37 @@ public struct AccessToken: Sendable, Hashable, Identifiable {
         createdAt = created
         lastUsedAt = date("last_used_at")
         expiresAt = date("expires_at")
+    }
+}
+
+/// An endpoint told when the account's change feed moves on.
+public struct Webhook: Sendable, Hashable, Identifiable {
+    public var id: String
+    public var url: String
+    public var createdAt: Date
+    /// The token that created it, if one did; it stops when that token is revoked.
+    public var createdByToken: String?
+    public var lastDeliveryAt: Date?
+    /// Failed deliveries in a row, and the last reason.
+    public var failures: Int
+    public var lastError: String?
+    /// Set after 15 failures in a row, or when its token was revoked.
+    public var disabledAt: Date?
+
+    init(json: [String: Any]) throws {
+        func date(_ key: String) -> Date? {
+            (json[key] as? String).flatMap(ISOMilliseconds.parse).map(Date.milliseconds)
+        }
+        guard let id = json["id"] as? String, let url = json["url"] as? String, let created = date("created_at")
+        else { throw APIError.invalidResponse }
+        self.id = id
+        self.url = url
+        createdAt = created
+        createdByToken = json["created_by_token"] as? String
+        lastDeliveryAt = date("last_delivery_at")
+        failures = json["failures"] as? Int ?? 0
+        lastError = json["last_error"] as? String
+        disabledAt = date("disabled_at")
     }
 }
 

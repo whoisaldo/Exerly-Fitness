@@ -258,6 +258,34 @@ func sessionJSON(_ token: String, refresh: String = "refresh-1", created: Bool? 
         replayed = true
         await #expect(throws: APIError.self) { try await account.createAccessToken(name: "Claude", scopes: [.propose]) }
     }
+
+    @Test func listsDeletesAndResumesTheAccountsWebhooks() async throws {
+        let store = InMemoryCredentialStore()
+        let start = Date.milliseconds(1_791_223_200_000)
+        try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600),
+                                   sessionID: "s", accountID: "a"))
+        let row: [String: Any] = ["id": "hook-1", "url": "https://dashboard.example/exerly", "created_at": "2026-10-05T18:00:00.000Z",
+                                  "created_by_token": "tok-1", "delivered_sequence": 4, "last_delivery_at": NSNull(),
+                                  "failures": 15, "last_error": "HTTP 500", "disabled_at": "2026-10-06T18:00:00.000Z"]
+        let transport = FakeTransport { request in
+            switch (request.method, request.path) {
+            case ("GET", "/v1/webhooks"): return (200, [row])
+            case ("POST", "/v1/webhooks/hook-1/enable"):
+                return (200, row.merging(["failures": 0, "last_error": NSNull(), "disabled_at": NSNull()]) { _, new in new })
+            default:
+                #expect(request.method == "DELETE" && request.path == "/v1/webhooks/hook-1")
+                return (204, [:])
+            }
+        }
+        let account = try await ExerlyAPI(baseURL: URL(string: "https://api.exerly.test")!, transport: transport, credentials: store,
+                                          now: { start }).account()
+        let hooks = try await account.webhooks()
+        #expect(hooks.map(\.createdByToken) == ["tok-1"] && hooks[0].failures == 15 && hooks[0].lastError == "HTTP 500")
+        #expect(hooks[0].disabledAt == start.addingTimeInterval(86_400) && hooks[0].createdAt == start)
+        let resumed = try await account.enableWebhook(id: "hook-1")
+        #expect(resumed.disabledAt == nil && resumed.failures == 0)
+        try await account.deleteWebhook(id: "hook-1")
+    }
 }
 
 @Suite struct AccountDeletedTests {
