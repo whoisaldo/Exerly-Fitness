@@ -1,26 +1,42 @@
 # App agent ledger (Astra)
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
-met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 11:35 EDT.
+met. No parity row is fully device-verified. Continue through milestones.
+Current date 2026-10-07, updated 15:07 EDT.
 
 ## Merge status
 
-Integration is d0b8a602. The search correction bf03296e is pushed on both
-integration and app-nutrition. Logic's two label basis corrections are adopted
-in both app worktrees. A10 build2610071410 remains live in Ali-only TestFlight.
-N04 is uncommitted while its last design corrections are checked. N15 is at
-17f31458 in the release tree, with two new hosted regressions not yet committed.
+Integration is 236fc88c. N15 scanner commits db5a41c5 and c29016b0 are rebased
+onto the quick-add contract. Unweighed-entry compatibility is being verified
+before this small piece lands. A10 build 2610071410 remains live in Ali-only
+TestFlight. N04 is in the primary tree while its final visual corrections run.
 
-| App branch                         | Unlanded work                               | Last landed / cleanup                              |
-| ---------------------------------- | ------------------------------------------- | -------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                      | Deleted locally/remotely                           |
-| `agent/app-next`                   | None, git cherry empty                      | Deleted locally/remotely; worktree removed         |
-| `agent/app-programs`               | None, git cherry empty                      | A6 landed 19925b28; branch deleted                 |
-| `release/app-nutrition-foundation` | None                                        | Foundation landed 60e83cf9; branch deleted         |
-| `agent/app-nutrition`              | N04 meal builder; full181active hosted pass | Search correction bf03296e landed/pushed           |
-| `agent/app-label`                  | 17f31458 + bilingual and basis regressions  | Final Core/API/hosted/device + affected UI running |
-| `release/app-design`               | 17f31458 with adopted Core fixes            | Only release worktree; A10 shipped                 |
+| App branch | Unlanded work | Last landed / cleanup |
+| --- | --- | --- |
+| `agent/app` | None, git cherry empty | Deleted locally/remotely |
+| `agent/app-next` | None, git cherry empty | Deleted locally/remotely; worktree removed |
+| `agent/app-programs` | None | A6 landed 19925b28; branch deleted |
+| `release/app-nutrition-foundation` | None | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition` | N04 meal builder and final visual corrections | Search correction bf03296e landed and pushed |
+| `agent/app-label` | Scanner held at ba6a668d; release tree contains its rebased commits | Update or delete after scanner lands |
+| `release/app-design` | db5a41c5, c29016b0, unweighed display correction | Only release worktree; A10 shipped |
+
+## Unweighed entries and final meal verification, 2026-10-07 15:07 EDT
+
+Integration advanced before N15 could fast-forward. Rebased scanner source
+onto 236fc88c and reviewed the new quick-add contract. Unweighed entries now
+hide weight and portion controls, retain their whole-portion nutrients when
+edited, and stay out of the food library. Full 185 active hosted tests plus
+one credential skip, Core 308, API 261 and device build pass on this source.
+The offline unweighed UI journey passed in 111.455 seconds, including relaunch
+and exact export. N05 creation UI is still open.
+
+The previous largest-text meal offline run failed because the test dragged
+through the fixed Add foods button while scrolling. Its original red result
+and video remain in plate-largest-dark-final. The helper now keeps gestures
+above that button; a focused rerun is in progress. Final light critique checks
+passed, including all hosted tests and both meal journeys. Fresh capture review
+and final dark captures follow. No failed run has been erased or called green.
 
 ## N15 ready to land, 2026-10-07 11:35 EDT
 

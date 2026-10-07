@@ -69,7 +69,7 @@ struct NutritionLibraryView: View {
             }
             if !showArchived && query.isEmpty {
                 let suggestions = workspace.nutrition.suggestions(at: .now, timeZone: timeZone)
-                    .filter { workspace.nutrition.food($0.food.foodID)?.archivedAt == nil }
+                    .filter { $0.food.unweighed != true && workspace.nutrition.food($0.food.foodID)?.archivedAt == nil }
                 if !suggestions.isEmpty {
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
                         ExSectionHeading("Usual around now")
@@ -81,7 +81,7 @@ struct NutritionLibraryView: View {
                     }
                 }
                 let recent = workspace.nutrition.recentFoods(limit: 5).filter { snapshot in
-                    workspace.nutrition.food(snapshot.foodID)?.archivedAt == nil &&
+                    snapshot.unweighed != true && workspace.nutrition.food(snapshot.foodID)?.archivedAt == nil &&
                         !suggestions.contains { $0.food.foodID == snapshot.foodID }
                 }
                 if !recent.isEmpty {

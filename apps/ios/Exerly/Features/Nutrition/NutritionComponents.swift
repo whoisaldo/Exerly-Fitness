@@ -196,6 +196,7 @@ enum NutritionFormat {
     }
 
     static func portion(_ entry: FoodEntry) -> String {
+        if entry.food.unweighed == true { return "Unweighed portion" }
         let grams = TrainingFormat.number(entry.grams)
         if let serving = entry.serving, let quantity = entry.quantity {
             let measure = NutritionPortionMeasure.saved(serving, food: entry.food.foodForLogging())

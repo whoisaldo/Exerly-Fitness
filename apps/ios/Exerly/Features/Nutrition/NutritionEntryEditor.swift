@@ -46,21 +46,29 @@ struct NutritionEntryEditor: View {
                             .fixedSize(horizontal: false, vertical: true)
                         if let brand = draft.food.brand { Text(brand).foregroundStyle(.secondary) }
                     }
-                    ExCard {
-                        Button { typing = false; choosingMeasure = true } label: {
-                            ExNavigationLabel(title: draft.measure.title, icon: "scalemass", detail: "Portion measure")
-                        }.accessibilityIdentifier("nutrition.measure")
-                        ExQuantityControl(title: draft.measure.amountTitle,
-                                          text: $draft.amount.text, step: draft.measure.step,
-                                          presets: draft.measure.presets, unit: draft.measure.symbol)
-                            .focused($typing).accessibilityIdentifier("nutrition.amount")
-                        if case .serving(let serving) = draft.measure {
-                            Text("One \(serving.name): \(TrainingFormat.number(serving.grams)) g")
-                                .foregroundStyle(.secondary)
-                        }
-                        if draft.measure == .milliliters || draft.measure == .fluidOunces, draft.food.volume?.assumed == true {
-                            Label("Estimated weight from volume", systemImage: "info.circle")
-                                .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    if draft.snapshot.unweighed == true {
+                        ExCard {
+                            ExEyebrow("Whole portion", color: .exPrimaryText)
+                            Text("This entry was logged without a weight. Edit its Calories and nutrients below.")
+                                .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                        }.accessibilityIdentifier("nutrition.unweighedEntry")
+                    } else {
+                        ExCard {
+                            Button { typing = false; choosingMeasure = true } label: {
+                                ExNavigationLabel(title: draft.measure.title, icon: "scalemass", detail: "Portion measure")
+                            }.accessibilityIdentifier("nutrition.measure")
+                            ExQuantityControl(title: draft.measure.amountTitle,
+                                              text: $draft.amount.text, step: draft.measure.step,
+                                              presets: draft.measure.presets, unit: draft.measure.symbol)
+                                .focused($typing).accessibilityIdentifier("nutrition.amount")
+                            if case .serving(let serving) = draft.measure {
+                                Text("One \(serving.name): \(TrainingFormat.number(serving.grams)) g")
+                                    .foregroundStyle(.secondary)
+                            }
+                            if draft.measure == .milliliters || draft.measure == .fluidOunces, draft.food.volume?.assumed == true {
+                                Label("Estimated weight from volume", systemImage: "info.circle")
+                                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                            }
                         }
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -115,15 +123,17 @@ struct NutritionEntryEditor: View {
                                 .foregroundStyle(.secondary)
                         }
                         let saved = workspace.nutrition.food(draft.food.id)
-                        if saved?.favorite == true {
-                            Label("Saved in favorites", systemImage: "star.fill")
-                                .accessibilityIdentifier("nutrition.entryFavoriteSaved")
-                        } else if saved?.archivedAt == nil {
-                            Button("Add to favorites", systemImage: "star") {
-                                if libraryActions.keepFavorite(draft.food, reviewed: saved) {
-                                    Task { await workspace.synchronize() }
-                                }
-                            }.accessibilityIdentifier("nutrition.entryFavorite")
+                        if draft.snapshot.unweighed != true {
+                            if saved?.favorite == true {
+                                Label("Saved in favorites", systemImage: "star.fill")
+                                    .accessibilityIdentifier("nutrition.entryFavoriteSaved")
+                            } else if saved?.archivedAt == nil {
+                                Button("Add to favorites", systemImage: "star") {
+                                    if libraryActions.keepFavorite(draft.food, reviewed: saved) {
+                                        Task { await workspace.synchronize() }
+                                    }
+                                }.accessibilityIdentifier("nutrition.entryFavorite")
+                            }
                         }
                         if let error = libraryActions.error { Text(error).foregroundStyle(Color.exError) }
                     }

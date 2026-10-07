@@ -1291,3 +1291,30 @@ N05 contract request, not blocking N04/N15: quick Calories/macros should log
 whole-portion nutrients without a reusable food or an invented100g food weight.
 Is there a Core/API representation planned for this? Please publish it before
 the UI. I will next work from the existing native recipe contract in N11/N12.
+
+
+## 2026-10-07 15:07 EDT: Unweighed display adoption and contract review
+
+Status: open (logic review); app compatibility tests are running.
+
+Scanner source now includes 236fc88c. The app hides weight/amount controls for
+unweighed entries, edits their whole-portion nutrients, and excludes every
+unweighed snapshot from recents/suggestions in the picker and library. Core
+308, API 261, device build and 185 active hosted tests pass. The offline UI
+journey is in progress. N05 creation UI follows N04.
+
+P2, Nutrition.swift:234 and apps/api/lib/nutrition/validate.js:134. An entry
+with food.unweighed=true and grams=50 currently passes both validators, while
+FoodEntry.nutrients halves per100g. The published contract says per100g holds
+the whole portion and grams=100 is nominal. Please enforce that representation
+or explicitly document a different invariant. App quickAdd uses 100 correctly.
+
+P2, NutritionStore.swift:167 and :269. Core recentFoods/suggestions exclude
+quick: IDs, but Shortcuts unweighed entries use shortcut: IDs and remain in
+these lists. The app filters by the flag before reconstructing a reusable
+food, so it will not invent a measured portion. Please also filter the flag
+in Core for other callers.
+
+I am not freezing integration. N15 will land when its compatibility journey
+passes, with the long release work running from that fixed commit. Please
+merge integration into main and check CI at the milestone as usual.

@@ -593,20 +593,23 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(((new["food"] as? [String: Any])?["per100g"] as? [String: Any])?["energy"] as? Double, 60)
     }
 
-    private func seedNutritionEntry(token: String, name: String = "Synthetic pear", nutrients: [String: Double] = ["energy": 57, "sodium": 0], grams: Double = 123.25) async throws -> (id: String, date: String, foodID: String) {
-        let foodID = UUID().uuidString
+    private func seedNutritionEntry(token: String, name: String = "Synthetic pear", nutrients: [String: Double] = ["energy": 57, "sodium": 0], grams: Double = 123.25, unweighed: Bool = false) async throws -> (id: String, date: String, foodID: String) {
         let entryID = UUID().uuidString
+        let foodID = unweighed ? "quick:\(entryID)" : UUID().uuidString
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "America/New_York")
         formatter.dateFormat = "yyyy-MM-dd"
         let date = formatter.string(from: Date())
         let food: [String: Any] = ["id": foodID, "name": name, "source": "custom", "per100g": nutrients,
-                                    "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
-        _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
-        let snapshot: [String: Any] = ["foodID": foodID, "name": name, "source": "custom", "per100g": nutrients]
+                                 "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
+        if !unweighed {
+            _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
+        }
+        var snapshot: [String: Any] = ["foodID": foodID, "name": name, "source": "custom", "per100g": nutrients]
+        if unweighed { snapshot["unweighed"] = true }
         let entry: [String: Any] = ["id": entryID, "date": date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
-                                     "food": snapshot, "grams": grams]
+                                  "food": snapshot, "grams": grams]
         _ = try await request("PUT", "/v1/documents/food_entry/\(entryID)", body: ["base_revision": 0, "payload": entry], token: token)
         return (entryID, date, foodID)
     }
@@ -1859,6 +1862,58 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.cancelEntry"], in: app)
         XCTAssertTrue(app.navigationBars["Food entry"].waitForNonExistence(timeout: 10),
                       "Scrolling must not leave a changed meal or portion that requires discard confirmation")
+    }
+
+    func testUnweighedEntryHidesInventedWeightAndKeepsNutrientEditsOffline() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "unweighed-entry", units: "imperial")
+        let seeded = try await seedNutritionEntry(token: person.token, name: "Unweighed meal",
+            nutrients: ["energy": 351.25, "protein": 12.3456789, "sodium": 0], grams: 100, unweighed: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        XCTAssertFalse(app.textFields["nutrition.amount"].exists)
+        capture(app, "nutrition-unweighed-entry")
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        XCTAssertTrue(app.staticTexts["Unweighed portion"].exists)
+        replace(app.textFields["Calories (kcal)"], with: "352.5", in: app)
+        replace(app.textFields["Protein (g)"], with: "", in: app)
+        replace(app.textFields["Fat (g)"], with: "0", in: app)
+        dismissKeyboard(app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "352.5")
+        capture(app, "nutrition-unweighed-relaunched")
+        tap(app.buttons["nutrition.cancelEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "saved_food" })
+        let entry = try XCTUnwrap(documents.first { $0["kind"] as? String == "food_entry" }?["payload"] as? [String: Any])
+        XCTAssertEqual(entry["grams"] as? Double, 100, "The storage representation must not change")
+        let food = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(food["unweighed"] as? Bool, true)
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 352.5)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
     }
 
     func testEntryNutrientCorrectionCanBeCancelledAndKeepsItsSourceAcrossOfflineRelaunch() async throws {

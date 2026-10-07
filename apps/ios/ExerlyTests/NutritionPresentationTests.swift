@@ -4,6 +4,26 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testUnweighedEntryCorrectionKeepsWholePortionAndNeverCreatesALibraryFood() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let original = try store.quickAdd(NutrientAmounts([.energy: 351.25, .protein: 12.3456789, .sodium: 0]),
+                                          name: "Unweighed meal", on: date, meal: "Lunch")
+        XCTAssertEqual(NutritionFormat.portion(original), "Unweighed portion")
+        let draft = NutritionEntryDraft(store: store, food: original.food.foodForLogging(), date: date, meal: "Lunch", editing: original)
+        let reviewed = try XCTUnwrap(draft.reviewNutrition())
+        let correction = reviewed.editingNutrients(NutrientAmounts([.energy: 352.5, .fat: 0, .sodium: 0]))
+        try draft.applyNutrition(correction, reviewed: reviewed)
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.food.unweighed, true)
+        XCTAssertEqual(saved.grams, original.grams)
+        XCTAssertEqual(saved.nutrients[.energy], 352.5)
+        XCTAssertEqual(saved.nutrients[.fat], 0)
+        XCTAssertNil(saved.nutrients[.protein])
+        XCTAssertEqual(NutritionFormat.portion(saved), "Unweighed portion")
+        XCTAssertTrue(store.foods.isEmpty)
+    }
+
     func testNewFoodPortionsUseUSUnitsUnlessTheAccountExplicitlyUsesMetric() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))

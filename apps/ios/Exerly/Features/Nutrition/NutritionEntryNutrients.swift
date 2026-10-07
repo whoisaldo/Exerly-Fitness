@@ -52,7 +52,9 @@ struct NutritionEntryNutrientsEditor: View {
                         Text(draft.original.food.name).font(.exH2)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(NutritionFormat.portion(draft.original)).font(.exBody)
-                        Text("Enter nutrients for this whole portion. Your saved food and other entries stay unchanged.")
+                        Text(draft.original.food.unweighed == true
+                             ? "Enter nutrients for this whole portion. Other entries stay unchanged."
+                             : "Enter nutrients for this whole portion. Your saved food and other entries stay unchanged.")
                             .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {

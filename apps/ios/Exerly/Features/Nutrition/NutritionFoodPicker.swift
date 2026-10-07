@@ -166,7 +166,7 @@ struct NutritionFoodPicker: View {
     private var recents: [ExerlyCore.Food] {
         let favoriteIDs = Set(favorites.map(\.id))
         return workspace.nutrition.recentFoods().compactMap { snapshot in
-            guard !favoriteIDs.contains(snapshot.foodID) else { return nil }
+            guard snapshot.unweighed != true, !favoriteIDs.contains(snapshot.foodID) else { return nil }
             let saved = workspace.nutrition.food(snapshot.foodID)
             guard saved?.archivedAt == nil else { return nil }
             let last = workspace.nutrition.entries.last { $0.food.foodID == snapshot.foodID }
