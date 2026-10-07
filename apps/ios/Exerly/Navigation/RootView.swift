@@ -100,9 +100,10 @@ struct RootView: View {
         }
         if authVM.isOffline && authVM.currentUser != nil {
             HStack(spacing: ExSpacing.small) {
-                Label("Offline", systemImage: "icloud.slash").font(.exCaption)
+                Label("Saved account", systemImage: "person.crop.circle").font(.exCaption)
                     .foregroundStyle(Color.exTextSecondary)
-                    .accessibilityLabel("Offline. Showing saved account details.")
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Showing saved account details.")
                 Spacer(minLength: ExSpacing.small)
                 Button("Retry") { Task { await authVM.checkAuth() } }
                     .font(.exCaption.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
