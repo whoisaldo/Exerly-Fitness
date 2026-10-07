@@ -102,6 +102,12 @@ import Testing
             if request.path.hasPrefix("/v1/foods/search") { return (200, ["foods": foods, "attribution": attribution]) }
             if request.path == "/v1/foods/barcode/0012345678905" { return (200, ["food": foods[0], "attribution": attribution]) }
             if request.path == "/v1/foods/barcode/4000000000016" { return (404, ["error": "No food has that barcode"]) }
+            if ["/v1/foods/barcode/01234565?symbology=upce", "/v1/foods/barcode/96385074?symbology=ean8"].contains(request.path) {
+                return (200, ["food": foods[1], "attribution": attribution])
+            }
+            if request.path == "/v1/foods/barcode/01234565" {
+                return (400, ["error": "Choose EAN-8 or UPC-E for an eight-digit code."])
+            }
             return (503, ["error": "The food database is unavailable right now. Try again shortly."])
         }
         let api = try await account(transport)
@@ -113,5 +119,9 @@ import Testing
         #expect(try await api.food(barcode: "0012345678905")?.foods.first?.name == "Synthetic oat bar")
         #expect(try await api.food(barcode: "4000000000016") == nil)
         await #expect(throws: APIError.self) { try await api.food(barcode: "5000000000017") }
+        // Eight digits need the camera's format.
+        #expect(try await api.food(barcode: "01234565", symbology: .upcE)?.foods.first?.id == "off:5000000000017")
+        #expect(try await api.food(barcode: "96385074", symbology: .ean8) != nil)
+        await #expect(throws: APIError.self) { try await api.food(barcode: "01234565") }
     }
 }

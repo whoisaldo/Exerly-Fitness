@@ -75,4 +75,17 @@ test('a barcode is one Food, or a clear not found, busy or unavailable', async (
   providers.openFoodFactsBarcode = async () => ({ status: 'temporarily_unavailable' });
   assert.equal((await get('0012345678905')).status, 503);
   assert.equal((await get('12ab')).status, 400);
+
+  // Eight digits are EAN-8 or UPC-E, and only the camera knows which.
+  const asked = [];
+  providers.openFoodFactsBarcode = async (identity) => {
+    asked.push(identity.openFoodFacts);
+    return { status: 'found', product: { ...golden.products[0], code: identity.openFoodFacts } };
+  };
+  const bare = await get('01234565');
+  assert.equal(bare.status, 400);
+  assert.match(bare.body.error ?? bare.body.message, /Choose EAN-8 or UPC-E/);
+  assert.equal((await get('01234565?symbology=upce')).status, 200);
+  assert.equal((await get('96385074?symbology=ean8')).status, 200);
+  assert.deepEqual(asked, ['0012345000065', '96385074'], 'UPC-E is expanded on the server');
 });

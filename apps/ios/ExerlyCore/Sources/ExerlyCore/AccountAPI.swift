@@ -142,13 +142,22 @@ public struct AccountAPI: DocumentAPI {
     }
 
     /// The food with this barcode, or nil when the database doesn't have it.
-    public func food(barcode: String) async throws -> DatabaseFoods? {
+    /// Pass the camera's `symbology`: an eight-digit code is refused without
+    /// one, because EAN-8 and UPC-E codes can't be told apart. Never expand a
+    /// UPC-E code yourself; the server does.
+    public func food(barcode: String, symbology: BarcodeSymbology? = nil) async throws -> DatabaseFoods? {
         let digits = barcode.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
-        let (status, data) = try await send("GET", "/v1/foods/barcode/\(digits)")
+        let query = symbology.map { "?symbology=\($0.rawValue)" } ?? ""
+        let (status, data) = try await send("GET", "/v1/foods/barcode/\(digits)\(query)")
         if status == 404 { return nil }
         guard status == 200 else { throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data)) }
         let found = try ExerlyJSON.decoder.decode(BarcodeFood.self, from: data)
         return DatabaseFoods(foods: [found.food], attribution: found.attribution)
+    }
+
+    /// Product barcode formats, as cameras report them.
+    public enum BarcodeSymbology: String, Sendable, Hashable, CaseIterable {
+        case upcA = "upca", upcE = "upce", ean8, ean13, gtin14, itf14
     }
 
     private struct BarcodeFood: Decodable {

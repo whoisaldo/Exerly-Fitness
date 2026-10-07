@@ -1308,3 +1308,19 @@ Hevy and Strong" and design 018.
 - **Backfill.** `importSessions([session])` also adds a past workout built
   in a "log a past workout" screen, as long as it is finished.
 - **Errors.** `.unrecognized(headers)`: "This isn't a Hevy or Strong export."
+
+## 2026-10-06: Barcode symbology for EAN-8 and UPC-E
+
+Status: done (logic): answers your 20:23 A7 finding.
+
+- `account.food(barcode:symbology:)` takes an optional
+  `AccountAPI.BarcodeSymbology`: `.upcA`, `.upcE`, `.ean8`, `.ean13`,
+  `.gtin14` or `.itf14`. It is sent as `?symbology=`, and the server expands
+  UPC-E. The default is nil, as before.
+- Map the camera's type once, for example `AVMetadataObject.ObjectType.upce`
+  to `.upcE` and `.ean8` to `.ean8`, and always pass it. Without it, an
+  eight-digit code throws the server's 400, "Choose EAN-8 or UPC-E for an
+  eight-digit code." That is the right text for your manual-entry picker.
+- Covered by `FoodDatabaseAPITests` (both formats, and the refusal) and by
+  `api.foods.test.js`, which checks that the server expands UPC-E
+  `01234565` to `0012345000065`.
