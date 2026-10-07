@@ -1310,6 +1310,56 @@ final class ProductionTests: XCTestCase {
         XCTAssertNil(otherAccount.targets.calories)
     }
 
+    func testHealthReadPreferenceIsScopedAndDoesNotInferGrantedReadAccess() async {
+        defaults.set(true, forKey: "healthKitSync")
+        let model = HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults,
+                                    available: { true }, request: {}, load: { (0, 210) })
+        XCTAssertFalse(model.isEnabled, "A global preference must not opt another account into Health reads")
+        await model.setEnabled(true)
+        XCTAssertTrue(model.isEnabled)
+        XCTAssertNil(model.steps, "A missing or denied read must not be presented as zero recorded steps")
+        XCTAssertEqual(model.calories, 210)
+        XCTAssertTrue(HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults).isEnabled)
+        XCTAssertFalse(HealthReadModel(accountID: "b", namespace: "fixture", defaults: defaults).isEnabled)
+        XCTAssertFalse(HealthReadModel(accountID: "a", namespace: "another-server", defaults: defaults).isEnabled)
+        await model.setEnabled(false)
+        XCTAssertNil(model.calories)
+        XCTAssertFalse(HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults).isEnabled)
+    }
+
+    func testHealthPermissionFailureRemainsOffAndUnavailableDevicesDoNotRequestAccess() async {
+        let failed = HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults,
+                                     available: { true }, request: { throw URLError(.cancelled) }, load: { (0, 0) })
+        await failed.setEnabled(true)
+        XCTAssertFalse(failed.isEnabled)
+        XCTAssertNotNil(failed.message)
+        XCTAssertFalse(failed.isRequesting)
+        var requested = false
+        let unavailable = HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults,
+                                          available: { false }, request: { requested = true }, load: { (0, 0) })
+        await unavailable.setEnabled(true)
+        XCTAssertFalse(requested)
+        XCTAssertFalse(unavailable.isEnabled)
+        XCTAssertNotNil(unavailable.message)
+    }
+
+    func testDismissedHealthPermissionRequestCannotEnableReadingLater() async {
+        var continuation: CheckedContinuation<Void, Never>?
+        let model = HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults,
+                                    available: { true }, request: {
+                                        await withCheckedContinuation { continuation = $0 }
+                                    }, load: { (1200, 150) })
+        let operation = Task { await model.setEnabled(true) }
+        while continuation == nil { await Task.yield() }
+        model.close()
+        continuation?.resume()
+        await operation.value
+        XCTAssertFalse(model.isEnabled)
+        XCTAssertNil(model.steps)
+        XCTAssertFalse(model.isRequesting)
+        XCTAssertFalse(HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults).isEnabled)
+    }
+
     func testDiaryStatusReplaysLostAcknowledgementBeforeLaterOfflineChange() async throws {
         keychain.saveSession(token: "e30.eyJzdWIiOiJhIn0.fixture", refreshToken: "fixture-refresh")
         let container = try ModelContainer(for: Schema(versionedSchema: ExerlySchemaV3.self), configurations: ModelConfiguration(isStoredInMemoryOnly: true))

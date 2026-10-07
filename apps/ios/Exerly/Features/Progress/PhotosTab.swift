@@ -32,7 +32,7 @@ struct PhotosTab: View {
                 toolbar
                 if compareMode, let compareA, let compareB {
                     ExCard {
-                        ExSectionHeading("Side by side")
+                        ExSectionHeading("Compare photos")
                         let layout = typeSize.isAccessibilitySize
                             ? AnyLayout(VStackLayout(spacing: ExSpacing.item))
                             : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.small))

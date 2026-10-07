@@ -1,4 +1,5 @@
 import ExerlyCore
+import HealthKit
 import SwiftUI
 
 struct ProfileView: View {
@@ -123,7 +124,7 @@ struct ProfileView: View {
                     } label: { settingsRowContent(icon: "key", title: "Connected agents") }
                     .accessibilityIdentifier("profile.agents")
                 }
-                NavigationLink(destination: HealthKitSettingsView()) {
+                NavigationLink(destination: HealthKitSettingsView(accountID: authVM.currentUser?.id ?? "")) {
                     settingsRowContent(icon: "heart.circle", title: "Apple Health")
                 }
             }
@@ -195,89 +196,137 @@ struct ProfileView: View {
 
 // MARK: - HealthKit Settings
 
+@MainActor
+final class HealthReadModel: ObservableObject {
+    @Published private(set) var isEnabled: Bool
+    @Published private(set) var isRequesting = false
+    @Published private(set) var steps: Int?
+    @Published private(set) var calories: Int?
+    @Published private(set) var message: String?
+    private let preferenceKey: String
+    private let defaults: UserDefaults
+    private let available: () -> Bool
+    private let request: () async throws -> Void
+    private let load: () async -> (steps: Int, calories: Int)
+    private var generation = UUID()
+
+    init(accountID: String, namespace: String = APIClient.shared.storageNamespace, defaults: UserDefaults = .standard,
+         available: @escaping () -> Bool = { HKHealthStore.isHealthDataAvailable() },
+         request: @escaping () async throws -> Void = {
+             let types: Set<HKObjectType> = [HKQuantityType(.stepCount), HKQuantityType(.activeEnergyBurned)]
+             try await HKHealthStore().requestAuthorization(toShare: [], read: types)
+         },
+         load: @escaping () async -> (steps: Int, calories: Int) = {
+             let steps = await HealthKitService.shared.fetchStepsToday()
+             let calories = await HealthKitService.shared.fetchActiveCaloriesToday()
+             return (steps, calories)
+         }) {
+        preferenceKey = "healthRead.\(namespace).\(accountID)"
+        self.defaults = defaults
+        self.available = available
+        self.request = request
+        self.load = load
+        isEnabled = !accountID.isEmpty && defaults.bool(forKey: preferenceKey)
+    }
+
+    func setEnabled(_ enabled: Bool) async {
+        let operation = UUID()
+        generation = operation
+        message = nil
+        steps = nil
+        calories = nil
+        if !enabled {
+            isEnabled = false
+            isRequesting = false
+            defaults.set(false, forKey: preferenceKey)
+            return
+        }
+        guard available() else {
+            message = "Apple Health isn't available on this device."
+            return
+        }
+        isRequesting = true
+        defer { if generation == operation { isRequesting = false } }
+        do {
+            try await request()
+            guard generation == operation, !Task.isCancelled else { return }
+            // Completing the permission sheet does not prove that read access
+            // was granted. Health deliberately does not reveal denied reads.
+            isEnabled = true
+            defaults.set(true, forKey: preferenceKey)
+            await refresh()
+        } catch {
+            guard generation == operation, !Task.isCancelled else { return }
+            isEnabled = false
+            defaults.set(false, forKey: preferenceKey)
+            message = "Health access couldn't open. Try again."
+        }
+    }
+
+    func refresh() async {
+        guard isEnabled, available() else { return }
+        let operation = generation
+        let values = await load()
+        guard generation == operation, isEnabled, !Task.isCancelled else { return }
+        // The legacy reader returns zero for both no samples and denied
+        // access. Keep that uncertainty visible instead of claiming a zero.
+        steps = values.steps > 0 ? values.steps : nil
+        calories = values.calories > 0 ? values.calories : nil
+    }
+
+    func close() { generation = UUID(); isRequesting = false }
+}
+
 struct HealthKitSettingsView: View {
-    @State private var syncEnabled = UserDefaults.standard.bool(forKey: "healthKitSync")
-    @State private var todaySteps: Int?
-    @State private var todayCalories: Int?
+    @StateObject private var model: HealthReadModel
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    init(accountID: String) { _model = StateObject(wrappedValue: HealthReadModel(accountID: accountID)) }
 
     var body: some View {
         ExScreen {
             ExCard(accent: true) {
-                HStack {
-                    Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(Color.exAccent)
-                    Spacer()
-                    Toggle("Read Apple Health data", isOn: $syncEnabled)
-                        .tint(.exPrimaryText)
-                        .labelsHidden()
-                }
-                Text("Apple Health").font(.exH2).foregroundStyle(Color.exTextPrimary)
-                Text("Choose which health data to share.").font(.exBody).foregroundStyle(Color.exTextSecondary)
-                if !syncEnabled {
-                    Text("Connect to see steps and active Calories for today.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                ExEyebrow("Apple Health", color: .exPrimaryText)
+                Text("Today's activity").font(.exH2).foregroundStyle(Color.exTextPrimary)
+                Text("See steps and active Calories recorded on this device.")
+                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                Toggle("Read today's activity", isOn: Binding(get: { model.isEnabled }, set: { enabled in
+                    Task { await model.setEnabled(enabled) }
+                })).tint(.exActionFill).disabled(model.isRequesting)
+                    .accessibilityIdentifier("health.readActivity")
+                if model.isRequesting { ProgressView("Opening Health access…") }
+                if let message = model.message { Text(message).font(.exCaption).foregroundStyle(Color.exError) }
+            }
+            if model.isEnabled {
+                ExCard {
+                    ExSectionHeading("Available from Health")
+                    activityRow("Steps", value: model.steps.map { $0.formatted() })
+                    Divider()
+                    activityRow("Active Calories", value: model.calories.map { "\($0.formatted()) kcal" })
+                    Text("No data can mean nothing is recorded or read access is off. Check Exerly's permissions in the Health app.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
             }
-
-            if syncEnabled {
-                GlassCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Available today")
-                            .font(.exLabel)
-                            .foregroundStyle(.exTextSecondary)
-                        syncRow("Steps", icon: "figure.walk", value: todaySteps.map { "\($0)" })
-                        syncRow("Active Calories", icon: "flame", value: todayCalories.map { "\($0) kcal" })
-                        syncRow("Workouts", icon: "figure.run", value: nil)
-                        syncRow("Sleep", icon: "bed.double", value: nil)
-                    }
-                }
-            }
-
-        }
-        .background(Color.exBackground)
-        .navigationTitle("Apple Health")
-        .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: syncEnabled) { _, enabled in
-            UserDefaults.standard.set(enabled, forKey: "healthKitSync")
-            if enabled {
-                Task {
-                    _ = await HealthKitService.shared.requestAuthorization()
-                    await fetchHealthData()
-                }
+            ExCard {
+                ExSectionHeading("You choose what to share")
+                Text("This screen reads steps and active Calories. It doesn't add or change Health records.")
+                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                Text("Turning this off stops reading here. Manage permissions in the Health app.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
         }
-        .task {
-            if syncEnabled {
-                await fetchHealthData()
-            }
-        }
+        .navigationTitle("Apple Health").navigationBarTitleDisplayMode(.inline)
+        .task { await model.refresh() }
+        .onDisappear { model.close() }
     }
 
-    private func fetchHealthData() async {
-        let steps = await HealthKitService.shared.fetchStepsToday()
-        let calories = await HealthKitService.shared.fetchActiveCaloriesToday()
-        await MainActor.run {
-            todaySteps = steps
-            todayCalories = calories
-        }
-    }
-
-    private func syncRow(_ title: String, icon: String, value: String?) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.exPrimaryText)
-                .frame(width: 24)
-            Text(title)
-                .font(.exBody)
-                .foregroundStyle(.exTextPrimary)
-            Spacer()
-            if let value {
-                Text(value)
-                    .font(.exCaption)
-                    .foregroundStyle(.exTextSecondary)
-            }
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.exSuccess)
-        }
+    private func activityRow(_ title: String, value: String?) -> some View {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
+        return layout {
+            Text(title).font(.exBody).foregroundStyle(Color.exTextPrimary)
+            if !typeSize.isAccessibilitySize { Spacer() }
+            Text(value ?? "No data available").font(value == nil ? .exCaption : .exStatSmall).foregroundStyle(Color.exTextSecondary)
+        }.fixedSize(horizontal: false, vertical: true).accessibilityElement(children: .combine)
     }
 }

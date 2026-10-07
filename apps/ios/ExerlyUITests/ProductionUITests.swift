@@ -62,6 +62,17 @@ final class ProductionUITests: XCTestCase {
         let app = launch(resetSession: true)
         var findings: [String] = []
         var rechecked: [String] = []
+        if ProcessInfo.processInfo.environment["EXERLY_ACCESSIBILITY_PROGRESS_DIAGNOSTIC"] == "1" {
+            signIn(app, email: person.email)
+            tap(app.buttons["Progress"], in: app)
+            capture(app, "accessibility-progress-diagnostic")
+            let tree = XCTAttachment(string: app.debugDescription)
+            tree.name = "Progress accessibility hierarchy"
+            tree.lifetime = .keepAlways
+            add(tree)
+            try app.performAccessibilityAudit(for: .contrast)
+            return
+        }
         func audit(_ screen: String) throws {
             capture(app, "accessibility-\(screen)")
             let tabBar = app.tabBars.firstMatch
@@ -226,8 +237,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Compare"], in: app)
         tap(photos.element(boundBy: 0), in: app)
         tap(photos.element(boundBy: 1), in: app)
-        revealAbove(app.staticTexts["Side by side"], in: app)
-        XCTAssertTrue(app.staticTexts["Side by side"].exists)
+        revealAbove(app.staticTexts["Compare photos"], in: app)
+        XCTAssertTrue(app.staticTexts["Compare photos"].exists)
         capture(app, "design-photos-comparison")
         tap(app.buttons["Done"], in: app)
         tap(photos.firstMatch, in: app)
@@ -771,9 +782,11 @@ final class ProductionUITests: XCTestCase {
         let previewOpened = app.staticTexts["Two-day strength: Pull"].waitForExistence(timeout: 10)
         _ = try XCTUnwrap(previewOpened ? true : nil, app.debugDescription)
         capture(app, "program-next-preview")
-        reveal(app.staticTexts["Target 3 RIR"], in: app)
-        XCTAssertTrue(app.staticTexts["Target 3 RIR"].exists)
+        let targetRIR = app.staticTexts.matching(identifier: "Target 3 RIR").firstMatch
+        reveal(targetRIR, in: app)
+        XCTAssertTrue(targetRIR.exists)
         capture(app, "program-next-targets")
+        revealAbove(app.buttons["program.startPlanned"], in: app)
         tap(app.buttons["program.startPlanned"], in: app)
         let incomplete = app.buttons["Complete set 1, Deadlift"]
         reveal(incomplete, in: app)
