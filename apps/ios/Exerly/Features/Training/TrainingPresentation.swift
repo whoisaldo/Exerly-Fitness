@@ -10,6 +10,7 @@ final class TrainingWorkspace: ObservableObject {
     let url: URL
     let store: TrainingStore
     let programs: ProgramStore
+    let gyms: GymStore
     let nutrition: NutritionStore
     let agent: AgentStore
     let entryChecks: TrainingEntryChecks
@@ -38,8 +39,9 @@ final class TrainingWorkspace: ObservableObject {
         persistence = try SQLiteTrainingPersistence(url: url)
         store = try TrainingStore(persistence: persistence)
         programs = try ProgramStore(persistence: persistence, training: store)
+        gyms = try GymStore(persistence: persistence)
         nutrition = try NutritionStore(persistence: persistence)
-        agent = try AgentStore(persistence: persistence, hosts: [store, programs, nutrition])
+        agent = try AgentStore(persistence: persistence, hosts: [store, programs, nutrition, gyms])
         entryChecks = TrainingEntryChecks(training: store, agent: agent, accountID: accountID)
         unreadableCount = persistence.unreadableRows.count
         if let api { resumeSync(api: api) }
@@ -48,7 +50,7 @@ final class TrainingWorkspace: ObservableObject {
     func resumeSync(api: AccountAPI) {
         guard api.accountID == accountID, !persistence.isClosed else { return }
         accountAPI = api
-        sync = ExerlyCore.SyncEngine(hosts: [store, programs, nutrition, agent], state: persistence, api: api)
+        sync = ExerlyCore.SyncEngine(hosts: [store, programs, nutrition, gyms, agent], state: persistence, api: api)
     }
 
     func synchronize() async {
@@ -87,11 +89,11 @@ final class TrainingWorkspace: ObservableObject {
     }
 
     func export(server: Data?, pending: [AccountExport.PendingRow] = []) throws -> Data {
-        try AccountExport.merging(server: server, hosts: [store, programs, nutrition, agent], state: persistence, pending: pending)
+        try AccountExport.merging(server: server, hosts: [store, programs, nutrition, gyms, agent], state: persistence, pending: pending)
     }
 
     func supportsChanges(in proposal: Proposal) -> Bool {
-        let kinds = store.documentKinds + programs.documentKinds + nutrition.documentKinds
+        let kinds = store.documentKinds + programs.documentKinds + nutrition.documentKinds + gyms.documentKinds
         return proposal.changes.allSatisfy { kinds.contains($0.kind) }
     }
 

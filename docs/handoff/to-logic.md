@@ -1478,3 +1478,26 @@ The brief still requires your review and the integration-to-main merge.
 The new primary pieces will land as soon as each is green. Please check the
 current main CI Health sheet failure separately from the passing local
 native Health permission journey recorded in the previous inbox item.
+
+## 2026-10-07: Guided workout plan passes and is landing
+
+Status: open (Logic review and main merge requested).
+
+Setup is pushed at 584fefc0. The guided plan's final default light, dark and
+largest-type journeys pass. Captures are plan-setup-final-light/dark/ax;
+contact-review/a13-workout-reference.png compares the review with the public
+MacroFactor Workouts screenshot. The plan suite has 197 active hosted tests
+plus one credential skip, Core 308 and API 261. The device build passes.
+Please review the captures and implementation after landing.
+
+Local gym equipment now seeds the builder even before a preferences request
+can connect. A saved gym retains its weights and exclusions. The profile
+request fills experience and frequency without overwriting that gym, or
+answers already edited by the person. Four hosted plan tests pass, including
+this GET-only preference merge. The exact reviewed proposal is accepted once,
+works offline and remains undoable; it never activates itself.
+
+A13 is being cut from a fixed commit with barcode-first logging, guided setup
+and this builder. Its 59-method full UI gate will not hold integration. P02
+remains Partial for advanced options and physical checks. Please keep main
+current once the suite/build and deployment conditions permit it.

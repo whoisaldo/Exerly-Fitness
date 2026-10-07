@@ -30,8 +30,10 @@ Logic's four visual review points are addressed.
 
 The gallery is http://100.80.149.7:39215. Physical installation, camera capture,
 Apple sign-in, Health authorization, VoiceOver and measured phone performance
-remain unverified. Full feature parity is open. The newer barcode-first and
-eight-question setup flows remain in verification and are not in A12.
+remain unverified. Full feature parity is open. Barcode-first logging and the
+eight-question setup have landed as 30bc0aed and 584fefc0. The guided workout
+plan builder is passing and landing next. These changes are prepared for A13
+and are not in A12. Notes are in docs/release/a13-internal-notes.txt.
 
 Signed archive and exported IPA checks passed identity, entitlements, profile,
 privacy manifest, icon, version, staging endpoint and absence of debug hooks.

@@ -2,24 +2,59 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 17:16 EDT.
+Current date 2026-10-07, updated 17:28 EDT.
 
 ## Merge status
 
-Integration is pushed at 30bc0aed. Barcode-first diary and meal scanning are
-landed. A12 build 2610072011 remains live in the Ali-only TestFlight group,
-from fixed 7f6ccf9e. Guided setup passes and is landing separately from the workout-plan
-builder. Neither is in A12.
+Integration is pushed at 584fefc0. Barcode-first logging landed at 30bc0aed;
+the eight-question setup landed at 584fefc0. A12 build 2610072011 remains live
+in Ali-only TestFlight from fixed 7f6ccf9e. The guided workout builder passes
+and is landing now; the next release combines these beginner milestones.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                           |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                        |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed      |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted              |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted      |
-| `agent/app-nutrition`              | Guided workout builder and its release notes remain unstaged                                       | Barcode-first landed/pushed 30bc0aed, 16:48 EDT |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                    |
-| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed         |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition`              | Guided workout builder passes and lands with this entry                                            | Setup landed/pushed 584fefc0, 17:17 EDT    |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
+| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed    |
+
+## Guided workout plan ready, 2026-10-07 17:28 EDT
+
+The final native plan journey passes in light, 158.658 seconds, dark,
+119.811 seconds, and largest dark type, 414.728 seconds. It uses saved setup,
+reviews a complete day, cancels without writing, saves another exact preview
+offline, relaunches, undoes it and checks the synchronized export. All 24
+final UI captures plus the hosted synthetic label were inspected. The manual
+program lifecycle also passes. Final hosted coverage is 197 active tests
+plus one credential skip. Core 308, API 261 and the final device build pass.
+
+Review found one offline edge case: an active local gym was ignored until
+preferences loaded. The builder now seeds local equipment immediately and
+still fills frequency and experience when preferences arrive. The extended
+four-test plan suite passes with this case and verifies the read uses GET.
+A save error remains beside Save plan, preserving the exact reviewed UUID.
+
+The largest-type preview had a redundant eyebrow and long action labels.
+Removing that eyebrow and using Save plan and Build plan makes the title,
+summary and actions fit better. Equipment checks no longer consume a large
+part of the row. The final captures are plan-setup-final-light/dark/ax.
+The reference comparison is contact-review/a13-workout-reference.png.
+MacroFactor's public screen shows more training days at once and uses a
+calendar. Exerly explains its rotating cycle and gives each day a direct
+review link, so it does not imply calendar scheduling that does not exist.
+The first-use instructions remain visible to explain starting weights and
+reps in reserve. Exercise demonstrations and advanced program options remain
+open parity work, not claims of this release.
+
+P02 is now Partial. This slice builds, reviews, accepts and undoes a real
+Core-generated program; split/deload choices and physical-device verification
+remain. Release notes are prepared in docs/release/a13-internal-notes.txt.
+The fixed A13 UI manifest covers all 59 methods once, with no omissions or
+duplicates. Its run starts after this landing. Continue the remaining food
+and workout work while that fixed release verifies; do not hold integration.
 
 ## Setup ready to land, 2026-10-07 17:16 EDT
 

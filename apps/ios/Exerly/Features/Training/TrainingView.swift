@@ -42,6 +42,7 @@ struct TrainingView: View {
     @State private var starting = false
     @State private var browsing = false
     @State private var reviewingPlan = false
+    @State private var buildingPlan = false
 
     var body: some View {
         Group {
@@ -52,6 +53,12 @@ struct TrainingView: View {
                     if let workspace, workspace.programs.active != nil {
                         NextTrainingWorkoutSection(workspace: workspace) { reviewingPlan = true }
                         Button("Start a different workout", systemImage: "plus") { starting = true }
+                            .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
+                    } else if workspace != nil {
+                        ExEmptyState(icon: "dumbbell", title: "Your first workout starts here",
+                                     message: "Tell us your goal, time and equipment. Review a plan built around your answers.",
+                                     action: "Build my workout plan", actionID: "planSetup.open") { buildingPlan = true }
+                        Button("Start a workout yourself", systemImage: "plus") { starting = true }
                             .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
                     } else {
                         ExEmptyState(icon: "dumbbell", title: "No workout planned",
@@ -123,6 +130,9 @@ struct TrainingView: View {
         }
         .sheet(isPresented: $reviewingPlan) {
             if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
+        }
+        .sheet(isPresented: $buildingPlan) {
+            if let workspace { TrainingPlanSetupView(workspace: workspace, unit: unit) }
         }
     }
 }
