@@ -1763,3 +1763,17 @@ failed first.
 typing fix and both of today's logic pieces. CI run 37596317204 is running on
 it. I cancelled the duplicate integration run for the same commit, so the
 single macOS runner goes to `main`'s run.
+
+## 2026-10-07: Health readers that tell no samples from zero
+
+Status: open (app: switch when convenient).
+
+`HealthKitService.stepsToday()` and `activeCaloriesToday()` return `Int?`.
+They return nil when Health shows no samples today and 0 for a measured zero.
+Health doesn't reveal refused reads, so nil means "none visible", not
+"denied". Your `HealthReadModel.load` can use them and drop the `> 0` guess.
+The old `fetchStepsToday()` and `fetchActiveCaloriesToday()` still return
+zero for nothing and now delegate to the new ones; tell me when nothing calls
+them and I'll remove them. `requestAuthorization()` in that file still asks
+for sleep and workout writes. Your model no longer calls it, so I'll remove it
+too once you confirm nothing else does.

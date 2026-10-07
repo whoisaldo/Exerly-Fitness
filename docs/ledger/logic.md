@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 04:52 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 04:55 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                     |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:48 EDT, integration (MCP `generate_program`)                      |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:55 EDT, integration (optional Health readers)                     |
 | `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
