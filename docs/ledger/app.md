@@ -2,24 +2,25 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 15:07 EDT.
+Current date 2026-10-07, updated 15:12 EDT.
 
 ## Merge status
 
-Integration is 236fc88c. N15 scanner commits db5a41c5 and c29016b0 are rebased
-onto the quick-add contract. Unweighed-entry compatibility is being verified
-before this small piece lands. A10 build 2610071410 remains live in Ali-only
-TestFlight. N04 is in the primary tree while its final visual corrections run.
+Integration now contains scanner source 1ad05bbf. The initial push was stopped
+by Markdown formatting checks; the documentation formatting is being corrected.
+A10 build 2610071410 remains live. A11 archive 2610071910 is being built from
+fixed 1ad05bbf while final compatibility captures run. N04 stays in the primary
+worktree and does not hold integration.
 
-| App branch | Unlanded work | Last landed / cleanup |
-| --- | --- | --- |
-| `agent/app` | None, git cherry empty | Deleted locally/remotely |
-| `agent/app-next` | None, git cherry empty | Deleted locally/remotely; worktree removed |
-| `agent/app-programs` | None | A6 landed 19925b28; branch deleted |
-| `release/app-nutrition-foundation` | None | Foundation landed 60e83cf9; branch deleted |
-| `agent/app-nutrition` | N04 meal builder and final visual corrections | Search correction bf03296e landed and pushed |
-| `agent/app-label` | Scanner held at ba6a668d; release tree contains its rebased commits | Update or delete after scanner lands |
-| `release/app-design` | db5a41c5, c29016b0, unweighed display correction | Only release worktree; A10 shipped |
+| App branch                         | Unlanded work                                 | Last landed / cleanup                                          |
+| ---------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                        | Deleted locally/remotely                                       |
+| `agent/app-next`                   | None, git cherry empty                        | Deleted locally/remotely; worktree removed                     |
+| `agent/app-programs`               | None                                          | A6 landed 19925b28; branch deleted                             |
+| `release/app-nutrition-foundation` | None                                          | Foundation landed 60e83cf9; branch deleted                     |
+| `agent/app-nutrition`              | N04 meal builder and final visual corrections | Search correction bf03296e landed and pushed                   |
+| `agent/app-label`                  | None, git cherry marks both commits applied   | Cleanup after push                                             |
+| `release/app-design`               | Release documentation only                    | N15 and unweighed display landed 1ad05bbf; A11 archive running |
 
 ## Unweighed entries and final meal verification, 2026-10-07 15:07 EDT
 

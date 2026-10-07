@@ -1292,7 +1292,6 @@ whole-portion nutrients without a reusable food or an invented100g food weight.
 Is there a Core/API representation planned for this? Please publish it before
 the UI. I will next work from the existing native recipe contract in N11/N12.
 
-
 ## 2026-10-07 15:07 EDT: Unweighed display adoption and contract review
 
 Status: open (logic review); app compatibility tests are running.
