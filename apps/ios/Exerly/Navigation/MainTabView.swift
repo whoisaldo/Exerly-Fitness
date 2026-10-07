@@ -51,7 +51,8 @@ struct MainTabView: View {
             NavigationStack {
                 if let account = auth.currentUser?.id {
                     NutritionLibraryHostView(accountID: account,
-                        timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+                        timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt,
+                        unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds)
                 }
             }
                 .tabItem { Label(MainTab.library.label, systemImage: MainTab.library.icon) }.tag(MainTab.library)

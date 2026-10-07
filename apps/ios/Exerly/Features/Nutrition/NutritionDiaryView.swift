@@ -285,11 +285,11 @@ struct NutritionDiaryView: View {
         case .date: NutritionDateView(date: $date, timeZone: timeZone)
         case .add(let date, let meal):
             NutritionFoodPicker(workspace: workspace, api: api, date: date, meal: meal,
-                                timeZone: timeZone, actions: actions) {}
+                                timeZone: timeZone, unit: unit, actions: actions) {}
         case .edit(let entry):
             NutritionEntryEditor(workspace: workspace,
                 food: entry.food.foodForLogging(serving: entry.serving),
-                date: entry.date, meal: entry.meal, timeZone: timeZone, actions: actions, editing: entry) { _ in }
+                date: entry.date, meal: entry.meal, timeZone: timeZone, unit: unit, actions: actions, editing: entry) { _ in }
         case .notes(let date): NutritionDayNotesView(workspace: workspace, date: date, timeZone: timeZone)
         case .copy(let date, let meal): NutritionCopyView(workspace: workspace, source: date, meal: meal, timeZone: timeZone)
         case .status(let review):

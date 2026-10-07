@@ -7,6 +7,7 @@ struct NutritionFoodPicker: View {
     let date: LocalDate
     let meal: String
     let timeZone: TimeZone
+    let unit: MassUnit
     @ObservedObject var actions: NutritionDiaryActions
     let onLogged: () -> Void
     @StateObject private var search: NutritionSearchModel
@@ -18,12 +19,13 @@ struct NutritionFoodPicker: View {
     @Environment(\.dismiss) private var dismiss
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
-         timeZone: TimeZone, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
+         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
         self.workspace = workspace
         self.api = api
         self.date = date
         self.meal = meal
         self.timeZone = timeZone
+        self.unit = unit
         self.actions = actions
         self.onLogged = onLogged
         _search = StateObject(wrappedValue: NutritionSearchModel(api: api))
@@ -38,7 +40,7 @@ struct NutritionFoodPicker: View {
                         .accessibilityIdentifier("nutrition.createFood")
                     NavigationLink {
                         NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
-                                             timeZone: timeZone, actions: actions) {
+                                             timeZone: timeZone, unit: unit, actions: actions) {
                             onLogged()
                             dismiss()
                         }
@@ -82,7 +84,7 @@ struct NutritionFoodPicker: View {
                 if didLog { didLog = false; onLogged(); dismiss() }
             }, content: { food in
                 NutritionEntryEditor(workspace: workspace, food: food, date: date, meal: meal,
-                                     timeZone: timeZone, actions: actions) { _ in didLog = true }
+                                     timeZone: timeZone, unit: unit, actions: actions) { _ in didLog = true }
             })
         }
         .onDisappear { search.clear() }

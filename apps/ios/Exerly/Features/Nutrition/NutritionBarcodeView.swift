@@ -7,6 +7,7 @@ struct NutritionBarcodeView: View {
     let date: LocalDate
     let meal: String
     let timeZone: TimeZone
+    let unit: MassUnit
     @ObservedObject var actions: NutritionDiaryActions
     let onLogged: () -> Void
     @StateObject private var search: NutritionSearchModel
@@ -25,11 +26,12 @@ struct NutritionBarcodeView: View {
     @Environment(\.dismiss) private var dismiss
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
-         timeZone: TimeZone, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
+         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
         self.workspace = workspace
         self.date = date
         self.meal = meal
         self.timeZone = timeZone
+        self.unit = unit
         self.actions = actions
         self.onLogged = onLogged
         _search = StateObject(wrappedValue: NutritionSearchModel(api: api))
@@ -126,7 +128,7 @@ struct NutritionBarcodeView: View {
             if didLog { didLog = false; onLogged() }
         }, content: { food in
             NutritionEntryEditor(workspace: workspace, food: food, date: date, meal: meal,
-                                 timeZone: timeZone, actions: actions) { _ in didLog = true }
+                                 timeZone: timeZone, unit: unit, actions: actions) { _ in didLog = true }
         })
     }
 

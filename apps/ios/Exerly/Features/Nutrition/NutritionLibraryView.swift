@@ -4,13 +4,14 @@ import SwiftUI
 struct NutritionLibraryHostView: View {
     let accountID: String
     let timeZone: TimeZone
+    let unit: MassUnit
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var auth: AuthViewModel
 
     var body: some View {
         Group {
             if let workspace = account.training, workspace.accountID == accountID {
-                NutritionLibraryView(workspace: workspace, timeZone: timeZone).id(workspace.identity)
+                NutritionLibraryView(workspace: workspace, timeZone: timeZone, unit: unit).id(workspace.identity)
             } else if account.openingError != nil {
                 ContentUnavailableView {
                     Label("Food library could not open", systemImage: "externaldrive.badge.exclamationmark")
@@ -27,15 +28,17 @@ struct NutritionLibraryHostView: View {
 struct NutritionLibraryView: View {
     @ObservedObject var workspace: TrainingWorkspace
     let timeZone: TimeZone
+    let unit: MassUnit
     @State private var query = ""
     @State private var creating = false
     @State private var showArchived = false
     @State private var loggingFood: ExerlyCore.Food?
     @StateObject private var diaryActions: NutritionDiaryActions
 
-    init(workspace: TrainingWorkspace, timeZone: TimeZone) {
+    init(workspace: TrainingWorkspace, timeZone: TimeZone, unit: MassUnit) {
         self.workspace = workspace
         self.timeZone = timeZone
+        self.unit = unit
         _diaryActions = StateObject(wrappedValue: NutritionDiaryActions(store: workspace.nutrition))
     }
 
@@ -56,7 +59,7 @@ struct NutritionLibraryView: View {
                     ExCard {
                         ForEach(visibleFoods) { food in
                             NavigationLink {
-                                NutritionLibraryDetail(workspace: workspace, foodID: food.id, timeZone: timeZone)
+                                NutritionLibraryDetail(workspace: workspace, foodID: food.id, timeZone: timeZone, unit: unit)
                             } label: { NutritionFoodRow(food: food) }
                                 .accessibilityIdentifier("nutrition.libraryFood.\(food.id)")
                             if food.id != visibleFoods.last?.id { Divider().overlay(Color.exBorder.opacity(0.3)) }
@@ -106,7 +109,7 @@ struct NutritionLibraryView: View {
         .sheet(item: $loggingFood) { food in
             NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(.now, in: timeZone),
                                  meal: workspace.nutrition.entries.last { $0.food.foodID == food.id }?.meal ?? "Snacks",
-                                 timeZone: timeZone, actions: diaryActions) { _ in }
+                                 timeZone: timeZone, unit: unit, actions: diaryActions) { _ in }
         }
     }
 
@@ -180,6 +183,7 @@ private struct NutritionLibraryDetail: View {
     @ObservedObject var workspace: TrainingWorkspace
     let foodID: String
     let timeZone: TimeZone
+    let unit: MassUnit
     @StateObject private var actions: NutritionLibraryActions
     @StateObject private var diaryActions: NutritionDiaryActions
     @State private var destination: Destination?
@@ -197,10 +201,11 @@ private struct NutritionLibraryDetail: View {
         }
     }
 
-    init(workspace: TrainingWorkspace, foodID: String, timeZone: TimeZone) {
+    init(workspace: TrainingWorkspace, foodID: String, timeZone: TimeZone, unit: MassUnit) {
         self.workspace = workspace
         self.foodID = foodID
         self.timeZone = timeZone
+        self.unit = unit
         _actions = StateObject(wrappedValue: NutritionLibraryActions(store: workspace.nutrition))
         _diaryActions = StateObject(wrappedValue: NutritionDiaryActions(store: workspace.nutrition))
     }
@@ -283,7 +288,7 @@ private struct NutritionLibraryDetail: View {
             case .edit(let food): NutritionFoodEditor(workspace: workspace, editing: food) { _ in }
             case .log(let food):
                 NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(Date(), in: timeZone),
-                                     meal: workspace.nutrition.entries.last?.meal ?? "Snacks", timeZone: timeZone,
+                                     meal: workspace.nutrition.entries.last?.meal ?? "Snacks", timeZone: timeZone, unit: unit,
                                      actions: diaryActions) { logged = $0 }
             case .archive(let food):
                 let restoring = food.archivedAt != nil

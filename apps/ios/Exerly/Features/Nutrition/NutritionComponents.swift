@@ -196,10 +196,15 @@ enum NutritionFormat {
     }
 
     static func portion(_ entry: FoodEntry) -> String {
+        let grams = TrainingFormat.number(entry.grams)
         if let serving = entry.serving, let quantity = entry.quantity {
-            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(entry.grams.formatted(.number.precision(.fractionLength(0)))) g"
+            let measure = NutritionPortionMeasure.saved(serving, food: entry.food.foodForLogging())
+            if !measure.symbol.isEmpty {
+                return "\(TrainingFormat.number(quantity)) \(measure.symbol) · \(grams) g"
+            }
+            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(grams) g"
         }
-        return "\(entry.grams.formatted(.number.precision(.fractionLength(0)))) g"
+        return "\(grams) g"
     }
 
     static func day(_ date: LocalDate, timeZone: TimeZone) -> String {

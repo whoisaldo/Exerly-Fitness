@@ -4,6 +4,102 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testNewFoodPortionsUseUSUnitsUnlessTheAccountExplicitlyUsesMetric() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let food = ExerlyCore.Food(name: "Synthetic food", per100g: NutrientAmounts([.energy: 100, .sodium: 0]))
+        let us = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
+        XCTAssertEqual(us.measure, .ounces)
+        XCTAssertEqual(us.amount.text, "1")
+        let entry = try XCTUnwrap(us.save())
+        XCTAssertEqual(entry.grams, USUnits.grams(ounces: 1))
+        XCTAssertEqual(entry.serving?.name, "oz")
+        XCTAssertEqual(entry.quantity, 1)
+        XCTAssertFalse(us.availableMeasures.contains(.fluidOunces), "No density means no volume conversion")
+        let metric = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch", preferredUnit: .kilograms)
+        XCTAssertEqual(metric.measure, .grams)
+        XCTAssertEqual(metric.amount.text, "100")
+        var liquid = food
+        liquid.volume = VolumeBasis(density: 0.92, assumed: false)
+        let usLiquid = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", preferredUnit: .pounds)
+        XCTAssertEqual(usLiquid.measure, .fluidOunces)
+        XCTAssertEqual(try usLiquid.preview().grams, liquid.grams(milliliters: USUnits.milliliters(fluidOunces: 1)))
+        let metricLiquid = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", preferredUnit: .kilograms)
+        XCTAssertEqual(metricLiquid.measure, .milliliters)
+        XCTAssertEqual(metricLiquid.amount.text, "100")
+    }
+
+    func testRepeatedMeasureSwitchingRetainsExactWeightAndOriginalNutrition() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let cup = Serving("Cup", grams: 42.123456789)
+        let food = ExerlyCore.Food(name: "Precise cereal", per100g: NutrientAmounts([.energy: 380.123456789, .sodium: 0]), servings: [cup])
+        try store.saveFood(food)
+        let original = try store.log(food, grams: 45.123456789, on: date, meal: "Lunch")
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch", editing: original, preferredUnit: .pounds)
+        XCTAssertEqual(draft.measure, .grams, "An existing explicit gram portion stays in grams")
+        for _ in 0..<20 {
+            for measure in [NutritionPortionMeasure.ounces, .serving(cup), .grams] {
+                XCTAssertTrue(draft.selectMeasure(measure))
+                let preview = try draft.preview()
+                XCTAssertEqual(preview.grams, original.grams)
+                XCTAssertEqual(preview.nutrients, original.nutrients)
+                XCTAssertNil(preview.nutrients[.protein])
+            }
+        }
+        XCTAssertFalse(draft.hasChanges)
+        XCTAssertEqual(draft.save(), original)
+        XCTAssertTrue(draft.selectMeasure(.ounces))
+        draft.amount.text = "2.5"
+        XCTAssertTrue(draft.selectMeasure(.grams))
+        XCTAssertEqual(try draft.preview().grams, USUnits.grams(ounces: 2.5))
+    }
+
+    func testFluidOuncesKeepTheirDensityAndCanBeReopenedInTheSavedMeasure() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        var liquid = ExerlyCore.Food(name: "Synthetic liquid", source: .openFoodFacts, per100g: NutrientAmounts([.energy: 80, .fat: 0]))
+        liquid.volume = VolumeBasis(density: 1.04, assumed: true, note: "Test density")
+        let draft = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", preferredUnit: .pounds)
+        draft.amount.text = "2,5"
+        let saved = try XCTUnwrap(draft.save(locale: Locale(identifier: "de_DE")))
+        XCTAssertEqual(saved.grams, liquid.grams(milliliters: USUnits.milliliters(fluidOunces: 2.5))!, accuracy: 0.000_000_001)
+        XCTAssertEqual(saved.quantity, 2.5)
+        XCTAssertEqual(saved.food.volume, liquid.volume)
+        let reopened = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", editing: saved, preferredUnit: .kilograms)
+        XCTAssertEqual(reopened.measure, .fluidOunces, "Saved explicit units survive a preference change")
+        XCTAssertTrue(reopened.selectMeasure(.milliliters))
+        XCTAssertEqual(try reopened.preview().grams, saved.grams)
+        XCTAssertTrue(reopened.selectMeasure(.fluidOunces))
+        XCTAssertEqual(reopened.save(), saved)
+        XCTAssertTrue(NutritionFormat.portion(saved).hasPrefix("2.5 fl oz"))
+    }
+
+    func testUnitSwitchingPreservesMissingQuantityAndRejectsInvalidDraftsWithoutLosingInput() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let serving = Serving("Scoop", grams: 37.123456789)
+        let food = ExerlyCore.Food(name: "Imported food", per100g: NutrientAmounts([.energy: 100]), servings: [serving])
+        let original = FoodEntry(date: date, meal: "Lunch", loggedAt: Date().roundedToMilliseconds, food: food.snapshot,
+                                 grams: 45.123456789, serving: serving, quantity: nil)
+        try store.saveEntry(original)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch", editing: original, preferredUnit: .pounds)
+        XCTAssertTrue(draft.selectMeasure(.grams))
+        XCTAssertTrue(draft.selectMeasure(.serving(serving)))
+        XCTAssertFalse(draft.hasChanges)
+        XCTAssertEqual(draft.save(), original)
+        for text in ["", "bad", "-1", "1e999"] {
+            draft.amount.text = text
+            XCTAssertFalse(draft.selectMeasure(.ounces))
+            XCTAssertEqual(draft.amount.text, text)
+            XCTAssertEqual(draft.measure, .serving(serving))
+            XCTAssertEqual(store.entries.first, original)
+        }
+        draft.amount.text = "1"
+        XCTAssertFalse(draft.selectMeasure(.fluidOunces))
+        XCTAssertEqual(draft.amount.text, "1")
+    }
+
     func testEntryCorrectionStaysInTheDraftAndPreservesTheLibrarySourceAndOtherEntries() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))
@@ -311,9 +407,10 @@ final class NutritionPresentationTests: XCTestCase {
     func testServingPreviewMatchesTheSavedEntryWithoutInventingUnknownNutrients() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))
-        let food = ExerlyCore.Food(name: "Measured food", per100g: NutrientAmounts([.energy: 380, .sodium: 0]))
+        let food = ExerlyCore.Food(name: "Measured food", per100g: NutrientAmounts([.energy: 380, .sodium: 0]),
+                                   servings: [Serving("Cup", grams: 42.123456789)])
         let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
-        draft.serving = Serving("Cup", grams: 42.123456789)
+        XCTAssertTrue(draft.selectMeasure(.serving(food.servings[0])))
         draft.amount.text = "1,25"
         let preview = try draft.preview(locale: Locale(identifier: "de_DE"))
         XCTAssertTrue(store.entries.isEmpty)

@@ -11,6 +11,7 @@ struct NutritionEntryEditor: View {
     @StateObject private var libraryActions: NutritionLibraryActions
     @State private var confirmation: Confirmation?
     @State private var nutritionEditing: FoodEntry?
+    @State private var choosingMeasure = false
     @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -22,7 +23,7 @@ struct NutritionEntryEditor: View {
     }
 
     init(workspace: TrainingWorkspace, food: ExerlyCore.Food, date: LocalDate, meal: String,
-         timeZone: TimeZone, actions: NutritionDiaryActions, editing: FoodEntry? = nil,
+         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, editing: FoodEntry? = nil,
          onSaved: @escaping (FoodEntry) -> Void) {
         self.workspace = workspace
         self.timeZone = timeZone
@@ -31,7 +32,8 @@ struct NutritionEntryEditor: View {
         self.onSaved = onSaved
         _libraryActions = StateObject(wrappedValue: NutritionLibraryActions(store: workspace.nutrition))
         _draft = StateObject(wrappedValue: NutritionEntryDraft(store: workspace.nutrition, food: food,
-            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id }))
+            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id },
+            preferredUnit: unit))
     }
 
     var body: some View {
@@ -45,27 +47,20 @@ struct NutritionEntryEditor: View {
                         if let brand = draft.food.brand { Text(brand).foregroundStyle(.secondary) }
                     }
                     ExCard {
-                        if !draft.food.servings.isEmpty {
-                        NutritionChoice(title: "Measure", value: draft.serving?.name ?? "Grams") {
-                            Picker("Measure", selection: $draft.serving) {
-                                Text("Grams").tag(Serving?.none)
-                                ForEach(draft.food.servings, id: \.self) { serving in
-                                    Text("\(serving.name) · \(TrainingFormat.number(serving.grams)) g").tag(Optional(serving))
-                                }
-                            }
+                        Button { typing = false; choosingMeasure = true } label: {
+                            ExNavigationLabel(title: draft.measure.title, icon: "scalemass", detail: "Portion measure")
                         }.accessibilityIdentifier("nutrition.measure")
-                        .onChange(of: draft.serving) { _, serving in
-                            draft.amount = NutritionNumberField(serving == nil ? 100 : 1)
-                        }
-                        }
-                        ExQuantityControl(title: draft.serving == nil ? "Amount (g)" : "Number of servings",
-                                          text: $draft.amount.text, step: draft.serving == nil ? 10 : 0.5,
-                                          presets: draft.serving == nil ? [50, 100, 150] : [0.5, 1, 2],
-                                          unit: draft.serving == nil ? "g" : "")
+                        ExQuantityControl(title: draft.measure.amountTitle,
+                                          text: $draft.amount.text, step: draft.measure.step,
+                                          presets: draft.measure.presets, unit: draft.measure.symbol)
                             .focused($typing).accessibilityIdentifier("nutrition.amount")
-                        if let serving = draft.serving {
+                        if case .serving(let serving) = draft.measure {
                             Text("One \(serving.name): \(TrainingFormat.number(serving.grams)) g")
                                 .foregroundStyle(.secondary)
+                        }
+                        if draft.measure == .milliliters || draft.measure == .fluidOunces, draft.food.volume?.assumed == true {
+                            Label("Estimated weight from volume", systemImage: "info.circle")
+                                .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -204,6 +199,7 @@ struct NutritionEntryEditor: View {
                 try draft.applyNutrition(corrected, reviewed: reviewed)
             }
         }
+        .sheet(isPresented: $choosingMeasure) { NutritionMeasureSelection(draft: draft) }
     }
 
     private var meals: [String] {

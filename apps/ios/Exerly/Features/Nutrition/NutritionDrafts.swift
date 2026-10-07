@@ -137,7 +137,7 @@ final class NutritionFoodDraft: ObservableObject {
 @MainActor
 final class NutritionEntryDraft: ObservableObject {
     @Published var amount: NutritionNumberField
-    @Published var serving: Serving?
+    @Published private(set) var measure: NutritionPortionMeasure
     @Published var date: LocalDate
     @Published var meal: String
     @Published var loggedAt: Date
@@ -148,20 +148,33 @@ final class NutritionEntryDraft: ObservableObject {
     private var original: FoodEntry?
     private let entryID: UUID
     private let initialAmount: NutritionNumberField
-    private let initialServing: Serving?
+    private let initialMeasure: NutritionPortionMeasure
     private let initialDate: LocalDate
     private let initialMeal: String
     private let initialTime: Date
-    private let initialPortion: FoodEntry?
     private let initialSnapshot: FoodSnapshot
+    private let preferredUnit: MassUnit
+    private let initialAnchor: PortionAnchor?
+    private var anchor: PortionAnchor?
+
+    private struct PortionAnchor {
+        let measure: NutritionPortionMeasure
+        let amount: NutritionNumberField
+        let grams: Double
+        let serving: Serving?
+        let quantity: Double?
+    }
 
     init(store: NutritionStore, food: ExerlyCore.Food, date: LocalDate, meal: String,
-         editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date()) {
+         editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date(), preferredUnit: MassUnit = .pounds) {
         self.store = store
-        if let editing {
-            let snapshot = editing.food
-            self.food = snapshot.foodForLogging(serving: editing.serving)
-        } else { self.food = food }
+        self.preferredUnit = preferredUnit
+        var loggingFood = editing.map { $0.food.foodForLogging(serving: $0.serving) } ?? food
+        if let editing, let saved = store.food(editing.food.foodID) {
+            for serving in saved.servings where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
+            if let serving = saved.recipeServing, !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
+        }
+        self.food = loggingFood
         original = editing
         entryID = editing?.id ?? UUID()
         let previous = editing ?? repeating.flatMap { $0.food.foodID == food.id ? $0 : nil }
@@ -171,12 +184,24 @@ final class NutritionEntryDraft: ObservableObject {
         }
         snapshot = entrySnapshot
         initialSnapshot = entrySnapshot
-        initialPortion = previous
-        serving = previous?.serving
-        initialServing = previous?.serving
-        let field = NutritionNumberField(previous.map { $0.serving == nil ? $0.grams : ($0.quantity ?? 1) } ?? 100)
+        let measure = previous.map { NutritionPortionMeasure.saved($0.serving, food: loggingFood) }
+            ?? NutritionPortionMeasure.preferred(for: loggingFood, unit: preferredUnit)
+        self.measure = measure
+        initialMeasure = measure
+        let entered = previous.map { entry in
+            entry.serving.map { entry.quantity ?? $0.quantity(grams: entry.grams) } ?? entry.grams
+        } ?? measure.initialAmount
+        let field = NutritionNumberField(entered)
         amount = field
         initialAmount = field
+        let serving = measure.portion(in: loggingFood)
+        let preview = try? NutritionStore.preview(loggingFood, grams: serving == nil ? entered : nil,
+                                                  serving: serving, quantity: serving == nil ? nil : entered)
+        let grams = previous?.grams ?? preview?.grams
+        let initialAnchor = grams.map { PortionAnchor(measure: measure, amount: field, grams: $0,
+            serving: previous?.serving ?? serving, quantity: previous.map(\.quantity) ?? preview?.quantity) }
+        self.initialAnchor = initialAnchor
+        anchor = initialAnchor
         self.date = editing?.date ?? date
         initialDate = editing?.date ?? date
         self.meal = editing?.meal ?? meal
@@ -186,8 +211,42 @@ final class NutritionEntryDraft: ObservableObject {
     }
 
     var hasChanges: Bool {
-        amount != initialAmount || serving != initialServing || date != initialDate || meal != initialMeal ||
+        amount != initialAmount || measure != initialMeasure || date != initialDate || meal != initialMeal ||
             loggedAt != initialTime || snapshot != initialSnapshot
+    }
+
+    var serving: Serving? { measure.portion(in: food) }
+
+    var availableMeasures: [NutritionPortionMeasure] {
+        var measures = NutritionPortionMeasure.available(for: food, unit: preferredUnit)
+        if !measures.contains(measure) { measures.append(measure) }
+        return measures
+    }
+
+    @discardableResult
+    func selectMeasure(_ selected: NutritionPortionMeasure, locale: Locale = .current) -> Bool {
+        guard selected != measure else { return true }
+        errors = []
+        do {
+            guard availableMeasures.contains(selected) else {
+                throw NutritionDraftError.input("This food has no weight for that measure.")
+            }
+            let current = try preview(locale: locale)
+            let serving = selected.portion(in: food)
+            let quantity = serving?.quantity(grams: current.grams)
+            let field: NutritionNumberField
+            if let initialAnchor, initialAnchor.measure == selected, initialAnchor.grams == current.grams {
+                field = initialAnchor.amount
+                anchor = initialAnchor
+            } else {
+                field = NutritionNumberField(quantity ?? current.grams)
+                anchor = PortionAnchor(measure: selected, amount: field, grams: current.grams,
+                                       serving: serving, quantity: quantity)
+            }
+            measure = selected
+            amount = field
+            return true
+        } catch { errors = NutritionDraftError.messages(error); return false }
     }
 
     func preview(locale: Locale = .current) throws -> LoggedAmount {
@@ -195,8 +254,8 @@ final class NutritionEntryDraft: ObservableObject {
         guard let value = try amount.value(named: serving == nil ? "grams" : "quantity", locale: locale) else {
             throw NutritionDraftError.input("Enter an amount to log.")
         }
-        if let initialPortion, amount == initialAmount, serving == initialServing {
-            return try NutritionStore.preview(currentFood, grams: initialPortion.grams, serving: initialPortion.serving, quantity: initialPortion.quantity)
+        if let anchor, amount == anchor.amount, measure == anchor.measure {
+            return try NutritionStore.preview(currentFood, grams: anchor.grams, serving: anchor.serving, quantity: anchor.quantity)
         }
         return try NutritionStore.preview(currentFood, grams: serving == nil ? value : nil,
                                           serving: serving, quantity: serving == nil ? nil : value)
@@ -223,10 +282,10 @@ final class NutritionEntryDraft: ObservableObject {
         var entry = FoodEntry(id: entryID, date: date, meal: meal.trimmingCharacters(in: .whitespacesAndNewlines),
                               loggedAt: loggedAt.roundedToMilliseconds, food: snapshot,
                               grams: portion.grams, serving: portion.serving, quantity: portion.quantity)
-        if let original, amount == initialAmount, serving == initialServing {
-            entry.grams = original.grams
-            entry.serving = original.serving
-            entry.quantity = original.quantity
+        if let anchor, amount == anchor.amount, measure == anchor.measure {
+            entry.grams = anchor.grams
+            entry.serving = anchor.serving
+            entry.quantity = anchor.quantity
         }
         return entry
     }

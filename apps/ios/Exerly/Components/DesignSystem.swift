@@ -326,11 +326,20 @@ struct ExQuantityControl: View {
                     : AnyLayout(HStackLayout(spacing: 8))
                 layout {
                     ForEach(presets, id: \.self) { value in
-                        Button("\(value.formatted(.number.precision(.fractionLength(0...2))))\(unit.isEmpty ? "" : " " + unit)") {
+                        let selected = enteredNumber == value
+                        let title = "\(value.formatted(.number.precision(.fractionLength(0...2))))\(unit.isEmpty ? "" : " " + unit)"
+                        Button {
                             text = value.formatted(.number.grouping(.never).precision(.fractionLength(0...8)))
-                        }.font(.exLabel).frame(maxWidth: .infinity, minHeight: 44)
-                            .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+                        } label: {
+                            HStack(spacing: ExSpacing.small) {
+                                Text(title)
+                                if selected { Image(systemName: "checkmark").accessibilityHidden(true) }
+                            }.frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+                        }.font(.exLabel)
+                            .background(selected ? Color.exPrimary.opacity(0.15) : Color.exSurface2,
+                                        in: RoundedRectangle(cornerRadius: ExRadius.control))
                             .buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
+                            .accessibilityLabel(title).accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
             }
@@ -340,6 +349,13 @@ struct ExQuantityControl: View {
     private var quantityField: some View {
         ExNumericTextField(title: title, text: $text, placeholder: "0", integer: integer, centered: true, identifier: identifier)
             .frame(minHeight: 52)
+    }
+
+    private var enteredNumber: Double? {
+        let formatter = NumberFormatter()
+        formatter.locale = .current
+        formatter.numberStyle = .decimal
+        return formatter.number(from: text.trimmingCharacters(in: .whitespacesAndNewlines))?.doubleValue
     }
 
     private func adjustment(_ symbol: String, amount: Double, label: String) -> some View {
