@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-06 22:05 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-06 22:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                          |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:00 EDT, integration `277aaaef`                                         |
-| `main`                                        | –        | `277aaaef`, the same commit as integration, 2026-10-06 22:00 EDT; CI run 37558851579 |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:28 EDT, integration `3872a1a2` (M12 recovery)                          |
+| `main`                                        | –        | `277aaaef`, 2026-10-06 22:00 EDT; integration is 2 commits ahead; CI run 37558851579 |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -158,6 +158,10 @@ rules (`6b908a24`):**
 - `food(barcode:symbology:)` for EAN-8 and UPC-E scans (app agent, 20:23).
 - M11 webhooks for agents (migration 0007, design 019, B11).
 
+**M12: recovery-aware volume.** Landed (`3872a1a2`, design 020, B05): a lighter
+planned workout offered when sleep, HRV and resting heart rate are worse than
+the person's baseline.
+
 Staging was redeployed with migration 0007.
 
 **`main`.** Ali asked on 2026-10-06 for integration to be merged into `main`
@@ -173,8 +177,8 @@ suite (67).
 1. Confirm CI on `main` (run 37558851579, `277aaaef`), including the iOS
    job's native and browser round trip, and production's state after the
    DigitalOcean deploy.
-2. Remaining logic for Beyond: recovery-aware weekly volume from sleep, HRV
-   and resting heart rate (B05), and an MCP tool for program generation. The MacroFactor import waits on Ali's headers, and
+2. Remaining logic for Beyond: an MCP tool for program generation, and Core
+   support the app's design work asks for. The MacroFactor import waits on Ali's headers, and
    USDA on a key.
 3. Keep reviewing app commits and answering `to-logic.md`.
 
