@@ -31,20 +31,19 @@ struct ActionButton: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, ExSpacing.content)
+            .padding(.vertical, ExSpacing.item)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 52)
             .foregroundStyle(textColor)
             .background(background)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: ExRadius.control))
             .overlay(borderOverlay)
         }
         .disabled(isDisabled || isLoading)
         .opacity(isDisabled ? 0.5 : 1)
         .accessibilityLabel(title)
         .accessibilityValue(isLoading ? "In progress" : "")
-        .modifier(GlowModifier(variant: variant))
     }
 
     @ViewBuilder
@@ -71,25 +70,13 @@ struct ActionButton: View {
     private var borderOverlay: some View {
         switch variant {
         case .secondary:
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: ExRadius.control)
                 .stroke(Color.exBorder, lineWidth: 1)
         case .ghost:
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: ExRadius.control)
                 .stroke(Color.exBorder, lineWidth: 1)
         default:
             EmptyView()
-        }
-    }
-}
-
-private struct GlowModifier: ViewModifier {
-    let variant: ActionButtonVariant
-
-    func body(content: Content) -> some View {
-        if variant == .primary {
-            content.primaryGlow(radius: 16, opacity: 0.3)
-        } else {
-            content
         }
     }
 }

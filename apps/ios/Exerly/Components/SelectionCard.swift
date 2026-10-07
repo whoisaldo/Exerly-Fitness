@@ -6,6 +6,7 @@ struct SelectionCard: View {
     var icon: String?
     let isSelected: Bool
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: action) {
@@ -20,7 +21,7 @@ struct SelectionCard: View {
                                 ? Color.exPrimary.opacity(0.15)
                                 : Color.exSurface2
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .clipShape(RoundedRectangle(cornerRadius: ExRadius.control))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -40,18 +41,19 @@ struct SelectionCard: View {
                     .foregroundStyle(isSelected ? .exPrimary : .exTextMuted)
                     .font(.system(size: 22))
             }
-            .padding(14)
+            .padding(ExSpacing.content)
             .background(isSelected ? Color.exPrimary.opacity(0.08) : Color.exGlassBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: ExRadius.card))
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: ExRadius.card)
                     .stroke(
                         isSelected ? Color.exPrimary.opacity(0.4) : Color.exGlassBorder,
                         lineWidth: 1
                     )
             )
         }
-        .animation(.spring(response: 0.3), value: isSelected)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: isSelected)
     }
 }
 
@@ -61,10 +63,11 @@ struct MultiSelectGrid<Item: Identifiable & Hashable>: View {
     let label: (Item) -> String
     let icon: ((Item) -> String)?
     var columns: Int = 2
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns),
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : columns),
             spacing: 10
         ) {
             ForEach(items) { item in

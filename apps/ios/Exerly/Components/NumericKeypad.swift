@@ -22,6 +22,9 @@ struct ExNumericTextField: UIViewRepresentable {
         field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
         let input = UIInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 284), inputViewStyle: .keyboard)
         let host = UIHostingController(rootView: keypad(for: field, coordinator: context.coordinator))
+        // UIKit already places this content inside the keyboard. Applying
+        // SwiftUI's keyboard safe area again can hide the keypad header.
+        host.safeAreaRegions = .container
         context.coordinator.host = host
         host.view.backgroundColor = .clear
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -108,7 +111,7 @@ struct ExNumericKeypad: View {
                     Image(systemName: "delete.left").font(.system(size: 22))
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.control))
-                }.buttonStyle(.plain).accessibilityLabel("Delete digit")
+                }.buttonStyle(.plain).accessibilityLabel("Delete digit").accessibilityIdentifier("exerly.keypad.delete")
             }
         }.padding(.horizontal, ExSpacing.content).padding(.bottom, ExSpacing.item)
             .foregroundStyle(Color.exTextPrimary).background(Color.exSurface2)
@@ -119,6 +122,6 @@ struct ExNumericKeypad: View {
             Text(title).font(.system(size: 24, weight: .medium, design: .rounded))
                 .frame(maxWidth: .infinity, minHeight: 48)
                 .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.control))
-        }.buttonStyle(.plain)
+        }.buttonStyle(.plain).accessibilityIdentifier("exerly.keypad.\(title)")
     }
 }

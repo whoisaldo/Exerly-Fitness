@@ -32,12 +32,12 @@ struct FloatingLabelTextField: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 18)
+        .padding(.horizontal, ExSpacing.content)
+        .padding(.vertical, ExSpacing.content)
         .background(Color.exSurface2)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: ExRadius.control))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: ExRadius.control)
                 .stroke(
                     isFocused ? Color.exPrimary : Color.exBorder,
                     lineWidth: isFocused ? 1.5 : 1

@@ -32,6 +32,23 @@ struct ExScreen<Content: View>: View {
     }
 }
 
+/// Native scrolling and row behavior, with Exerly's shared surfaces.
+struct ExList<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        List { content.listRowBackground(Color.exSurface1).listRowSeparatorTint(Color.exBorder) }
+            .exListStyle()
+    }
+}
+
+struct ExForm<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        Form { content.listRowBackground(Color.exSurface1).listRowSeparatorTint(Color.exBorder) }
+            .scrollContentBackground(.hidden).background(Color.exBackground).tint(Color.exPrimary)
+    }
+}
+
 struct ExCard<Content: View>: View {
     var accent = false
     @ViewBuilder var content: Content
@@ -56,7 +73,7 @@ struct ExEyebrow: View {
     init(_ title: String, color: Color = .exTextSecondary) { self.title = title; self.color = color }
 
     var body: some View {
-        Text(title.uppercased()).font(.exSmall.weight(.semibold)).tracking(1.2)
+        Text(title.uppercased()).font(.exSmall.weight(.semibold)).tracking(1.2).accessibilityLabel(title)
             .foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -196,10 +213,19 @@ struct ExQuantityControl: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
             Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            HStack(spacing: ExSpacing.item) {
-                adjustment("minus", amount: -step, label: "Decrease \(title)")
-                ExNumericTextField(title: title, text: $text, integer: integer, centered: true, identifier: identifier).frame(minHeight: 52)
-                adjustment("plus", amount: step, label: "Increase \(title)")
+            if typeSize.isAccessibilitySize {
+                quantityField
+                HStack {
+                    adjustment("minus", amount: -step, label: "Decrease \(title)")
+                    Spacer()
+                    adjustment("plus", amount: step, label: "Increase \(title)")
+                }
+            } else {
+                HStack(spacing: ExSpacing.item) {
+                    adjustment("minus", amount: -step, label: "Decrease \(title)")
+                    quantityField
+                    adjustment("plus", amount: step, label: "Increase \(title)")
+                }
             }
             if !presets.isEmpty {
                 let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
@@ -215,6 +241,11 @@ struct ExQuantityControl: View {
                 }
             }
         }
+    }
+
+    private var quantityField: some View {
+        ExNumericTextField(title: title, text: $text, integer: integer, centered: true, identifier: identifier)
+            .frame(minHeight: 52)
     }
 
     private func adjustment(_ symbol: String, amount: Double, label: String) -> some View {
