@@ -51,7 +51,7 @@ function validateAnswers(body, user = {}) {
   );
   const timezone = body.timezone ?? user.timezone ?? 'UTC';
   if (!dates.isValidTimeZone(timezone)) throw badRequest('Choose a valid timezone');
-  const unitSystem = v.oneOf(body.unitSystem ?? user.unitSystem ?? 'metric', 'unitSystem', [
+  const unitSystem = v.oneOf(body.unitSystem ?? user.unitSystem ?? 'imperial', 'unitSystem', [
     'metric',
     'imperial',
   ]);

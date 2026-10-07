@@ -44,6 +44,13 @@ const get = async (user) => (await api.get('/api/preferences', options(user))).b
 const save = (user, revision, changes, key) =>
   api.patch('/api/preferences', { base_revision: revision, changes }, options(user, key));
 
+test('accounts default to U.S. units, and an explicit metric choice is kept', async () => {
+  const plain = await signUp(api);
+  assert.equal(plain.user.unitSystem, 'imperial');
+  const metric = await signUp(api, { unitSystem: 'metric' });
+  assert.equal(metric.user.unitSystem, 'metric');
+});
+
 test('preferences preserve setup values and update non-nutrition goals atomically without rewriting accepted targets or weight history', async () => {
   const user = await complete();
   const initial = await get(user);

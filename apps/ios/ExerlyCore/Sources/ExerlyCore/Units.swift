@@ -143,3 +143,34 @@ public struct LocalDate: Sendable, Hashable, Comparable, Codable, CustomStringCo
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
 }
+
+/// U.S. customary units for entry and display. Stored values stay metric:
+/// millilitres and centimetres.
+public enum USUnits {
+    /// One U.S. fluid ounce, exactly.
+    public static let millilitersPerFluidOunce = 29.573_529_562_5
+    public static let centimetersPerInch = 2.54
+
+    public static func milliliters(fluidOunces: Double) -> Double { fluidOunces * millilitersPerFluidOunce }
+
+    public static func fluidOunces(milliliters: Double) -> Double { milliliters / millilitersPerFluidOunce }
+
+    /// Whole millilitres, for stores that keep integers such as water:
+    /// rounded to the nearest, halves away from zero. Whole fluid ounces come
+    /// back exactly when shown to 0.1 fl oz.
+    public static func wholeMilliliters(fluidOunces: Double) -> Int {
+        Int(milliliters(fluidOunces: fluidOunces).rounded())
+    }
+
+    public static func centimeters(feet: Int, inches: Double) -> Double {
+        (Double(feet) * 12 + inches) * centimetersPerInch
+    }
+
+    /// A height in feet and inches, the inches rounded to `inchStep`; 12
+    /// inches carry to a foot, so 182.8 cm is 6 ft 0 in, not 5 ft 12 in.
+    public static func feetAndInches(centimeters: Double, inchStep: Double = 1) -> (feet: Int, inches: Double) {
+        let total = (centimeters / centimetersPerInch / inchStep).rounded() * inchStep
+        let feet = Int((total / 12).rounded(.down))
+        return (feet, total - Double(feet) * 12)
+    }
+}

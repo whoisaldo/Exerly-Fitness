@@ -134,7 +134,7 @@ function profile(ws) {
     name: ws.account.name ?? null,
     time_zone: timezone,
     today: training.localDate(new Date(), timezone),
-    unit_system: ws.account.unitSystem ?? 'metric',
+    unit_system: ws.account.unitSystem ?? 'imperial',
     units:
       'Loads are kilograms and volume is kilogram-reps unless a field says otherwise. Convert for display only.',
     finished_workouts: ws.history.sessions.length,
