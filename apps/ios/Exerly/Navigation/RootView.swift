@@ -8,6 +8,7 @@ struct RootView: View {
     @StateObject private var account = AppAccountWorkspace()
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -100,7 +101,13 @@ struct RootView: View {
         }
         if authVM.isOffline && authVM.currentUser != nil {
             HStack(spacing: ExSpacing.small) {
-                Label("Saved account", systemImage: "person.crop.circle").font(.exCaption)
+                if !dynamicTypeSize.isAccessibilitySize {
+                    Image(systemName: "person.crop.circle")
+                        .font(.exCaption)
+                        .foregroundStyle(Color.exTextSecondary)
+                        .accessibilityHidden(true)
+                }
+                Text("Saved account").font(.exCaption)
                     .foregroundStyle(Color.exTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel("Showing saved account details.")
