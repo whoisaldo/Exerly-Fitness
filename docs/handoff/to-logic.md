@@ -1369,3 +1369,77 @@ plans or targets. Watch/heart-rate access is a secondary experimental option,
 with appropriate permissions; please propose the minimum read interface when
 nutrition and training setup contracts are covered. Do not add recovery claims
 without supporting data.
+
+## 2026-10-07 15:55 EDT: Setup contract details for beginner guidance
+
+Status: open, contract request; app barcode work continues independently.
+
+I found the published ProgramGeneration interface and will use it for a
+reviewable training plan. Current setup has five cloud stages, and schema 2
+last_valid_step must be 0...4. OnboardingRequest already carries experience,
+weekly days, weekday names and equipment, but lacks session length and an
+independent training goal. Please publish a versioned setup contract covering
+those inputs, preserving unknown preferences and interrupted setup, plus a
+Core/API-safe way to carry the reviewed generated program into the account.
+An existing prepared Proposal may be sufficient after account setup, with
+accept/follow through ProgramStore, but please confirm the intended boundary.
+
+I can improve the current five-stage UI and ask the already-supported questions
+without waiting. Nutrition dietType supports the strategy choice; dietaryStyle
+and allergies are saved preferences, not evidence of a generated meal plan.
+The UI will say what actually changes. No fabricated recovery score or food
+plan will be shown. Please also expose the API models through the current
+account client as convenient so new screens do not add raw network calls.
+
+## 2026-10-07 16:22 EDT: Barcode-first and guided setup implementation
+
+Status: open, final capture review requested.
+
+N04 is landed and pushed at 7f6ccf9e. A12 fixed gate group 1 passes, including
+Health permission. Groups 2/3 continue. Signed internal build 2610072011 is
+ready for upload after the gate. A11 remains live until A12 is verified.
+
+Primary usability work now makes scanning one tap from the diary and supports
+barcode additions inside an unsaved meal. Manual creation is a last option.
+The setup now asks training experience, weekly days, equipment and macro style.
+Eight visual questions use the existing five cloud stages; a local optional
+planningPage preserves the exact interrupted question. I use the already
+published fields and API target preview, without adding domain calculations.
+193 active hosted tests, Core 308, API 261 and device build pass. The final
+light/dark/largest-text journeys are running.
+
+Early reviewed captures are in ../Exerly-Fitness-app/artifacts/design/contact-review/
+barcode-first-light-01/02.png and beginner-setup-first-dark-01 through -04.png.
+The final review explicitly says training preferences are saved and does not
+claim a generated program exists yet. The next app piece is the published
+ProgramGeneration preview/proposal flow. Please review the setup contract
+request above when available.
+
+Additional usability request: publish a practical default-portion helper for
+barcode foods with a clear named serving, such as one bar or one banana. We
+currently default a new U.S. entry to one ounce, preserving prior portions.
+The app must not parse serving text or calculate nutrients itself. A named
+food unit could remove an avoidable measure change while keeping metric
+preferences and exact prior quantities intact.
+
+## 2026-10-07 16:37 EDT: A12 live; beginner review and training generation next
+
+Status: open (Logic review and main merge).
+
+N04 build 2610072011 from 7f6ccf9e is VALID/IN_BETA_TESTING, one Ali tester and
+one assigned build, exact en-US notes verified. All 49 active full UI methods
+pass with 9 context skips; Health passes 52.514s. The tag is pushed. Please bring
+main current from integration once CI is green.
+
+All 97 first beginner UI captures were inspected. The light/AX signup test
+cleared appearance and type arguments after relaunch; this is corrected and
+fresh runs are underway. The scan button now stacks when full labels don't
+fit. A barcode match has a clear Review portion/Add to meal action, with
+Search secondary. Final screenshots will follow.
+
+Next app milestone uses the existing ProgramGeneration proposal contract and
+adds GymStore to app composition/sync. Saved preferences will seed experience,
+weekly days and equipment through the existing PreferencesStore boundary.
+Please prioritize the requested versioned setup contract for independent
+training goal/session length and a typed read-only AccountAPI preferences
+snapshot; current OnboardingRequest has no training session length.

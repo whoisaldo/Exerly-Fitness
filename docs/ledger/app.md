@@ -2,24 +2,93 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 15:46 EDT.
+Current date 2026-10-07, updated 16:37 EDT.
 
 ## Merge status
 
-Integration is pushed at c824159e. A11 scanner build 2610071910 is live in
+Integration is pushed at 7f6ccf9e. A11 scanner build 2610071910 is live in
 Ali-only TestFlight from fixed 1ad05bbf. Scanner branch cleanup is complete.
-N04 has passed its combined checks and is landing now. Its long full UI release
-gate runs from a fixed commit while primary work continues.
+N04 landed at 7f6ccf9e and both integration and the app branch are pushed. Its
+58-method full UI release gate passed; A12 build 2610072011 is live in the
+Ali-only group. Primary work simplifies barcode logging and first-time setup.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                                            |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                                         |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed                       |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted                               |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted                       |
-| `agent/app-nutrition`              | N04 meal builder, verified and ready to land                                                       | Search correction bf03296e landed and pushed                     |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                                     |
-| `release/app-design`               | None; next fixed release is N04                                                                    | N15 landed 1ad05bbf; A11 shipped; fixed source remains available |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition`              | Barcode-first logging and eight-question setup in verification                                     | N04 landed and pushed 7f6ccf9e, 15:46 EDT  |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
+| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed    |
+
+## Final beginner review, 2026-10-07 16:37 EDT
+
+A12's fixed full gate passes all 49 active UI methods with nine context skips.
+Build 2610072011 uploaded successfully and Apple reports VALID. The tag is
+pushed. Group assignment and exact notes passed at 16:37 EDT: one Ali tester, only
+this build, IN_BETA_TESTING. The first final read was not yet consistent; the
+subsequent verification passed. A11 was detached only after A12 was available.
+
+The first beginner matrix passes 193 active hosted tests plus one credential
+skip, six light UI journeys, four dark UI journeys and three AX-started
+journeys. All 97 UI captures and the synthetic label attachment were inspected.
+The screenshot review revealed that signup cleared every launch argument on
+relaunch, removing both light appearance and largest type. The later setup
+captures are therefore default dark, not evidence of largest-type setup.
+The test now removes only the session-reset flag. Fresh appearance-preserving
+setup, primary and barcode journeys run as beginner-review-light/dark/ax.
+
+Visual fixes from the review: diary logging actions now stack when their full
+labels cannot fit; a found barcode visibly offers Review portion or Add to
+meal, and Search becomes secondary. The target-weight field uses the shared
+surface. These are being captured again before landing. Training generation
+remains the next milestone, using the published Core proposal contract.
+
+## Beginner flow implementation, 2026-10-07 16:22 EDT
+
+N04 is merged and pushed as 7f6ccf9e. Three redundant owned stashes were
+backed up to artifacts/nutrition/n04-retained-stash-*.patch, then dropped.
+The fixed A12 full gate has passed group 1, including Health permission in
+52.514 seconds. Groups 2 and 3 continue without test failures. Signed build
+2610072011 is archived and exported. Archive and IPA identity, signature,
+HealthKit, Apple sign-in, privacy and internal-only checks pass. Upload waits
+for the remaining full gate; A11 remains the live Ali-only build.
+
+The primary tree now has a one-tap diary scanner, adjacent Search food,
+secondary manual barcode digits, and a More food options menu for label and
+manual creation. Camera matches open the portion review automatically. Meal
+selection can also scan and add a food to its unsaved draft. The light meal
+cancellation journey passes 222.554 seconds with this path and confirms that
+no diary entry was written. Physical camera use is still unverified.
+
+The new setup presents eight questions over the existing five cloud stages.
+Training experience, weekly workouts, equipment and macro style now reach the
+existing request, rather than silently keeping defaults. The local checkpoint
+also restores the precise question inside the week stage. A cloud draft from
+another device resumes at the start of that stage with its answers retained.
+New profiles use Other/prefer not to say for gender, not an assumed male
+identity. Explicit metric and manual targets stay intact. The final review
+explains target inputs and gives first-day actions. It does not claim that a
+meal plan or generated workout has been created. ProgramGeneration UI and
+cross-device training-setup extensions remain next.
+
+Core 308, API 261, 193 active hosted tests plus one credential skip and device
+build pass. Legacy repair passes 24.115 seconds. Default setup reached the
+diary and restored the exact training question after relaunch. Its original
+run stopped later at the barcode disclosure's propagated accessibility ID.
+That ID is now on its own button. The corrected direct scanner/search/hit/miss
+and three-tap repeat journey passes 149.808 seconds. Original red/interrupted
+runs remain. The native toolbar menu also replaced a custom hit area; menu
+rows are tapped directly instead of scrolling and dismissing the open menu.
+
+All six first barcode captures and ten setup UI captures were reviewed at
+contact-review/barcode-first-light-01/02 and beginner-setup-first-dark-01
+through -04. The setup's old black target-weight field still looked like a
+stock input; it now uses the shared input surface and number style. The final
+three appearance/text-size runs are in beginner-final-light/dark/ax. Capture
+and review their results, then commit in passing pieces. A later training
+milestone must turn the saved answers into a Core-generated, reviewable plan.
 
 ## Ali's usability direction; N04 ready, 2026-10-07 15:46 EDT
 

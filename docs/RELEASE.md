@@ -5,60 +5,57 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Label scanner milestone A11, version 1.0 build 2610071910, is available in
+Meal-builder milestone A12, version 1.0 build 2610072011, is available in
 internal TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only
 group contains one tester and exactly this build, with the English notes
-verified at 15:27 EDT on 2026-10-07. The phone needs Tailscale for devbox1
+verified at 16:37 EDT on 2026-10-07. The phone needs Tailscale for devbox1
 staging and the existing internal account.
 
-Add food > Scan label reads a photo with on-device Vision, then asks the person
-to review the photo, serving basis, Calories and nutrients before saving. It
-calls out unread amounts and less-than values. Manual entry is always available.
-The photo stays on the phone. US and bilingual Canadian synthetic labels pass
-actual recognition tests. Pure French labels are not claimed.
+Add food > Build a meal lets the person select several foods, adjust each
+portion, and review combined Calories and macros before one atomic Log meal.
+Nothing enters the diary when the draft is cancelled. Added foods show a
+check, meal choices fit the screen, and display rounding preserves exact
+saved quantities. Unknown nutrients remain unknown. A12 also includes A11's
+on-device nutrition-label recognition and unweighed-entry editing.
 
-Unweighed entries show no invented weight or portion controls. Whole-portion
-nutrients remain editable offline. The purple/pink identity, dark default and
-U.S. units remain. New food portions default to ounces or supported fluid
-ounces; explicit metric preferences and exact saved portions stay intact.
+Core 308, API 261, all 191 active hosted tests and the device build pass.
+The fixed full UI gate passes all 49 active methods with nine context-specific
+skips, including native Health authorization and the seeded label-photo test.
+The manifest is artifacts/nutrition/a12-verified-manifest.json in the release
+worktree. N04's two meal journeys also pass in default light/dark and largest
+text, including exact U.S. portions, cancellation, offline relaunch and export.
+All 47 milestone captures were inspected. The public-reference comparison is
+artifacts/design/contact-review/a12-meal-reference.png in the primary tree.
+Logic's four visual review points are addressed.
 
-Core 308, API 261, all 185 active hosted tests and the device build pass. The
-full scanner gate covered 46 active UI methods and nine context-specific skips.
-Its original group 3 photo test failed because the simulator lacked the label
-fixture. The seeded rerun passed; the original result remains red. Both Core
-label-basis regressions and affected search/photo/manual journeys passed after
-integration. The new unweighed offline journey also passed in default light,
-default dark and largest text, including relaunch and exact exported nutrients.
-Evidence is `artifacts/nutrition/a11-final-test-evidence.json` in the release
-worktree, with the fixed-gate manifest and original result bundles beside it.
-
-All primary light/dark, scanner light/dark/largest-type, and unweighed-entry
-captures were inspected. The scanner/reference comparison is
-`artifacts/design/contact-review/a11-label-reference.png` in the primary tree.
 The gallery is http://100.80.149.7:39215. Physical installation, camera capture,
 Apple sign-in, Health authorization, VoiceOver and measured phone performance
-remain unverified. Full feature parity is open.
+remain unverified. Full feature parity is open. The newer barcode-first and
+eight-question setup flows remain in verification and are not in A12.
 
 Signed archive and exported IPA checks passed identity, entitlements, profile,
 privacy manifest, icon, version, staging endpoint and absence of debug hooks.
 
 - Release worktree: `/Users/aldo/Desktop/Exerly-Fitness-app-programs`.
-- Archive: `apps/ios/build/release/2610071910/Exerly.xcarchive`.
-- IPA: `apps/ios/build/release/2610071910/export/Exerly.ipa`.
-- Logs: `apps/ios/build/release/2610071910/{archive,export,upload}.log`.
-- Build and delivery UUID: `24817290-870d-4106-a0e5-63de075124f1`.
-- Fixed source tag: `ios/internal-2610071910`, commit `1ad05bbf`.
+- Archive: `apps/ios/build/release/2610072011/Exerly.xcarchive`.
+- IPA: `apps/ios/build/release/2610072011/export/Exerly.ipa`.
+- Archive/export logs: `apps/ios/build/release/2610072011/{archive,export}.log`.
+- Upload log: `artifacts/nutrition/a12-upload.log`.
+- Build and delivery UUID: `c19ce4b3-b9f2-40bf-974c-5504d0f152fd`.
+- Fixed source tag: `ios/internal-2610072011`, commit `7f6ccf9e`.
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
 - Team: `9X79V37Q89`. Distribution certificate expires 2027-09-25.
 - Exerly profile: `J5J395Y9AF`, HealthKit and Apple sign-in, same expiry.
 - App Store Connect: Exerly, app ID `6819776832`.
 - Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`.
   Only Ali, no public link or automatic future builds.
-- Availability evidence: `artifacts/nutrition/a11-internal-2610071910.json`.
-- Exact test notes: `docs/release/a11-internal-notes.txt`.
+- Availability evidence: `artifacts/nutrition/a12-internal-2610072011.json`.
+- Exact test notes: `docs/release/a12-internal-notes.txt`.
 
-A10 build 2610071410 was detached only after A11 became available. No other
-app's identifiers or profiles changed. Credentials stay outside the repository.
+A11 build 2610071910 was detached only after A12 became available. The first
+post-assignment read did not yet pass final verification; the subsequent full
+verification passed. No other app's identifiers or profiles changed.
+Credentials stay outside the repository.
 
 ## Repeatable commands
 
@@ -103,10 +100,10 @@ bundles are not given an unsupported provisioning profile.
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610071910), valid and in beta testing; only Ali and only this build.                                                                             |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610072011), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | A11: API 261, Core 308, 185 hosted and 47 active UI methods pass, including a seeded fixture rerun. Light/dark/AX and device build pass.               |
+| Native test suite                 | In progress           | A12: API 261, Core 308, 191 hosted and all 49 active UI methods pass. Light/dark/AX meal journeys and device build pass.                               |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
