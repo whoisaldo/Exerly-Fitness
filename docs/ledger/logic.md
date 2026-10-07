@@ -8,10 +8,10 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 Updated 2026-10-07 11:21 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                                                               |
-| --------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 11:21 EDT, integration (label headings outrank its title)                                                      |
-| `main`                                        | –        | `0b56070f` (the design release), 2026-10-07 07:53 EDT; CI 37616722886 failed one UI test (generic foods; fix in progress) |
+| Branch                                        | Unlanded | Last landed                                                                |
+| --------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 11:21 EDT, integration (label headings outrank its title)       |
+| `main`                                        | –        | `a982be2d` (fast-forward), 2026-10-07 11:24 EDT; CI run 37643561510 queued |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -256,13 +256,10 @@ suite (67).
 
 ## Next three steps
 
-1. `main`'s CI run 37616722886 (`0b56070f`) passed unit tests and failed
-   `testNutritionSubmittedSearchBarcodeAndThreeTapRepeat`: generic foods
-   (`71604c45`) filled the first ten results for "oat" and pushed the
-   fixture's packaged product off CI's screen. Generic results are now a
-   quarter of the list; the app is making the test independent of position.
-   When that lands, advance `main` and confirm CI. Production is still the old
-   API until Ali sets `DATABASE_URL`.
+1. Confirm `main`'s CI run 37643561510 (`a982be2d`). It has the app's
+   position-independent search test (`bf03296e`); the run before
+   (`0b56070f`) failed only that test. Production is still the old API until
+   Ali sets `DATABASE_URL`.
 2. Remaining logic for Beyond: Core support the app's design work asks
    for. The MacroFactor import waits on Ali's headers.
 3. Keep reviewing app commits and answering `to-logic.md`.
