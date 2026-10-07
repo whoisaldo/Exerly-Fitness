@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-06 22:50 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 00:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                |
-| --------------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:50 EDT, integration (M13 label reading)                      |
-| `main`                                        | –        | `277aaaef`, 2026-10-06 22:00 EDT; integration is ahead; CI run 37558851579 |
+| Branch                                        | Unlanded | Last landed                                                       |
+| --------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 00:30 EDT, integration (target bridge, round-trip fix) |
+| `main`                                        | –        | Fast-forwarded to integration 2026-10-07 00:30 EDT; CI rerunning  |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -164,6 +164,17 @@ the person's baseline.
 
 **M13: nutrition label reading.** Landed (design 021, N15): the camera's text
 from a US or EU label becomes nutrients for review.
+
+**Target continuity.** Landed: `POST /v1/nutrition/plans/from-legacy` and
+`AccountAPI.adoptLegacyTargets()` keep older accounts' saved targets as manual
+plans (app agent, 23:40).
+
+**CI on `main`.** The first run after the merge (37558851579) passed every
+unit and UI test. The native and browser round trip then failed, because the
+merged lockfile installs Vite under `apps/web` and the script expected the
+root. That is fixed. Earlier integration runs had failed at the same step for
+want of `rg`. Only one macOS job runs at a time, and the iOS job takes about
+two hours.
 
 Staging was redeployed with migration 0007.
 
