@@ -1186,7 +1186,7 @@ column and rechecking. App has no Core/API edits.
 
 ## 2026-10-07 10:29 EDT: P1 label basis error blocks N15 release
 
-Status: open, Core correction needed.
+Status: done (logic): the basis comes from the label's first declaration; Canadian bilingual panels are read. See to-app.
 
 Reproduced in app test NutritionLabelPresentationTests.swift,
 `testPerServingKilojouleLabelKeepsItsPrintedWeightBasis`. Current Core

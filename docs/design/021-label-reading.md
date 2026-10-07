@@ -13,11 +13,21 @@ leaves the phone.
 - **US Nutrition Facts:** amounts per serving, "Serving size 2/3 cup (55g)",
   calories, then nutrients with % Daily Value, which is ignored.
 - **EU-style declarations:** amounts per 100 g or per 100 ml, often with a
-  per-serving column after it. The first column is read. Energy in kJ and
-  kcal: kcal wins, else kJ ÷ 4.184. Salt becomes sodium: 1 g of salt is
-  400 mg of sodium.
+  per-serving column after it. Energy in kJ and kcal: kcal wins, else kJ ÷
+  4.184. Salt becomes sodium: 1 g of salt is 400 mg of sodium.
+- **Australian and New Zealand panels:** per serving first, then per 100 g.
+- **Canadian bilingual panels:** "Nutrition Facts / Valeur nutritive", the
+  serving as "Per 1 bar (50 g) / pour 1 barre (50 g)", and nutrients named in
+  both languages ("Fat / Lipides 8 g"). The English serving is kept.
 
-A label counts as EU-style if it mentions per 100 g or 100 ml, kJ or salt.
+The first column is read, and the label's own declaration says what it is
+for: whichever comes first of an amount per serving ("Amount per serving",
+"Nutrition Facts", "Per 1 bar (50 g)") and one per 100 g or ml. Only lines
+that name no nutrient count, so "Carbohydrate 100 g" isn't a declaration, and
+"Serving size 1 cup (100 g)" is a serving. Without a declaration, a serving
+size means per serving, and only then do kJ or salt suggest per 100 g. Energy
+units used to decide it, so a US-style label printing kJ was read per 100 g
+and logged half its energy (found by the app's tests).
 
 ## Reading
 
@@ -46,6 +56,7 @@ uses the volume basis (design 007 notes, `Food.volume`).
 
 ## Checked
 
-Synthetic US and EU labels with the misreads above, a drink in kJ per 100 ml,
-and non-label text. Real labels vary more. Every reading goes to a review
+Synthetic US, EU, Australian and bilingual Canadian labels with the misreads
+above, per-serving labels with kJ or salt, a drink in kJ per 100 ml, and
+non-label text. Real labels vary more. Every reading goes to a review
 screen, and the unread and approximated lists say where to look.

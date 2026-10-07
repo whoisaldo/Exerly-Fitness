@@ -61,14 +61,16 @@ public enum NutritionLabel {
     /// look like a nutrition label: no energy and fewer than two macronutrients.
     public static func read(_ lines: [String]) -> LabelReading? {
         let text = lines.map(clean).filter { !$0.isEmpty }
-        let joined = text.joined(separator: "\n")
-        let perVolume = joined.contains("100 ml") || joined.contains("100ml")
-        let european = perVolume || joined.contains("100 g") || joined.contains("100g") || joined.contains("salt")
-            || joined.contains("kj")
-        var reading = LabelReading(basis: european ? (perVolume ? .per100ml : .per100g) : .serving, amounts: NutrientAmounts(),
+        let servingLine = text.first { line in
+            line.hasPrefix("serving size") || line.hasPrefix("serving") && line.contains("(")
+                // Canadian: "Per 1 bar (50 g) / pour 1 barre (50 g)".
+                || line.hasPrefix("per ") && line.contains("(") && line.range(of: #"^per 100\s?(g|ml)\b"#, options: .regularExpression) == nil
+        }
+        var reading = LabelReading(basis: basis(of: text, hasServing: servingLine != nil), amounts: NutrientAmounts(),
                                    approximated: [], unread: [])
-        if let line = text.first(where: { $0.hasPrefix("serving size") || $0.hasPrefix("serving") && $0.contains("(") }) {
-            let serving = line.replacingOccurrences(of: #"^serving size[:\s]*"#, with: "", options: .regularExpression)
+        if let line = servingLine {
+            let serving = line.replacingOccurrences(of: #"^(serving size[:\s]*|per\s+)"#, with: "", options: .regularExpression)
+                .replacingOccurrences(of: #"\s*/\s*pour\s.*$"#, with: "", options: .regularExpression)
             reading.servingText = serving.isEmpty ? nil : serving
             reading.servingGrams = number(in: serving, before: #"\s*g\b"#)
             reading.servingMilliliters = number(in: serving, before: #"\s*ml\b"#)
@@ -77,7 +79,9 @@ public enum NutritionLabel {
         while index < text.count {
             let line = text[index]
             index += 1
-            if line.hasPrefix("serving") || line.contains("per container") || line.contains("daily value") { continue }
+            if line.hasPrefix("serving") || line == servingLine || line.contains("per container") || line.contains("daily value") {
+                continue
+            }
             if line.hasPrefix("salt") {
                 // Salt is 2.5 times sodium; Exerly stores sodium in mg.
                 if let (salt, _, approximate) = amount(in: line, after: "salt") {
@@ -109,6 +113,34 @@ public enum NutritionLabel {
         let macros = [Nutrient.protein, .fat, .carbohydrate].filter { reading.amounts[$0] != nil }.count
         guard reading.amounts[.energy] != nil || macros >= 2 else { return nil }
         return reading
+    }
+
+    /// What the amounts are for. The label's own declaration decides: whichever
+    /// comes first of an amount per serving and one per 100 g or ml, since on
+    /// a two-column label that is the first column (per 100 g first in the EU,
+    /// per serving first in Australia). Declarations are read only from lines
+    /// that name no nutrient. Without one, a serving size means per serving,
+    /// and only then do kilojoules or salt suggest a European label per 100 g.
+    static func basis(of text: [String], hasServing: Bool) -> LabelReading.Basis {
+        let headers = text.filter { line in
+            !line.hasPrefix("serving") && !names.contains { entry in entry.words.contains { line.contains($0) } }
+                && !line.hasPrefix("salt")
+        }.joined(separator: "\n")
+        let per100 = headers.firstMatch(of: /(^|[^\d])100\s?(g|ml)\b/)
+        let perServing = headers.firstMatch(of: /per serving|per portion|amount per|amount\/serving|nutrition facts|valeur nutritive|per \d+(\.\d+)?\s?(g|ml) serving|(^|\n)(per|pour) [^\n]*\(\s*\d/)
+        switch (per100, perServing) {
+        case let (hundred?, serving?):
+            if serving.range.lowerBound < hundred.range.lowerBound { return .serving }
+            return hundred.2 == "ml" ? .per100ml : .per100g
+        case let (hundred?, nil):
+            return hundred.2 == "ml" ? .per100ml : .per100g
+        case (nil, _?):
+            return .serving
+        case (nil, nil):
+            if hasServing { return .serving }
+            let joined = text.joined(separator: "\n")
+            return joined.contains("kj") || joined.contains("salt") ? .per100g : .serving
+        }
     }
 
     /// Lowercase, decimal commas as points, and the usual misreads in amounts:

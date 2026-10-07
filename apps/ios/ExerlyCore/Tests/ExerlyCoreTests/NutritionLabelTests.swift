@@ -38,6 +38,53 @@ import Testing
         #expect(drink.basis == .per100ml && drink.amounts[.energy] == 43 && drink.per100g == nil)
     }
 
+    @Test func theLabelsOwnDeclarationDecidesTheBasisNotItsUnits() throws {
+        // A per-serving label with kilojoules: the app's P1 (its synthetic input).
+        let bar = try #require(NutritionLabel.read(["Nutrition Facts", "Serving size 1 bar (50 g)", "Amount per serving",
+                                                    "Energy 837 kJ / 200 kcal", "Fat 8 g", "Carbohydrate 25 g", "Protein 7 g"]))
+        #expect(bar.basis == .serving && bar.servingGrams == 50 && bar.amounts[.energy] == 200)
+        #expect(bar.per100g?[.energy] == 400)
+        // A serving label that prints salt instead of sodium is still per serving.
+        let salted = try #require(NutritionLabel.read(["Serving size 2 crackers (30g)", "Calories 140", "Fat 6g",
+                                                       "Carbohydrate 18g", "Salt 0.5g"]))
+        #expect(salted.basis == .serving && salted.amounts[.sodium] == 200 && salted.per100g?[.energy] == 140 * 100 / 30.0)
+
+        // Two columns: the first declared is the first column. Australian
+        // labels put the serving first.
+        let australian = try #require(NutritionLabel.read([
+            "NUTRITION INFORMATION", "Servings per package: 8", "Serving size: 30 g",
+            "Avg quantity per serving Avg quantity per 100 g", "Energy 520 kJ 1730 kJ", "Protein 3.2 g 10.7 g",
+            "Fat, total 1.1 g 3.7 g", "Carbohydrate 20.1 g 67.0 g", "Sodium 55 mg 183 mg",
+        ]))
+        #expect(australian.basis == .serving && australian.servingGrams == 30)
+        #expect(australian.amounts[.energy] == 124 && australian.amounts[.protein] == 3.2 && australian.amounts[.sodium] == 55)
+        // "Serving size 1 cup (100 g)" is a serving, not a declaration per 100 g.
+        let hundred = try #require(NutritionLabel.read(["Serving size 1 cup (100 g)", "Amount per serving", "Calories 90",
+                                                        "Protein 2 g", "Carbohydrate 21 g"]))
+        #expect(hundred.basis == .serving && hundred.servingGrams == 100)
+        // Without any declaration, kilojoules and salt still suggest per 100 g.
+        let bare = try #require(NutritionLabel.read(["Energy 1580 kJ", "Fat 6.5 g", "Carbohydrate 66 g", "Salt 0.1 g"]))
+        #expect(bare.basis == .per100g)
+    }
+
+    @Test func aBilingualCanadianPanelReadsItsServing() throws {
+        let label = try #require(NutritionLabel.read([
+            "Nutrition Facts", "Valeur nutritive", "Per 1 bar (50 g) / pour 1 barre (50 g)", "Calories 200",
+            "% Daily Value* % valeur quotidienne*", "Fat / Lipides 8 g 11 %", "Saturated / saturés 1 g 5 %",
+            "Carbohydrate / Glucides 25 g", "Fibre / Fibres 3 g 11 %", "Sugars / Sucres 9 g 9 %",
+            "Protein / Protéines 7 g", "Cholesterol / Cholestérol 0 mg", "Sodium 140 mg 6 %",
+        ]))
+        #expect(label.basis == .serving && label.servingText == "1 bar (50 g)" && label.servingGrams == 50)
+        let expected: [Nutrient: Double] = [.energy: 200, .fat: 8, .saturatedFat: 1, .carbohydrate: 25, .fiber: 3,
+                                            .sugars: 9, .protein: 7, .cholesterol: 0, .sodium: 140]
+        for (nutrient, value) in expected { #expect(label.amounts[nutrient] == value, "\(nutrient)") }
+        // On separate lines too.
+        let split = try #require(NutritionLabel.read(["Nutrition Facts / Valeur nutritive", "Per 2/3 cup (55 g)",
+                                                      "pour 2/3 tasse (55 g)", "Calories 230", "Fat / Lipides 8 g",
+                                                      "Protein / Protéines 3 g"]))
+        #expect(split.basis == .serving && split.servingText == "2/3 cup (55 g)" && split.servingGrams == 55)
+    }
+
     @Test func otherTextIsNotALabelAndUnreadableLinesAreListed() throws {
         #expect(NutritionLabel.read(["Best before 12/2026", "Store in a cool, dry place"]) == nil)
         let label = try #require(NutritionLabel.read(["Calories 120", "Protein 4g", "Total Fat --"]))

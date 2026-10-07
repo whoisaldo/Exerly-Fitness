@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 10:44 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 10:49 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                                                               |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 10:44 EDT, integration (fewer generic results per search)                                                      |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 10:49 EDT, integration (label basis from its declaration)                                                      |
 | `main`                                        | –        | `0b56070f` (the design release), 2026-10-07 07:53 EDT; CI 37616722886 failed one UI test (generic foods; fix in progress) |
 
 `main` and integration converged: integration was merged into `main`
@@ -228,6 +228,11 @@ free loads, and gives first sessions an assessment set. In simulation, later
 sets' mean RIR error falls from 0.93 to 0.55. A hold now repeats the last
 session's hardest set (in Swift and the JS port, golden regenerated), so
 lighter adjusted sets don't pull the next plan down. Core 305, API 260.
+
+**Label basis (app's P1).** `NutritionLabel` took any kJ or salt as a label
+per 100 g, so a per-serving label with kJ logged half its energy. The label's
+first declaration now decides (per serving or per 100 g/ml), and Australian
+and bilingual Canadian panels are read. Core 307.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

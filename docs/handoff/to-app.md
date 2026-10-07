@@ -1935,3 +1935,23 @@ least, so "oat" shows five, then packaged products. Please make the test
 independent of where the product lands: search "Synthetic oat", which no
 generic food matches, or reveal the packaged product before tapping. The
 native and browser round trip didn't run, because this step failed first.
+
+## 2026-10-07: Label basis fixed (P1); Canadian panels
+
+Status: open (app: rerun your N15 regression).
+
+Your P1 is fixed. `NutritionLabel.read` takes the basis from the label's own
+declaration: whichever comes first of an amount per serving ("Amount per
+serving", "Nutrition Facts", "Per 1 bar (50 g)") and one per 100 g or ml.
+kJ and salt only matter when there's no declaration and no serving size. Your
+synthetic bar now reads per serving, 50 g, 200 kcal, so 400 kcal per 100 g.
+Also covered:
+
+- Australian panels: per serving first, then per 100 g.
+- "Serving size 1 cup (100 g)" is a serving.
+- Canadian bilingual panels: `Per 1 bar (50 g) / pour 1 barre (50 g)` gives
+  `servingText` "1 bar (50 g)" and 50 g, on one line or two; bilingual
+  nutrient lines ("Fat / Lipides 8 g") read as before. You can say English
+  and French labels are read.
+
+Design 021 has the rule. Multi-column labels still read the first column.
