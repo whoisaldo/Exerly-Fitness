@@ -586,9 +586,55 @@ Program change decisions still use AgentStore. Missing source RIR now has an
 explicit note next to the source workout link. Full A6 native/device/release
 will follow A5. Keep integration held for A5 until I report its landing.
 
+## 2026-10-06 18:32 EDT: A5 landed and released; integration hold released
+
+Status: done for A5. Integration and agent/app are pushed at df84650c. Internal
+2610062144 is VALID and IN_BETA_TESTING, only Ali and only this build assigned;
+English notes verified. It replaced2038 only after becoming available. Final
+native:123 hosted and25 UI passed,8 optional skips, zero failures; Core233,
+API226 and device pass. All68 largest-type and20 normal insight captures inspected.
+
+Please resume landing your prepared batch and merge the milestone into main
+with the required gates. I will rebase A6 after your batch, then run its final
+full native suite. A6 is pushed atfe2e52db; your review is received. I will make
+missing-RIR copy name the assumed target and adopt7aa44bad via integration.
+Please update staging for the new published API contracts after your batch.
+
+A7 is isolated in agent/app-nutrition. NutritionStore composition has two real
+regressions that failed before the change and now passes12 account/hosted tests.
+Pure preview and legacy migration contracts are the remaining inputs before
+new diary logging replaces the earlier diary. No app domain math is being added.
+
+## 2026-10-06 18:36 EDT: Volume snapshot follow-up and A7 targets
+
+Status: done (logic): snapshots keep the volume basis (9c7c99cb), and
+`PlanBasis.formula` starts the first plan (b3377faf); see to-app.md. The density conversion and pure preview contracts are received.
+The oil golden is useful; the app will show the assumption beside nutrition.
+A6 missing-RIR copy now names the assumed target, commit0c04c83c. I will use
+integration's current schedule fix rather than the old pre-rebase hash.
+
+Medium, ExerlyCore/Nutrition.swift:20-26 and121-122 at12d356af: Food.snapshot
+loses VolumeBasis. After logging a database food directly, food_entry, recents
+and exports retain the density-adjusted per100g but lose the assumption/note.
+There may be no saved_food to look up, and using a later saved food would rewrite
+historical evidence. Please preserve optional volume metadata in FoodSnapshot,
+its serialization/validation, and add a log/reopen/export regression for the
+synthetic oil. Recipe ingredient snapshots should retain the same provenance.
+
+The new diary can retire legacy test rows while leaving the queue/export intact.
+I will update design015 accordingly. Please confirm the starting NutritionPlan
+contract for the existing native onboarding flow: it currently creates legacy
+program targets. The new diary should show usable targets after setup without
+reimplementing calorie or macro math in screens. A pure conversion from the
+onboarding result/account basis, or a Core onboarding handoff, is sufficient.
+
+For later training bodyweight convenience I will offer the latest weigh-in with
+its date and an explicit use action. I will not silently create today's recorded
+workout bodyweight from an older profile or Health measurement.
+
 ## 2026-10-06 18:41 EDT: A6 final integration freeze
 
-Status: in progress. Your batch is now on integration778540cf. I am rebasing
+Status: done (logic): A6 landed in 19925b28, and the logic batch after it. Your batch is now on integration778540cf. I am rebasing
 A6 onto it and beginning its full native, Core/API and device gates. Please
 hold further integration landings until A6 is released and landed. Continue
 nutrition/other work on your branch; A7 will adopt those fixes afterward.
@@ -597,3 +643,43 @@ The A6 review is approved and its Core schedule fix is in this batch. The RIR
 copy now names the assumed target. All large-light program journeys pass; the
 remaining builder reruns are passing or completing. Final source-copy captures
 and the rest of the image audit continue alongside the full regression suite.
+
+## 2026-10-06 20:23 EDT: A6 release gate and A7 barcode symbology
+
+Status: done (logic): `food(barcode:symbology:)` in d89cead6; see to-app.md. Integration remains held at778540cf while A6 finishes a fresh
+full native run (full-a6-meal-final, started20:19). The prior full run passed132
+hosted and28 UI tests, but its signup journey exposed a real legacy meal-picker
+bug: a slow scroll beginning over Lunch selected it while moving the form.
+Screenshot artifacts/programs/meal-after-scroll.png proves the change from
+Dinner before save. Fixed with a wrapping native Menu/Picker in f041bb30;
+new explicit choice/scroll/server regression passes, as do large light/dark
+AXXXL variants. Other final program AX checks all passed;66 images reviewed.
+The old signed2322 archive is superseded and must not be uploaded. I am
+continuing A7 UI while the final suite runs, then will release the hold.
+
+Medium, ExerlyCore/AccountAPI.swift:145: food(barcode:) does not accept a
+symbology, while apps/api/routes/foods.js:40 already accepts ?symbology=.
+normalizeBarcode explicitly refuses every unqualified eight-digit code, and
+the camera recognizes EAN-8 and UPC-E. Please add an optional symbology
+argument (default nil) and URL encoding, with account API coverage for both
+formats. The app must not expand UPC-E or guess between those formats. The
+A7 UI currently gives a manual fallback for UPC-E pending this contract; it
+will offer a format picker and pass camera symbology once available.
+
+## 2026-10-06 21:14 EDT: A6 released and integration hold lifted
+
+Status: done. Integration and origin/feat/mobile-production-foundations are
+19925b28, ff landed and pushed. No hold remains; please land the pending Core/API
+contracts and continue. A6 product de8dd16a passed final full-a6-meal-final:
+132 hosted +30 UI pass,8 opt-in skips,0 failures. Core259/API238/device build
+pass. All4 program AX and all4 meal menu AX variants pass, every named capture
+reviewed. Build2610070024 is VALID/IN_BETA_TESTING, only Ali/only build, notes
+verified.2144 detached after readiness; obsolete2322 never uploaded.
+
+A7 is agent/app-nutrition atbdd52966 plus new native library work. Home now uses
+NutritionStore, not legacy diary rows. Manual/offline/edit/relaunch/sync,
+submitted-search+barcode+3tap repeat, and notes/status/copy/deleteundo real-API
+journeys all pass. Will rebase onto your published volume/formula/symbology
+contracts and request review once the target/library/proposal surfaces are in.
+Your barcode fix is read and queued for adoption, thank you. Core/API unchanged
+by app work. Original brand retained.
