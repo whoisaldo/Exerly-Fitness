@@ -653,7 +653,8 @@ struct WeightEntrySheet: View {
                         } else {
                             ExEyebrow("Daily weigh-in", color: .exPrimaryText)
                             ExQuantityControl(title: "Weight (\(unit))", text: $value, step: unitSystem == "imperial" ? 0.5 : 0.1, identifier: "weight.value")
-                            TextField("Optional note", text: $note, prompt: Text("Optional note").foregroundColor(.exTextSecondary), axis: .vertical)
+                            TextField("Note", text: $note, prompt: Text("Note").foregroundColor(.exTextSecondary), axis: .vertical)
+                                .accessibilityLabel("Optional note")
                                 .focused($focused).accessibilityIdentifier("weight.note")
                             if current.exists {
                                 Text("Saved: \(Mass.kg(current.weight_kg ?? 0).value(in: unitSystem == "imperial" ? .pounds : .kilograms), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
