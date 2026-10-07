@@ -4,26 +4,30 @@ import SwiftUI
 struct NutritionDayNotesView: View {
     let workspace: TrainingWorkspace
     let date: LocalDate
+    let timeZone: TimeZone
+    @Environment(\.dynamicTypeSize) private var typeSize
     @StateObject private var draft: NutritionDayNotesDraft
     @State private var discarding = false
     @FocusState private var typing: Bool
     @Environment(\.dismiss) private var dismiss
 
-    init(workspace: TrainingWorkspace, date: LocalDate) {
+    init(workspace: TrainingWorkspace, date: LocalDate, timeZone: TimeZone) {
         self.workspace = workspace
         self.date = date
+        self.timeZone = timeZone
         _draft = StateObject(wrappedValue: NutritionDayNotesDraft(store: workspace.nutrition, date: date))
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Note for \(date.description)") {
+            ExScreen {
+                ExCard {
+                    ExEyebrow(NutritionFormat.day(date, timeZone: timeZone), color: .exPrimary)
                     TextField("Food log note", text: $draft.text, axis: .vertical)
                         .lineLimit(5...20).focused($typing).accessibilityIdentifier("nutrition.dayNote")
                 }
                 if let error = draft.error {
-                    Section { Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("nutrition.noteError") }
+                    Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("nutrition.noteError")
                 }
             }
             .scrollContentBackground(.hidden).background(Color.exBackground)
@@ -41,6 +45,8 @@ struct NutritionDayNotesView: View {
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
             }
         }
+        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
+        .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(draft.hasChanges)
         .sheet(isPresented: $discarding) {
             NutritionConfirmation(title: "Discard this note?", message: "Your unsaved note changes will be discarded.",
@@ -67,9 +73,10 @@ struct NutritionCopyView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Copy from") {
-                    Text("\(draft.sourceMeal ?? "All meals") · \(draft.source.description)")
+            ExScreen {
+                ExCard {
+                    ExEyebrow("Copy from", color: .exPrimary)
+                    Text("\(draft.sourceMeal ?? "All meals") · \(NutritionFormat.day(draft.source, timeZone: timeZone))").font(.exH3)
                     ForEach(draft.entries) { entry in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.food.name).font(.headline)
@@ -77,7 +84,8 @@ struct NutritionCopyView: View {
                         }.fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                Section("Destination") {
+                ExCard {
+                    ExSectionHeading("Destination")
                     DatePicker("Copy to date", selection: Binding(
                         get: { NutritionFormat.pickerDate(draft.target, timeZone: timeZone) },
                         set: { draft.target = LocalDate($0, in: timeZone) }), displayedComponents: .date)
@@ -91,12 +99,12 @@ struct NutritionCopyView: View {
                         .foregroundStyle(.secondary)
                 }
                 if let error = draft.error {
-                    Section { Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("nutrition.copyError") }
+                    Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("nutrition.copyError")
                 }
-                Section {
+                Group {
                     Button("Copy \(draft.entries.count) \(draft.entries.count == 1 ? "entry" : "entries")") {
                         if draft.copy() != nil { Task { await workspace.synchronize() }; dismiss() }
-                    }.disabled(draft.entries.isEmpty || draft.completed)
+                    }.buttonStyle(ExActionStyle()).disabled(draft.entries.isEmpty || draft.completed)
                     .accessibilityIdentifier("nutrition.copyConfirm")
                 }
             }

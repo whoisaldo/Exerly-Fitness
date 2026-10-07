@@ -4,6 +4,18 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testDiaryKeepsReviewedTargetsUntilACorePlanExistsAndNeverBorrowsAnotherDay() throws {
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        let reviewed = SummaryTargetsDTO(calories: 2187, proteinG: 131.4, carbsG: 252.7, fatG: 68.2, fiberG: nil, waterMl: nil)
+        let shown = NutritionFormat.displayTargets(current: nil, saved: reviewed, savedDate: date.description, on: date)
+        XCTAssertEqual(shown, DailyTargets(energy: 2187, protein: 131.4, fat: 68.2, carbohydrate: 252.7))
+        XCTAssertNil(NutritionFormat.displayTargets(current: nil, saved: reviewed, savedDate: "2026-10-05", on: date))
+        let incomplete = SummaryTargetsDTO(calories: 2187, proteinG: nil, carbsG: 252.7, fatG: 68.2, fiberG: nil, waterMl: nil)
+        XCTAssertNil(NutritionFormat.displayTargets(current: nil, saved: incomplete, savedDate: date.description, on: date))
+        let current = DailyTargets(energy: 2000, protein: 120, fat: 60, carbohydrate: 245)
+        XCTAssertEqual(NutritionFormat.displayTargets(current: current, saved: reviewed, savedDate: date.description, on: date), current)
+    }
+
     func testEditingAnEntryKeepsItsVolumeLabelAndEstimatedDensity() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))

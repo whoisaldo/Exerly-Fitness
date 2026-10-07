@@ -31,9 +31,10 @@ struct NutritionFoodPicker: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Button("Enter a food label", systemImage: "square.and.pencil") { creating = true }
+            ExScreen {
+                ExCard {
+                    ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimary)
+                    Button { creating = true } label: { ExNavigationLabel(title: "Enter a food label", icon: "square.and.pencil") }
                         .accessibilityIdentifier("nutrition.createFood")
                     NavigationLink {
                         NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
@@ -41,26 +42,23 @@ struct NutritionFoodPicker: View {
                             onLogged()
                             dismiss()
                         }
-                    } label: { Label("Scan or enter a barcode", systemImage: "barcode.viewfinder") }
+                    } label: { ExNavigationLabel(title: "Scan or enter a barcode", icon: "barcode.viewfinder") }
                     .accessibilityIdentifier("nutrition.barcode")
-                } footer: {
-                    Text("Adding to \(meal) · \(date.description). Saved foods work offline.")
                 }
                 if !favorites.isEmpty {
-                    Section("Favorites") { ForEach(favorites) { foodRow($0) } }
+                    foodGroup("Favorites", foods: favorites)
                 }
                 if !recents.isEmpty {
-                    Section("Recently logged") { ForEach(recents) { foodRow($0) } }
+                    foodGroup("Recently logged", foods: recents)
                 }
                 if !otherSaved.isEmpty {
-                    Section("Saved foods") { ForEach(otherSaved) { foodRow($0) } }
+                    foodGroup("Saved foods", foods: otherSaved)
                 }
                 databaseResults
                 if query.isEmpty && favorites.isEmpty && recents.isEmpty && otherSaved.isEmpty {
-                    Section {
-                        Text("Your food library is empty. Enter a label, scan a barcode, or search the food database.")
-                            .foregroundStyle(.secondary)
-                    }
+                    ExEmptyState(icon: "magnifyingglass", title: "Find your first food",
+                                 message: "Search above, scan a barcode, or enter the details from a label.",
+                                 action: "Enter a food label") { creating = true }
                 }
             }
             .scrollContentBackground(.hidden).background(Color.exBackground)
@@ -92,14 +90,19 @@ struct NutritionFoodPicker: View {
 
     @ViewBuilder private var databaseResults: some View {
         if search.isLoading {
-            Section("Food database") { ProgressView("Searching…") }
+            ExCard {
+                ExEyebrow("Food database")
+                ProgressView("Searching…")
+            }
         } else if let error = search.error {
-            Section("Food database") {
+            ExCard {
+                ExEyebrow("Food database")
                 Text(error).foregroundStyle(Color.exError)
                 Button("Try search again") { Task { await search.search(query) } }
             }
         } else if let request = search.request {
-            Section("Food database") {
+            ExCard {
+                ExEyebrow("Food database")
                 if let result = search.result, !result.foods.isEmpty {
                     ForEach(result.foods) { foodRow($0) }
                     Text(result.attribution).font(.footnote).foregroundStyle(.secondary)
@@ -112,7 +115,7 @@ struct NutritionFoodPicker: View {
                 }
             }
         } else if !query.isEmpty {
-            Section {
+            ExCard {
                 Button("Search the food database") { hideKeyboard(); Task { await search.search(query) } }
                 Text("Submit a search to look beyond saved foods.").font(.footnote).foregroundStyle(.secondary)
             }
@@ -124,12 +127,21 @@ struct NutritionFoodPicker: View {
             hideKeyboard()
             selectedFood = food
         } label: {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(food.name).font(.headline).foregroundStyle(Color.exTextPrimary)
-                if let brand = food.brand { Text(brand).foregroundStyle(Color.exTextSecondary) }
-                Text(NutritionFormat.source(food.source)).font(.caption).foregroundStyle(Color.exTextSecondary)
-            }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
+            NutritionFoodRow(food: food)
+
         }.accessibilityIdentifier("nutrition.food.\(food.id)")
+    }
+
+    private func foodGroup(_ title: String, foods: [ExerlyCore.Food]) -> some View {
+        VStack(alignment: .leading, spacing: ExSpacing.item) {
+            ExSectionHeading(title)
+            ExCard {
+                ForEach(foods) { food in
+                    foodRow(food)
+                    if food.id != foods.last?.id { Divider().overlay(Color.exBorder.opacity(0.3)) }
+                }
+            }
+        }
     }
 
     private func matches(_ food: ExerlyCore.Food) -> Bool {
@@ -148,8 +160,7 @@ struct NutritionFoodPicker: View {
             let saved = workspace.nutrition.food(snapshot.foodID)
             guard saved?.archivedAt == nil else { return nil }
             let last = workspace.nutrition.entries.last { $0.food.foodID == snapshot.foodID }
-            let food = saved ?? ExerlyCore.Food(id: snapshot.foodID, name: snapshot.name, brand: snapshot.brand,
-                source: snapshot.source, per100g: snapshot.per100g, servings: last?.serving.map { [$0] } ?? [])
+            let food = saved ?? snapshot.foodForLogging(serving: last?.serving)
             return matches(food) ? food : nil
         }
     }

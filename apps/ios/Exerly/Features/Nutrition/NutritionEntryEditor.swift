@@ -35,13 +35,15 @@ struct NutritionEntryEditor: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
-                Form {
-                    Section {
-                        Text(draft.food.name).font(.title2.weight(.semibold))
+                ExScreen {
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        ExEyebrow(editing == nil ? "Add to your day" : "Logged food", color: .exPrimary)
+                        Text(draft.food.name).font(.exH2)
                             .fixedSize(horizontal: false, vertical: true)
                         if let brand = draft.food.brand { Text(brand).foregroundStyle(.secondary) }
                     }
-                    Section("Amount") {
+                    ExCard {
+                        if !draft.food.servings.isEmpty {
                         NutritionChoice(title: "Measure", value: draft.serving?.name ?? "Grams") {
                             Picker("Measure", selection: $draft.serving) {
                                 Text("Grams").tag(Serving?.none)
@@ -53,20 +55,27 @@ struct NutritionEntryEditor: View {
                         .onChange(of: draft.serving) { _, serving in
                             draft.amount = NutritionNumberField(serving == nil ? 100 : 1)
                         }
-                        NutritionNumberInput(title: draft.serving == nil ? "Amount (g)" : "Number of servings",
-                                             text: $draft.amount.text)
+                        }
+                        ExQuantityControl(title: draft.serving == nil ? "Amount (g)" : "Number of servings",
+                                          text: $draft.amount.text, step: draft.serving == nil ? 10 : 0.5,
+                                          presets: draft.serving == nil ? [50, 100, 150] : [0.5, 1, 2],
+                                          unit: draft.serving == nil ? "g" : "")
                             .focused($typing).accessibilityIdentifier("nutrition.amount")
                         if let serving = draft.serving {
                             Text("One \(serving.name): \(TrainingFormat.number(serving.grams)) g")
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    Section("Diary") {
-                        NutritionChoice(title: "Meal", value: draft.meal) {
-                            Picker("Meal", selection: $draft.meal) {
-                                ForEach(meals, id: \.self) { Text($0).tag($0) }
-                            }
-                        }.accessibilityIdentifier("nutrition.meal")
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
+                        ExSectionHeading("Meal")
+                        ExChoiceChips(values: meals, selection: $draft.meal) { $0 }
+                            .accessibilityIdentifier("nutrition.meal")
+                    }
+                    ExCard(accent: true) {
+                        ExEyebrow("This portion", color: .exPrimary)
+                        portion
+                    }
+                    ExCard {
                         DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
                             .accessibilityIdentifier("nutrition.entryDate")
                         DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
@@ -74,8 +83,8 @@ struct NutritionEntryEditor: View {
                         Text("Dates and times use \(timeZone.identifier). The diary date controls which day's totals include this food.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
-                    Section("This portion") { portion }
-                    Section("Source") {
+                    ExCard {
+                        DisclosureGroup("About this food") {
                         Text(NutritionFormat.source(draft.food.source))
                         if let volume = draft.food.volume {
                             if volume.assumed {
@@ -105,14 +114,15 @@ struct NutritionEntryEditor: View {
                         }
                         if let error = libraryActions.error { Text(error).foregroundStyle(Color.exError) }
                     }
+                    }
                     if !draft.errors.isEmpty || actions.error != nil {
-                        Section("Could not save") {
+                        ExCard {
                             ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
                             if let error = actions.error { Text(error).foregroundStyle(Color.exError) }
                         }.id("errors").accessibilityFocused($errorsFocused)
                     }
                     if editing != nil {
-                        Section {
+                        ExCard {
                             Button("Delete entry", role: .destructive) { typing = false; confirmation = .delete }
                                 .accessibilityIdentifier("nutrition.deleteEntry")
                         }
@@ -139,6 +149,7 @@ struct NutritionEntryEditor: View {
                     Button(editing == nil ? "Log" : "Save") {
                         typing = false
                         if let entry = draft.save() {
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
                             onSaved(entry)
                             Task { await workspace.synchronize() }
                             dismiss()
@@ -183,10 +194,10 @@ struct NutritionEntryEditor: View {
 
     @ViewBuilder private var portion: some View {
         if let amount = try? draft.preview() {
-            Text("\(TrainingFormat.number(amount.grams)) g").monospacedDigit()
-            NutritionAmountsView(amounts: amount.nutrients)
-            Text("Not reported means the food has no value for that nutrient; it does not mean zero.")
-                .font(.footnote).foregroundStyle(.secondary)
+            NutritionDailySummary(amounts: amount.nutrients, targets: nil, showHeading: false, showTargetNote: false)
+            DisclosureGroup("All portion nutrients") { NutritionAmountsView(amounts: amount.nutrients) }
+                .font(.exLabel)
+
         } else {
             Text("Enter a positive amount to preview its nutrition.").foregroundStyle(.secondary)
         }

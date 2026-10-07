@@ -4,12 +4,14 @@ import SwiftUI
 struct NutritionNumberInput: View {
     let title: String
     @Binding var text: String
+    var identifier = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).foregroundStyle(.secondary)
-            TextField("Unknown", text: $text).keyboardType(.decimalPad)
-                .accessibilityLabel(title).monospacedDigit()
+            Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+            TextField("Unknown", text: $text).keyboardType(.decimalPad).font(.exStatMedium)
+                .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+                .accessibilityLabel(title).accessibilityIdentifier(identifier)
         }
     }
 }
@@ -43,6 +45,7 @@ struct NutritionConfirmation: View {
     var destructive = false
     let perform: () -> Void
     let cancel: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NavigationStack {
@@ -61,7 +64,10 @@ struct NutritionConfirmation: View {
                     Button(cancelLabel, action: cancel).accessibilityIdentifier("nutrition.confirmCancel")
                 }
             }
+            .background(Color.exBackground)
         }
+        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -88,7 +94,7 @@ struct NutritionAmountsView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(nutrient.name).foregroundStyle(.secondary)
             Text(amounts[nutrient].map { "\(TrainingFormat.number($0)) \(nutrient.unit.rawValue)" } ?? "Not reported")
-                .monospacedDigit()
+                .font(.exStatSmall)
         }.fixedSize(horizontal: false, vertical: true).accessibilityElement(children: .combine)
     }
 }
@@ -96,38 +102,73 @@ struct NutritionAmountsView: View {
 struct NutritionDailySummary: View {
     let amounts: NutrientAmounts
     let targets: DailyTargets?
+    var showHeading = true
+    var showTargetNote = true
     @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var energySize: CGFloat = 46
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(amounts[.energy].map { "\(TrainingFormat.number($0)) kcal" } ?? "No energy reported")
-                    .font(.title2.weight(.semibold)).monospacedDigit().foregroundStyle(Color.exPrimary)
-                if let targets { Text("Target \(TrainingFormat.number(targets.energy)) kcal").font(.caption).foregroundStyle(.secondary) }
+        VStack(alignment: .leading, spacing: ExSpacing.page) {
+            if showHeading { ExEyebrow("Daily nutrition", color: .exPrimary) }
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(amounts[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
+                    .font(.system(size: energySize, weight: .bold, design: .rounded)).foregroundStyle(Color.exTextPrimary)
+                    .contentTransition(.numericText())
+                Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
+            }.accessibilityElement(children: .combine)
+            if let targets {
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    ExProgressBar(value: amounts[.energy] ?? 0, total: targets.energy)
+                    Text("of \(targets.energy.formatted(.number.precision(.fractionLength(0)))) kcal target")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        .accessibilityIdentifier("nutrition.targetEnergy").accessibilityValue(String(targets.energy))
+                }
             }
-            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
-                : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.item))
             layout {
-                macro(.protein, target: targets?.protein)
-                macro(.carbohydrate, target: targets?.carbohydrate)
-                macro(.fat, target: targets?.fat)
+                macro(.protein, label: "Protein", target: targets?.protein, color: .exPrimary)
+                macro(.carbohydrate, label: "Carbs", target: targets?.carbohydrate, color: .exAccent)
+                macro(.fat, label: "Fat", target: targets?.fat, color: .exSecondary)
             }
-            if targets == nil {
-                Text("Nutrition targets have not been set for this date.").font(.footnote).foregroundStyle(.secondary)
+            if targets == nil && showTargetNote {
+                NavigationLink { ProgramView() } label: {
+                    Label("Review nutrition targets", systemImage: "target").font(.exCaption).frame(minHeight: 44)
+                }
+                Text("No targets set for this day").font(.exSmall).foregroundStyle(Color.exTextSecondary)
             }
         }.fixedSize(horizontal: false, vertical: true)
     }
 
-    private func macro(_ nutrient: Nutrient, target: Double?) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(nutrient.name).font(.caption).foregroundStyle(.secondary)
-            Text(amounts[nutrient].map { "\(TrainingFormat.number($0)) g" } ?? "Not reported").monospacedDigit()
-            if let target { Text("Target \(TrainingFormat.number(target)) g").font(.caption).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+    private func macro(_ nutrient: Nutrient, label: String, target: Double?, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Circle().fill(color).frame(width: 5, height: 5).accessibilityHidden(true)
+                Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+            Text(amounts[nutrient].map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) g" } ?? "—")
+                .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+            if let target {
+                ExProgressBar(value: amounts[nutrient] ?? 0, total: target, color: color)
+                Text("of \(target.formatted(.number.precision(.fractionLength(0)))) g").font(.exSmall)
+                    .foregroundStyle(Color.exTextSecondary)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .ignore)
+            .accessibilityLabel(nutrient.name)
+            .accessibilityValue(amounts[nutrient].map { "\(TrainingFormat.number($0)) grams" } ?? "Not reported")
     }
 }
 
 enum NutritionFormat {
+    /// Preserve reviewed account targets while the account has no Core plan.
+    /// This is a read-only field mapping; it never estimates or saves a target.
+    static func displayTargets(current: DailyTargets?, saved: SummaryTargetsDTO?, savedDate: String?, on date: LocalDate) -> DailyTargets? {
+        if let current { return current }
+        guard savedDate == date.description, let saved, let energy = saved.calories,
+              let protein = saved.proteinG, let fat = saved.fatG, let carbohydrate = saved.carbsG else { return nil }
+        return DailyTargets(energy: Double(energy), protein: protein, fat: fat, carbohydrate: carbohydrate)
+    }
+
     static func status(_ status: DayStatus) -> String {
         switch status {
         case .unlogged: "In progress"
@@ -148,15 +189,15 @@ enum NutritionFormat {
 
     static func portion(_ entry: FoodEntry) -> String {
         if let serving = entry.serving, let quantity = entry.quantity {
-            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(TrainingFormat.number(entry.grams)) g"
+            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(entry.grams.formatted(.number.precision(.fractionLength(0)))) g"
         }
-        return "\(TrainingFormat.number(entry.grams)) g"
+        return "\(entry.grams.formatted(.number.precision(.fractionLength(0)))) g"
     }
 
     static func day(_ date: LocalDate, timeZone: TimeZone) -> String {
         let formatter = DateFormatter()
         formatter.timeZone = timeZone
-        formatter.setLocalizedDateFormatFromTemplate("EEE MMM d yyyy")
+        formatter.setLocalizedDateFormatFromTemplate("EEE MMM d")
         return formatter.string(from: pickerDate(date, timeZone: timeZone))
     }
 

@@ -34,6 +34,8 @@ struct NutritionDiaryView: View {
     @State private var date: LocalDate
     @State private var destination: Destination?
     @StateObject private var actions: NutritionDiaryActions
+    @StateObject private var savedDay = DiaryViewModel()
+    @EnvironmentObject private var dailySync: SyncEngine
     @AccessibilityFocusState private var errorFocused: Bool
 
     private struct StatusReview {
@@ -67,63 +69,91 @@ struct NutritionDiaryView: View {
 
     var body: some View {
         ScrollViewReader { scroll in
-            List {
-                Section { dateNavigation }
+            ExScreen {
+                dateNavigation
+                ExCard(accent: true) {
+                    NutritionDailySummary(amounts: store.summary(on: date).totals, targets: displayTargets, showHeading: false)
+                }
+                HStack(spacing: ExSpacing.item) {
+                    dayStatus
+                    Spacer(minLength: 0)
+                    Menu {
+                        Button(store.day(date).notes.isEmpty ? "Add a note" : "Edit note", systemImage: "square.and.pencil") {
+                            destination = .notes(date)
+                        }.accessibilityIdentifier("nutrition.editNote")
+                        Button("Copy day", systemImage: "doc.on.doc") { destination = .copy(date, nil) }
+                            .disabled(store.entries(on: date).isEmpty).accessibilityIdentifier("nutrition.copyDay")
+                    } label: {
+                        Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                    }.accessibilityLabel("Diary actions").accessibilityIdentifier("nutrition.dayActions")
+                }
+                if !store.day(date).notes.isEmpty {
+                    Button { destination = .notes(date) } label: {
+                        Label(store.day(date).notes, systemImage: "text.alignleft")
+                            .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }.buttonStyle(.plain).accessibilityLabel("Edit note, \(store.day(date).notes)")
+                }
+                if dailySync.attentionCount > 0 {
+                    NavigationLink { SyncIssuesView() } label: {
+                        ExNavigationLabel(title: "Review changes", icon: "arrow.triangle.2.circlepath",
+                                          detail: "Activity or body measurements changed on another device")
+                    }.accessibilityLabel("Review changes")
+                }
                 if let error = actions.error {
-                    Section {
+                    ExCard {
                         Text(error).foregroundStyle(Color.exError).accessibilityFocused($errorFocused)
                         Button("Dismiss message") { actions.clearError() }
                     }.id("errors")
                 }
                 if let deleted = actions.deleted {
-                    Section {
-                        Text("Removed \(deleted.food.name) from \(deleted.meal), \(deleted.date.description).")
+                    ExCard {
+                        Label("Removed \(deleted.food.name)", systemImage: "trash")
                         Button("Undo food deletion") {
                             if actions.undoDeletion() { Task { await workspace.synchronize() } }
-                        }.accessibilityIdentifier("nutrition.undoDelete")
+                        }.accessibilityIdentifier("nutrition.undoDelete").buttonStyle(ExActionStyle(secondary: true))
                     }
                 }
-                Section("Logged nutrition") {
-                    NutritionDailySummary(amounts: store.summary(on: date).totals, targets: store.targets(on: date))
-                    DisclosureGroup("All nutrients") { NutritionAmountsView(amounts: store.summary(on: date).totals) }
-                    Text("Totals include only nutrients reported by each food. A missing value does not mean zero.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-                Section("Logging status") {
-                    Menu {
-                        ForEach(DayStatus.allCases, id: \.self) { status in
-                            Button(NutritionFormat.status(status)) {
-                                actions.clearError()
-                                destination = .status(StatusReview(desired: status, day: store.day(date), entries: store.entries(on: date)))
-                            }.accessibilityIdentifier("nutrition.status.\(status.rawValue)")
+                if store.entries(on: date).isEmpty {
+                    ExEmptyState(icon: "fork.knife", title: "Your day starts here",
+                                 message: "Find a food, scan a label, or log one of your own.", action: "Add your first food") {
+                        destination = .add(date, "Breakfast")
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
+                        ExSectionHeading("Meals", detail: "\(store.entries(on: date).count) logged")
+                        ForEach(meals, id: \.self) { meal in
+                            if !store.entries(on: date).filter({ $0.meal == meal }).isEmpty { mealSection(meal) }
                         }
-                    } label: {
-                        Label(NutritionFormat.status(store.day(date).status), systemImage: "checklist")
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }.accessibilityIdentifier("nutrition.dayStatus")
-                    Text(NutritionFormat.statusDescription(store.day(date).status)).font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
-                ForEach(meals, id: \.self) { mealSection($0) }
-                Section("Day note") {
-                    if !store.day(date).notes.isEmpty { Text(store.day(date).notes).fixedSize(horizontal: false, vertical: true) }
-                    Button(store.day(date).notes.isEmpty ? "Add a note" : "Edit note") { destination = .notes(date) }
-                        .accessibilityIdentifier("nutrition.editNote")
+            if let engine = workspace.sync {
+                switch engine.state {
+                case .offline:
+                    Label("Saved on this device · Offline", systemImage: "wifi.slash").font(.exCaption)
+                case .failed:
+                    NavigationLink("Some changes could not sync") { AccountSyncView(workspace: workspace) }.font(.exCaption)
+                case .syncing: ProgressView("Syncing…").font(.exCaption)
+                case .idle: EmptyView()
                 }
-                Section {
-                    Button("Copy this day's food log", systemImage: "doc.on.doc") { destination = .copy(date, nil) }
-                        .disabled(store.entries(on: date).isEmpty).accessibilityIdentifier("nutrition.copyDay")
-                    NavigationLink("Food and meal suggestions") { AgentReviewView(workspace: workspace, unit: unit) }
-                    NavigationLink("Backup and sync") { AccountSyncView(workspace: workspace) }
+            }
+                ExCard {
+                    DisclosureGroup("All nutrients") {
+                        NutritionAmountsView(amounts: store.summary(on: date).totals)
+                        Text("Totals use reported nutrients. Missing values do not mean zero.")
+                            .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }.font(.exBodyMedium)
                     if let calendarDate = CalendarDay(rawValue: date.description) {
-                        NavigationLink("Activity, sleep and water") {
+                        NavigationLink {
                             HomeView(refreshToken: 0, initialDate: calendarDate, healthOnly: true)
-                        }.accessibilityIdentifier("nutrition.dailyHealth")
+                        } label: { ExNavigationLabel(title: "Activity, sleep & water", icon: "heart.text.clipboard") }
+                            .accessibilityIdentifier("nutrition.dailyHealth")
+                    }
+                    NavigationLink { AgentReviewView(workspace: workspace, unit: unit) } label: {
+                        ExNavigationLabel(title: "Food & meal suggestions", icon: "tray")
                     }
                 }
             }
-            .listStyle(.insetGrouped).scrollContentBackground(.hidden).background(Color.exBackground)
             .navigationTitle("Diary").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -142,39 +172,63 @@ struct NutritionDiaryView: View {
         }
         .sheet(item: $destination) { destination in sheet(destination) }
         .task { await workspace.synchronize() }
+        .task(id: date.description) {
+            if let day = CalendarDay(rawValue: date.description) { await savedDay.load(for: day) }
+        }
+    }
+
+    private var displayTargets: DailyTargets? {
+        NutritionFormat.displayTargets(current: store.targets(on: date), saved: savedDay.summary?.targets,
+                                       savedDate: savedDay.summary?.date, on: date)
     }
 
     private var store: NutritionStore { workspace.nutrition }
 
     private var dateNavigation: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button { destination = .date } label: {
-                Text(NutritionFormat.day(date, timeZone: timeZone)).font(.headline)
-                    .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
-            }.accessibilityLabel("Diary date, \(NutritionFormat.day(date, timeZone: timeZone))")
-            HStack {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            HStack(spacing: ExSpacing.tight) {
                 Button { date = date.adding(days: -1) } label: {
                     Image(systemName: "chevron.left").frame(width: 44, height: 44)
                 }.accessibilityLabel("Previous day")
-                Spacer()
-                Button("Today") { date = LocalDate(Date(), in: timeZone) }.frame(minHeight: 44)
-                Spacer()
+                Spacer(minLength: 0)
+                Button { destination = .date } label: {
+                    VStack(spacing: 2) {
+                        Text(date == LocalDate(Date(), in: timeZone) ? "Today" : NutritionFormat.day(date, timeZone: timeZone))
+                            .font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                        if date == LocalDate(Date(), in: timeZone) {
+                            Text(NutritionFormat.day(date, timeZone: timeZone)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }
+                    }.fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.center)
+                }.accessibilityLabel("Diary date, \(NutritionFormat.day(date, timeZone: timeZone))")
+                    .accessibilityIdentifier("diary.selected-day").accessibilityValue(date.description)
+                Spacer(minLength: 0)
                 Button { date = date.adding(days: 1) } label: {
                     Image(systemName: "chevron.right").frame(width: 44, height: 44)
                 }.accessibilityLabel("Next day")
-            }.buttonStyle(.borderless)
-            if let engine = workspace.sync {
-                switch engine.state {
-                case .offline:
-                    Label("Offline. Food is saved on this device.", systemImage: "wifi.slash").font(.footnote)
-                case .failed:
-                    NavigationLink("Some changes could not sync") { AccountSyncView(workspace: workspace) }
-                        .font(.footnote)
-                case .syncing: ProgressView("Syncing…").font(.footnote)
-                case .idle: EmptyView()
-                }
+            }.buttonStyle(.plain).foregroundStyle(Color.exPrimary)
+            if date != LocalDate(Date(), in: timeZone) {
+                Button("Back to today") { date = LocalDate(Date(), in: timeZone) }.font(.exCaption).frame(minHeight: 44)
             }
+
         }
+    }
+
+    private var dayStatus: some View {
+        Menu {
+            ForEach(DayStatus.allCases, id: \.self) { status in
+                Button(NutritionFormat.status(status)) {
+                    actions.clearError()
+                    destination = .status(StatusReview(desired: status, day: store.day(date), entries: store.entries(on: date)))
+                }.accessibilityIdentifier("nutrition.status.\(status.rawValue)")
+            }
+        } label: {
+            HStack(spacing: ExSpacing.item) {
+                Image(systemName: store.day(date).status == .complete ? "checkmark.circle.fill" : "circle.dotted")
+                    .foregroundStyle(Color.exPrimary)
+                Text(NutritionFormat.status(store.day(date).status)).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                Image(systemName: "chevron.down").font(.caption2).foregroundStyle(Color.exTextMuted)
+            }.frame(minHeight: 44).contentShape(Rectangle())
+        }.accessibilityIdentifier("nutrition.dayStatus")
     }
 
     private var meals: [String] {
@@ -185,26 +239,36 @@ struct NutritionDiaryView: View {
 
     private func mealSection(_ meal: String) -> some View {
         let entries = store.entries(on: date).filter { $0.meal == meal }
-        return Section(meal) {
-            if entries.isEmpty { Text("Nothing logged").foregroundStyle(.secondary) }
+        return ExCard {
+            HStack {
+                ExEyebrow(meal, color: .exPrimary)
+                Spacer()
+                Menu {
+                    Button("Copy \(meal)", systemImage: "doc.on.doc") { destination = .copy(date, meal) }
+                } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }
+                    .accessibilityLabel("\(meal) actions")
+            }
             ForEach(entries) { entry in
                 Button { actions.clearError(); destination = .edit(entry) } label: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(entry.food.name).font(.headline).foregroundStyle(Color.exTextPrimary)
-                        if let brand = entry.food.brand { Text(brand).foregroundStyle(Color.exTextSecondary) }
-                        Text(NutritionFormat.portion(entry)).foregroundStyle(Color.exTextSecondary)
-                        Text(entry.nutrients[.energy].map { "\(TrainingFormat.number($0)) kcal" } ?? "Energy not reported")
-                            .monospacedDigit().foregroundStyle(Color.exPrimary)
-                    }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
-                }.accessibilityIdentifier("nutrition.entry.\(entry.id.uuidString)")
+                    HStack(alignment: .firstTextBaseline, spacing: ExSpacing.item) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(entry.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                            Text(NutritionFormat.portion(entry)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(entry.nutrients[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
+                                .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+                            Text("kcal").font(.exSmall).foregroundStyle(Color.exTextSecondary)
+                        }
+                    }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("nutrition.entry.\(entry.id.uuidString)")
             }
             Button("Add food to \(meal)", systemImage: "plus") {
                 actions.clearError()
                 destination = .add(date, meal)
-            }.accessibilityIdentifier("nutrition.add.\(meal.lowercased())")
-            if !entries.isEmpty {
-                Button("Copy \(meal)", systemImage: "doc.on.doc") { destination = .copy(date, meal) }
-            }
+            }.font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("nutrition.add.\(meal.lowercased())")
         }
     }
 
@@ -216,13 +280,13 @@ struct NutritionDiaryView: View {
                                 timeZone: timeZone, actions: actions) {}
         case .edit(let entry):
             NutritionEntryEditor(workspace: workspace,
-                food: ExerlyCore.Food(id: entry.food.foodID, name: entry.food.name, source: entry.food.source, per100g: entry.food.per100g),
+                food: entry.food.foodForLogging(serving: entry.serving),
                 date: entry.date, meal: entry.meal, timeZone: timeZone, actions: actions, editing: entry) { _ in }
-        case .notes(let date): NutritionDayNotesView(workspace: workspace, date: date)
+        case .notes(let date): NutritionDayNotesView(workspace: workspace, date: date, timeZone: timeZone)
         case .copy(let date, let meal): NutritionCopyView(workspace: workspace, source: date, meal: meal, timeZone: timeZone)
         case .status(let review):
             NutritionConfirmation(title: "Mark this day as \(NutritionFormat.status(review.desired).lowercased())?",
-                                  message: "\(review.day.date) has \(review.entries.count) food \(review.entries.count == 1 ? "entry" : "entries"). \(NutritionFormat.statusDescription(review.desired)) Logged foods stay unchanged.",
+                                  message: "\(NutritionFormat.day(review.day.date, timeZone: timeZone)) has \(review.entries.count) food \(review.entries.count == 1 ? "entry" : "entries"). \(NutritionFormat.statusDescription(review.desired)) Logged foods stay unchanged.",
                                   confirm: "Set logging status") {
                 self.destination = nil
                 if actions.setStatus(review.desired, reviewed: review.day, entries: review.entries) {

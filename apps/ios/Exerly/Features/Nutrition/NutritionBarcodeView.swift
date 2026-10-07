@@ -12,6 +12,7 @@ struct NutritionBarcodeView: View {
     @StateObject private var search: NutritionSearchModel
     @StateObject private var camera = CameraCaptureController()
     @State private var code = ""
+    @State private var symbology: AccountAPI.BarcodeSymbology?
     @State private var cameraAllowed = false
     @State private var cameraMessage: String?
     @State private var selectedFood: ExerlyCore.Food?
@@ -35,76 +36,83 @@ struct NutritionBarcodeView: View {
     }
 
     var body: some View {
-        List {
+        ExScreen {
             if cameraAllowed {
-                Section {
-                    CameraPreview(controller: camera).frame(height: 240)
-                        .accessibilityLabel("Camera barcode viewfinder")
-                    Text("Center the barcode in the frame. Tap the viewfinder to focus.")
-                    Button(camera.torchOn ? "Turn flashlight off" : "Turn flashlight on") { camera.toggleTorch() }
+                CameraPreview(controller: camera).frame(height: 240)
+                    .clipShape(RoundedRectangle(cornerRadius: ExRadius.card))
+                    .accessibilityLabel("Camera barcode viewfinder")
+                HStack {
+                    Text("Center the barcode. Tap to focus.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    Spacer()
+                    Button(camera.torchOn ? "Turn flashlight off" : "Turn flashlight on", systemImage: camera.torchOn ? "flashlight.on.fill" : "flashlight.off.fill") { camera.toggleTorch() }
+                        .labelStyle(.iconOnly).frame(width: 44, height: 44)
                 }
             } else {
-                Section {
-                    Text("Camera unavailable. Enter the barcode digits below or search by name.")
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    ExEyebrow("Food lookup", color: .exPrimary)
+                    Text("Find it by barcode").font(.exH2)
+                    Text("Enter the digits below. You can also search by name or enter the label.").font(.exBody).foregroundStyle(Color.exTextSecondary)
                     if AVCaptureDevice.authorizationStatus(for: .video) == .denied {
                         Button("Open camera settings") {
                             if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-                        }
+                        }.frame(minHeight: 44)
                     }
                 }
             }
-            Section("Barcode") {
-                TextField("Barcode digits", text: $code).keyboardType(.numberPad).focused($typing)
+            ExCard {
+                ExSectionHeading("Barcode")
+                TextField("Barcode digits", text: $code).keyboardType(.numberPad).focused($typing).font(.exStatSmall)
+                    .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                     .accessibilityIdentifier("nutrition.barcodeDigits")
-                Button("Look up barcode") { lookup() }
+                    .onChange(of: code) { _, _ in if typing { symbology = nil } }
+                if code.filter(\.isNumber).count == 8 {
+                    ExChoiceChips(values: [AccountAPI.BarcodeSymbology?.none, .ean8, .upcE], selection: $symbology) {
+                        $0 == .ean8 ? "EAN-8" : $0 == .upcE ? "UPC-E" : "Choose format"
+                    }
+                    Text("Eight-digit barcodes need their format. Scan it with the camera if you're unsure.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                Button("Look up barcode") { lookup() }.buttonStyle(ExActionStyle())
                     .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || search.isLoading)
                     .accessibilityIdentifier("nutrition.lookupBarcode")
-                if let message = cameraMessage ?? camera.error { Text(message).foregroundStyle(.secondary) }
+                if let message = cameraMessage ?? camera.error { Text(message).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
             }
-            if search.isLoading {
-                Section { ProgressView("Looking up barcode…") }
-            } else if let error = search.error {
-                Section("Lookup unavailable") { Text(error).foregroundStyle(Color.exError) }
+            if search.isLoading { ProgressView("Looking up barcode…") }
+            else if let error = search.error {
+                ExCard { Text("Lookup unavailable").font(.exH3); Text(error).foregroundStyle(Color.exError) }
             } else if search.request != nil {
-                Section("Result") {
+                ExCard {
                     if let result = search.result, !result.foods.isEmpty {
+                        ExSectionHeading("Found your food")
                         ForEach(result.foods) { food in
-                            Button { selectedFood = food } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(food.name).font(.headline).foregroundStyle(Color.exTextPrimary)
-                                    if let brand = food.brand { Text(brand).foregroundStyle(Color.exTextSecondary) }
-                                    Text("Review amount and log").font(.callout)
-                                }.fixedSize(horizontal: false, vertical: true)
-                            }.accessibilityIdentifier("nutrition.barcodeFood")
+                            Button { selectedFood = food } label: { NutritionFoodRow(food: food) }
+                                .accessibilityIdentifier("nutrition.barcodeFood")
                         }
-                        Text(result.attribution).font(.footnote).foregroundStyle(.secondary)
+                        Text(result.attribution).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     } else {
+                        Text("Not in the database yet").font(.exH2)
                         Text("No food was found for this barcode. Enter its label or search by name.")
                             .accessibilityIdentifier("nutrition.barcodeNotFound")
                     }
                 }
             }
-            Section {
-                Button("Enter a food label") { camera.stop(); creating = true }
+            Button("Enter a food label") { camera.stop(); creating = true }.buttonStyle(ExActionStyle(secondary: true))
+            HStack {
                 Button("Scan again") {
-                    lookupTask?.cancel()
-                    search.clear()
-                    cameraMessage = nil
+                    lookupTask?.cancel(); search.clear(); cameraMessage = nil
                     if cameraAllowed { camera.resumeScanning() }
-                }
-                Button("Search by name") { dismiss() }
-            }
+                }.frame(minHeight: 44)
+                Spacer()
+                Button("Search by name") { dismiss() }.frame(minHeight: 44)
+            }.font(.exLabel)
         }
-        .scrollContentBackground(.hidden).background(Color.exBackground)
         .navigationTitle("Scan barcode").navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } } }
         .task { await checkCameraPermission() }
         .onChange(of: camera.detected) { _, detected in
             guard let detected else { return }
             code = detected.value
-            if detected.symbology == "upce" {
-                cameraMessage = "Enter the full UPC digits for this compact barcode, or search by name."
-            } else { lookup() }
+            symbology = AccountAPI.BarcodeSymbology(rawValue: detected.symbology)
+            lookup(format: symbology)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await checkCameraPermission() } } else { camera.stop() }
@@ -123,13 +131,14 @@ struct NutritionBarcodeView: View {
         })
     }
 
-    private func lookup() {
+    private func lookup(format: AccountAPI.BarcodeSymbology? = nil) {
         typing = false
         camera.stop()
         cameraMessage = nil
         lookupTask?.cancel()
         let digits = code
-        lookupTask = Task { await search.lookup(digits) }
+        let format = format ?? symbology
+        lookupTask = Task { await search.lookup(digits, symbology: format) }
     }
 
     private func checkCameraPermission() async {

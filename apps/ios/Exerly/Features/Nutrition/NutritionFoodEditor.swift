@@ -19,37 +19,40 @@ struct NutritionFoodEditor: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
-                Form {
-                    Section("Food") {
-                        TextField("Food name", text: $draft.name, axis: .vertical)
+                ExScreen {
+                    ExCard {
+                        ExEyebrow("Food label", color: .exPrimary)
+                        TextField("Food name", text: $draft.name, axis: .vertical).font(.exH2)
                             .focused($typing).accessibilityIdentifier("nutrition.foodName")
                         TextField("Brand, optional", text: $draft.brand, axis: .vertical).focused($typing)
                         Toggle("Favorite", isOn: $draft.favorite)
                     }
-                    Section {
-                        NutritionChoice(title: "Label amounts", value: draft.basis.rawValue) {
-                            Picker("Label amounts", selection: $draft.basis) {
-                                ForEach(NutritionFoodDraft.Basis.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                            }
-                        }.accessibilityIdentifier("nutrition.labelBasis")
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
+                        ExChoiceChips(values: NutritionFoodDraft.Basis.allCases, selection: $draft.basis) { $0.rawValue }
+                            .accessibilityIdentifier("nutrition.labelBasis")
                         if draft.basis == .perServing {
                             NutritionNumberInput(title: "Label serving weight (g)", text: $draft.labelGrams.text)
                                 .focused($typing).accessibilityIdentifier("nutrition.labelGrams")
                         }
-                        Text("Leave nutrients blank when the label does not report them. Enter 0 only when the label says zero.")
+                        Text("Blank means unknown. Use 0 only when the label says zero.")
                             .font(.footnote).foregroundStyle(.secondary)
-                    } header: { Text("Nutrition label") }
-                    Section("Energy and macros") {
-                        ForEach([Nutrient.energy, .protein, .carbohydrate, .fat], id: \.self) { nutrientField($0) }
                     }
-                    Section("More nutrients") {
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
+                        ExSectionHeading("Energy & macros")
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), alignment: .top)], alignment: .leading, spacing: ExSpacing.content) {
+                            ForEach([Nutrient.energy, .protein, .carbohydrate, .fat], id: \.self) { nutrientField($0) }
+                        }
+                    }
+                    ExCard {
+                        ExSectionHeading("More nutrients")
                         ForEach(Nutrient.Group.allCases.filter { $0 != .energy && $0 != .macros }, id: \.self) { group in
                             DisclosureGroup(NutritionFormat.group(group)) {
                                 ForEach(Nutrient.allCases.filter { $0.group == group }, id: \.self) { nutrientField($0) }
                             }.accessibilityIdentifier("nutrition.group.\(group.rawValue)")
                         }
                     }
-                    Section {
+                    ExCard {
+                        ExSectionHeading("Named servings")
                         ForEach($draft.servings) { $serving in
                             VStack(alignment: .leading, spacing: 12) {
                                 TextField("Serving name", text: $serving.name, axis: .vertical).focused($typing)
@@ -59,15 +62,13 @@ struct NutritionFoodEditor: View {
                         }
                         Button("Add named serving", systemImage: "plus") { draft.servings.append(NutritionServingFields()) }
                             .accessibilityIdentifier("nutrition.addServing")
-                    } header: { Text("Named servings") } footer: {
+
                         Text("For example, a cup weighing 80 g. You can always log by grams without a named serving.")
                     }
-                    Section {
-                        Text("The food stays in your library for later. Editing it does not change food you already logged.")
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Label edits apply to future entries. Previously logged food stays unchanged.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     if !draft.errors.isEmpty {
-                        Section("Could not save") {
+                        ExCard {
                             ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
                         }.id("errors").accessibilityFocused($errorsFocused)
                     }
@@ -88,6 +89,7 @@ struct NutritionFoodEditor: View {
                     Button("Save") {
                         typing = false
                         if let food = draft.save() {
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
                             onSaved(food)
                             Task { await workspace.synchronize() }
                             dismiss()
