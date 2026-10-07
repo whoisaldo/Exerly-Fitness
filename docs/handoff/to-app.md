@@ -1337,3 +1337,72 @@ Status: open (contract published). See design 019.
   disabled webhook should say why. Offer Delete
   (`deleteWebhook(id:)`) and, for a disabled one, Resume
   (`enableWebhook(id:)`). Revoking a token already stops its webhooks.
+
+## 2026-10-06: Design review against Ali's new bar (brief, "Design quality")
+
+Status: open (critique). I reviewed the newest captures:
+
+- A7 diary: `artifacts/nutrition/day-actions-hitarea-attachments`.
+- A7 food detail: `library-name-fixed-attachments`.
+- A6 Training: `Exerly-Fitness-app-programs/artifacts/programs/builder-live.png`
+  and `small-light-current.png`.
+- The references: `artifacts/design/references`.
+
+Most are test-journey captures, not the milestone set the brief asks for
+(primary screens, light and dark, default and accessibility sizes), so
+please produce that set. Against MacroFactor, Apple Fitness and Things 3,
+these screens fall short in the same ways:
+
+1. **No summary at the top.**
+   - The diary opens with a nutrient disclaimer and a "Logging status" card.
+     MacroFactor opens with the day's calories and macros against target.
+     Lead with a summary card: calories as a ring or bar against
+     `nutrition.targets(on:)`, and protein, fat and carbs as three small
+     bars, from `summary(on:)`.
+   - Training opens with a stock list of five navigation rows. Lead with the
+     next workout from `programs.nextWorkout(...)`: day, cycle, exercises and
+     one Start button. Programs, Observations and History move below it.
+2. **Repeated empty states.**
+   - "Nothing logged" plus "Add food to Breakfast/Lunch/…" in every meal is
+     exactly what the brief calls failing.
+   - Show a meal header with its total and a + button. Keep empty meals to
+     one line.
+   - Fill the empty space with `nutrition.suggestions(at: .now, timeZone:)`,
+     one tap each, as MacroFactor's "3 PM Picks" do.
+3. **Raw numbers.**
+   - "123.25 g" and "70.252 kcal" show storage precision. Show whole kcal,
+     grams to the nearest gram, macros as whole grams, in a shared rounded
+     number style.
+   - An entry should be one row: name, then amount below it in secondary
+     text, kcal on the right, and "33P · 7F · 0C" shorthand.
+4. **Machine dates and grammar.**
+   - "Note for 2026-10-06" and "2026-10-06 has 1 food entries" should read
+     "Today", or "Mon, 6 Oct", and "1 food".
+   - Use one date formatter and plural rules in the design system.
+5. **Sheets that are mostly empty.**
+   - Day note and the partial-log Confirm fill a whole screen for one field
+     or one button. Use a small detent.
+   - Day status works better as a segmented control or menu under the
+     summary, with undo, than as a confirmation sheet with a paragraph.
+6. **Everything looks like a link.**
+   - Purple text rows ("Add food to Dinner", "Log this food", "Archive
+     food") give primary and destructive actions the same weight.
+   - Food detail should lead with nutrition per serving, then one
+     prominent Log button with serving presets and a stepper, which
+     `NutritionStore.preview` backs.
+   - Favourite belongs as a star in the navigation bar. Edit and archive go
+     in a menu.
+7. **The offline banner** costs a third of the screen at accessibility
+   sizes (`small-light-current.png`), and a full-width bar at default. Make
+   it a compact status pill that wraps at large sizes, and keep it out of the
+   way of the first card.
+8. **No shared components yet.** Each screen is a stock List or Form with
+   different icon use (some rows have icons, some don't). The brief wants one
+   design system:
+   - cards, a progress ring, macro bars, meal chips, a quantity stepper and
+     empty states;
+   - type, spacing and number styles;
+   - Exerly's purple and pink on dark, which you kept.
+
+Logic will add anything a summary needs that Core doesn't expose yet; ask in
+`to-logic.md`.

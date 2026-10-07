@@ -3,6 +3,21 @@
 Owned by the logic agent; see "Two agents" in `docs/AGENT_BRIEF.md`. Records observed
 results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
+## Merge status
+
+Updated 2026-10-06 21:45 EDT. Unlanded commits are counted with `git cherry`
+against the integration branch.
+
+| Branch                                        | Unlanded | Last landed                                                     |
+| --------------------------------------------- | -------- | --------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 21:27 EDT, integration `3a010060`                    |
+| `main`                                        | –        | Integration merged 2026-10-06 21:34 EDT, `fc016093`; CI running |
+
+All other logic branches (`logic/uuid`, `logic/uuid2`, `logic/bridge`,
+`logic/landing`, `logic/pre-rebase`, `logic/next-prerebase*`, the old local
+`agent/logic`) were fully landed and deleted on 2026-10-06. The
+`/tmp/exerly-main-merge` worktree exists only for the `main` merge.
+
 ## Current milestone
 
 **L1: ExerlyCore training domain.** Done on 2026-10-06 and landed (`55903a9d`).
@@ -126,8 +141,8 @@ The API gained kinds and routes (`custom_metric`, `metric_entry`,
 `experiment`, `/v1/foods`, nutrition MCP tools), so redeploy staging when
 this lands.
 
-**On `agent/logic` after `778540cf`, waiting for A6 to land** (the app agent
-asked at 18:41 for integration to stay put until A6 is released):
+**Landed after A6 (`3a010060`), with the brief's new integration and design
+rules (`6b908a24`):**
 
 - Snapshots keep a food's volume basis (`FoodSnapshot.volume`), the first
   nutrition plan from the onboarding profile (`PlanBasis.formula`), and faster
@@ -142,18 +157,21 @@ asked at 18:41 for integration to stay put until A6 is released):
 - `food(barcode:symbology:)` for EAN-8 and UPC-E scans (app agent, 20:23).
 - M11 webhooks for agents (migration 0007, design 019, B11).
 
-The API gained `gym_profile`, session `slotID` checks and webhooks (migration
-0007), so redeploy staging when this lands.
+Staging was redeployed with migration 0007.
 
-**Merging into `main` is blocked on Ali** (QUESTIONS_FOR_ALI.md, 2026-10-06):
-production still runs the MongoDB API, and integration's needs
-`DATABASE_URL`.
+**`main`.** Ali asked on 2026-10-06 for integration to be merged into `main`
+at every milestone end and at least daily. Merged at `fc016093` (142 commits
+behind). Conflicts went to integration's side, keeping main's own work:
+dotenv 18, the Tailwind 4, Vite 8 and framer-motion 13 web toolchain, newer
+lint packages, and the Dependabot and workflow updates. Checked on the merged
+tree: lint, prettier, web typecheck and build, API tests (243) and the web e2e
+suite (67).
 
 ## Next three steps
 
-1. When A6 lands: rebase `logic/next`, run API, ExerlyCore, ExerlyTests, the
-   iOS build and live sync, land, redeploy staging, and mark the 18:32, 18:36,
-   18:41 and 20:23 inbox notes done.
+1. Confirm CI on `main` (`fc016093`) and production's state after the
+   DigitalOcean deploy. Then remove `/tmp/exerly-main-merge`, and mark the
+   18:32 inbox note's main merge done.
 2. Remaining logic for Beyond: recovery-aware weekly volume from sleep, HRV
    and resting heart rate (B05), and an MCP tool for program generation. The MacroFactor import waits on Ali's headers, and
    USDA on a key.
@@ -248,15 +266,20 @@ the app agent adds it to the project.
   and no personal data, ever.
 - Neon and DigitalOcean `DATABASE_URL` need Ali. Local Postgres work proceeds
   without them.
-- `main` has diverged from the integration branch: origin/main has Sideband
-  migration commits that the integration branch carries as different SHAs. A merge
-  to main needs care at the end of a milestone. Every push to main redeploys the
-  API, and production still runs Mongo, so don't merge a Postgres-only API to main
-  before Ali sets `DATABASE_URL`.
-- Production runs MongoDB on `main` today. The integration branch has no Mongo
-  driver, so merging it to `main` breaks the live API until Ali sets
-  `DATABASE_URL` (Neon) in DigitalOcean. Merge to main only after that, then check
-  `/api/health`.
+- Every push to `main` redeploys the API on DigitalOcean. Production ran the
+  MongoDB API until the 2026-10-06 merge; integration's API needs
+  `DATABASE_URL` (Neon). If it isn't set, the new deployment fails to start and
+  DigitalOcean keeps the previous one serving. Check `/api/health` after each
+  merge: version 2.0.0 with driver `postgres` means the new API is live.
+- `main` keeps Ali's Tailwind 4/Vite 8 web toolchain, which integration lacks.
+  Later merges keep it; integration's web code runs on it (the e2e suite
+  passed). Integration's rewritten web components still need the Tailwind 4
+  pass (`npx @tailwindcss/upgrade`, then a visual diff for the v4 traps in
+  memory) before they look as they did on Tailwind 3.
+- Since the 2026-10-06 merge, Deploy Web publishes integration's web app, which
+  signs in through `/login` and `/auth/token`. The old production API answers
+  404 to both, so web sign-in fails until the new API runs in production
+  (`DATABASE_URL`). The landing pages are unaffected.
 - Colima's default VM was started for container checks. Stop it with
   `colima stop default` when you're done.
 - Mapping MacroFactor's 22 muscle columns to Exerly's 21 regions needs a synthetic
@@ -265,7 +288,8 @@ the app agent adds it to the project.
 ## Resume exactly
 
 1. Read the brief, this ledger and `docs/handoff/to-logic.md`, and check
-   `git status` in `~/Desktop/Exerly-Fitness-logic` (branch `agent/logic`).
+   `git status` in `~/Desktop/Exerly-Fitness-logic` (branch `logic/next`,
+   pushed as `agent/logic`).
 2. Run `gh repo view sidebandstudio/Exerly-Fitness`.
 3. Review the app agent's commits since `55903a9d`:
    `git log 55903a9d..feat/mobile-production-foundations`.
@@ -275,12 +299,21 @@ the app agent adds it to the project.
    - ExerlyCore tests: `cd apps/ios/ExerlyCore && swift test`.
    - API tests: `npm test` in `apps/api`.
    - iOS build: `bash scripts/ios.sh build`.
-5. To land:
+5. To land (at most about 4 hours of finished work at a time):
    - Rebase onto `feat/mobile-production-foundations`.
-   - Run `git -C ~/Desktop/Exerly-Fitness merge --ff-only agent/logic`.
-   - Push with `DEVELOPER_DIR=... git push origin feat/mobile-production-foundations agent/logic`.
-     The pre-push hook runs eslint, prettier, the web typecheck, API tests and SwiftLint.
-6. Use only Logic scratch ports 39100-39199 and "Exerly Logic" simulators.
+   - Run `git -C ~/Desktop/Exerly-Fitness merge --ff-only logic/next`.
+   - Push with `DEVELOPER_DIR=... git push origin feat/mobile-production-foundations`,
+     then `logic/next:agent/logic`. The pre-push hook runs eslint, prettier, the
+     web typecheck, API tests and SwiftLint.
+   - Update the merge status table.
+6. To merge into `main` (each milestone end, and at least daily):
+   - In a temporary worktree from `origin/main`, merge
+     `origin/feat/mobile-production-foundations` with `--no-ff`.
+   - Run lint, prettier, the web typecheck and build, API tests, and the web
+     e2e suite on scratch ports with `PLAYWRIGHT_API_URL` set.
+   - Push to `main`, watch CI with `gh run list --branch main`, check
+     production's `/api/health`, then remove the worktree.
+7. Use only Logic scratch ports 39100-39199 and "Exerly Logic" simulators.
 
 ---
 
