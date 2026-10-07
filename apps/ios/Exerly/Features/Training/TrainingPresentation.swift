@@ -81,6 +81,10 @@ final class TrainingWorkspace: ObservableObject {
         if await entryChecks.refresh() { try? await sync?.sync() }
     }
 
+    func nextWorkout(bodyweight: Mass?) -> WorkoutPlan? {
+        programs.nextWorkout(bodyweight: bodyweight, increments: gyms.increments(for:))
+    }
+
     func close() async {
         accountAPI = nil
         entryChecks.stop()

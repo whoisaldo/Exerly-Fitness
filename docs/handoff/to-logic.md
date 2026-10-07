@@ -1501,3 +1501,61 @@ A13 is being cut from a fixed commit with barcode-first logging, guided setup
 and this builder. Its 59-method full UI gate will not hold integration. P02
 remains Partial for advanced options and physical checks. Please keep main
 current once the suite/build and deployment conditions permit it.
+
+## 2026-10-07 17:49 EDT: Gyms and available weights app slice
+
+Status: in progress (app); Core follow-up requested.
+
+GymStore is now wired to sync/export/proposals on integration 208ed075. The
+primary app work adds named gyms, explicit Use, archive/restore, unchanged
+mixed-unit inventories and gym-filtered exercise selection. Both workout
+preview and final start use the active gym increments. Three presentation
+tests pass; native checks are in progress. A fourth integration test checks
+32 kg standard versus the actual 32.5 kg dumbbell rack.
+
+T06 limitation for follow-up: GymProfile.increments(for:) uses twice the
+smallest plate but not finite combinations or available pair counts beyond
+zero. App copy therefore describes plate increments, not guaranteed loadable
+barbell totals. Please provide a Core recommendation contract for feasible
+barbell loads if that is needed before marking T06 Built. No app maths added.
+
+A13 remains fixed at 208ed075 while integration stays open. Signed/exported
+2610072129 passes identity/privacy/internal-only checks. Full 59-method UI
+gate is still running, including all hosted tests. Main still needs the
+landed beginner improvements; please merge after your review and CI checks.
+
+## 2026-10-07 18:28 EDT: A13 live, gym review requested
+
+Status: open (review and main merge requested).
+
+A13 build 2610072129 is VALID and IN_BETA_TESTING, one Ali tester and exactly
+one assigned build, with verified en-US notes. Source tag ios/internal-2610072129
+is pushed at 208ed075. Fixed full UI gate: all 59 methods accounted for,
+50 pass and nine context skips; 197 active hosted pass. Core 308/API 261 and
+device/archive checks pass. Setup and plan also pass light/dark/largest text.
+
+The upcoming gym slice passes light/dark native journeys and 201 active
+hosted tests; largest text is finishing. Please review the app code and
+artifacts/design/contact-review/gym-chips-light-01...05.png and
+gym-chips-dark-01...05.png in the primary app tree. All 30 captures inspected.
+The current gym is shown once, inventory is compact, explicit Use is separate
+from Save, and workout preview/final start both use Core gym increments.
+T05/T06 remain Partial for icons, per-workout overrides and exact plate
+combinations. Integration remains open. Please merge the passed integration
+into main and inspect CI, as required by the brief.
+
+## 2026-10-07 18:39 EDT: Gym slice passes; A14 next
+
+Status: open (Logic review and main merge).
+
+Final gym light and largest-text journeys pass, with unchanged mixed-unit
+inventory, archive/restore and synchronized export. 201 active hosted tests,
+Core 308, API 261 and device build pass. Dark gym and both program regressions
+pass. Review gym-final-headings-light, gym-final-ax-headings and
+gym-final-headings-primary-ax-capture in the app artifacts/design folder.
+All final captures inspected. Section headings now stack their detail at
+accessibility sizes, fixing the cramped inventory title. T05/T06 are Partial.
+
+The slice is landing now, followed by a fixed A14 full gate of 60 UI methods.
+No integration freeze. The next app slice uses your published quickAdd API.
+Please review and keep main current when the suite/build pass.

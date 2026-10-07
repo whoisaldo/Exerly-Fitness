@@ -13,6 +13,7 @@ struct ActiveWorkoutView: View {
     let store: TrainingStore
     let session: WorkoutSession
     let unit: MassUnit
+    var gym: GymProfile?
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var adding = false
     @State private var editing: SetEditorTarget?
@@ -97,7 +98,7 @@ struct ActiveWorkoutView: View {
             }
         }
         .sheet(isPresented: $adding) {
-            ExercisePickerView(store: store) { exercise in try store.addExercise(exercise.id) }
+            ExercisePickerView(store: store, onSelect: { exercise in try store.addExercise(exercise.id) }, gym: gym)
         }
         .sheet(item: $editing) { target in
             TrainingSetEditor(exercise: target.exercise, original: target.set, number: target.number, unit: unit) { updated, propagate in

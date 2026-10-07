@@ -105,8 +105,7 @@ final class TrainingPlanSetupModel: ObservableObject {
         defer { loadingPreferences = false }
         let cached = preferences.accepted ?? preferences.draft?.base
         if let cached { seed(cached) }
-        do { seed(try await preferences.savedSnapshot()) }
-        catch {
+        do { seed(try await preferences.savedSnapshot()) } catch {
             guard ownerIsActive(), !Task.isCancelled else { return }
             if cached == nil { preferenceMessage = "Saved setup couldn't load. You can choose your answers here, including offline." }
         }
@@ -138,8 +137,7 @@ final class TrainingPlanSetupModel: ObservableObject {
                                               equipmentSummary: answers.fullGym ? "Full gym" :
                                                 answers.equipment.map(TrainingPlanFormat.equipment).sorted().joined(separator: ", "))
             error = nil
-        } catch ProgramStore.StoreError.invalid(let problems) { error = problems.joined(separator: ". ") }
-        catch { self.error = "The plan couldn't be prepared. Your answers are still here. Try again." }
+        } catch ProgramStore.StoreError.invalid(let problems) { error = problems.joined(separator: ". ") } catch { self.error = "The plan couldn't be prepared. Your answers are still here. Try again." }
     }
 
     func revise() {
@@ -175,10 +173,18 @@ final class TrainingPlanSetupModel: ObservableObject {
 
 enum TrainingPlanFormat {
     static func goal(_ goal: ProgramGeneration.Goal) -> String {
-        switch goal { case .hypertrophy: "Build muscle"; case .strength: "Get stronger"; case .general: "Build a balanced routine" }
+        switch goal {
+        case .hypertrophy: "Build muscle"
+        case .strength: "Get stronger"
+        case .general: "Build a balanced routine"
+        }
     }
     static func experience(_ value: ProgramGeneration.Experience) -> String {
-        switch value { case .beginner: "New or starting again"; case .intermediate: "Training regularly"; case .advanced: "Experienced with structured plans" }
+        switch value {
+        case .beginner: "New or starting again"
+        case .intermediate: "Training regularly"
+        case .advanced: "Experienced with structured plans"
+        }
     }
     static func equipment(_ value: ExerlyCore.Equipment) -> String {
         switch value {

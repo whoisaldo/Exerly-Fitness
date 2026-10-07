@@ -42,9 +42,7 @@ private struct TrainingPlanSetupContent: View {
                         ExEyebrow("Question \(page + 1) of 3", color: .exPrimaryText)
                         ExProgressBar(value: Double(page + 1), total: 3)
                     }
-                    if page == 0 { goals }
-                    else if page == 1 { experienceAndTime }
-                    else { equipment }
+                    if page == 0 { goals } else if page == 1 { experienceAndTime } else { equipment }
                     if let error = model.error {
                         Label(error, systemImage: "exclamationmark.triangle")
                             .font(.exBody).foregroundStyle(Color.exError).accessibilityIdentifier("planSetup.error")
@@ -164,8 +162,7 @@ private struct TrainingPlanSetupContent: View {
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     ForEach([Muscle.chest, .lats, .midBack, .quads, .hamstrings, .glutes, .sideDelts, .rearDelts, .biceps, .triceps, .calves, .abs], id: \.self) { muscle in
                         Button {
-                            if model.answers.emphasis.contains(muscle) { model.answers.emphasis.remove(muscle) }
-                            else { model.answers.emphasis.insert(muscle) }
+                            if model.answers.emphasis.contains(muscle) { model.answers.emphasis.remove(muscle) } else { model.answers.emphasis.insert(muscle) }
                         } label: { choiceLabel(muscle.name, selected: model.answers.emphasis.contains(muscle)) }
                             .buttonStyle(.plain).accessibilityAddTraits(model.answers.emphasis.contains(muscle) ? .isSelected : [])
                     }
@@ -176,8 +173,7 @@ private struct TrainingPlanSetupContent: View {
 
     private func equipmentChoice(_ value: ExerlyCore.Equipment) -> some View {
         Button {
-            if model.answers.equipment.contains(value) { model.answers.equipment.remove(value) }
-            else { model.answers.equipment.insert(value) }
+            if model.answers.equipment.contains(value) { model.answers.equipment.remove(value) } else { model.answers.equipment.insert(value) }
         } label: { choiceLabel(TrainingPlanFormat.equipment(value), selected: model.answers.equipment.contains(value)) }
             .buttonStyle(.plain).accessibilityAddTraits(model.answers.equipment.contains(value) ? .isSelected : [])
             .accessibilityIdentifier("planSetup.equipment.\(value.rawValue)")

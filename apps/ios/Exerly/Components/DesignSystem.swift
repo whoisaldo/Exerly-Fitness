@@ -96,15 +96,19 @@ struct ExEyebrow: View {
 struct ExSectionHeading: View {
     let title: String
     var detail: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(_ title: String, detail: String? = nil) { self.title = title; self.detail = detail }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+        layout {
             Text(title).font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
-            Spacer(minLength: ExSpacing.small)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
             if let detail { Text(detail).font(.exLabel.weight(.medium)).foregroundStyle(Color.exTextSecondary) }
-        }.fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
     }
 }
 

@@ -214,8 +214,7 @@ struct NutritionBarcodeView: View {
     private var barcodeMissing: Bool { search.request != nil && !search.isLoading && search.error == nil && (search.result?.foods.isEmpty ?? true) }
 
     private func choose(_ food: ExerlyCore.Food) {
-        if let onPicked { onPicked(food); dismiss() }
-        else { selectedFood = food }
+        if let onPicked { onPicked(food); dismiss() } else { selectedFood = food }
     }
 
     private func lookup(format: AccountAPI.BarcodeSymbology? = nil, openMatch: Bool = false) {

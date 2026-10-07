@@ -2,24 +2,196 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 17:28 EDT.
+Current date 2026-10-07, updated 18:39 EDT.
 
 ## Merge status
 
-Integration is pushed at 584fefc0. Barcode-first logging landed at 30bc0aed;
-the eight-question setup landed at 584fefc0. A12 build 2610072011 remains live
-in Ali-only TestFlight from fixed 7f6ccf9e. The guided workout builder passes
-and is landing now; the next release combines these beginner milestones.
+Integration is pushed at 208ed075. Barcode-first logging landed at 30bc0aed,
+guided setup at 584fefc0, and the workout builder at 208ed075. A13 is fixed at
+208ed075 in the existing release worktree. Build 2610072129 passes the full 59-method gate and is live in Ali-only
+TestFlight. The fixed release source stayed independent of integration.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
-| `agent/app-nutrition`              | Guided workout builder passes and lands with this entry                                            | Setup landed/pushed 584fefc0, 17:17 EDT    |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
-| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed    |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                      |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed    |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted            |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted    |
+| `agent/app-nutrition`              | Gym inventory passed; landing now                                                                  | Guided plan landed/pushed 208ed075, 17:27 EDT |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                  |
+| `release/app-design`               | None; A13 fixed source, released                                                                   | Fixed 208ed075; live build 2610072129         |
+
+## Gym inventory ready to land, 2026-10-07 18:39 EDT
+
+The final largest-text gym journey passes in 522.041 seconds. All seven new
+captures were inspected: inventory headings now wrap at spaces, with the
+count below. The final light journey passes in 190.248 seconds and all 201
+active hosted tests pass, one credential skip. All eight light attachments
+and 16 primary/empty AX captures were inspected. The latter two opt-in tests
+pass in 47.347 and 67.060 seconds. Dark gym, manual-program and guided-plan
+regressions already pass. Core 308, API 261 and the final device build pass.
+
+SwiftLint is clean for the changed components and new gym code. Its first
+invocation omitted DEVELOPER_DIR and failed to load SourceKit; retry with the
+required Xcode 26.2 environment passes. This was a tool setup failure.
+
+The gallery includes the gym captures at http://100.80.149.7:39215. The public
+comparison is contact-review/a14-gym-reference.png. T05/T06 are Partial, with
+remaining feature/device gaps recorded. A14 notes are ready. Land this slice,
+then fix the release worktree at that commit for the full 60-method gate.
+Quick-add model/view, four presentation tests and design 030 are drafted but
+not registered in the project or part of this gym commit. Continue them after
+cutting the release. Main remains a982be2d; the Logic inbox requests its merge.
+
+## Gym accessibility correction, 2026-10-07 18:31 EDT
+
+The gym's largest-text journey passed in 506.477 seconds. All seven captures
+were inspected, exposing a real layout issue despite the pass: the inventory
+heading broke a word because the count occupied the same row. ExSectionHeading
+now stacks its detail under the title at accessibility sizes. Default sizes
+retain the horizontal layout. The current-gym explanation now says equipment
+settings to avoid implying exact finite plate combinations.
+
+A fresh largest-text gym run and default-light hosted/gym regression run are
+underway. The device build passes. The first primary AX capture invocation
+skipped both opt-in methods because its capture flag was missing; it provides
+no capture evidence. A corrected capture invocation is running on EBE. No
+simulator test claims VoiceOver or physical-device verification. The visual
+comparison a14-gym-reference.png has been generated and inspected.
+
+## A13 available and gym visual review, 2026-10-07 18:28 EDT
+
+A13 build 2610072129 uploaded at 18:18 EDT. Apple now reports VALID and
+IN_BETA_TESTING. Final verification confirms one tester, only this build, and
+exact en-US notes. A12 was detached after the new build became available.
+The pushed source tag is ios/internal-2610072129 at 208ed075. Notes describe
+workouts per week, not calendar scheduling. Metadata evidence is in the
+release tree at artifacts/nutrition/a13-internal-2610072129.json.
+
+The fixed gate covers all 59 declared UI methods once: 50 pass and nine
+context skips. All 197 active hosted tests pass, with one credential skip.
+Core 308, API 261 and the signed device/archive checks pass. Final selected
+setup and beginner captures were also inspected: a13-beginner-light has 14,
+a13-setup-dark has seven. No physical-device verification is claimed.
+
+Gym light passes all 201 active hosted tests, the gym journey and manual
+program lifecycle. Dark passes the gym and guided-plan journeys. The final
+device build passes. All 15 light and 15 dark captures were inspected,
+including regression screens. The current gym now appears once; available
+weights share a compact inventory; lb is the default and saved kg remains kg.
+MacroFactor's equipment reference offers denser summaries and presets.
+Exerly now keeps its first actions visible and its inventory compact. Icons,
+presets and per-workout overrides remain explicit parity gaps.
+
+The first largest-text attempt failed because the test queried a lazy result
+before scrolling it into view. The rerun reveals the result first and has
+passed that step. It is still completing archive/restore and export. The red
+attempt remains preserved. Finish this run and inspect its captures, then
+land the gym slice promptly and cut A14 from its fixed commit.
+
+## A13 visual review and gym corrections, 2026-10-07 18:09 EDT
+
+Fixed A13 group 1 passes all 15 UI methods. The added default-light primary
+and empty-state capture also passes. All 23 selected group-1 dark captures
+and all 16 default-light captures were inspected. Folders are a13-primary-dark
+and a13-primary-light. The original E/pulse identity, visible Scan action,
+summary-first diary, clear empty-training action and readable U.S. values hold
+on SE and the larger phone. The public comparisons recorded for A13 remain
+a13-barcode-reference.png and a13-workout-reference.png. MacroFactor still
+shows more choices at once; Exerly keeps the first logging actions visible.
+The gallery is updated and returns HTTP 200 at http://100.80.149.7:39215.
+The other fixed groups continue with no failures. No A13 upload yet.
+
+Gym verification exposed two test-helper issues. A native search field lives
+in the navigation bar and must not be scrolled below it. Checking its element
+type before existence then broke lazy off-screen controls such as Undo; the
+existence guard now comes first. These red/interrupted results are retained.
+The second light gym attempt also failed to turn off a gym filter reliably
+while searching. The UI now offers explicit At this gym and All exercises
+choices and dismisses the keyboard on search submission. The test checks the
+selected state, and leaves search before closing the library. Fresh matrix:
+gym-chips-light/dark/ax. The light group includes all 201 active hosted tests
+and manual program lifecycle; dark includes guided plan regression.
+
+Current gym renders once, mixed-unit weights share a compact inventory card,
+and required weight entry now says Enter weight instead of Unknown. Planned
+workouts name the current gym, allow changing it, and flag unavailable
+exercises without silently changing the saved program. Core still supplies
+every load recommendation. The updated device build passes.
+
+## Gym checks and fixed A13, 2026-10-07 17:55 EDT
+
+Core 308, API 261 and the gym device build pass. The SE run now passes all
+201 active hosted tests with one credential skip. Its gym journey continues.
+The EBE hosted attempt never launched a test host. Diagnostics stopped at
+PID 0 and wait_for_debugger, so it was interrupted and only that owned
+simulator was shut down and rebooted. No release simulator or service changed.
+The EBE attempt has no passing-test claim and failed to finalize its log.
+
+The second gym journey saved mixed units offline and restored the current gym
+after relaunch. It then exposed the shared reveal helper treating a visible
+navigation-bar search field as scroll content. That interrupted run's four
+captures were exported and all reviewed. The current-gym repetition and roomy
+weight cards visible there are already removed. The helper now recognizes a
+visible search field and prioritizes keyboard Done over sheet Done. A fresh
+light run includes all hosted tests and the whole gym journey.
+
+A13's fixed gate has 34 active UI methods passed so far and no test failures;
+remaining methods continue. A default-light primary/empty-screen capture on
+EBE is running from fixed 208ed075 in the release tree. Reserve that simulator
+until a13-primary-light finishes, then use it for final gym dark captures.
+The main release sims remain 7D, 02 and 718.
+
+## Gym inventory in progress, 2026-10-07 17:51 EDT
+
+The primary branch and integration both pushed 208ed075. The first own-branch
+push failed only because the working ledger was unformatted; formatting and
+retry passed the hooks. A13's signed archive and exported IPA pass source,
+identity, signature, privacy, HealthKit, Apple sign-in and internal-only checks.
+The fixed 59-method UI gate continues with no test failure seen so far.
+
+New primary source adds named gyms, explicit Use, archive/restore, mixed-unit
+inventories, filtered exercise selection, and active-gym workout recommendations.
+Four hosted gym tests pass, including 32 kg standard versus an available
+32.5 kg dumbbell, offline reopen without conversion, stale edits and sign-out.
+The full hosted run, native journey, Core/API suites and device build continue.
+Nothing from this gym slice is landed or released yet.
+
+First compile fixes were a nonexistent surface token, the keyboard helper's
+argument label, and registering the test source in the compact PBX test list.
+The first native attempt exposed a keyboard-dismissal problem on SE. Its
+screenshot is artifacts/programs/gym-first-live.png. That attempt was interrupted
+with SIGINT after capture; it is not a passing run. The name now has a keyboard
+action and dismisses on scroll/return. The helper prioritizes the numeric
+keypad's Done over a sheet's Done. The second native journey continues.
+
+Reviewed the public MacroFactor gym/weight screens. The initial Exerly design
+repeated the current gym and gave every weight a separate large card. Current
+gym now appears once and weights share a compact inventory card. Final captures
+still need review in default light/dark and largest text. New app source has
+no SwiftLint warning; existing Core-owned warnings remain outside this slice.
+
+Next: finish the native journey, run the final appearance matrix and all hosted
+checks, review captures, land a passing gym slice and retain A13's fixed source
+until its upload gate completes. The EBE full hosted run is taking unusually
+long to launch, so check its log before claiming it passed.
+
+## Fixed A13 running, 2026-10-07 17:29 EDT
+
+208ed075 is fast-forwarded and pushed to integration. The release worktree
+is fixed there and its tracked tree is clean. Its scripts are
+artifacts/nutrition/run-a13-verified-1/2/3.sh. They select all 59 UI methods
+exactly once; group 2 also runs every hosted test. Separate simulator and
+fixture pairs are 7D/39225, 02/39222 and 718/39226. Do not use those in the
+primary tree until their release runs finish. Primary 39/39224 and EBE/39228
+remain available. Build 2610072129 is archiving; upload waits for the gate.
+The staging health endpoint reports PostgreSQL connected and API 2.0.0.
+
+Continue app work from primary while release verification runs. The next
+useful workout slice is named gyms and actual available weights, using the
+published GymStore contract. Connect that inventory to Core progression so
+recommendations fit the gym. Keep U.S. defaults and exact saved mass. Do not
+change the fixed release source or interrupt its simulators.
 
 ## Guided workout plan ready, 2026-10-07 17:28 EDT
 

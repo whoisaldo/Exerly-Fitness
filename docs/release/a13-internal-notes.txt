@@ -6,6 +6,6 @@ First-time setup now explains the app and asks about training experience, weekly
 
 Workout plan builder
 
-Build a plan from your goal, experience, available time and equipment. Saved setup fills your weekly schedule, experience and equipment. Review the workout days and the reasons for the plan before saving. Saving works offline, keeps your current program, and can be undone in Suggestions. Choose Follow program separately when ready.
+Build a plan from your goal, experience, available time and equipment. Saved setup fills your workouts per week, experience and equipment. Review the workout days and the reasons for the plan before saving. Saving works offline, keeps your current program, and can be undone in Suggestions. Choose Follow program separately when ready.
 
 Please try the first setup, scan a packaged food, review its portion, and build a workout plan. Physical camera, VoiceOver, Watch and heart-rate checks are still pending. This build does not claim full MacroFactor parity.

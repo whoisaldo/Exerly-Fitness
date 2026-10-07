@@ -77,7 +77,7 @@ struct TrainingProgramEditor: View {
                         ForEach($draft.program.days) { $day in
                             NavigationLink {
                                 TrainingProgramDayEditor(day: $day, store: workspace.store,
-                                                         cycles: TrainingInput.reps(draft.cycles))
+                                                         cycles: TrainingInput.reps(draft.cycles), gym: workspace.gyms.active)
                             } label: {
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text(day.name.isEmpty ? "Unnamed day" : day.name)
@@ -245,6 +245,7 @@ private struct TrainingProgramDayEditor: View {
     @Binding var day: ProgramDay
     let store: TrainingStore
     let cycles: Int?
+    var gym: GymProfile?
     @State private var adding = false
     @FocusState private var typing: Bool
 
@@ -284,9 +285,9 @@ private struct TrainingProgramDayEditor: View {
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
         }
         .sheet(isPresented: $adding) {
-            ExercisePickerView(store: store) { exercise in
+            ExercisePickerView(store: store, onSelect: { exercise in
                 day.slots.append(ProgramSlot(exerciseID: exercise.id, target: SlotTarget(sets: 3, minReps: 6, maxReps: 10, rir: 2)))
-            }
+            }, gym: gym)
         }
     }
 }

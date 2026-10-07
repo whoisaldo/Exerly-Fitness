@@ -47,7 +47,7 @@ struct TrainingView: View {
     var body: some View {
         Group {
             if let session = store.activeSession {
-                ActiveWorkoutView(store: store, session: session, unit: unit)
+                ActiveWorkoutView(store: store, session: session, unit: unit, gym: workspace?.gyms.active)
             } else {
                 ExScreen {
                     if let workspace, workspace.programs.active != nil {
@@ -95,6 +95,10 @@ struct TrainingView: View {
                                     .accessibilityIdentifier("programs.open")
                                 Divider().overlay(Color.exBorder.opacity(0.3))
                                 NavigationLink {
+                                    TrainingGymsView(workspace: workspace, unit: unit)
+                                } label: { ExNavigationLabel(title: "Gyms & equipment", icon: "building.2", detail: workspace.gyms.active?.name ?? "Use the weights you have") }
+                                    .accessibilityIdentifier("gyms.open")
+                                NavigationLink {
                                     AgentReviewView(workspace: workspace, unit: unit)
                                 } label: { ExNavigationLabel(title: "Suggestions", icon: "tray", detail: "Review changes from your agents") }
                                     .accessibilityIdentifier("suggestions.open")
@@ -126,7 +130,7 @@ struct TrainingView: View {
             NewWorkoutView(store: store, unit: unit, timeZone: timeZone)
         }
         .sheet(isPresented: $browsing) {
-            ExercisePickerView(store: store, onSelect: nil)
+            ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active)
         }
         .sheet(isPresented: $reviewingPlan) {
             if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
@@ -191,10 +195,12 @@ private struct NewWorkoutView: View {
 struct ExercisePickerView: View {
     let store: TrainingStore
     let onSelect: ((ExerlyCore.Exercise) throws -> Void)?
+    var gym: GymProfile?
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var muscle: Muscle?
     @State private var error: String?
+    @State private var useGym = true
 
     var body: some View {
         NavigationStack {
@@ -206,12 +212,18 @@ struct ExercisePickerView: View {
                     }.padding(.vertical, ExSpacing.small)
                 }.listRowBackground(Color.clear)
                 Section {
+                    if let gym {
+                        VStack(alignment: .leading, spacing: ExSpacing.small) {
+                            Text(gym.name).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                            ExChoiceChips(values: [true, false], selection: $useGym) { $0 ? "At this gym" : "All exercises" }
+                        }.padding(.vertical, ExSpacing.small)
+                    }
                     Picker("Target muscle", selection: $muscle) {
                         Text("All muscles").tag(Muscle?.none)
                         ForEach(Muscle.allCases, id: \.self) { Text($0.name).tag(Optional($0)) }
                     }
                 }
-                let matches = store.library.search(query, muscle: muscle)
+                let matches = store.library.search(query, muscle: muscle).filter { !useGym || gym?.allows($0) != false }
                 if matches.isEmpty {
                     ContentUnavailableView.search(text: query)
                 } else {
@@ -232,6 +244,9 @@ struct ExercisePickerView: View {
             }
             .exListStyle()
             .searchable(text: $query, prompt: "Search exercises")
+            .onSubmit(of: .search) {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             .navigationTitle(onSelect == nil ? "Exercises" : "Add exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }

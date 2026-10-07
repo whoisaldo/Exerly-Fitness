@@ -6,11 +6,12 @@ struct NutritionNumberInput: View {
     @Binding var text: String
     var identifier = ""
     var integer = false
+    var placeholder = "Unknown"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            ExNumericTextField(title: title, text: $text, placeholder: "Unknown", integer: integer, identifier: identifier)
+            ExNumericTextField(title: title, text: $text, placeholder: placeholder, integer: integer, identifier: identifier)
                 .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
         }
     }

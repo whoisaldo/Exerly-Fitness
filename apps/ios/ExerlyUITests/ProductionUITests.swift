@@ -782,6 +782,98 @@ final class ProductionUITests: XCTestCase {
         capture(app, "account-reconnected-navigation")
     }
 
+    func testGymInventorySavesMixedUnitsOfflineFiltersExercisesAndRestoresArchivedPlaces() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "gym-inventory", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["gyms.open"], in: app)
+        capture(app, "gym-empty")
+        tap(app.buttons["gyms.addFirst"], in: app)
+        replace(app.textFields["gym.name"], with: "Synthetic home", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.equipment.dumbbell"], in: app)
+        tap(app.buttons["gym.equipment.flatBench"], in: app)
+        capture(app, "gym-equipment")
+        tap(app.buttons["gym.weights.dumbbell"], in: app)
+        replace(app.textFields["gym.weightValue"], with: "22.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.addWeight"], in: app)
+        reveal(app.staticTexts["gym.inventory.0"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.0"].label, "22.5 lb")
+        revealAbove(app.buttons["kg"], in: app)
+        tap(app.buttons["kg"], in: app)
+        replace(app.textFields["gym.weightValue"], with: "12", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.addWeight"], in: app)
+        reveal(app.staticTexts["gym.inventory.1"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.1"].label, "12 kg")
+        capture(app, "gym-mixed-weight-inventory")
+        tap(app.buttons["gym.weightsDone"], in: app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["gym.save"], in: app)
+        XCTAssertFalse(app.staticTexts["gyms.currentName"].exists, "Save must not choose a gym")
+        let use = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "gyms.use.")).firstMatch
+        tap(use, in: app)
+        revealAbove(app.staticTexts["gyms.currentName"], in: app)
+        XCTAssertEqual(app.staticTexts["gyms.currentName"].label, "Synthetic home")
+        capture(app, "gym-current-offline")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["Exercise library"], in: app)
+        tap(app.searchFields.firstMatch, in: app)
+        app.searchFields.firstMatch.typeText("barbell bench press\n")
+        XCTAssertTrue(app.buttons["At this gym"].isSelected)
+        XCTAssertFalse(app.staticTexts["Barbell Bench Press"].exists)
+        tap(app.buttons["All exercises"], in: app)
+        XCTAssertTrue(app.buttons["All exercises"].isSelected)
+        reveal(app.staticTexts["Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.staticTexts["Barbell Bench Press"].waitForExistence(timeout: 5))
+        capture(app, "gym-library-all-exercises")
+        if app.buttons["Cancel"].firstMatch.exists { tap(app.buttons["Cancel"].firstMatch, in: app) }
+        tap(app.buttons["Close"], in: app)
+        tap(app.buttons["gyms.open"], in: app)
+        tap(app.buttons["gyms.editCurrent"], in: app)
+        tap(app.buttons["gym.weights.dumbbell"], in: app)
+        reveal(app.staticTexts["gym.inventory.1"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.1"].label, "12 kg")
+        revealAbove(app.staticTexts["gym.inventory.0"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.0"].label, "22.5 lb")
+        capture(app, "gym-inventory-after-relaunch")
+        tap(app.buttons["gym.weightsDone"], in: app)
+        tap(app.buttons["gym.cancel"], in: app)
+        let archive = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "gyms.archive.")).firstMatch
+        tap(archive, in: app)
+        XCTAssertFalse(app.staticTexts["gyms.currentName"].exists)
+        tap(app.switches["gyms.showArchived"], in: app)
+        capture(app, "gym-archived")
+        tap(use, in: app)
+        tap(app.switches["gyms.showArchived"], in: app)
+        revealAbove(app.staticTexts["gyms.currentName"], in: app)
+        XCTAssertEqual(app.staticTexts["gyms.currentName"].label, "Synthetic home")
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let export = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(export["documents"] as? [[String: Any]])
+        let gyms = documents.filter { $0["kind"] as? String == "gym_profile" }
+        XCTAssertEqual(gyms.count, 1)
+        let payload = try XCTUnwrap(gyms.first?["payload"] as? [String: Any])
+        XCTAssertEqual(payload["name"] as? String, "Synthetic home")
+        let loads = try XCTUnwrap(payload["loads"] as? [String: [[String: Any]]])
+        XCTAssertEqual(loads["dumbbell"]?.compactMap { $0["value"] as? Double }, [22.5, 12])
+        XCTAssertEqual(loads["dumbbell"]?.compactMap { $0["unit"] as? String }, ["lb", "kg"])
+        XCTAssertNotNil(payload["activatedAt"])
+        XCTAssertNil(payload["archivedAt"])
+    }
+
     func testGuidedTrainingPlanUsesSetupAndCanBeReviewedSavedOfflineAndUndone() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "guided-plan", units: "imperial")
@@ -3603,8 +3695,9 @@ final class ProductionUITests: XCTestCase {
         // element before it has a usable frame. Asking isHittable then causes
         // XCTest to abort all subsequent event delivery for this test.
         if (app.keyboards.firstMatch.exists || app.buttons["exerly.keypadDone"].exists) &&
-            (!visibleFrame(element) || !element.isHittable) && app.buttons["Done"].firstMatch.exists {
-            app.buttons["Done"].firstMatch.tap()
+            (!visibleFrame(element) || !element.isHittable) &&
+            (app.buttons["Done"].firstMatch.exists || app.buttons["Hide keyboard"].firstMatch.exists || app.buttons["exerly.keypadDone"].exists) {
+            dismissKeyboard(app)
         }
         for _ in 0..<48 {
             // The system can present the sheet after the diary first appears.
@@ -3624,6 +3717,9 @@ final class ProductionUITests: XCTestCase {
             // the last accessibility node is the frontmost navigation bar.
             if visibleFrame(element) && element.isHittable,
                app.navigationBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
+            // Native search fields can belong to the navigation bar itself.
+            // They are already visible above the scrolling content's top edge.
+            if visibleFrame(element), element.elementType == .searchField, element.isHittable { return }
             let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30, fixedFooterTop(in: app))
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             // The saved-account notice is outside the navigation stack. Its
@@ -3665,7 +3761,7 @@ final class ProductionUITests: XCTestCase {
     }
     private var persistentActionIDs: [String] {
         ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
-         "planSetup.continue", "planSetup.accept"]
+         "planSetup.continue", "planSetup.accept", "gym.save"]
     }
     private func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
@@ -3725,12 +3821,13 @@ final class ProductionUITests: XCTestCase {
         }
     }
     private func dismissKeyboard(_ app: XCUIApplication) {
-        if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
+        if app.buttons["exerly.keypadDone"].firstMatch.exists { app.buttons["exerly.keypadDone"].firstMatch.tap() }
+        else if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
         else if app.buttons["Done"].firstMatch.exists { app.buttons["Done"].firstMatch.tap() }
         else { app.swipeUp() }
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        if name.hasPrefix("design") || name.hasPrefix("setup") || name.hasPrefix("guided-plan") {
+        if name.hasPrefix("design") || name.hasPrefix("setup") || name.hasPrefix("guided-plan") || name.hasPrefix("gym") {
             Thread.sleep(forTimeInterval: 0.5)
         }
         if dismissPasswordPrompt(in: app) { Thread.sleep(forTimeInterval: 0.8) }

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        388C1337938D46019543FCDD /* GymPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0534D736A5A4F21B498FC25; };
+        C54FD2E4FDC544B8860F4066 /* TrainingGymsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D0EB706F0C494EA6BB91B7; };
+        526B28C39B884D7A829AE71A /* GymEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1463BAA436B34C9BAC2B4D9F; };
         09845E5CFDF241848D8F0CBA /* TrainingPlanSetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A2821C9ED5458DBA9A368B; };
         49EB98539CB3463A97972674 /* TrainingPlanSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2FF5678D2349F6B36DED83; };
         2FBD60E35D394BD39A00097B /* TrainingPlanSetupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF64556D5EC5440C95B959E4; };
@@ -148,6 +151,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        B0534D736A5A4F21B498FC25 /* GymPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/GymPresentationTests.swift; sourceTree = SOURCE_ROOT; };
+        F0D0EB706F0C494EA6BB91B7 /* TrainingGymsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingGymsView.swift; sourceTree = SOURCE_ROOT; };
+        1463BAA436B34C9BAC2B4D9F /* GymEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/GymEditorModel.swift; sourceTree = SOURCE_ROOT; };
         C1A2821C9ED5458DBA9A368B /* TrainingPlanSetupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/TrainingPlanSetupTests.swift; sourceTree = SOURCE_ROOT; };
         7F2FF5678D2349F6B36DED83 /* TrainingPlanSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingPlanSetupView.swift; sourceTree = SOURCE_ROOT; };
         EF64556D5EC5440C95B959E4 /* TrainingPlanSetupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/TrainingPlanSetupModel.swift; sourceTree = SOURCE_ROOT; };
@@ -569,7 +575,9 @@
 			children = (
                 C6808DE00E33488E9530B0B8 /* TrainingProgramEditor.swift */,
                 EF64556D5EC5440C95B959E4 /* TrainingPlanSetupModel.swift */,
+                1463BAA436B34C9BAC2B4D9F /* GymEditorModel.swift */,
                 7F2FF5678D2349F6B36DED83 /* TrainingPlanSetupView.swift */,
+                F0D0EB706F0C494EA6BB91B7 /* TrainingGymsView.swift */,
                 8DABCD4CC3DD4382BCDBE410 /* TrainingProgramsView.swift */,
                 742DC8EEBEA54BF2A4C74E1A /* PlannedWorkoutView.swift */,
                 CF6BEE1111964C41A168DBB5 /* NutritionSearchModel.swift */,
@@ -592,6 +600,7 @@
                 DD78D7DC40B04CEAB225542D /* NutritionEntryEditor.swift */,
                 2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */,
                 C1A2821C9ED5458DBA9A368B /* TrainingPlanSetupTests.swift */,
+                B0534D736A5A4F21B498FC25 /* GymPresentationTests.swift */,
                 011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */,
                 A4AD25D26B1142A7B73B77AA /* NutritionLabelPresentationTests.swift */,
                 E9FE851555CB44219DE581E3 /* NutritionPresentationTests.swift */,
@@ -771,7 +780,9 @@
 			files = (
                 D6CAD7BA67DA4B5FA06CE906 /* TrainingProgramEditor.swift in Sources */,
                 2FBD60E35D394BD39A00097B /* TrainingPlanSetupModel.swift in Sources */,
+                526B28C39B884D7A829AE71A /* GymEditorModel.swift in Sources */,
                 49EB98539CB3463A97972674 /* TrainingPlanSetupView.swift in Sources */,
+                C54FD2E4FDC544B8860F4066 /* TrainingGymsView.swift in Sources */,
                 526F2C1D49254927A2B1E1E7 /* TrainingProgramsView.swift in Sources */,
                 6751206B7FEC405595E09014 /* PlannedWorkoutView.swift in Sources */,
                 3C210BAE207F422F8C3E1626 /* NutritionSearchModel.swift in Sources */,
@@ -889,7 +900,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B57FE442895E470E9535FFB8,289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 09845E5CFDF241848D8F0CBA, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+		236AF237E7B5966EB1668889 /* ExerlyTests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B57FE442895E470E9535FFB8,289370A92BF84037A6810941,A650352E2DC24A6EB71D1008,ADC76406B794B49B23AE476B,E20000000000000000000004,E30000000000000000000001,E40000000000000000000005,E50000000000000000000007, 370ABFA07E731E4D8972EF46, 09845E5CFDF241848D8F0CBA, 388C1337938D46019543FCDD, 507A4C17BF35AB31025AF79B, E60000000000000000000001, EB83E4B93032858D58F6DB10, 4372126B70768FF5578B6DA8,E50000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		B3EBD2453DCEFACEA20751A5 /* ExerlyUITests.sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CB9A26B47270E9F304D7C173,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
