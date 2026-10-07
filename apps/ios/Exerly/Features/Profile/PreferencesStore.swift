@@ -50,7 +50,10 @@ enum PreferenceFields {
     }
     static func heightText(_ cm: Double?, units: String) -> String {
         guard let cm else { return "" }
-        return numberText(units == "imperial" ? cm / 2.54 : cm)
+        // The draft keeps the exact centimeter value separately. Display
+        // rounding must never become a change to the saved measurement.
+        return (units == "imperial" ? cm / 2.54 : cm)
+            .formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
     static func text(_ value: JSONValue) -> String {
         switch value {
