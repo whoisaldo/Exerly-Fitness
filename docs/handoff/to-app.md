@@ -1440,3 +1440,20 @@ Status: open (contract published). See "Recovery" in the README and design 020.
   tap away. Never apply it silently.
 - **With `.notEnoughData`,** show nothing, or a one-line note in settings
   that Exerly needs two weeks of Health data first.
+
+## 2026-10-06: Reading a nutrition label (N15)
+
+Status: open (contract published). See design 021.
+
+- Run Vision text recognition (`VNRecognizeTextRequest`, accurate, with
+  language correction off) on the label photo. Pass the recognised strings,
+  top to bottom, to `NutritionLabel.read(_:)`. Everything stays on the
+  phone.
+- **Nil** means the text isn't a label. Say so and offer manual entry.
+- **Otherwise,** open your custom-food review prefilled:
+  - with `per100g`, save it directly;
+  - for a serving label, show `servingText` and use `servingGrams`;
+  - when the weight is missing, as with a serving in millilitres or a label
+    per 100 ml, ask for it, or set `food.volume`.
+- **Flag for the person** each nutrient in `approximated` ("less than" on the
+  label) and each line in `unread`.

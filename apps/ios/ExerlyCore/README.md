@@ -582,6 +582,12 @@ trend weight and expenditure.
   which gives totals, totals per meal and `energyShares`.
   `contributors(of:on:)` ranks the entries behind one nutrient.
 - Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
+- Labels: `NutritionLabel.read(lines)` turns the text the camera recognised
+  on a nutrition label (US Nutrition Facts or an EU declaration) into a
+  `LabelReading`. It holds the `basis` (per serving, per 100 g or per 100
+  ml), the serving, the `amounts`, `per100g` when the weight is known,
+  `approximated` "less than" values and `unread` lines. Show it for review
+  before saving a food. See design 021.
 - Shortcuts: `ShortcutsJSON` reads MacroFactor's "Log by JSON" food format and
   writes its today summary, from the public spec at
   github.com/MacroFactor/apple-shortcuts. `logShortcutFood(_:on:meal:at:)` logs
