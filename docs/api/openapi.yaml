@@ -566,8 +566,9 @@ paths:
       tags: [Foods]
       summary: Generic and packaged foods, as ExerlyCore Foods
       description: |
-        Generic foods from the bundled USDA FNDDS table come first, up to
-        half the results (`source` `usda`, IDs `usda:<fdcId>`), then
+        Generic foods from the bundled USDA FNDDS table come first, a quarter
+        of the results at most and three at least (`source` `usda`, IDs
+        `usda:<fdcId>`), then
         packaged foods from Open Food Facts. Each result has the `saved_food`
         document shape, with nutrients per 100 g in ExerlyCore's units, so it
         can be saved or logged as it is. Show the attribution with the

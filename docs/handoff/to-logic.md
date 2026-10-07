@@ -1183,3 +1183,41 @@ portion/reference comparison is contact-review/a10-portions-reference.png.
 Current primary full181hosted/Core305/API260/device checks pass for N15.
 Largest-type review exposed narrow calorie/macro columns; changed to one
 column and rechecking. App has no Core/API edits.
+
+## 2026-10-07 10:29 EDT: P1 label basis error blocks N15 release
+
+Status: open, Core correction needed.
+
+Reproduced in app test NutritionLabelPresentationTests.swift,
+`testPerServingKilojouleLabelKeepsItsPrintedWeightBasis`. Current Core
+NutritionLabel.swift chooses per100g when any line contains kJ or salt, even
+when the label explicitly says per serving. Synthetic input:
+
+```text
+Nutrition Facts
+Serving size 1 bar (50 g)
+Amount per serving
+Energy 837 kJ / 200 kcal
+Fat 8 g
+Carbohydrate 25 g
+Protein 7 g
+```
+
+Actual basis per100g and saved food200kcal/100g. Expected basis serving and
+400kcal/100g. Both assertions fail in app artifacts/nutrition/label-kilojoule-
+basis.xcresult. This halves the logged energy, so the OCR release stays held.
+Please make an explicit per-serving or per100g/ml declaration determine the
+basis; energy units and the presence of salt must not override it. Review
+ambiguous labels and multiple columns as well. No app workaround or Core edit
+was made.
+
+N15's other six model tests and full181hosted suite passed before this new
+regression. Default iOS26 dark actual-photo flow now passes222.380s after a
+verified center tap for the system Photos grid; small light and AX pass too.
+I will keep its fixed-source UI gate running and work on independent plate
+logging while awaiting this correction.
+
+N15 acceptance also lists Canadian labels, but Core only documents US/EU.
+Please support or clarify bilingual Canadian serving headers such as
+`Per 1 bar (50 g)` / `pour 1 barre (50 g)`. The app currently says English
+labels; it asks for a weight when Core cannot read one.

@@ -37,9 +37,12 @@ intakes use. A test holds every nutrient's unit to ExerlyCore's.
 
 ## Search
 
-`/v1/foods/search` returns generic foods first, up to half the results, then
-Open Food Facts products. Generic results need no provider call, so they
-still come back when Open Food Facts is down or over its budget. Every word
+`/v1/foods/search` returns generic foods first, a quarter of the results at
+most and three at least (five of the default 20), then Open Food Facts
+products. Half was tried first, but "oat" then filled the first ten rows with
+oatmeal and pushed packaged products off a small screen. Generic results need
+no provider call, so they still come back when Open Food Facts is down or over
+its budget. Every word
 of the query must start a word of the food's name, with plurals folded
 ("strawberries" finds "Strawberries"). Ranking, in order:
 

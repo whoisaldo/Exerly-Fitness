@@ -36,7 +36,7 @@ test('search returns Foods ExerlyCore can save, with attribution, to sessions an
   const res = await api.get('/v1/foods/search?q=oat%20bar&limit=5', { token: user.token });
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.deepEqual(asked, { query: 'oat bar', limit: 5 });
-  // Up to half are generic foods, then the packaged ones.
+  // A few generic foods (a quarter of the limit, three at least), then the packaged ones.
   assert.deepEqual(
     res.body.foods.map((food) => food.source),
     ['usda', 'usda', 'usda', 'openFoodFacts', 'openFoodFacts']
@@ -66,7 +66,7 @@ test('generic foods are found without Open Food Facts, and credited only when sh
   const offline = await api.get('/v1/foods/search?q=bananas', { token: user.token });
   assert.equal(offline.status, 200);
   assert.equal(offline.body.foods[0].name, 'Banana, raw');
-  assert.ok(offline.body.foods.length <= 10);
+  assert.equal(offline.body.foods.length, 5, 'a quarter of the default 20');
   assert.ok(offline.body.foods.every((food) => food.source === 'usda'));
   assert.doesNotMatch(offline.body.attribution, /Open Food Facts/);
 

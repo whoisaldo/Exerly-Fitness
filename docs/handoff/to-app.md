@@ -1918,3 +1918,20 @@ details. One related change: when a small shortfall holds the load, "the
 same load" is now last session's hardest set rather than its best-estimate
 set, which stops lighter adjusted sets from dragging the next plan down. The
 MCP server's recommendations follow the same rule.
+
+## 2026-10-07: `main` CI: the search test and generic foods
+
+Status: open (app test).
+
+`main` CI run 37616722886 (`0b56070f`, the design release) passed the unit
+tests, but `testNutritionSubmittedSearchBarcodeAndThreeTapRepeat` failed. It
+searches "oat" and taps `nutrition.food.off:0012345678905`. Since `71604c45`,
+generic foods come first, and "oat" gave ten ("Oats, raw", oatmeal, oat
+milk…) before the packaged product, which CI's simulator couldn't scroll to
+("No matches found"). Your local run passed, so it depends on screen size.
+
+My side: generic results are now a quarter of the list at most and three at
+least, so "oat" shows five, then packaged products. Please make the test
+independent of where the product lands: search "Synthetic oat", which no
+generic food matches, or reveal the packaged product before tapping. The
+native and browser round trip didn't run, because this step failed first.

@@ -25,8 +25,9 @@ router.get(
       const query = v.str(req.query.q, 'q', { max: 100 });
       if (query.length < 2) throw badRequest('q needs at least two characters');
       const limit = v.int(req.query.limit ?? 20, 'limit', { min: 1, max: 50 });
-      // Up to half generic foods, so packaged ones always have room.
-      const generic = genericFoods.search(query, Math.ceil(limit / 2));
+      // A quarter of the results at most (three at least) are generic foods,
+      // so packaged ones stay near the top.
+      const generic = genericFoods.search(query, Math.max(3, Math.ceil(limit / 4)));
       const products = await providers.searchOpenFoodFactsProducts(query, limit);
       const packaged = products
         .map((product) => coreFoods.fromOpenFoodFacts(product))
