@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 00:30 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 02:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                       |
-| --------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 00:30 EDT, integration (target bridge, round-trip fix) |
-| `main`                                        | –        | Fast-forwarded to integration 2026-10-07 00:30 EDT; CI rerunning  |
+| Branch                                        | Unlanded | Last landed                                                                         |
+| --------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 02:30 EDT, integration (U.S. units, progress, plan continuity)           |
+| `main`                                        | –        | `3425db1d`, 2026-10-07 00:30 EDT; CI run 37569162426 in progress; integration ahead |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -168,6 +168,10 @@ from a US or EU label becomes nutrients for review.
 **Target continuity.** Landed: `POST /v1/nutrition/plans/from-legacy` and
 `AccountAPI.adoptLegacyTargets()` keep older accounts' saved targets as manual
 plans (app agent, 23:40).
+
+**U.S. units, "kcal left" and plan continuity.** Landed 2026-10-07: imperial
+defaults and `USUnits` (Ali, through the app agent), `NutritionStore.progress(on:)`,
+and bridged plans following the legacy Program screen.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
