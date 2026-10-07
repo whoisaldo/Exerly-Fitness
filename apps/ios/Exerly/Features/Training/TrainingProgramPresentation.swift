@@ -46,7 +46,7 @@ final class TrainingProgramDraft: ObservableObject {
             initialCycles = cycles
             return true
         } catch ProgramStore.StoreError.invalid(let messages) {
-            errors = messages
+            errors = messages.map { $0.prefix(1).uppercased() + $0.dropFirst() }
         } catch {
             errors = ["The program could not be saved. Your draft is still here. Try again."]
         }
@@ -90,9 +90,7 @@ struct ProgramTargetFields {
             throw InputError.invalid
         }
         let seconds: Double?
-        if rest == initialRest { seconds = original.rest }
-        else if rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { seconds = nil }
-        else if let parsed = TrainingInput.number(rest, locale: locale) { seconds = parsed }
+        if rest == initialRest { seconds = original.rest } else if rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { seconds = nil } else if let parsed = TrainingInput.number(rest, locale: locale) { seconds = parsed }
         else { throw InputError.invalid }
         return SlotTarget(sets: sets, minReps: minimum, maxReps: maximum, rir: reserve, rest: seconds, kind: kind)
     }

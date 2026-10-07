@@ -174,8 +174,35 @@ private struct ProposalChangeView: View {
     let change: ProposedChange
     let library: ExerlyCore.ExerciseLibrary
     let unit: MassUnit
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
+        ForEach(Array(diff.fields.enumerated()), id: \.offset) { _, field in
+            let display = ProposalFieldPresentation(field: field, change: change, library: library, unit: unit)
+            VStack(alignment: .leading, spacing: ExSpacing.item) {
+                VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                    if !display.context.isEmpty { Text(display.context).font(.exBodyMedium).accessibilityLabel(display.title) }
+                    Text(display.property).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                if field.path.isEmpty || isCollection(field.before) || isCollection(field.after) {
+                    NavigationLink("View complete change") {
+                        ProposalRawChangeView(title: display.title, before: field.before, after: field.after)
+                    }
+                } else {
+                    let layout = typeSize.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                        : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
+                    layout {
+                        Text(display.before).foregroundStyle(Color.exTextSecondary)
+                            .accessibilityLabel("Before: \(display.before)")
+                        Image(systemName: typeSize.isAccessibilitySize ? "arrow.down" : "arrow.right")
+                            .font(.exCaption).foregroundStyle(Color.exTextSecondary).accessibilityHidden(true)
+                        Text(display.after).foregroundStyle(Color.exPrimaryText)
+                            .accessibilityLabel("After: \(display.after)")
+                    }.font(.exH2).fixedSize(horizontal: false, vertical: true)
+                }
+            }.padding(.vertical, ExSpacing.small)
+        }
         if change.kind == "program" {
             if let before = try? change.before?.decode(Program.self) {
                 NavigationLink("Read original program") {
@@ -191,20 +218,6 @@ private struct ProposalChangeView: View {
             } else if change.after == nil {
                 Text("Removes this program").font(.headline)
             }
-        }
-        ForEach(Array(diff.fields.enumerated()), id: \.offset) { _, field in
-            let display = ProposalFieldPresentation(field: field, change: change, library: library, unit: unit)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(display.title).font(.headline)
-                if field.path.isEmpty || isCollection(field.before) || isCollection(field.after) {
-                    NavigationLink("View complete change") {
-                        ProposalRawChangeView(title: display.title, before: field.before, after: field.after)
-                    }
-                } else {
-                    Text("Before: \(display.before)").foregroundStyle(.secondary)
-                    Text("After: \(display.after)")
-                }
-            }.padding(.vertical, 4)
         }
         DisclosureGroup("Full record details") {
             Text("\(TrainingFormat.words(change.kind)) · \(change.id)")

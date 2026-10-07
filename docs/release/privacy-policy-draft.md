@@ -37,7 +37,9 @@ Account JSON exports do not include these photos.
 Food searches and barcodes are sent through Exerly's service to the food
 provider named in the result. The current native search uses Open Food Facts.
 The provider receives the search text or barcode, not your Exerly food diary.
-Avoid including personal information in a food search.
+Exerly's native food service does not keep a cache of those searches. Its
+request limits count requests without saving search text. The provider's own
+retention policies apply. Avoid including personal information in a food search.
 
 Connecting an agent is optional. An agent can access only the permissions you
 grant to its token. Proposed changes wait for your review; direct write access
@@ -45,12 +47,21 @@ requires a separate choice. Revoke a token in Profile, Connected agents. The
 agent or service you connect may retain information it already received under
 its own policies. Revoking access prevents future access with that token.
 
-Manual logging works without an AI service. This build does not require sending
-your logs to a hosted model to use its main screens.
+Manual logging works without an AI service. This native build does not require
+sending your logs to a hosted model to use its main screens.
+
+The separate legacy web coach, when enabled, sends messages and supplied
+context to Google Gemini. Its error records can include your account ID, email,
+IP address and browser details. Account deletion removes those error records;
+the current export does not include them. Before publishing this notice,
+confirm whether that web route will remain enabled.
+
+If you configure a webhook, Exerly sends the receiver a change notification and
+signature. The receiver needs an authorized token to read the records.
 
 ## Your choices
 
-Use Profile, Account settings, Export account data to save an account export.
+Use Profile, Account settings, Export data to save an account export.
 An offline device export contains the records available on that device. Files
 you export or share become your responsibility to store securely.
 

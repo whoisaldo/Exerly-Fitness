@@ -322,7 +322,7 @@ struct ExQuantityControl: View {
     }
 
     private var quantityField: some View {
-        ExNumericTextField(title: title, text: $text, placeholder: "—", integer: integer, centered: true, identifier: identifier)
+        ExNumericTextField(title: title, text: $text, placeholder: "0", integer: integer, centered: true, identifier: identifier)
             .frame(minHeight: 52)
     }
 

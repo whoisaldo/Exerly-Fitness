@@ -12,7 +12,7 @@ final class AgentPresentationTests: XCTestCase {
         let presentation = ProposalFieldPresentation(field: field, change: change,
                                                       library: training.library, unit: .kilograms)
         XCTAssertEqual(presentation.title, "Deadlift · Set 1 · Load")
-        XCTAssertEqual(presentation.before, "1500 kg")
+        XCTAssertEqual(presentation.before, "1,500 kg")
         XCTAssertEqual(presentation.after, "150 kg")
         let pounds = ProposalFieldPresentation(field: field, change: change,
                                                library: training.library, unit: .pounds)

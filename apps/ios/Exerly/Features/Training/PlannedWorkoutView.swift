@@ -62,15 +62,11 @@ struct PlannedWorkoutView: View {
                     Section {
                         NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)",
                                              text: $bodyweight, identifier: "program.bodyweight")
-                        Text("Enter today's bodyweight for bodyweight exercise estimates, or leave it empty. Your profile weight is not filled in automatically.")
+                        Text("Used for bodyweight exercise estimates. Leave empty to skip.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, planned in
                         PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit)
-                    }
-                    Section {
-                        Text("All sets start incomplete. The program advances only after you finish the workout.")
-                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 } else if error == nil {
                     Section { Text("No next workout is available. Check the program selected in Training.") }
@@ -136,15 +132,7 @@ private struct PlannedExerciseSection: View {
                 Text(TrainingProgramFormat.reason(planned.recommendation, exercise: exercise, target: planned.target))
                     .foregroundStyle(.secondary)
             }
-            ForEach(Array(planned.recommendation.sets.enumerated()), id: \.offset) { index, set in
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Set \(index + 1) · \(TrainingFormat.kind(set.kind))").font(.subheadline).foregroundStyle(.secondary)
-                    Text(TrainingFormat.set(PerformedSet(kind: set.kind, efforts: [set.effort], rir: set.rir), unit: unit))
-                    if exercise?.metric.tracksReps == true {
-                        Text("Target \(TrainingFormat.number(set.rir)) RIR").font(.subheadline)
-                    }
-                }.fixedSize(horizontal: false, vertical: true)
-            }
+            PlannedSetsPreview(sets: planned.recommendation.sets, tracksReps: exercise?.metric.tracksReps == true, unit: unit)
             if let rest = planned.target.rest { Text("Rest \(TrainingFormat.number(rest)) seconds") }
             if !planned.notes.isEmpty { Text(planned.notes) }
             if planned.recommendation.outsideRange {
@@ -171,6 +159,57 @@ private struct PlannedExerciseSection: View {
                     Text("The source set is unavailable on this device.").foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+}
+
+private struct PlannedSetsPreview: View {
+    let sets: [PlannedSet]
+    let tracksReps: Bool
+    let unit: MassUnit
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if tracksReps && !typeSize.isAccessibilitySize {
+            Grid(alignment: .leading, horizontalSpacing: ExSpacing.content, verticalSpacing: ExSpacing.item) {
+                GridRow {
+                    Text("Set")
+                    Text(unit == .kilograms ? "kg" : "lb")
+                    Text("Reps")
+                    Text("RIR")
+                }.font(.exCaption).foregroundStyle(Color.exTextSecondary).accessibilityHidden(true)
+                ForEach(Array(sets.enumerated()), id: \.offset) { index, set in
+                    row(set, index: index)
+                }
+            }.font(.exBody).padding(.vertical, ExSpacing.small)
+        } else {
+            ForEach(Array(sets.enumerated()), id: \.offset) { index, set in
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    Text("Set \(index + 1) · \(TrainingFormat.kind(set.kind))")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    Text(TrainingFormat.set(PerformedSet(kind: set.kind, efforts: [set.effort], rir: set.rir), unit: unit))
+                        .font(.exBodyMedium)
+                    if tracksReps {
+                        Text("Target \(TrainingFormat.number(set.rir)) RIR").font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                    }
+                }.fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func row(_ set: PlannedSet, index: Int) -> some View {
+        let load = set.effort.load.map { TrainingFormat.number($0.value(in: unit)) } ?? "Choose"
+        let loadLabel = set.effort.load.map { "Load \(TrainingFormat.mass($0, unit: unit))" } ?? "Choose your load"
+        let reps = set.effort.reps.map { String($0) } ?? "Not set"
+        return GridRow {
+            VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                Text("\(index + 1)").accessibilityLabel("Set \(index + 1)")
+                if set.kind != .standard { Text(TrainingFormat.kind(set.kind)).font(.exCaption) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Text(load).accessibilityLabel(loadLabel)
+            Text(reps).font(.exBodyMedium).accessibilityLabel("\(reps) reps")
+            Text(TrainingFormat.number(set.rir)).foregroundStyle(Color.exPrimaryText)
+                .accessibilityLabel("Target \(TrainingFormat.number(set.rir)) RIR")
         }
     }
 }

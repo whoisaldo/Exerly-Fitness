@@ -44,6 +44,14 @@ struct ProposalFieldPresentation {
     let before: String
     let after: String
 
+    var property: String { title.components(separatedBy: " · ").last ?? title }
+    var context: String {
+        var parts = Array(title.components(separatedBy: " · ").dropLast())
+        if parts.count > 1, parts[0].range(of: #"^Day \d+$"#, options: .regularExpression) != nil { parts.removeFirst() }
+        parts.removeAll { $0 == "Base targets" || $0.isEmpty }
+        return parts.joined(separator: " · ")
+    }
+
     init(field: FieldChange, change: ProposedChange, library: ExerlyCore.ExerciseLibrary, unit: MassUnit) {
         if change.kind == "program" {
             let display = ProgramProposalField(field: field, change: change, library: library)
@@ -95,7 +103,7 @@ struct ProposalFieldPresentation {
               session.exercises[exercise].sets.indices.contains(set),
               session.exercises[exercise].sets[set].efforts.indices.contains(effort),
               let load = session.exercises[exercise].sets[set].efforts[effort].load else { return nil }
-        return TrainingFormat.mass(load, unit: unit)
+        return "\(load.value(in: unit).formatted(.number.precision(.fractionLength(0...3)))) \(unit == .kilograms ? "kg" : "lb")"
     }
 
     private static func label(_ leaf: String) -> String {
@@ -254,8 +262,8 @@ enum AgentFormat {
         case .humanRCT: "Human randomized trial"
         case .observational: "Observational research"
         case .mechanism: "Proposed mechanism"
-        case .anecdote: "Anecdote"
-        case .personalData: "Your logged data · n=1"
+        case .anecdote: "Personal report"
+        case .personalData: "Your logged data"
         }
     }
 

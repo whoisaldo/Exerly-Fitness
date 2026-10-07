@@ -1,6 +1,6 @@
 # Privacy publication review
 
-Prepared 2026-10-07 from the app and API source at 4172379b. This is an audit
+Prepared 2026-10-07 from the app source and Logic’s API review through f7b92d41. This is an audit
 draft, not a submitted App Store declaration or legal approval.
 
 Apple's [privacy details guidance](https://developer.apple.com/app-store/app-privacy-details/)
@@ -19,7 +19,7 @@ deletion flow must remain available in the app, as described in Apple's
 | Workouts, sets, programs and activity           | Account records and sync                                 | Linked fitness data; app functionality                                                           |
 | Notes, saved labels, proposals and decisions    | Account records and audit history                        | Linked other user content; app functionality                                                     |
 | Profile age, sex and timezone                   | Account profile, target calculations                     | Confirm the additional category and personalization purpose before submitting                    |
-| Search terms and barcodes                       | Server to Open Food Facts; temporary shared search cache | Review search-history disclosure and provider retention, including searches not saved to a diary |
+| Search terms and barcodes                       | Native requests go to Open Food Facts without an Exerly search cache | Review provider retention; native request budgets retain counts, not search text |
 | Steps and active energy read in Health settings | HealthKit to local presentation only                     | This screen does not transmit these readings; manually logged health records above are separate  |
 | Progress photos                                 | System photo picker to local SwiftData records           | No Exerly account upload; device backup settings may apply                                       |
 | IP addresses and request diagnostics            | Network hosts and rate limiting                          | Hosting/log retention must be reviewed before choosing the final diagnostic categories           |
@@ -42,9 +42,25 @@ do not assume that the manifest alone completes the App Store questionnaire.
   needs the separate configured Sign in with Apple key described in
   QUESTIONS_FOR_ALI.md. A passing simulated authorization test does not prove
   that production revocation is configured.
-- Legacy AI service code still exists, but its old coach screen is unreachable
-  from the current shell. Do not publish a blanket claim that every Exerly API
-  route avoids cloud inference. Any future app route needs disclosure and opt-in.
+- Native food search and barcode endpoints do not cache queries or products.
+  Request budgets keep minute counts and drop them after a day. The separate
+  legacy web barcode route caches products by barcode for seven days, and may
+  serve a stale product up to 30 days old after a provider failure. It does not
+  associate the cache with a person. FatSecret is limited to that legacy route
+  when its keys are configured.
+- API error logs contain the request method, path without its query string and
+  error. Rate limiting holds IP addresses in memory during its window.
+  DigitalOcean request logging and retention remain unverified.
+- The legacy web Gemini coach sends messages and context to Google when its key
+  is configured. Its ai_errors rows include email, user ID, IP address and user
+  agent. Account deletion removes these rows; account export omits them. This
+  route is unreachable from the current native shell. Disclose the separate web
+  behavior or disable that route before publication, as tracked for Ali.
+- User-configured webhooks send a sequence number and signature, not records.
+  The receiver needs its own token to read changes. Account deletion removes
+  webhook configuration and secrets; exports omit webhook secrets.
+- Production still runs the legacy Mongo API. This review describes the new
+  staging API; final hosting, database and backup declarations require cutover.
 - No advertising, analytics or crash SDK is added by this release.
 
 ## Decisions required before publishing
@@ -57,7 +73,7 @@ flows and operational settings. Resolve these concrete items:
    backup retention and deletion from backups. Do not invent retention periods.
 3. Applicable rights, request verification and any legally required retention.
 4. Sign in with Apple revocation key and physical authorization/deletion proof.
-5. Final App Store categories for profile fields, cached searches and diagnostics,
+5. Final App Store categories for profile fields, food-provider requests and diagnostics,
    and whether recommendations require the product-personalization purpose.
 6. Public HTTPS policy and support URLs under Sideband. The drafts are local;
    no website or App Store declaration has been changed.

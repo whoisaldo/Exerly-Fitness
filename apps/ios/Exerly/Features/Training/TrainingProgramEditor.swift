@@ -9,6 +9,7 @@ struct TrainingProgramEditor: View {
     @State private var confirmingDiscard = false
     @State private var editMode = EditMode.inactive
     @FocusState private var typing: Bool
+    @AccessibilityFocusState private var errorFocused: Bool
 
     init(workspace: TrainingWorkspace, editing: Program? = nil) {
         self.workspace = workspace
@@ -51,7 +52,13 @@ struct TrainingProgramEditor: View {
                         }.accessibilityIdentifier("program.deload")
                     }
                     Section {
-                        EditButton().accessibilityLabel("Reorder or remove days")
+                        if !draft.errors.isEmpty {
+                            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                                ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
+                            }
+                            .id("errors").accessibilityIdentifier("program.errors")
+                            .accessibilityFocused($errorFocused)
+                        }
                         ForEach($draft.program.days) { $day in
                             NavigationLink {
                                 TrainingProgramDayEditor(day: $day, store: workspace.store,
@@ -72,8 +79,15 @@ struct TrainingProgramEditor: View {
                         Button("Add rest day", systemImage: "moon") {
                             draft.program.days.append(ProgramDay(name: "Rest"))
                         }.accessibilityIdentifier("program.addRest")
-                    } header: { Text("Days in each cycle") } footer: {
-                        Text("Add exercises to make a training day. Days without exercises are rest days. Finished workouts advance the program; rest days do not assign calendar dates.")
+                    } header: {
+                        HStack {
+                            Text("Days in each cycle")
+                            Spacer()
+                            EditButton().accessibilityLabel("Reorder or remove days")
+                                .textCase(nil).font(.exCaption).frame(minHeight: 44)
+                        }
+                    } footer: {
+                        Text("Days without exercises are rest days. Finished workouts advance the plan.")
                     }
                     Section("Appearance") {
                         ProgramChoiceField("Icon", value: iconName) {
@@ -103,19 +117,19 @@ struct TrainingProgramEditor: View {
                         Text("Saving changes future workouts. Completed workouts and any workout in progress keep their logged values.")
                             .foregroundStyle(.secondary)
                     }
-                    if !draft.errors.isEmpty {
-                        Section("Could not save") {
-                            ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
-                        }.id("errors").accessibilityIdentifier("program.errors")
-                    }
                 }
                 .exListStyle()
                 .environment(\.editMode, $editMode)
                 .onChange(of: draft.errors) { _, errors in
-                    if !errors.isEmpty { scroll.scrollTo("errors", anchor: .bottom) }
+                    if !errors.isEmpty {
+                        scroll.scrollTo("errors", anchor: .top)
+                        errorFocused = true
+                    }
                 }
             }
             .navigationTitle("Program").navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.exBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if draft.hasChanges { confirmingDiscard = true } else { dismiss() } }
@@ -149,6 +163,7 @@ private struct ProgramChoiceField<Content: View>: View {
     let title: String
     let value: String
     let content: () -> Content
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(_ title: String, value: String, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -157,16 +172,19 @@ private struct ProgramChoiceField<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-            Menu(content: content) {
-                HStack(alignment: .firstTextBaseline) {
+        Menu(content: content) {
+            let layout = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
+            layout {
+                Text(title).foregroundStyle(Color.exTextPrimary)
+                if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
                     Text(value).fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
-                    Spacer(minLength: 8)
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
-                }.frame(minHeight: 44).padding(.vertical, 4)
-            }.accessibilityLabel("\(title), \(value)")
-        }
+                }
+            }.frame(minHeight: 44).padding(.vertical, 4)
+        }.accessibilityLabel("\(title), \(value)")
     }
 }
 

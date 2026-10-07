@@ -59,8 +59,8 @@ photos, and photos are not uploaded to Exerly's account service.
 
 ## Export or delete your account
 
-Open Profile, Account settings. Export account data prepares a JSON file of
-your records. Export saved device data works offline and includes only records
+Open Profile, Account settings, Export data. Share account export prepares a
+JSON file of your records. Offline, Share device export includes only records
 available on this device.
 
 Delete account shows a confirmation before deleting. Apple-linked accounts may

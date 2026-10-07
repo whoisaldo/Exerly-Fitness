@@ -14,7 +14,6 @@ struct AgentConnectionsView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Connected agents", color: .exPrimaryText)
                     Text(model.tokens.isEmpty ? "Bring your own agent" : "\(model.tokens.count) connected").font(.exH2)
                     Text("Give an agent access to read your logs and propose changes. You choose its permissions.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -35,11 +34,9 @@ struct AgentConnectionsView: View {
                 Text("Add this endpoint to your agent's MCP settings, then use the access token as its Bearer token. Anyone with that token has the permissions you select.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("Connected agents") {
+            if model.isLoading || !model.tokens.isEmpty {
+            Section("Active access") {
                 if model.isLoading { ProgressView("Loading agents…") }
-                if model.tokens.isEmpty && !model.isLoading {
-                    Text("No connected agents").foregroundStyle(.secondary)
-                }
                 ForEach(model.tokens) { token in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(token.name).font(.headline)
@@ -58,6 +55,7 @@ struct AgentConnectionsView: View {
                             .accessibilityIdentifier("agents.revoke.\(token.id)")
                     }.padding(.vertical, 4)
                 }
+            }
             }
             if let error = model.error {
                 Section {
@@ -137,10 +135,12 @@ private struct NewAgentConnectionView: View {
                 } else {
                     Section {
                         ExCard(accent: true) {
-                            ExEyebrow("New connection", color: .exPrimaryText)
-                            TextField("Name", text: $name).font(.exH2).textInputAutocapitalization(.words)
+                            Text("Agent name").font(.exBodyMedium)
+                            TextField("For example, Training coach", text: $name).font(.exBody).textInputAutocapitalization(.words)
                                 .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
-                                .accessibilityIdentifier("agents.name")
+                                .padding(ExSpacing.content)
+                                .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+                                .accessibilityLabel("Agent name").accessibilityIdentifier("agents.name")
                             Text("Name the agent so you can recognize its access later.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
@@ -174,7 +174,7 @@ private struct NewAgentConnectionView: View {
                             if permission == .write { confirmingWrite = true } else { create() }
                         }
                         .disabled(model.isBusy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .accessibilityIdentifier("agents.confirmCreate")
+                        .accessibilityIdentifier("agents.confirmCreate").buttonStyle(ExActionStyle())
                     }
                 }
                 if let error = model.error {
