@@ -194,7 +194,7 @@ struct HomeView: View {
         .overlay(alignment: .top) {
             if viewModel.isLoading {
                 ProgressView()
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                     .padding(8)
                     .background(Color.exSurface3)
                     .clipShape(Capsule())
@@ -245,7 +245,7 @@ struct HomeView: View {
                                   timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                 .labelsHidden()
                 .datePickerStyle(.compact)
-                .tint(.exPrimary)
+                .tint(.exPrimaryText)
                 .font(.exCaption)
                 if !isToday {
                     Button("Today") { selectedDate = sync.today }.frame(minHeight: 44)
@@ -423,7 +423,7 @@ struct HomeView: View {
         VStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.exPrimary)
+                .foregroundStyle(.exPrimaryText)
             Text(value)
                 .font(.exStatSmall)
                 .foregroundStyle(.exTextPrimary)
@@ -502,7 +502,7 @@ struct HomeView: View {
                     Text("Add")
                         .font(.exCaption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.exPrimary)
+                        .foregroundStyle(.exPrimaryText)
                         .padding(.horizontal, 11)
                         .padding(.vertical, 6)
                         .background(Color.exPrimary.opacity(0.12))
@@ -552,7 +552,7 @@ struct HomeView: View {
                 Task { await viewModel.load(for: selectedDate) }
             }
             .font(.exCaption)
-            .foregroundStyle(.exPrimary)
+            .foregroundStyle(.exPrimaryText)
         }
         .padding(12)
         .background(Color.exError.opacity(0.08))
@@ -723,7 +723,7 @@ private struct WaterEntryView: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("Hydration", color: .exPrimary)
+                    ExEyebrow("Hydration", color: .exPrimaryText)
                     ExQuantityControl(title: "Amount (ml)", text: $amount, step: 50, presets: [250, 500, 750], unit: "ml", identifier: "water.amount", integer: true)
                         .onChange(of: amount) { _, _ in error = nil }
                     Text("Adds to your day's total. Enter 1 to 5,000 ml.")

@@ -17,7 +17,7 @@ struct AchievementsTab: View {
                              action: "Review measurements", perform: onReviewMeasurements)
             } else {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExEyebrow("Your record", color: .exPrimary)
+                    ExEyebrow("Your record", color: .exPrimaryText)
                     Text("Milestones").font(.exH1)
                     Text("\(sorted.filter(\.isUnlocked).count) recorded").font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }

@@ -17,7 +17,7 @@ struct WorkoutHistoryView: View {
             if !store.history.sessions.isEmpty {
                 Section {
                     ExCard(accent: true) {
-                        ExEyebrow("Training history", color: .exPrimary)
+                        ExEyebrow("Training history", color: .exPrimaryText)
                         Text("\(store.history.sessions.count) sessions").font(.exH1)
                         Text("Every completed set, in one place.").font(.exBody).foregroundStyle(Color.exTextSecondary)
                     }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
@@ -37,10 +37,10 @@ struct WorkoutHistoryRow: View {
     let library: ExerlyCore.ExerciseLibrary
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(session.name).font(.headline)
-            Text(TrainingFormat.date(session)).font(.subheadline).foregroundStyle(.secondary)
+            Text(session.name).font(.exH3)
+            Text(TrainingFormat.date(session)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             Text(session.exercises.compactMap { library.exercise($0.exerciseID)?.name }.joined(separator: " · "))
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.exCaption).foregroundStyle(Color.exTextSecondary)
         }.padding(.vertical, 5)
     }
 }
@@ -59,10 +59,10 @@ struct WorkoutDetailView: View {
                 ExList {
                     Section {
                         ExCard(accent: true) {
-                        ExEyebrow("Completed session", color: .exPrimary)
+                        ExEyebrow("Completed session", color: .exPrimaryText)
                         Text(session.name).font(.exH2)
                         Text(TrainingFormat.date(session))
-                        Text(session.timeZoneID).font(.caption).foregroundStyle(.secondary)
+                        Text(session.timeZoneID).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         let summary = store.summary(of: session)
                         LabeledContent("Working sets", value: String(summary.workingSets))
                         LabeledContent("Volume", value: "\(TrainingFormat.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb")·reps")
@@ -83,7 +83,7 @@ struct WorkoutDetailView: View {
                                 ForEach(Array(performed.sets.enumerated()), id: \.element.id) { index, set in
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text("Set \(index + 1) · \(TrainingFormat.kind(set.kind))\(set.side.map { " · " + $0.rawValue.capitalized } ?? "")")
-                                            .font(.caption).foregroundStyle(.secondary)
+                                            .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                                         Text(TrainingFormat.set(set, unit: unit)).font(.exStatSmall)
                                         if let rir = set.rir { Text("\(rir == 6 ? "6+" : TrainingFormat.number(rir)) RIR").font(.caption) }
                                     }.padding(.vertical, 4)

@@ -14,7 +14,8 @@ struct LogSleepView: View {
     @State private var isSaving = false
     @State private var confirmingDelete = false
     @State private var error: String?
-    @FocusState private var focused: Bool
+    private enum Field: Hashable { case bedtime, wakeTime }
+    @FocusState private var focused: Field?
 
     init(initialDate: CalendarDay, editing: SleepDTO? = nil, onDeleted: @escaping (String) -> Void = { _ in }, onSaved: @escaping () -> Void = {}) {
         self.editing = editing; self.onDeleted = onDeleted; self.onSaved = onSaved
@@ -28,7 +29,7 @@ struct LogSleepView: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("Rest & recovery", color: .exPrimary)
+                    ExEyebrow("Rest & recovery", color: .exPrimaryText)
                     ExQuantityControl(title: "Hours slept", text: $hours, step: 0.25, presets: [6, 7, 8], unit: "h", identifier: "sleep.hours")
                     Text("Log overnight sleep on the day you woke up. Add naps separately.")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
@@ -40,11 +41,13 @@ struct LogSleepView: View {
                 ExCard {
                     ExSectionHeading("Sleep times", detail: "Optional")
                     LabeledContent("Bedtime") {
-                        TextField("23:00", text: $bedtime).keyboardType(.numbersAndPunctuation).focused($focused).accessibilityIdentifier("sleep.bedtime")
+                        TextField("23:00", text: $bedtime).keyboardType(.numbersAndPunctuation).focused($focused, equals: .bedtime)
+                            .frame(minHeight: 44).accessibilityIdentifier("sleep.bedtime")
                     }
                     Divider()
                     LabeledContent("Wake time") {
-                        TextField("07:00", text: $wakeTime).keyboardType(.numbersAndPunctuation).focused($focused).accessibilityIdentifier("sleep.wake-time")
+                        TextField("07:00", text: $wakeTime).keyboardType(.numbersAndPunctuation).focused($focused, equals: .wakeTime)
+                            .frame(minHeight: 44).accessibilityIdentifier("sleep.wake-time")
                     }
                     Text("Times describe your sleep. Hours are recorded separately.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     CalendarDayPicker("Wake date", selection: $selectedDate, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
@@ -61,7 +64,7 @@ struct LogSleepView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save sleep") { save() }.disabled(isSaving) }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = nil; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
             }
             .alert("Delete this sleep entry?", isPresented: $confirmingDelete) {
                 Button("Delete sleep entry", role: .destructive) {

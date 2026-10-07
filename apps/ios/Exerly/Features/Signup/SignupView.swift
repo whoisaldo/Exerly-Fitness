@@ -130,7 +130,7 @@ struct SignupView: View {
                 } label: {
                     Text("Log in instead →")
                         .font(.exLabel)
-                        .foregroundStyle(.exPrimary)
+                        .foregroundStyle(.exPrimaryText)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

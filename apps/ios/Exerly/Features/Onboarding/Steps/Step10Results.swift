@@ -27,7 +27,7 @@ struct Step10Results: View {
                 } else if let error = state.previewError {
                     Text(error).foregroundStyle(.exError)
                     Button("Retry target calculation") { Task { await state.loadPreview() } }
-                        .buttonStyle(.borderedProminent).frame(minHeight: 44)
+                        .buttonStyle(.borderedProminent).tint(Color.exActionFill).frame(minHeight: 44)
                     Text("Your answers are saved on this device.").font(.callout)
                 } else {
                     ProgressView("Calculating targets")

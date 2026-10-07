@@ -55,7 +55,7 @@ private struct PreferencesEditor: View {
             ExForm {
                 Section {
                     ExCard(accent: true) {
-                        ExEyebrow("Preferences", color: .exPrimary)
+                        ExEyebrow("Preferences", color: .exPrimaryText)
                         Text(fields["name"] ?? "Make Exerly yours").font(.exH2)
                         Text("Your profile, units and reminders. Edits stay here until you save.")
                             .font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -80,7 +80,7 @@ private struct PreferencesEditor: View {
                 if revision != nil { focusedField = nil; proxy.scrollTo("preferences-status", anchor: .top) }
             }
         }
-        .tint(.exPrimary)
+        .tint(.exPrimaryText)
         .navigationTitle("Preferences")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -209,7 +209,7 @@ private struct PreferencesEditor: View {
                         store.edit("workoutDays", value: PreferenceFields.days.filter { days.contains($0) }.joined(separator: "\n"))
                     }))
                     .accessibilityIdentifier("preferences.day.\(day)")
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                 }
             }
         }
@@ -231,7 +231,7 @@ private struct PreferencesEditor: View {
                 ForEach(["meals", "workouts", "sleep"], id: \.self) { kind in
                     Toggle(PreferenceFields.label("reminders.\(kind)"), isOn: enabled("reminders.\(kind)"))
                         .accessibilityIdentifier("preferences.reminders.\(kind)")
-                        .tint(.exPrimary)
+                        .tint(.exPrimaryText)
                 }
                 field("reminderTimes.meals", multiline: true)
                 field("reminderTimes.workout", keyboard: .numbersAndPunctuation)

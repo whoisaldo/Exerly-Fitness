@@ -23,7 +23,7 @@ struct TrainingHostView: View {
                     Text("Your saved data is still on this device. Keep Exerly installed and try again.")
                 } actions: {
                     Button("Try again") { Task { await account.configure(auth.accountAPI) } }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.borderedProminent).tint(Color.exActionFill)
                 }
             } else {
                 ProgressView("Opening training…")
@@ -140,7 +140,7 @@ private struct NewWorkoutView: View {
         NavigationStack {
             ExScreen {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExEyebrow("New session", color: .exPrimary)
+                    ExEyebrow("New session", color: .exPrimaryText)
                     Text("Make it yours").font(.exH1)
                     Text("Add exercises after you start. Each set saves as you go.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -197,7 +197,7 @@ struct ExercisePickerView: View {
             ExList {
                 Section {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
-                        ExEyebrow("Exercise library", color: .exPrimary)
+                        ExEyebrow("Exercise library", color: .exPrimaryText)
                         Text(onSelect == nil ? "Know your movements" : "Choose your next exercise").font(.exH2)
                     }.padding(.vertical, ExSpacing.small)
                 }.listRowBackground(Color.clear)
@@ -258,7 +258,7 @@ private struct ExerciseInformationView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow(TrainingFormat.words(exercise.metric.rawValue), color: .exPrimary)
+                    ExEyebrow(TrainingFormat.words(exercise.metric.rawValue), color: .exPrimaryText)
                     Text(exercise.name).font(.exH2)
                     Text(exercise.targetMuscles.map(\.name).joined(separator: " · ")).font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())

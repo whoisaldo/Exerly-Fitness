@@ -113,7 +113,7 @@ struct MeasurementsTab: View {
                 }
                 if let actionError { Text(actionError).foregroundStyle(.exError) }
                 summarySection
-                chartSection
+                if viewModel.trend?.summary?.weighIns != 1 { chartSection }
                 historySection
                 if !legacyMeasurements.isEmpty {
                     Text("Measurements from an older version are preserved on this device. They have not been assigned to this account.")
@@ -163,7 +163,7 @@ struct MeasurementsTab: View {
     private var summarySection: some View {
         if let summary = viewModel.trend?.summary {
             ExCard(accent: true) {
-                ExEyebrow("Weight trend", color: .exPrimary)
+                ExEyebrow("Weight trend", color: .exPrimaryText)
                 Text(formatWeight(summary.currentTrendKg, digits: 1)).font(.exStat).foregroundStyle(Color.exTextPrimary)
                 if let weight = summary.currentWeightKg {
                     Text("Last scale \(formatWeight(weight, digits: 1))").font(.exCaption).foregroundStyle(Color.exTextSecondary)
@@ -176,6 +176,8 @@ struct MeasurementsTab: View {
                 } else {
                     Text("A starting point. Add another weigh-in to see the change.").font(.exCaption)
                         .foregroundStyle(Color.exTextSecondary)
+                    Button("Log a weigh-in") { weightDate = sync.today; addingWeight = true }
+                        .buttonStyle(ExActionStyle())
                 }
             }
         }
@@ -256,7 +258,7 @@ struct MeasurementsTab: View {
                         x: .value("Date", date),
                         y: .value("Trend", displayValue(point.trend))
                     )
-                    .foregroundStyle(Color.exPrimary)
+                    .foregroundStyle(Color.exPrimaryText)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
 
                     if let weight = point.weight {
@@ -342,7 +344,7 @@ struct MeasurementsTab: View {
                             Spacer()
                             Text(formatWeight(point.weight_kg ?? 0, digits: 2))
                                 .font(.exStatSmall)
-                                .foregroundStyle(.exPrimary)
+                                .foregroundStyle(.exPrimaryText)
                         }
                     }
                     }.buttonStyle(.plain).accessibilityLabel("Edit weight for \(point.entry_date)")
@@ -370,7 +372,7 @@ struct MeasurementsTab: View {
                             Spacer()
                             Text(formatBodyMeasurement(measurement))
                                 .font(.exStatSmall)
-                                .foregroundStyle(.exPrimary)
+                                .foregroundStyle(.exPrimaryText)
                         }
                     }
                     }.buttonStyle(.plain).accessibilityLabel("Edit \(measurement.type) measurement")
@@ -443,13 +445,13 @@ struct AddMeasurementSheet: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("Body measurement", color: .exPrimary)
+                    ExEyebrow("Body measurement", color: .exPrimaryText)
                     Picker("Type", selection: $type) {
                         ForEach(types, id: \.self) { Text($0.replacingOccurrences(of: "_", with: " ").capitalized).tag($0) }
                     }
                     .pickerStyle(.menu)
                     .accessibilityIdentifier("measurement.type")
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     ExQuantityControl(title: "Value (\(displayUnit))", text: $value,
@@ -461,7 +463,7 @@ struct AddMeasurementSheet: View {
                                           timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                         .font(.exLabel)
                         .foregroundStyle(.exTextSecondary)
-                        .tint(.exPrimary)
+                        .tint(.exPrimaryText)
                     }
 
                     Button("Save", action: save).buttonStyle(ExActionStyle())
@@ -650,13 +652,13 @@ struct WeightEntrySheet: View {
                                 catch { self.error = error.localizedDescription }
                             }.frame(minHeight: 44)
                         } else {
-                            ExEyebrow("Daily weigh-in", color: .exPrimary)
+                            ExEyebrow("Daily weigh-in", color: .exPrimaryText)
                             ExQuantityControl(title: "Weight (\(unit))", text: $value, step: unitSystem == "imperial" ? 0.5 : 0.1, identifier: "weight.value")
                             TextField("Optional note", text: $note, axis: .vertical)
                                 .focused($focused).accessibilityIdentifier("weight.note")
                             if current.exists {
-                                Text("Current reading: \((current.weight_kg ?? 0) * (unitSystem == "imperial" ? poundsPerKilogram : 1), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source ?? "manual")")
-                                    .font(.callout)
+                                Text("Saved: \((current.weight_kg ?? 0) * (unitSystem == "imperial" ? poundsPerKilogram : 1), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
+                                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                                 Button("Delete weight reading", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                             }
                         }
@@ -667,7 +669,7 @@ struct WeightEntrySheet: View {
                 if offline { ExCard { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }
                 if let error { ExCard { Text(error).foregroundStyle(.red) } }
             }
-            .navigationTitle("Log weight")
+            .navigationTitle("Log weight").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

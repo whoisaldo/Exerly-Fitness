@@ -6,7 +6,6 @@ struct NutritionFoodEditor: View {
     let onSaved: (ExerlyCore.Food) -> Void
     @StateObject private var draft: NutritionFoodDraft
     @State private var discarding = false
-    @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -21,10 +20,10 @@ struct NutritionFoodEditor: View {
             ScrollViewReader { scroll in
                 ExScreen {
                     ExCard {
-                        ExEyebrow("Food label", color: .exPrimary)
+                        ExEyebrow("Food label", color: .exPrimaryText)
                         TextField("Food name", text: $draft.name, axis: .vertical).font(.exH2)
-                            .focused($typing).accessibilityIdentifier("nutrition.foodName")
-                        TextField("Brand, optional", text: $draft.brand, axis: .vertical).focused($typing)
+                            .accessibilityIdentifier("nutrition.foodName")
+                        TextField("Brand, optional", text: $draft.brand, axis: .vertical)
                         Toggle("Favorite", isOn: $draft.favorite)
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -32,7 +31,7 @@ struct NutritionFoodEditor: View {
                             .accessibilityIdentifier("nutrition.labelBasis")
                         if draft.basis == .perServing {
                             NutritionNumberInput(title: "Label serving weight (g)", text: $draft.labelGrams.text)
-                                .focused($typing).accessibilityIdentifier("nutrition.labelGrams")
+                                .accessibilityIdentifier("nutrition.labelGrams")
                         }
                         Text("Blank means unknown. Use 0 only when the label says zero.")
                             .font(.footnote).foregroundStyle(.secondary)
@@ -55,8 +54,8 @@ struct NutritionFoodEditor: View {
                         ExSectionHeading("Named servings")
                         ForEach($draft.servings) { $serving in
                             VStack(alignment: .leading, spacing: 12) {
-                                TextField("Serving name", text: $serving.name, axis: .vertical).focused($typing)
-                                NutritionNumberInput(title: "Serving weight (g)", text: $serving.grams.text).focused($typing)
+                                TextField("Serving name", text: $serving.name, axis: .vertical)
+                                NutritionNumberInput(title: "Serving weight (g)", text: $serving.grams.text)
                                 Button("Remove serving", role: .destructive) { draft.servings.removeAll { $0.id == serving.id } }
                             }
                         }
@@ -83,11 +82,11 @@ struct NutritionFoodEditor: View {
             .navigationTitle("Food label").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { typing = false; if draft.hasChanges { discarding = true } else { dismiss() } }
+                    Button("Cancel") { hideKeyboard(); if draft.hasChanges { discarding = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        typing = false
+                        hideKeyboard()
                         if let food = draft.save() {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                             onSaved(food)
@@ -96,7 +95,7 @@ struct NutritionFoodEditor: View {
                         }
                     }.fontWeight(.semibold).accessibilityIdentifier("nutrition.saveFood")
                 }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { hideKeyboard() } }
             }
         }
         .interactiveDismissDisabled(draft.hasChanges)
@@ -114,6 +113,10 @@ struct NutritionFoodEditor: View {
             get: { draft.nutrients[nutrient]?.text ?? "" },
             set: { draft.nutrients[nutrient]?.text = $0 }
         ))
-        .focused($typing).accessibilityIdentifier("nutrition.nutrient.\(nutrient.rawValue)")
+        .accessibilityIdentifier("nutrition.nutrient.\(nutrient.rawValue)")
     }
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
 }

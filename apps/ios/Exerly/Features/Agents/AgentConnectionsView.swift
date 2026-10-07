@@ -14,7 +14,7 @@ struct AgentConnectionsView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Connected agents", color: .exPrimary)
+                    ExEyebrow("Connected agents", color: .exPrimaryText)
                     Text(model.tokens.isEmpty ? "Bring your own agent" : "\(model.tokens.count) connected").font(.exH2)
                     Text("Give an agent access to read your logs and propose changes. You choose its permissions.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -137,7 +137,7 @@ private struct NewAgentConnectionView: View {
                 } else {
                     Section {
                         ExCard(accent: true) {
-                            ExEyebrow("New connection", color: .exPrimary)
+                            ExEyebrow("New connection", color: .exPrimaryText)
                             TextField("Name", text: $name).font(.exH2).textInputAutocapitalization(.words)
                                 .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
                                 .accessibilityIdentifier("agents.name")

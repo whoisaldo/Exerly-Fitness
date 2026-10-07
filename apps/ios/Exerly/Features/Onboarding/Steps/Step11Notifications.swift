@@ -64,7 +64,7 @@ struct Step11Notifications: View {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundStyle(.exPrimary)
+                    .foregroundStyle(.exPrimaryText)
                     .frame(width: 40, height: 40)
                     .background(Color.exPrimary.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -81,7 +81,7 @@ struct Step11Notifications: View {
                 Spacer()
 
                 Toggle(title, isOn: isOn)
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                     .labelsHidden()
             }
         }

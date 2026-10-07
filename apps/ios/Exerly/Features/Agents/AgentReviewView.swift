@@ -9,7 +9,7 @@ struct AgentReviewView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Your review", color: .exPrimary)
+                    ExEyebrow("Your review", color: .exPrimaryText)
                     let count = workspace.agent.proposals.filter { $0.status == .pending }.count
                     Text(count == 0 ? "You're up to date" : "\(count) to review").font(.exH1)
                     Text(count == 0 ? "New suggestions will appear here. Your training and food log work with or without an agent." :
@@ -345,7 +345,7 @@ struct AgentAuditView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Agent record", color: .exPrimary)
+                    ExEyebrow("Agent record", color: .exPrimaryText)
                     Text("Every decision, recorded").font(.exH2)
                     Text("\(workspace.agent.auditLog.count) events").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())

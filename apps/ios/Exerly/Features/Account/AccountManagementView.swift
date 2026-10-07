@@ -34,10 +34,15 @@ struct AccountManagementView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Your account", color: .exPrimary)
-                    Image(systemName: "person.crop.circle.badge.checkmark").font(.system(size: 32, weight: .light))
-                        .foregroundStyle(Color.exPrimary).accessibilityHidden(true)
-                    Text(email).font(.exH3).textSelection(.enabled).accessibilityIdentifier("account.email")
+                    HStack(alignment: .top, spacing: ExSpacing.item) {
+                        Image(systemName: "person.crop.circle.badge.checkmark").font(.system(size: 28, weight: .light))
+                            .foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: ExSpacing.small) {
+                            ExEyebrow("Your account", color: .exPrimaryText)
+                            Text(email).font(.exBodyMedium).textSelection(.enabled)
+                                .accessibilityIdentifier("account.email").fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             Section("Sign-in methods") {

@@ -80,7 +80,7 @@ struct TrainingSetEditor: View {
         NavigationStack {
             ExScreen {
                 ExCard {
-                    ExEyebrow("Set \(number)", color: .exPrimary)
+                    ExEyebrow("Set \(number)", color: .exPrimaryText)
                     Text(exercise.name).font(.exH2)
                     Picker("Set type", selection: $kind) {
                         ForEach(SetKind.allCases, id: \.self) { Text(TrainingFormat.kind($0)).tag($0) }

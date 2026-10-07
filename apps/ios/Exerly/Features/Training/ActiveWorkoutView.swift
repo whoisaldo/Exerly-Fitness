@@ -26,7 +26,7 @@ struct ActiveWorkoutView: View {
             Section {
                 ExCard(accent: true) {
                     HStack {
-                        ExEyebrow("Session in progress", color: .exPrimary)
+                        ExEyebrow("Session in progress", color: .exPrimaryText)
                         Spacer()
                         Text(session.startedAt, style: .timer).font(.exMono).foregroundStyle(Color.exTextSecondary)
                             .accessibilityLabel("Workout elapsed time")
@@ -171,7 +171,7 @@ struct TrainingSetRow: View {
             .buttonStyle(.borderless)
             .padding(.horizontal, 8)
             .background(Color.exPrimary.opacity(set.isCompleted ? 0.15 : 0.06), in: RoundedRectangle(cornerRadius: ExRadius.control))
-            .tint(Color.exPrimary)
+            .tint(Color.exPrimaryText)
             .accessibilityLabel("\(set.isCompleted ? "Reopen" : "Complete") set \(number), \(exercise.name)")
         }.padding(.vertical, 4)
     }
@@ -221,7 +221,7 @@ private struct WorkoutNotesView: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("This session", color: .exPrimary)
+                    ExEyebrow("This session", color: .exPrimaryText)
                     TextField("Workout name", text: $name).font(.exH2)
                     NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $weight)
                 }

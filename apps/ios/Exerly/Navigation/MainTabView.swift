@@ -60,6 +60,6 @@ struct MainTabView: View {
             NavigationStack { ProfileView() }
                 .tabItem { Label(MainTab.profile.label, systemImage: MainTab.profile.icon) }.tag(MainTab.profile)
         }
-        .tint(Color.exPrimary)
+        .tint(Color.exPrimaryText)
     }
 }

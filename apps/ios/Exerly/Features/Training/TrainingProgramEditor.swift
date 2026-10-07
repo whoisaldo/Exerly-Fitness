@@ -32,7 +32,7 @@ struct TrainingProgramEditor: View {
                 ExForm {
                     Section {
                         ExCard(accent: true) {
-                            ExEyebrow(isNew ? "New program" : "Edit program", color: .exPrimary)
+                            ExEyebrow(isNew ? "New program" : "Edit program", color: .exPrimaryText)
                             TextField("Program name", text: $draft.program.name, axis: .vertical).font(.exH2)
                                 .focused($typing).accessibilityIdentifier("program.name")
                             Text("Build a cycle of training and rest days. Completed sessions advance your plan.")
@@ -188,7 +188,7 @@ private struct TrainingProgramDayEditor: View {
         ExForm {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow(day.isRest ? "Rest day" : "Training day", color: .exPrimary)
+                    ExEyebrow(day.isRest ? "Rest day" : "Training day", color: .exPrimaryText)
                     TextField("Day name", text: $day.name, axis: .vertical).font(.exH2).focused($typing).accessibilityIdentifier("program.dayName")
                     Text(day.slots.count == 1 ? "1 exercise" : "\(day.slots.count) exercises").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
@@ -243,7 +243,7 @@ private struct TrainingProgramSlotEditor: View {
         ExForm {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Exercise prescription", color: .exPrimary)
+                    ExEyebrow("Exercise prescription", color: .exPrimaryText)
                     Text(exercise?.name ?? "Exercise targets").font(.exH2)
                     Text(TrainingProgramFormat.target(slot.target, exercise: exercise)).font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
@@ -333,7 +333,7 @@ private struct ProgramTargetEditor: View {
     var body: some View {
         ExScreen {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
-                ExEyebrow(title, color: .exPrimary)
+                ExEyebrow(title, color: .exPrimaryText)
                 Text(exercise?.name ?? "Your prescription").font(.exH2)
             }
             ExCard(accent: true) {

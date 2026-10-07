@@ -17,7 +17,7 @@ struct TrainingProgramsView: View {
                         .listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 } else {
                     ExCard(accent: true) {
-                        ExEyebrow("Training plans", color: .exPrimary)
+                        ExEyebrow("Training plans", color: .exPrimaryText)
                         Text(workspace.programs.active?.name ?? "Find your rhythm").font(.exH2)
                         if let active = workspace.programs.active {
                             let progress = ProgramSchedule.progress(of: active, in: workspace.store.history)
@@ -92,7 +92,7 @@ private struct TrainingProgramDetailView: View {
             if let program = workspace.programs.program(programID) {
                 Section {
                     ExCard(accent: true) {
-                    ExEyebrow("Program", color: .exPrimary)
+                    ExEyebrow("Program", color: .exPrimaryText)
                     Text(program.name).font(.exH1)
                     Text("\(program.cycles) cycles · \(TrainingProgramFormat.deload(program.deload))")
                     let progress = ProgramSchedule.progress(of: program, in: workspace.store.history)
@@ -224,7 +224,7 @@ struct TrainingProgramConfirmation: View {
                     Button(role: destructive ? .destructive : nil, action: perform) {
                         Text(confirm).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.borderedProminent).tint(Color.exActionFill)
                     .accessibilityIdentifier("program.confirm")
                 }
                 .fixedSize(horizontal: false, vertical: true)

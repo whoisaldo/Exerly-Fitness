@@ -2738,7 +2738,7 @@ final class ProductionUITests: XCTestCase {
         // Tapping a populated field can put the caret at its start, including
         // UIKit numeric fields. Select the paragraph before deleting so a
         // replacement cannot silently prepend digits to the old value.
-        if !existing.isEmpty {
+        if !existing.isEmpty && existing != field.placeholderValue {
             field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         }
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)

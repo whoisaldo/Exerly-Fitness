@@ -22,7 +22,7 @@ struct PhotosTab: View {
     var body: some View {
         ExScreen {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
-                ExEyebrow("Visual record", color: .exPrimary)
+                ExEyebrow("Visual record", color: .exPrimaryText)
                 Text("Progress photos").font(.exH1)
                 Text("Saved on this device. Choose the moments you want to compare.").font(.exBody).foregroundStyle(Color.exTextSecondary)
             }
@@ -74,7 +74,7 @@ struct PhotosTab: View {
             PhotosPicker(selection: $selectedItem, matching: .images) {
                 Label("Add Photo", systemImage: "plus.circle.fill")
                     .font(.exLabel)
-                    .foregroundStyle(.exPrimary)
+                    .foregroundStyle(.exPrimaryText)
             }
 
             Spacer()
@@ -105,7 +105,7 @@ struct PhotosTab: View {
                         if compareMode && (compareA?.id == photo.id || compareB?.id == photo.id) {
                             Color.exPrimary.opacity(0.3)
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.exPrimary)
+                                .foregroundStyle(.exPrimaryText)
                                 .font(.system(size: 24))
                         }
                     }

@@ -42,13 +42,13 @@ struct Step9Equipment: View {
         GlassCard {
             HStack {
                 Image(systemName: "building.2.fill")
-                    .foregroundStyle(.exPrimary)
+                    .foregroundStyle(.exPrimaryText)
                 Text("Gym Access")
                     .font(.exBodyMedium)
                     .foregroundStyle(.exTextPrimary)
                 Spacer()
                 Toggle("", isOn: $state.hasGymAccess)
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                     .labelsHidden()
             }
         }

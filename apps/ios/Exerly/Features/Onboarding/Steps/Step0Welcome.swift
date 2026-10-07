@@ -10,7 +10,7 @@ struct Step0Welcome: View {
 
             Image(systemName: "sparkles")
                 .font(.system(size: 56))
-                .foregroundStyle(.exPrimary)
+                .foregroundStyle(.exPrimaryText)
                 .primaryGlow()
                 .scaleEffect(showContent ? 1 : 0.5)
 

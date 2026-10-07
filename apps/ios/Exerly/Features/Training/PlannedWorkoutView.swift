@@ -8,7 +8,7 @@ struct NextTrainingWorkoutSection: View {
     var body: some View {
         if let program = workspace.programs.active {
             ExCard(accent: true) {
-                ExEyebrow("Next up", color: .exPrimary)
+                ExEyebrow("Next up", color: .exPrimaryText)
                 if let next = ProgramSchedule.next(for: program, in: workspace.store.history) {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
                         Text(next.day.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
@@ -22,7 +22,7 @@ struct NextTrainingWorkoutSection: View {
                         .accessibilityIdentifier("program.nextWorkout")
                 } else {
                     Text(program.name).font(.exH2)
-                    Text("Program complete").font(.exBodyMedium).foregroundStyle(Color.exPrimary)
+                    Text("Program complete").font(.exBodyMedium).foregroundStyle(Color.exPrimaryText)
                     Text("Duplicate it in Programs to begin again with separate progress.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }
@@ -51,7 +51,7 @@ struct PlannedWorkoutView: View {
                 } else if let plan {
                     Section {
                         ExCard(accent: true) {
-                            ExEyebrow(plan.isDeload ? "Deload session" : "Up next", color: .exPrimary)
+                            ExEyebrow(plan.isDeload ? "Deload session" : "Up next", color: .exPrimaryText)
                             Text(plan.name).font(.exH2)
                             if let reference = plan.program { Text("Cycle \(reference.cycle + 1) · \(plan.exercises.count) exercises").font(.exCaption) }
                             Button("Start planned workout") { start(plan) }

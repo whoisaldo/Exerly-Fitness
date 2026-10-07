@@ -47,10 +47,10 @@ struct Step8Sleep: View {
                     Spacer()
                     Text(String(format: "%.1f hrs", state.sleepHours))
                         .font(.exStatSmall)
-                        .foregroundStyle(.exPrimary)
+                        .foregroundStyle(.exPrimaryText)
                 }
                 Slider(value: $state.sleepHours, in: 4...12, step: 0.5)
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
             }
         }
     }

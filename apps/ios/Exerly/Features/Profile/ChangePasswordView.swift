@@ -15,7 +15,7 @@ struct ChangePasswordView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     ExCard(accent: true) {
-                        ExEyebrow("Account security", color: .exPrimary)
+                        ExEyebrow("Account security", color: .exPrimaryText)
                         Text("Choose a new password").font(.exH2)
                         Text("Use a password you don't use for other accounts.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     }

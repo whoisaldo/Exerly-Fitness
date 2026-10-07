@@ -17,7 +17,7 @@ struct NutritionLibraryHostView: View {
                 } description: {
                     Text("Your saved data is still on this device. Keep Exerly installed and try again.")
                 } actions: {
-                    Button("Try again") { Task { await account.configure(auth.accountAPI) } }.buttonStyle(.borderedProminent)
+                    Button("Try again") { Task { await account.configure(auth.accountAPI) } }.buttonStyle(.borderedProminent).tint(Color.exActionFill)
                 }
             } else { ProgressView("Opening food library…") }
         }
@@ -110,7 +110,19 @@ struct NutritionLibraryView: View {
     }
 
     private func quickLogRow(_ food: ExerlyCore.Food) -> some View {
-        Button { loggingFood = food } label: { NutritionFoodRow(food: food) }
+        Button { loggingFood = food } label: {
+            HStack(spacing: ExSpacing.item) {
+                VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                    Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                    if let last = workspace.nutrition.entries.last(where: { $0.food.foodID == food.id }) {
+                        Text("Log again · \(NutritionFormat.portion(last))").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }
+                }.fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(Color.exPrimaryText)
+                    .frame(width: 44, height: 44).accessibilityHidden(true)
+            }.frame(minHeight: 52)
+        }
             .buttonStyle(.plain).accessibilityLabel("Log \(food.name)")
             .accessibilityIdentifier("nutrition.libraryRepeat.\(food.id)")
     }
@@ -182,7 +194,7 @@ private struct NutritionLibraryDetail: View {
         ExScreen {
             if let food = workspace.nutrition.food(foodID) {
                 ExCard(accent: true) {
-                    ExEyebrow(food.archivedAt == nil ? NutritionFormat.source(food.source) : "Archived", color: .exPrimary)
+                    ExEyebrow(food.archivedAt == nil ? NutritionFormat.source(food.source) : "Archived", color: .exPrimaryText)
                     Text(food.name).font(.exH2)
                     if let brand = food.brand { Text(brand).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
                     ExEyebrow("Per 100 g")

@@ -3,6 +3,10 @@ import UIKit
 
 extension Color {
     static let exPrimary = adaptive(0x7C3AED, 0x8B5CF6)
+    // Text and filled controls use separate purple roles for readable contrast.
+    // The original brand, chart and logo colours stay unchanged.
+    static let exPrimaryText = adaptive(0x7C3AED, 0xA78BFA)
+    static let exActionFill = Color(hex: "7C3AED")
     static let exSecondary = adaptive(0x9333EA, 0xA855F7)
     static let exAccent = adaptive(0xBE185D, 0xEC4899)
     static let exBackground = adaptive(0xF8F7FC, 0x0A0A0F)
@@ -35,6 +39,8 @@ extension Color {
 
 extension ShapeStyle where Self == Color {
     static var exPrimary: Color { Color.exPrimary }
+    static var exPrimaryText: Color { Color.exPrimaryText }
+    static var exActionFill: Color { Color.exActionFill }
     static var exSecondary: Color { Color.exSecondary }
     static var exAccent: Color { Color.exAccent }
     static var exBackground: Color { Color.exBackground }

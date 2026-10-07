@@ -38,7 +38,7 @@ struct TrainingObservationsView: View {
         ExList {
             Section {
                 ExCard(accent: true) {
-                    ExEyebrow("Training insights", color: .exPrimary)
+                    ExEyebrow("Training insights", color: .exPrimaryText)
                     Text("Look at the pattern").font(.exH2)
                     Text("Compare your recent working sets. Each observation links to the workouts behind it.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)

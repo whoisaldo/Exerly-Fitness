@@ -144,7 +144,7 @@ struct ProgramView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("MEASURED EXPENDITURE")
+                        Text(program.expenditure.measured == nil ? "ESTIMATED EXPENDITURE" : "MEASURED EXPENDITURE")
                             .font(.exSmall)
                             .fontWeight(.semibold)
                             .foregroundStyle(.exTextMuted)
@@ -225,7 +225,7 @@ struct ProgramView: View {
                     let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
                         : AnyLayout(HStackLayout(spacing: ExSpacing.content))
                     layout {
-                        target("Protein", value: program.targets.proteinG, unit: "g", color: .exPrimary)
+                        target("Protein", value: program.targets.proteinG, unit: "g", color: .exPrimaryText)
                         target("Carbs", value: program.targets.carbsG, unit: "g", color: .exAccent)
                         target("Fat", value: program.targets.fatG, unit: "g", color: .exSecondary)
                     }
@@ -264,7 +264,7 @@ struct ProgramView: View {
                         .foregroundStyle(.exTextPrimary)
                     Spacer()
                     if viewModel.isUpdating {
-                        ProgressView().tint(.exPrimary)
+                        ProgressView().tint(.exPrimaryText)
                     }
                 }
 
@@ -325,7 +325,7 @@ struct ProgramView: View {
                     Task { await viewModel.setRate(rateDraft) }
                 }
             )
-            .tint(.exPrimary)
+            .tint(.exPrimaryText)
             .disabled(viewModel.isUpdating)
 
             Text(rateExplanation(rateDraft))

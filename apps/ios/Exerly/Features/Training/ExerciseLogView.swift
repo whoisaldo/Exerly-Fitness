@@ -13,7 +13,7 @@ struct ExerciseLogView: View {
                 if let stats = store.history.statistics(of: exerciseID) {
                     Section {
                         ExCard(accent: true) {
-                        ExEyebrow("All saved working sets", color: .exPrimary)
+                        ExEyebrow("All saved working sets", color: .exPrimaryText)
                         metric("Sets", value: String(stats.totalSets))
                         if let estimate = stats.estimatedOneRepMax {
                             metric("Best estimated 1RM", value: TrainingFormat.mass(estimate, unit: unit))

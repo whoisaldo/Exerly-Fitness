@@ -33,7 +33,7 @@ struct NutritionFoodPicker: View {
         NavigationStack {
             ExScreen {
                 ExCard {
-                    ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimary)
+                    ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
                     Button { creating = true } label: { ExNavigationLabel(title: "Enter a food label", icon: "square.and.pencil") }
                         .accessibilityIdentifier("nutrition.createFood")
                     NavigationLink {

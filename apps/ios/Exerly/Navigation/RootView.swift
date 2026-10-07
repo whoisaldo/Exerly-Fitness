@@ -19,7 +19,7 @@ struct RootView: View {
             accountContent
             #endif
         }
-        .tint(Color.exPrimary)
+        .tint(Color.exPrimaryText)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
     }
 
@@ -36,7 +36,7 @@ struct RootView: View {
                         Text(authVM.error ?? "Your session is saved. Try connecting again.")
                             .multilineTextAlignment(.center)
                         Button("Try again") { Task { await authVM.checkAuth() } }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.borderedProminent).tint(Color.exActionFill)
                         Button("Sign out") { Task { await account.signOut(auth: authVM) } }
                     }.padding()
                 case .unauthenticated:

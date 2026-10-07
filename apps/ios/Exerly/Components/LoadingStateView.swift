@@ -6,7 +6,7 @@ struct LoadingStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
-                .tint(.exPrimary)
+                .tint(.exPrimaryText)
                 .scaleEffect(1.2)
             Text(message)
                 .font(.exLabel)

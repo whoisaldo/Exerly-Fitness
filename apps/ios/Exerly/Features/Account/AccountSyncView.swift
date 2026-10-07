@@ -7,9 +7,9 @@ struct AccountSyncView: View {
     var body: some View {
         ExScreen {
             ExCard(accent: true) {
-                Image(systemName: statusSymbol).font(.system(size: 36, weight: .light)).foregroundStyle(Color.exPrimary)
+                Image(systemName: statusSymbol).font(.system(size: 36, weight: .light)).foregroundStyle(Color.exPrimaryText)
                     .accessibilityHidden(true)
-                ExEyebrow("Account backup", color: .exPrimary)
+                ExEyebrow("Account backup", color: .exPrimaryText)
                 if let engine = workspace.sync {
                     status(engine).font(.exH2)
                     if let date = engine.lastSyncedAt {

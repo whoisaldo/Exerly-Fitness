@@ -55,7 +55,7 @@ struct NutritionConfirmation: View {
                     Text(message)
                     Button(role: destructive ? .destructive : nil, action: perform) {
                         Text(confirm).frame(maxWidth: .infinity, alignment: .leading)
-                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("nutrition.confirm")
+                    }.buttonStyle(.borderedProminent).tint(Color.exActionFill).accessibilityIdentifier("nutrition.confirm")
                 }.fixedSize(horizontal: false, vertical: true).padding()
             }
             .navigationTitle("Confirm").navigationBarTitleDisplayMode(.inline)
@@ -108,26 +108,30 @@ struct NutritionDailySummary: View {
     @ScaledMetric(relativeTo: .largeTitle) private var energySize: CGFloat = 46
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ExSpacing.page) {
-            if showHeading { ExEyebrow("Daily nutrition", color: .exPrimary) }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+        VStack(alignment: .leading, spacing: ExSpacing.item) {
+            if showHeading { ExEyebrow("Daily nutrition", color: .exPrimaryText) }
+            let energyLayout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
+            energyLayout {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(amounts[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
                     .font(.system(size: energySize, weight: .bold, design: .rounded)).foregroundStyle(Color.exTextPrimary)
                     .contentTransition(.numericText())
                 Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
-            }.accessibilityElement(children: .combine)
-            if let targets {
-                VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExProgressBar(value: amounts[.energy] ?? 0, total: targets.energy)
-                    Text("of \(targets.energy.formatted(.number.precision(.fractionLength(0)))) kcal target")
+                }.accessibilityElement(children: .combine)
+                if let targets {
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                    Text("of \(targets.energy.formatted(.number.precision(.fractionLength(0))))\nkcal target")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        .multilineTextAlignment(typeSize.isAccessibilitySize ? .leading : .trailing)
                         .accessibilityIdentifier("nutrition.targetEnergy").accessibilityValue(String(targets.energy))
                 }
             }
+            if let targets { ExProgressBar(value: amounts[.energy] ?? 0, total: targets.energy) }
             let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
                 : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.item))
             layout {
-                macro(.protein, label: "Protein", target: targets?.protein, color: .exPrimary)
+                macro(.protein, label: "Protein", target: targets?.protein, color: .exPrimaryText)
                 macro(.carbohydrate, label: "Carbs", target: targets?.carbohydrate, color: .exAccent)
                 macro(.fat, label: "Fat", target: targets?.fat, color: .exSecondary)
             }

@@ -49,7 +49,7 @@ struct NutritionBarcodeView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExEyebrow("Food lookup", color: .exPrimary)
+                    ExEyebrow("Food lookup", color: .exPrimaryText)
                     Text("Find it by barcode").font(.exH2)
                     Text("Enter the digits below. You can also search by name or enter the label.").font(.exBody).foregroundStyle(Color.exTextSecondary)
                     if AVCaptureDevice.authorizationStatus(for: .video) == .denied {

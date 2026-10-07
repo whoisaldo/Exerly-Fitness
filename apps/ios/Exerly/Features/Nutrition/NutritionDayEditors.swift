@@ -22,7 +22,7 @@ struct NutritionDayNotesView: View {
         NavigationStack {
             ExScreen {
                 ExCard {
-                    ExEyebrow(NutritionFormat.day(date, timeZone: timeZone), color: .exPrimary)
+                    ExEyebrow(NutritionFormat.day(date, timeZone: timeZone), color: .exPrimaryText)
                     TextField("Food log note", text: $draft.text, axis: .vertical)
                         .lineLimit(5...20).focused($typing).accessibilityIdentifier("nutrition.dayNote")
                 }
@@ -75,7 +75,7 @@ struct NutritionCopyView: View {
         NavigationStack {
             ExScreen {
                 ExCard {
-                    ExEyebrow("Copy from", color: .exPrimary)
+                    ExEyebrow("Copy from", color: .exPrimaryText)
                     Text("\(draft.sourceMeal ?? "All meals") · \(NutritionFormat.day(draft.source, timeZone: timeZone))").font(.exH3)
                     ForEach(draft.entries) { entry in
                         VStack(alignment: .leading, spacing: 4) {

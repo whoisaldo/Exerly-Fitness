@@ -51,7 +51,7 @@ struct AdminView: View {
             if isLoading {
                 Spacer()
                 ProgressView()
-                    .tint(.exPrimary)
+                    .tint(.exPrimaryText)
                 Spacer()
             } else {
                 switch selectedTab {
@@ -85,7 +85,7 @@ struct AdminView: View {
         ExScreen {
             if let stats {
                 ExCard(accent: true) {
-                    ExEyebrow("Active today", color: .exPrimary)
+                    ExEyebrow("Active today", color: .exPrimaryText)
                     Text(stats.activeToday.formatted()).font(.exStat)
                     Text("of \(stats.totalUsers.formatted()) accounts").font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }
@@ -156,6 +156,8 @@ struct AdminView: View {
                         .background((user.isAdmin == true ? Color.exPrimary : Color.exSurface2).opacity(0.2))
                         .clipShape(Capsule())
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityLabel("\(user.email), \(user.isAdmin == true ? "Admin" : "User")")
             }
         }
     }

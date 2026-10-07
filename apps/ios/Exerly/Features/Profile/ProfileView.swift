@@ -35,7 +35,7 @@ struct ProfileView: View {
     private var avatarSection: some View {
         HStack(spacing: ExSpacing.content) {
             Text(String((authVM.currentUser?.name ?? "A").prefix(1)).uppercased())
-                .font(.exStat).foregroundStyle(Color.exPrimary).frame(width: 64, height: 64)
+                .font(.exStat).foregroundStyle(Color.exPrimaryText).frame(width: 64, height: 64)
                 .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 22))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
@@ -59,7 +59,7 @@ struct ProfileView: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.exStatSmall)
-                .foregroundStyle(.exPrimary)
+                .foregroundStyle(.exPrimaryText)
             Text(label)
                 .font(.exSmall)
                 .foregroundStyle(.exTextMuted)
@@ -212,7 +212,7 @@ struct HealthKitSettingsView: View {
                     }
                     Spacer()
                     Toggle("Read Apple Health data", isOn: $syncEnabled)
-                        .tint(.exPrimary)
+                        .tint(.exPrimaryText)
                         .labelsHidden()
                 }
             }
@@ -263,7 +263,7 @@ struct HealthKitSettingsView: View {
     private func syncRow(_ title: String, icon: String, value: String?) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .foregroundStyle(.exPrimary)
+                .foregroundStyle(.exPrimaryText)
                 .frame(width: 24)
             Text(title)
                 .font(.exBody)

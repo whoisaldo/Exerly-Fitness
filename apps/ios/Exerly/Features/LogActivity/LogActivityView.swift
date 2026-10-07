@@ -14,7 +14,6 @@ struct LogActivityView: View {
     @State private var isSaving = false
     @State private var confirmingDelete = false
     @State private var error: String?
-    @FocusState private var focused: Bool
 
     init(initialDate: CalendarDay, editing: ActivityDTO? = nil, onDeleted: @escaping (String) -> Void = { _ in }, onSaved: @escaping () -> Void = {}) {
         self.editing = editing; self.onDeleted = onDeleted; self.onSaved = onSaved
@@ -28,14 +27,14 @@ struct LogActivityView: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("Movement", color: .exPrimary)
-                    TextField("Activity name", text: $name).font(.exH2).focused($focused).accessibilityIdentifier("activity.name")
+                    ExEyebrow("Movement", color: .exPrimaryText)
+                    TextField("Activity name", text: $name).font(.exH2).accessibilityIdentifier("activity.name")
                     ExQuantityControl(title: "Minutes", text: $duration, step: 5, presets: [15, 30, 60], unit: "min", identifier: "activity.minutes")
                 }
                 ExCard {
                     ExSectionHeading("Effort")
                     ExChoiceChips(values: intensityChoices, selection: $intensity) { $0.isEmpty ? "Not recorded" : $0.capitalized }
-                    NutritionNumberInput(title: "Calories, optional", text: $calories, identifier: "activity.calories").focused($focused)
+                    NutritionNumberInput(title: "Calories, optional", text: $calories, identifier: "activity.calories")
                     Text("Leave calories blank if you did not record them.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
                 ExCard {
@@ -53,7 +52,7 @@ struct LogActivityView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save activity") { save() }.disabled(isSaving) }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
             }
             .alert("Delete this activity?", isPresented: $confirmingDelete) {
                 Button("Delete activity", role: .destructive) {

@@ -45,7 +45,7 @@ struct ExForm<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         Form { content.listRowBackground(Color.exSurface1).listRowSeparatorTint(Color.exBorder) }
-            .scrollContentBackground(.hidden).background(Color.exBackground).tint(Color.exPrimary)
+            .scrollContentBackground(.hidden).background(Color.exBackground).tint(Color.exPrimaryText)
     }
 }
 
@@ -104,8 +104,8 @@ struct ExActionStyle: ButtonStyle {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, minHeight: 24)
             .padding(.horizontal, ExSpacing.content).padding(.vertical, 14)
-            .foregroundStyle(secondary ? Color.exPrimary : Color.white)
-            .background(secondary ? Color.exPrimary.opacity(0.1) : Color.exPrimary)
+            .foregroundStyle(secondary ? Color.exPrimaryText : Color.white)
+            .background(secondary ? Color.exPrimary.opacity(0.1) : Color.exActionFill)
             .clipShape(RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
             .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.75 : 1)
     }
@@ -122,7 +122,7 @@ struct ExEmptyState: View {
     var body: some View {
         ExCard {
             Image(systemName: icon).font(.system(size: 26, weight: .medium))
-                .foregroundStyle(Color.exPrimary).frame(width: 56, height: 56)
+                .foregroundStyle(Color.exPrimaryText).frame(width: 56, height: 56)
                 .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: ExSpacing.small) {
@@ -142,7 +142,7 @@ struct ExNavigationLabel: View {
     var body: some View {
         HStack(spacing: ExSpacing.item) {
             Image(systemName: icon).font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color.exPrimary).frame(width: 42, height: 42)
+                .foregroundStyle(Color.exPrimaryText).frame(width: 42, height: 42)
                 .background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: ExSpacing.tight) {
@@ -194,7 +194,7 @@ struct ExChoiceChips<Value: Hashable>: View {
                 Text(title(value)).font(.exLabel).fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
                     .padding(.horizontal, 14).frame(minHeight: 44)
                     .foregroundStyle(selection == value ? Color.white : Color.exTextSecondary)
-                    .background(selection == value ? Color.exPrimary : Color.exSurface2, in: Capsule())
+                    .background(selection == value ? Color.exActionFill : Color.exSurface2, in: Capsule())
             }.buttonStyle(.plain).accessibilityAddTraits(selection == value ? .isSelected : [])
         }
     }
@@ -236,7 +236,7 @@ struct ExQuantityControl: View {
                             text = value.formatted(.number.grouping(.never).precision(.fractionLength(0...8)))
                         }.font(.exLabel).frame(maxWidth: .infinity, minHeight: 44)
                             .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
-                            .buttonStyle(.plain).foregroundStyle(Color.exPrimary)
+                            .buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
                     }
                 }
             }
@@ -244,7 +244,7 @@ struct ExQuantityControl: View {
     }
 
     private var quantityField: some View {
-        ExNumericTextField(title: title, text: $text, integer: integer, centered: true, identifier: identifier)
+        ExNumericTextField(title: title, text: $text, placeholder: "—", integer: integer, centered: true, identifier: identifier)
             .frame(minHeight: 52)
     }
 
@@ -253,12 +253,13 @@ struct ExQuantityControl: View {
             let formatter = NumberFormatter()
             formatter.locale = .current
             formatter.numberStyle = .decimal
-            guard let number = formatter.number(from: text)?.doubleValue, number.isFinite else { return }
+            let entered = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let number = entered.isEmpty ? 0 : formatter.number(from: entered)?.doubleValue, number.isFinite else { return }
             text = max(0, number + amount).formatted(.number.grouping(.never).precision(.fractionLength(0...8)))
         } label: {
             Image(systemName: symbol).font(.body.weight(.semibold)).frame(width: 44, height: 44)
                 .background(Color.exSurface2, in: Circle())
-        }.buttonStyle(.plain).foregroundStyle(Color.exPrimary).accessibilityLabel(label)
+        }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText).accessibilityLabel(label)
     }
 }
 
@@ -290,6 +291,6 @@ extension View {
         self.listStyle(.insetGrouped).listSectionSpacing(ExSpacing.section)
             .scrollContentBackground(.hidden).background(Color.exBackground)
             .environment(\.defaultMinListRowHeight, 52)
-            .tint(Color.exPrimary)
+            .tint(Color.exPrimaryText)
     }
 }

@@ -37,7 +37,7 @@ struct NutritionEntryEditor: View {
             ScrollViewReader { scroll in
                 ExScreen {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
-                        ExEyebrow(editing == nil ? "Add to your day" : "Logged food", color: .exPrimary)
+                        ExEyebrow(editing == nil ? "Add to your day" : "Logged food", color: .exPrimaryText)
                         Text(draft.food.name).font(.exH2)
                             .fixedSize(horizontal: false, vertical: true)
                         if let brand = draft.food.brand { Text(brand).foregroundStyle(.secondary) }
@@ -72,7 +72,7 @@ struct NutritionEntryEditor: View {
                             .accessibilityIdentifier("nutrition.meal")
                     }
                     ExCard(accent: true) {
-                        ExEyebrow("This portion", color: .exPrimary)
+                        ExEyebrow("This portion", color: .exPrimaryText)
                         portion
                     }
                     ExCard {

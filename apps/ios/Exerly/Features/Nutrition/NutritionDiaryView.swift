@@ -19,7 +19,7 @@ struct NutritionHostView: View {
                 } description: {
                     Text("Your saved data is still on this device. Keep Exerly installed and try again.")
                 } actions: {
-                    Button("Try again") { Task { await account.configure(auth.accountAPI) } }.buttonStyle(.borderedProminent)
+                    Button("Try again") { Task { await account.configure(auth.accountAPI) } }.buttonStyle(.borderedProminent).tint(Color.exActionFill)
                 }
             } else { ProgressView("Opening diary…") }
         }
@@ -71,6 +71,7 @@ struct NutritionDiaryView: View {
         ScrollViewReader { scroll in
             ExScreen {
                 dateNavigation
+                VStack(spacing: ExSpacing.tight) {
                 ExCard(accent: true) {
                     NutritionDailySummary(amounts: store.summary(on: date).totals, targets: displayTargets, showHeading: false)
                 }
@@ -86,6 +87,7 @@ struct NutritionDiaryView: View {
                     } label: {
                         Image(systemName: "ellipsis").frame(width: 44, height: 44)
                     }.accessibilityLabel("Diary actions").accessibilityIdentifier("nutrition.dayActions")
+                }
                 }
                 if !store.day(date).notes.isEmpty {
                     Button { destination = .notes(date) } label: {
@@ -205,7 +207,7 @@ struct NutritionDiaryView: View {
                 Button { date = date.adding(days: 1) } label: {
                     Image(systemName: "chevron.right").frame(width: 44, height: 44)
                 }.accessibilityLabel("Next day")
-            }.buttonStyle(.plain).foregroundStyle(Color.exPrimary)
+            }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
             if date != LocalDate(Date(), in: timeZone) {
                 Button("Back to today") { date = LocalDate(Date(), in: timeZone) }.font(.exCaption).frame(minHeight: 44)
             }
@@ -224,7 +226,7 @@ struct NutritionDiaryView: View {
         } label: {
             HStack(spacing: ExSpacing.item) {
                 Image(systemName: store.day(date).status == .complete ? "checkmark.circle.fill" : "circle.dotted")
-                    .foregroundStyle(Color.exPrimary)
+                    .foregroundStyle(Color.exPrimaryText)
                 Text(NutritionFormat.status(store.day(date).status)).font(.exLabel).foregroundStyle(Color.exTextSecondary)
                 Image(systemName: "chevron.down").font(.caption2).foregroundStyle(Color.exTextMuted)
             }.frame(minHeight: 44).contentShape(Rectangle())
@@ -241,7 +243,7 @@ struct NutritionDiaryView: View {
         let entries = store.entries(on: date).filter { $0.meal == meal }
         return ExCard {
             HStack {
-                ExEyebrow(meal, color: .exPrimary)
+                ExEyebrow(meal, color: .exPrimaryText)
                 Spacer()
                 Menu {
                     Button("Copy \(meal)", systemImage: "doc.on.doc") { destination = .copy(date, meal) }
