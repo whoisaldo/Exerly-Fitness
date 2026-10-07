@@ -43,7 +43,7 @@ else
   bash scripts/ios.sh test "${producer_args[@]}" -resultBundlePath "$evidence/native-create.xcresult" > "$evidence/native-create.log" 2>&1
 fi
 for journey in testBodyMeasurementOfflineRecoveryAndSynchronizedUndo testWeightOfflineRecoveryConflictReviewDeletionAndUndo testActivityAndSleepOfflineRecoveryConflictDeletionAndUndo testBrowserSetupDraftContinuesOnNative testPreferencesDraftRecoveryLostResponseAndReviewedConflict testLegacySessionUpgradeRecoversALostResponseAndKeepsOfflineAccount; do
-  if ! rg -Fq "$journey]' passed" "$evidence/native-create.log"; then
+  if ! grep -Fq "$journey]' passed" "$evidence/native-create.log"; then
     echo "The native producer $journey was skipped or did not pass." >&2
     exit 1
   fi
@@ -53,7 +53,7 @@ PLAYWRIGHT_BASE_URL=http://127.0.0.1:3303 PLAYWRIGHT_API_URL=http://127.0.0.1:39
 echo 'Browser edits, conflict review, lost-response replay, undo and export passed.'
 bash scripts/ios.sh test -only-testing:ExerlyUITests/ProductionUITests/testBodyMeasurementWebChangesReturnToNative -only-testing:ExerlyUITests/ProductionUITests/testWeightWebChangesReturnToNative -only-testing:ExerlyUITests/ProductionUITests/testActivityAndSleepWebChangesReturnToNative -only-testing:ExerlyUITests/ProductionUITests/testBrowserSetupCompletionReturnsToNative -only-testing:ExerlyUITests/ProductionUITests/testBrowserPreferencesReturnToNative -resultBundlePath "$evidence/native-return.xcresult" > "$evidence/native-return.log" 2>&1
 for journey in testBodyMeasurementWebChangesReturnToNative testWeightWebChangesReturnToNative testActivityAndSleepWebChangesReturnToNative testBrowserSetupCompletionReturnsToNative testBrowserPreferencesReturnToNative; do
-  if ! rg -Fq "$journey]' passed" "$evidence/native-return.log"; then
+  if ! grep -Fq "$journey]' passed" "$evidence/native-return.log"; then
     echo "The native return check $journey was skipped or did not pass." >&2
     exit 1
   fi
