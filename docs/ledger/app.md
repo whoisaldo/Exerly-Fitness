@@ -6,63 +6,44 @@ milestone. Current date 2026-10-06, updated 18:44 EDT.
 
 ## Current work and next steps
 
-2026-10-06 19:03 EDT. A6, agent/app-programs. Done is not met. Continue.
-A5 is live as2610062144, only Ali/only build, VALID/IN_BETA_TESTING. Its final
-123 hosted+25 UI passed,8 skips; Core233/API226/device pass. A5 landed/pushed,
-then Logic landed778540cf. A6 rebased on that and was reviewed/approved by Logic.
-Integration is held for A6 since18:41. A7 will adopt subsequent Core work.
+2026-10-06 21:12 EDT. A6 release complete; Done is not met. Continue A7 in
+/Users/aldo/Desktop/Exerly-Fitness-app-nutrition (agent/app-nutrition). Its ledger
+is current. Do not restart A6 or upload another archive without a code change.
 
-The image audit found real truncation in the builder at largest text: name,
-deload choice and crowded navigation title. Program/day names now wrap; deload,
-icon, color and cycle selectors use wrapping Menu labels. Reorder moved into
-the Days section and the navigation title is Program. Core math is unchanged.
-The source-RIR note explicitly names the assumed target. Full-a6-final was
-interrupted to include these changes, so it is NOT final release evidence.
+A6 product source de8dd16a has passed the full suite. Signed2610070024 uploaded
+21:08 and is VALID/IN_BETA_TESTING. Only Ali, only0024, English notes verified.
+BuildUUIDdae77dd7-57c6-4922-9a34-c9ee016cf201; artifacts/programs/internal-final.json.
+2144 detached only after0024 available. Obsolete2322 never uploaded.
+This branch is ready for ff landing onto integration778540cf and push, followed
+by release of Logic's integration hold in its inbox.
 
-Core259 tests/52 suites and API238 pass in final-core.log/final-api.log. Earlier
-final-device passed before the wrapping fix. Lint/typecheck pass with warnings;
-format check found only this ledger and it will be formatted before commit.
-SwiftLint passed before wrapping; repeat device/SwiftLint for final source.
+Final evidence:
 
-Current AX wrapping runs, all compiled on the latest product source:
+- full-a6-meal-final: PASS21:07.132 hosted+30 UI,8 opt-in skips,0 failures.
+- Core259 tests/52 suites, API238, device build and SwiftLint pass.
+- Lint/typecheck/format pass with existing warnings. Release lint repeated21:08.
+- All4 program AXXXL variants pass, all66 captures inspected. All4 meal menu
+  variants pass, all12 captures inspected. meal-menu-normal2 journeys pass,
+  all10 captures inspected. Prior program source/lifecycle/proposal captures
+  are recorded in artifacts/programs/visual-review.md.
+- First full-a6-wrapped-final failed because scrolling began on inline Lunch
+  and changed Dinner. meal-scroll-diagnosis reproduced it. Wrapping native
+  Menu/Picker now protects the choice; strict date/server/offline checks kept.
+- Legacy diary rows still truncate atAXXXL; A7 replaces them. Not full parity.
+- Xcode's post-test diagnostic collector uses broken global simctl. This is
+  an existing warning after passing tests; project commands use Xcode26.2.
 
-- large-light-wrapping/session99623, LargeAX02A671D3/39207,a6-large:
-  builder+cancel/lifecycle. Source wording already passed large-light-assumption.
-- small-light-wrapping/session85894, SE7D2096/39206,a6-fields:
-  source+builder+lifecycle.
-- small-dark-wrapping/session78078, SE45D463AE/39209,a6-proposals:
-  source+builder.
-- large-dark-wrapping/session87661, Large7189880A/39208,a6-original:
-  source+builder.
-  Native full test will restart on SE39B20FBF/39211,a6-full, unique result bundle
-  full-a6-wrapping. Do not use that simulator for A7 while it runs.
+A6 SE39B20FBF/39211 and its other program test sims are free. A7 currently uses
+SE45D463AE/39212 and Large02A671D3/39213. Verify its ledger before using them.
+A7 atbdd52966 plus library work: new NutritionStore diary, manual food labels,
+submitted search/barcode, precise repeat portions, notes/copy/status/deleteundo.
+Three real-server journeys pass; current library actions6 hosted pass. It still
+needs incoming Logic volume/formula/symbology contracts, targets, library and
+food proposal review, four AX variants and full gates before a release.
 
-Completed earlier: small-light-final and large-dark-final each source/builder/
-proposal pass; small-dark-final source/builder pass. Their captures exported.
-Normal31 captures inspected. Large-dark-sheet lifecycle7 inspected. The detailed
-image audit continues; artifacts/programs/visual-review.md records inspected
-images and any remaining fixes. Never claim exported images as inspected.
-Large-light-assumption4 captures inspected; copy wraps, new heading is first.
-The next source captures also show the tail of the RIR assumption beside its
-workout link. Additional UI capture does not change product source.
-
-Once wrapping runs/images and final full native/device/quality gates pass,
-create a fresh signed timestamp archive, upload, wait for VALID/IN_BETA_TESTING,
-assign only Ali and detach2144 only after readiness. Update PARITY/RELEASE,
-ff land/push and release Logic's integration hold. No A6 archive created yet.
-
-A7 worktree Exerly-Fitness-app-nutrition, agent/app-nutrition,b83a896f rebased
-onto A6e6ea5dd7. NutritionStore composition/design015 committed. Two regressions
-red then green;12 account+nutrition hosted tests pass. Next food/amount drafts
-and diary. Legacy diary retires per Logic, its sync queue/server/export remain.
-Logic has published the volume snapshot fix, initial BodyProfile/formula plan,
-and batch logging/copy/move/recipe suggestions, landing after A6. Do not edit
-Core/API. A7 can build drafts with current NutritionStore.preview/per-label API.
-
-Login reverified19:00: correct /login endpoint returns200 for the stored
-synthetic TestFlight account. Credentials remain only in private_keys and were
-sent to Ali in chat. Phone requires Tailscale and current2144. Original theme
-and logo retained. No Mac password saved.
+Phone credentials already sent, only in private_keys; phone needs Tailscale.
+Preserve original purple/pink and E/pulse mark. Never edit Core/API. Commit as
+Ali Younes. Always DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer.
 
 ## A3 final evidence and release
 

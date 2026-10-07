@@ -117,21 +117,21 @@ same values to VoiceOver. Completeness is separate from nutrient intake.
 
 ## Programs, progression and training analytics
 
-| ID  | Feature and primary source                                                                    | Status  | Acceptance criteria                                                                                             | Beyond                                    | Evidence                                                                                        |
-| --- | --------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| P01 | Manual program builder [MF build program][program-build]                                      | Missing | Named/icon/color program, cycles, workouts/rest days, sets/rep ranges/RIR/rest; save and activate.              | Parity                                    | None                                                                                            |
-| P02 | Program generation [MF smart generation][program-generate]                                    | Missing | Goal, experience, days/time, gym, split, emphasis/exclusions and deload preferences create reviewable proposal. | B: every change reviewable/undoable       | None                                                                                            |
-| P03 | Scheduling and periodization [MF build program][program-build], [MF schedule][schedule]       | Missing | Reorder training/rest days, variable cycle length, per-cycle sets/reps/RIR and first/last deload.               | Parity                                    | None                                                                                            |
-| P04 | Program/workout lifecycle [MF program help][workouts-index]                                   | Missing | Duplicate, rename, activate/switch, archive/restore, complete/restart and skip; keep history.                   | Parity                                    | None                                                                                            |
-| P05 | Workout library sections and sharing [MF workout sections][sections]                          | Missing | Organize templates/programs; share and preview import without proprietary formats.                              | Parity                                    | None                                                                                            |
-| P06 | Apply live changes to program [MF program help][workouts-index], [Export]                     | Missing | Explicit choice for current session versus future cycles; show changed targets and retain old sessions.         | Parity                                    | None                                                                                            |
-| P07 | RIR autoregulated progression [MF overload][overload]                                         | Missing | Tested pure functions propose reps/load; explain inputs, rounding, stalls and unavailable equipment.            | Parity                                    | None                                                                                            |
-| P08 | Assessment, expanded rep ranges and weight matching [Export], [MF equipment][equipment]       | Missing | Exercise-specific controls affect recommendations predictably; old data unchanged.                              | Parity; exact controls export-derived     | None                                                                                            |
-| A01 | Estimated 1/3/10 RM [MF exercise overview][exercise-stats]                                    | Partial | Metric/window selector, low-rep constraints, estimate label and link to source set.                             | B: transparent formula/error              | A5: best estimated 1RM links to saved working sets and source workouts; 3/10RM selector pending |
-| A02 | Volume, best set, load, reps, duration, sets [MF exercise overview][exercise-stats], [Export] | Partial | Total/best-set volume, heaviest load, total/best reps/duration and set counts match reference fixtures.         | Parity                                    | A5: exercise-log best 1RM and raw completed sets; complete metric/window comparison pending     |
-| A03 | Muscle sets and volume [MF muscles][muscles], [Export]                                        | Missing | All 22 export muscle groups; per-session and time series; direct/indirect contribution documented.              | B: fractional accounting with assumptions | None                                                                                            |
-| A04 | Training dashboard and records [MF workouts dashboard][workouts-dashboard]                    | Missing | Compare cycles, recent records, session volume/duration; customize displayed metrics.                           | Parity                                    | None                                                                                            |
-| A05 | Training frequency/calendar and levels [MF workouts dashboard][workouts-dashboard]            | Missing | Calendar and workload history; explain derived performance levels without motivational scoring.                 | Parity                                    | None                                                                                            |
+| ID  | Feature and primary source                                                                    | Status  | Acceptance criteria                                                                                             | Beyond                                    | Evidence                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| P01 | Manual program builder [MF build program][program-build]                                      | Built   | Named/icon/color program, cycles, workouts/rest days, sets/rep ranges/RIR/rest; save and activate.              | Parity                                    | A6: manual builder, offline relaunch, source plan and four largest-type variants pass; physical check pending  |
+| P02 | Program generation [MF smart generation][program-generate]                                    | Missing | Goal, experience, days/time, gym, split, emphasis/exclusions and deload preferences create reviewable proposal. | B: every change reviewable/undoable       | None                                                                                                           |
+| P03 | Scheduling and periodization [MF build program][program-build], [MF schedule][schedule]       | Built   | Reorder training/rest days, variable cycle length, per-cycle sets/reps/RIR and first/last deload.               | Parity                                    | A6: ordered training/rest days, cycles, per-cycle targets and deload controls verified in simulator            |
+| P04 | Program/workout lifecycle [MF program help][workouts-index]                                   | Partial | Duplicate, rename, activate/switch, archive/restore, complete/restart and skip; keep history.                   | Parity                                    | A6: rename, duplicate, follow/switch, archive/restore preserve history; explicit restart/skip controls pending |
+| P05 | Workout library sections and sharing [MF workout sections][sections]                          | Missing | Organize templates/programs; share and preview import without proprietary formats.                              | Parity                                    | None                                                                                                           |
+| P06 | Apply live changes to program [MF program help][workouts-index], [Export]                     | Missing | Explicit choice for current session versus future cycles; show changed targets and retain old sessions.         | Parity                                    | None                                                                                                           |
+| P07 | RIR autoregulated progression [MF overload][overload]                                         | Partial | Tested pure functions propose reps/load; explain inputs, rounding, stalls and unavailable equipment.            | Parity                                    | A6: next-workout target and source-set explanation; available-equipment progression waits for gym UI           |
+| P08 | Assessment, expanded rep ranges and weight matching [Export], [MF equipment][equipment]       | Partial | Exercise-specific controls affect recommendations predictably; old data unchanged.                              | Parity; exact controls export-derived     | A6: expanded rep-range control; weight-match reserved by Core and omitted; assessment UI pending               |
+| A01 | Estimated 1/3/10 RM [MF exercise overview][exercise-stats]                                    | Partial | Metric/window selector, low-rep constraints, estimate label and link to source set.                             | B: transparent formula/error              | A5: best estimated 1RM links to saved working sets and source workouts; 3/10RM selector pending                |
+| A02 | Volume, best set, load, reps, duration, sets [MF exercise overview][exercise-stats], [Export] | Partial | Total/best-set volume, heaviest load, total/best reps/duration and set counts match reference fixtures.         | Parity                                    | A5: exercise-log best 1RM and raw completed sets; complete metric/window comparison pending                    |
+| A03 | Muscle sets and volume [MF muscles][muscles], [Export]                                        | Missing | All 22 export muscle groups; per-session and time series; direct/indirect contribution documented.              | B: fractional accounting with assumptions | None                                                                                                           |
+| A04 | Training dashboard and records [MF workouts dashboard][workouts-dashboard]                    | Missing | Compare cycles, recent records, session volume/duration; customize displayed metrics.                           | Parity                                    | None                                                                                                           |
+| A05 | Training frequency/calendar and levels [MF workouts dashboard][workouts-dashboard]            | Missing | Calendar and workload history; explain derived performance levels without motivational scoring.                 | Parity                                    | None                                                                                                           |
 
 ## Platform, migration and public product
 
@@ -325,3 +325,35 @@ height after source deletion. Result bundles and images are under
 `artifacts/insights`; final metric bundles end in `-metrics`. No physical-device,
 VoiceOver or full parity certification is claimed. Ranked weekly review, program
 proposals and nutrition proposals remain separate milestones.
+
+### A6 program evidence and release, 2026-10-06
+
+Product source de8dd16a (author-only amend of f041bb30) is based on integration
+778540cf. Manual programs, training/rest days, cycle targets and deloads now
+compose through the account's ProgramStore, sync, proposals and export.
+Lifecycle review rechecks the saved program and active selection before acting.
+The next-workout screen explains estimates and missing RIR, links source sets,
+and starts every set incomplete. Finishing advances to the next training day.
+
+Core259 tests in52 suites and API238 pass. Device build and SwiftLint pass.
+Four final program largest-type variants passed, with all66 named captures
+inspected. Program field names and choice labels grow and wrap. Evidence is
+in Exerly-Fitness-app-programs/artifacts/programs, bundles ending
+small-dark-wrapped-final, small-light-wrapped-final, large-dark-wrapped-final
+and large-light-wrapped-final. Earlier proposal/source/lifecycle evidence and
+inspected images are recorded in visual-review.md in the same directory.
+
+The first full gate found a legacy food picker bug: scrolling over Lunch
+changed a reviewed Dinner selection. A wrapping native meal menu fixes it.
+meal-menu-normal passes the explicit-choice journey and complete signup,
+offline edit/relaunch/reconnect journey, including server values. All four
+meal-menu-{small,large}-{light,dark} journeys pass at largest type. All12 named
+variant images and10 normal images were inspected. The old diary's meal and
+food rows still truncate at largest type; A7 replaces those rows.
+
+Final full-a6-meal-final passed132 hosted tests and30 UI journeys, eight opt-in
+skips and zero failures. Signed build2610070024 is VALID/IN_BETA_TESTING and
+the only Ali internal build, with English notes verified. Build2610062322 was
+never uploaded; A5 build2610062144 was detached after0024 became available.
+Physical installation and VoiceOver verification remain outstanding; these
+rows are not certified parity.
