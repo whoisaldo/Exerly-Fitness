@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { estimate } = require('../lib/nutrition/energyBalance');
-const { NUTRIENTS, FOOD_SOURCES } = require('../lib/nutrition/validate');
+const { NUTRIENTS, NUTRIENT_UNITS, FOOD_SOURCES } = require('../lib/nutrition/validate');
 
 const golden = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../../../docs/api/golden/nutrition-v1.json'), 'utf8')
@@ -47,4 +47,5 @@ test('the port reproduces ExerlyCore on every golden case', () => {
 test("the validators know exactly ExerlyCore's nutrients and food sources", () => {
   assert.deepEqual(NUTRIENTS, golden.nutrients);
   assert.deepEqual(FOOD_SOURCES, golden.foodSources);
+  assert.deepEqual(NUTRIENT_UNITS, golden.nutrientUnits);
 });

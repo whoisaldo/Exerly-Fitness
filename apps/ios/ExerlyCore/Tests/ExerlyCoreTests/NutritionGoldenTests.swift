@@ -26,6 +26,8 @@ import Testing
         /// Every nutrient name and food source ExerlyCore decodes, for the API's validators.
         var nutrients = Nutrient.allCases.map(\.rawValue)
         var foodSources = FoodSource.allCases.map(\.rawValue)
+        /// Each nutrient's unit, for exports that label their columns.
+        var nutrientUnits = Dictionary(uniqueKeysWithValues: Nutrient.allCases.map { ($0.rawValue, $0.unit.rawValue) })
         var cases: [Case]
     }
 

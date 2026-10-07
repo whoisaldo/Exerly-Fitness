@@ -178,4 +178,65 @@ function foodProblems(food, id) {
   return problems;
 }
 
-module.exports = { NUTRIENTS, FOOD_SOURCES, foodEntryProblems, foodProblems };
+// Each nutrient's unit, as ExerlyCore's Nutrient.unit gives it. A test holds
+// it to docs/api/golden/nutrition-v1.json.
+const NUTRIENT_UNITS = Object.fromEntries(
+  Object.entries({
+    kcal: ['energy'],
+    g: [
+      'protein',
+      'carbohydrate',
+      'fat',
+      'fiber',
+      'sugars',
+      'addedSugars',
+      'starch',
+      'saturatedFat',
+      'monounsaturatedFat',
+      'polyunsaturatedFat',
+      'transFat',
+      'omega3',
+      'omega3ALA',
+      'omega3EPA',
+      'omega3DHA',
+      'omega6',
+      'alcohol',
+      'water',
+      'histidine',
+      'isoleucine',
+      'leucine',
+      'lysine',
+      'methionine',
+      'phenylalanine',
+      'threonine',
+      'tryptophan',
+      'valine',
+      'cystine',
+      'tyrosine',
+    ],
+    mg: [
+      'cholesterol',
+      'sodium',
+      'potassium',
+      'calcium',
+      'iron',
+      'magnesium',
+      'phosphorus',
+      'zinc',
+      'copper',
+      'manganese',
+      'vitaminC',
+      'vitaminE',
+      'thiamin',
+      'riboflavin',
+      'niacin',
+      'pantothenicAcid',
+      'vitaminB6',
+      'choline',
+      'caffeine',
+    ],
+    mcg: ['selenium', 'vitaminA', 'vitaminD', 'vitaminK', 'vitaminB12', 'folate'],
+  }).flatMap(([unit, names]) => names.map((name) => [name, unit]))
+);
+
+module.exports = { NUTRIENTS, NUTRIENT_UNITS, FOOD_SOURCES, foodEntryProblems, foodProblems };
