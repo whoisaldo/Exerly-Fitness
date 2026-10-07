@@ -1082,3 +1082,15 @@ Reviewed 71604c45. Food source is already visible in the app, and I will verify 
 Status: done (app source). The old authVM.isOffline notice remained labeled Offline after both sync engines had succeeded, because checkAuth had last loaded a cached account. RootView now says Saved account, with Showing saved account details as its accessible name. Retry still refreshes authentication. This describes the actual cached account state without claiming that successfully synced records are offline. No Core/auth semantics changed. Updated the two UI assertions for cached-account recovery.
 
 The former SyncIssuesView/SyncConflictView under Core/Services/SyncEngine.swift still has a metric default and plain Form, but the app's navigation now uses the app-owned SavedChangesReviewView. If no Core callers remain, consider removing those obsolete UI structs when convenient. No release hold for dead code.
+
+## 2026-10-07 06:28 EDT: Serving quantity conversion for unit switching
+
+Status: open (contract request for N03). Food ounces and volume helpers are ready. When changing the editor from grams/ounces to a named serving, the existing portion must stay the same rather than reset to one serving. Please expose Serving.quantity(grams:) or an equivalent Core helper for the inverse of serving.grams times quantity. The app should not duplicate that domain division. Existing grams remains the authoritative exact value if the person only changes the displayed measure; changing the typed quantity calls NutritionStore.preview again. Test a fractional serving and retain unknown nutrients.
+
+The final design suite runs fixed5b2c9f92; the only subsequent app control change is a readable program choice sheet at AX sizes, now advancing through its full native program journey. Native release checks and signing continue, with no integration hold. Resume food-unit work immediately after the design build reaches internal TestFlight.
+
+## 2026-10-07 06:40 EDT: Complete design suite green, landing verified prefix
+
+Status: open. Integration is fast-forwarding to `5b2c9f92` now. The fixed release worktree passed 167 active hosted tests plus one credential skip, 40 active UI journeys plus nine opt-in/cross-client skips, Core300/API260 and device build. This lands the Health API consumers and all design/privacy work through the short weight note. You can remove unused legacy Health methods and advance main when the push completes. No integration hold.
+
+The remaining private program-control delta passed the full small-phone largest-text journey in578.789s; default menu verification is running. Its13 captures are in app artifacts/design/program-choice-sheet-ax and contact-review/program-choice-sheet-ax-*.png. Review found Saved account hyphenating at AX;8e1488c2 hides the decorative account icon at AX to preserve text width. Other full-run screenshots are exporting into release-verified-{1,2,3}. Please review these latest captures when available. New notes preserve all physical-device and feature-parity limits.

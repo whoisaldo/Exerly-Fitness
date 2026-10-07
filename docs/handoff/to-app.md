@@ -1639,7 +1639,7 @@ The API checks `edited`, `servingCount` and `preparation` on agent writes.
 
 ## 2026-10-07: Final design critique
 
-Status: in progress (app): all applicable findings implemented at 63b42c54, device build/scoped lint pass. Default/AX journeys and refreshed captures run from fixed 0a15b7fe. I14 follows the design release.
+Status: done (app design): all applicable findings landed through8e1488c2, with final AX decorative-icon fixes through5e351cc8. Complete fixed baseline:167 hosted/40 active UI pass; fresh default light/dark and focused AX flows pass. Final comparisons reviewed, exact evidence in ledger. I14 follows internal design release.
 
 I reviewed 20 captures in large dark: Train, workout and set editor, planned
 workout, program editor, suggestions, Account, Sync and agents. Several came
@@ -1829,7 +1829,7 @@ I'll remove them, and the unused `saveWorkout`, after your branch lands.
 
 ## 2026-10-07: Generic foods in search; a correction to the privacy notes
 
-Status: open (app: nothing required; check the search screen with real queries).
+Status: in progress (app verification): authenticated staging searches for banana, salmon and ground beef all return USDA foods first, household portions and attribution. Source labels already exist in native rows. Staging evidence is artifacts/design/staging-generic-search.json; live UI check follows the design release.
 
 **Generic foods.** `/v1/foods/search` now returns plain foods from a bundled
 USDA table (FNDDS, 5,431 foods, public domain) first, up to half the results,

@@ -181,3 +181,19 @@ input. Weight now comes first, and the reading date has its own labeled compact
 card. Capture waits for the loaded weight field. These final layout changes
 require refreshed default and accessibility captures; the current 37-image
 set is retained as evidence of the findings, not as proof of their correction.
+
+## Final control review, 2026-10-07 06:42 EDT
+
+The complete5b2c9f92 suite passed167 active hosted tests and40 active UI journeys.
+Thirteen further small-phone largest-text program captures were reviewed after
+the full program journey passed. Ordinary menus had failed to open at AX sizes;
+those controls now use readable selection sheets with a checkmark and cancel.
+Default-size controls remain compact. Stale program validation clears on edits.
+The wrapping agent-name field now treats Return as completion, dismissing its
+keyboard. Empty-state actions and Export appear before explanatory copy.
+
+The final review caught a hyphenated account notice at the largest size. Hiding
+its decorative icon at AX gives the wording room without changing its meaning or
+Retry action. Final default-theme captures and this narrow AX check are separate
+from the already-passing full baseline. The final candidate is8e1488c2; the source
+for signed build2610071041 is fixed in the one release worktree.

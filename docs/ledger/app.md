@@ -2,22 +2,81 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 06:21 EDT.
+milestone. Current date 2026-10-07, updated 06:54 EDT.
 
 ## Merge status
 
-Integration is `71604c45`; app primary is rebased onto it through `dff64429`.
-Last app landing was `87abfb67` at 04:11 EDT. Primary plus one fixed release
-worktree. No integration hold. The complete release suite runs from `5b2c9f92`.
+Integration is `8e1488c2`, landed and pushed at06:47 EDT. Primary is5e351cc8.
+The two remaining app changes only hide decorative icons at AX sizes. Both pass
+device build/lint and fresh primary AX capture. Archive1049 is superseded;
+archive1054 will use fixed5e351cc8 after the last image export is inspected.
 
-| App branch                         | Unlanded work                                                                                    | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                         | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                                         | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                                         | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                    | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | Health/design/privacy work through dff64429; private program choices delta under AX verification | U.S./accessibility batch 87abfb67 landed and pushed 04:11; primary pushed 137c7505 with all hooks passing       |
-| `release/app-design`               | Fixed 5b2c9f92; same as primary except the latest program choice sheet and short brand prompt    | release-verified-{1,2,3}, 49 UI methods exactly once and all hosted tests, now running                          |
+| App branch                         | Unlanded work                                                        | Last landed / cleanup                                                           |
+| ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                               | Deleted locally/remotely; primary now uses nutrition                            |
+| `agent/app-next`                   | None, git cherry empty                                               | Deleted locally/remotely; worktree removed; captures preserved                  |
+| `agent/app-programs`               | None, git cherry empty                                               | A6 landed19925b28; branch deleted locally/remotely                              |
+| `release/app-nutrition-foundation` | None                                                                 | Foundation landed60e83cf9; branch deleted                                       |
+| `agent/app-nutrition`              | Two code commits through5e351cc8 plus current verification docs      | Design batch5b2c9f92 at06:40; program/notice fixes8e1488c2 at06:47, both pushed |
+| `release/app-design`               | Fixedfbc2d769 archive1049 is superseded by5e351cc8 navigation labels | Will FF to1054 source after final AX image review; no integration hold          |
+
+## Final release source, 2026-10-07 06:54 EDT
+
+Default program builder363.938s and lifecycle111.573s pass with the new choices.
+The full small-phone AX agent flow passes228.218s, empty44.550s, secondary134.555s.
+The focused AX offline/export/reconnect128.914s passes and its five images confirm
+Saved account uses whole words and Export stays reachable. Fresh default primary
+light60.334s and dark61.207s pass. All eight updated before/after/reference sheets
+were reviewed. Summary hierarchy, grouped numbers, food rows and next actions
+retain the original identity. Differences from the references now concern the
+remaining feature backlog rather than an unstructured settings-first layout.
+
+Two final image corrections hide decorative symbols at AX only: Connect an agent
+no longer splits Connect, and navigation rows give Barcode its full width. The
+Connect check passes65.806s, and the navigation check also passes; review its
+export before upload. Default layouts and every action/accessible name stay the
+same. This is the last app delta beyond the full baseline, with affected checks
+rather than another unrelated full-suite restart.
+
+Staging login succeeds. Live banana, salmon and ground beef searches return USDA
+foods first, exact household portions, and the proper attribution. The read-only
+response evidence is artifacts/design/staging-generic-search.json. Core's inverse
+serving conversion remains requested in both Logic inbox copies; while awaiting
+it after release, entry nutrient corrections and other published nutrition
+contracts are independent work.
+
+## Full design suite passed, 2026-10-07 06:42 EDT
+
+All three fixed5b2c9f92 release groups passed. Exactly49 UI methods were partitioned
+once:40 active passes and nine documented opt-in/cross-client skips. Hosted tests:
+167 active passes and one private-credential skip. The real iOS reminder banner
+arrived, captured in release-verified-1. Core300/API260, device build and all push
+hooks pass. Group1 has65 captures, group2 has54, group3 has60. They are exported
+into the primary gallery at http://100.80.149.7:39215.
+
+The AX program choice sheet completed the full offline, relaunch and workout
+advancement journey in578.789s. Reviewed all13 captures in five contact sheets.
+The sheet keeps all three Deload choices readable and marks the selection.
+Correcting the draft removes the former validation error. Saved account wrapped
+as ac-count in the offline header at the largest size;8e1488c2 hides only its
+decorative icon at accessibility sizes, freeing text width. Device build/lint pass;
+a focused offline AX capture remains. The default program-control journeys and
+agent AX recheck are finishing. Fresh default large light/dark primary captures
+both pass and are exporting. Do not rerun unchanged full suites for these deltas.
+
+Reviewed final small dark sheets6/13/14/19/20 and large dark sheets4/11/13/20.
+Workout volume is grouped to4,189lb·reps, program errors sit beside the corrective
+action, proposals show2→3 RIR before source links, and the real notification uses
+the original pulse icon. Weight entry is above its separate reading date, export
+uses the native share sheet, and20.5fl oz survives relaunch. These current captures
+confirm the previously recorded hierarchy and precision fixes. Food amount units
+and richer nutrition workflows are still the next milestone, not shipped claims.
+
+Current internal TestFlight remains2610070024 until Apple confirms the new build.
+Archive2610071041 is fixed at8e1488c2. Signed0818 and0937 are obsolete and were never
+uploaded. Release notes describe the design changes and U.S. defaults, with the
+physical-device and remaining feature limits. After internal availability, resume
+nutrition; never end at the upload.
 
 ## Final release verification, 2026-10-07 06:21 EDT
 
