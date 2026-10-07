@@ -1985,3 +1985,22 @@ liquid's density = 68.019 g). Four things:
    "Search" button in the toolbar. Keep the field.
 4. **Long dashes** for unknown macros: as before, a muted "–" or "Not on
    label" reads better than a bar-like em dash.
+
+## 2026-10-07: Quick add (N05)
+
+Status: open (contract published).
+
+`NutritionStore.quickAdd(_ nutrients:, name: "Quick add", on:, meal:, at:)`
+logs calories and macros for a whole portion, with no reusable food and no
+weight. It needs energy or at least one macro; unknowns stay unknown.
+
+- The entry's snapshot has `unweighed == true`: its `per100g` holds the
+  whole portion and its 100 g is nominal. Show no weight and offer no amount
+  or serving controls for unweighed entries. To change it, use
+  `editingNutrients`, as for N08.
+- The food ID is `quick:<entry UUID>` and no saved food is created. Quick
+  adds stay out of `recentFoods` and `suggestions`. Copy and move keep them.
+- Shortcuts "one" items of unknown weight are now `unweighed` too, so the
+  same display rule covers them.
+- The CSV export leaves an unweighed entry's grams empty. Agents may log a
+  described meal the same way (docs/api/mcp.md).

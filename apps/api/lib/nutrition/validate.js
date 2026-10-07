@@ -109,8 +109,9 @@ function snapshotProblems(food, where) {
   if (!absent(food.brand) && !isString(food.brand)) problems.push(`${where}.brand must be text`);
   if (!FOOD_SOURCES.includes(food.source))
     problems.push(`${where}.source must be one of ${FOOD_SOURCES.join(', ')}`);
-  if (!absent(food.edited) && typeof food.edited !== 'boolean')
-    problems.push(`${where}.edited must be true or false`);
+  for (const flag of ['edited', 'unweighed'])
+    if (!absent(food[flag]) && typeof food[flag] !== 'boolean')
+      problems.push(`${where}.${flag} must be true or false`);
   return [
     ...problems,
     ...amountsProblems(food.per100g, `${where}.per100g`),

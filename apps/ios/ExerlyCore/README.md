@@ -601,6 +601,10 @@ trend weight and expenditure.
     changes the ingredients and recalculates the nutrients.
   - `FoodEntry.editingNutrients(_:)` corrects one entry's nutrients and marks
     its snapshot `edited`; the food it came from is unchanged.
+  - `quickAdd(_:name:on:meal:at:)` logs calories and macros for a whole
+    portion, with no food or weight. The snapshot is `unweighed`: show no
+    weight and offer no amount; correct it with `editingNutrients`. Quick adds
+    stay out of `recentFoods` and `suggestions`.
   - `suggestions(at:timeZone:days:limit:)` returns `FoodSuggestion`s: foods
     usually logged within 90 minutes of this time of day over the last 28
     days, with the amount and meal last used. Foods already logged today

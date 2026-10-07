@@ -20,6 +20,7 @@ import Testing
           "nutrients": { "caffeine": 64, "water": 30, }, "serving": "one" }
         """.utf8), on: monday, meal: "Breakfast")
         #expect(shot.nutrients[.caffeine] == 64 && shot.serving?.name == "1 serving" && shot.food.foodID == "shortcut:synthetic-coffee")
+        #expect(shot.food.unweighed == true, "a whole item of unknown weight is marked, not given 100 g")
 
         let shake = try nutrition.logShortcutFood(Data("""
         { "name": "Protein shake", "source": "synthetic-shakes", "brand": "Example Labs",
@@ -28,7 +29,7 @@ import Testing
         """.utf8), on: monday, meal: "Snacks")
         #expect(shake.grams == 60 && shake.quantity == 2 && shake.serving == Serving("scoop", grams: 30))
         #expect(shake.nutrients[.carbohydrate] == 6 && shake.nutrients[.thiamin] == 0.6 && shake.food.brand == "Example Labs")
-        #expect(shake.food.per100g[.protein] == 80)
+        #expect(shake.food.per100g[.protein] == 80 && shake.food.unweighed == nil)
 
         let juice = try ShortcutsJSON.food(from: Data("""
         { "name": "Orange juice", "source": "s", "nutrients": { "energy": 110 }, "serving": { "amount": 8, "unit": "fluidOuncesUS" } }

@@ -34,6 +34,10 @@ public struct FoodSnapshot: Sendable, Codable, Hashable {
     /// True when the person changed this entry's nutrients. The food it came
     /// from, and its source, are unchanged.
     public var edited: Bool?
+    /// True when the portion wasn't weighed: `per100g` holds the whole
+    /// portion's nutrients and the entry's 100 g is nominal, not a weight. A
+    /// quick add, or a Shortcuts item of unknown weight. Show no weight.
+    public var unweighed: Bool?
 }
 
 public struct RecipeIngredient: Sendable, Codable, Hashable {

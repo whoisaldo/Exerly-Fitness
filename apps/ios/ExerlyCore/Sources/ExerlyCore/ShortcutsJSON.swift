@@ -73,8 +73,10 @@ public enum ShortcutsJSON {
         var weight: Double?
         var serving: Serving?
         var quantity: Double?
+        var unweighed = false
         switch json["serving"] {
         case let kind as String where kind == "one":
+            unweighed = true
             weight = 100
             serving = Serving("1 serving", grams: 100)
             quantity = 1
@@ -107,8 +109,9 @@ public enum ShortcutsJSON {
         }
         guard problems.isEmpty, let weight else { throw Problem(messages: problems) }
         let brand = (json["brand"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-        let snapshot = FoodSnapshot(foodID: "shortcut:\(source)", name: name, brand: brand, source: .custom,
+        var snapshot = FoodSnapshot(foodID: "shortcut:\(source)", name: name, brand: brand, source: .custom,
                                     per100g: amounts.scaled(by: 100 / weight))
+        if unweighed { snapshot.unweighed = true }
         return LoggedFood(food: snapshot, grams: weight, serving: serving, quantity: quantity, source: source)
     }
 

@@ -52,6 +52,20 @@ async function seed(user) {
     quantity: 1,
     food,
   });
+  await put(user, 'food_entry', {
+    id: uuid(),
+    date: '2026-10-06',
+    meal: 'Lunch',
+    loggedAt: '2026-10-06T16:30:00.000Z',
+    grams: 100,
+    food: {
+      foodID: 'quick:synthetic',
+      name: 'Quick add',
+      source: 'custom',
+      per100g: { energy: 450, protein: 30 },
+      unweighed: true,
+    },
+  });
   await put(user, 'weight_entry', {
     id: uuid(),
     at: '2026-10-06T11:00:00.000Z',
@@ -136,8 +150,16 @@ test('CSV files label units, leave unknowns empty, and are safe in a spreadsheet
   const entries = await api.get('/v1/export/food_entries.csv', { token: user.token });
   assert.equal(entries.status, 200);
   assert.match(entries.headers.get('content-type'), /text\/csv/);
-  const [header, row] = parse(entries.body);
+  const [header, quick, row] = parse(entries.body);
   const columns = header.split(',');
+  const quickCells = cells(quick);
+  assert.equal(quickCells[columns.indexOf('food_name')], 'Quick add');
+  assert.equal(
+    quickCells[columns.indexOf('grams')],
+    '',
+    "an unweighed portion's weight is unknown"
+  );
+  assert.equal(quickCells[columns.indexOf('energy_kcal')], '450');
   assert.ok(
     columns.includes('energy_kcal') &&
       columns.includes('sodium_mg') &&
@@ -173,7 +195,7 @@ test('an export imports into another account whole, and twice changes nothing', 
   const to = await signUp(api);
   const first = await api.post('/v1/import', exported, { token: to.token });
   assert.equal(first.status, 200, JSON.stringify(first.body));
-  assert.equal(first.body.imported, 7);
+  assert.equal(first.body.imported, 8);
   assert.deepEqual(first.body.skipped, []);
   assert.ok(first.body.ignored_tables.includes('food'), 'legacy tables are not imported');
 
@@ -185,7 +207,7 @@ test('an export imports into another account whole, and twice changes nothing', 
   assert.deepEqual(await documents(to), await documents(from));
 
   const again = await api.post('/v1/import', exported, { token: to.token });
-  assert.deepEqual([again.body.imported, again.body.kept], [0, 7]);
+  assert.deepEqual([again.body.imported, again.body.kept], [0, 8]);
 
   assert.equal((await api.post('/v1/import', { hello: 1 }, { token: to.token })).status, 400);
   const minted = await api.post(

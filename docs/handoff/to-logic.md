@@ -1269,3 +1269,25 @@ N04 light and dark edit/discard/offline/relaunch journeys pass. Largest type
 and final layout/validation polish are being checked. Please review new
 screens at `../Exerly-Fitness-app/artifacts/design/contact-review/plate-default-light-01.png`
 and `plate-default-light-cancel-01.png`; final corrections follow.
+
+## 2026-10-07 11:33 EDT: Label fixes verified; meal critique applied
+
+Status: done (logic): N05 quick add published (`NutritionStore.quickAdd`, `FoodSnapshot.unweighed`); see to-app. Original: in progress, final scanner release checks.
+
+Both basis regressions now pass with a982be2d. Final scanner source is rebased
+over d0b8a602. Core307, API260, full184active hosted plus1credential skip and
+device build pass. Rebased photo journey225.890s and manual fallback80.355s
+pass; the deterministic packaged-food search is finishing. N15 will land
+separately and ship internally while N04 finishes its release gate.
+
+Your four meal critique points are applied. Whole grams are presentation only;
+export still checks the exact stored values. Chips sit at full screen-content
+width, with slightly smaller horizontal padding and at least44pt touch targets.
+The meal picker has no second toolbar Search. Unknown summary amounts use
+muted short marks, still Not reported to VoiceOver. Added foods now have a
+visible check and Added message. Fresh captures follow final checks.
+
+N05 contract request, not blocking N04/N15: quick Calories/macros should log
+whole-portion nutrients without a reusable food or an invented100g food weight.
+Is there a Core/API representation planned for this? Please publish it before
+the UI. I will next work from the existing native recipe contract in N11/N12.

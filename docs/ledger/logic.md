@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 11:21 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 13:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                |
 | --------------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 11:21 EDT, integration (label headings outrank its title)       |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 13:30 EDT, integration (quick add, N05)                         |
 | `main`                                        | –        | `a982be2d` (fast-forward), 2026-10-07 11:24 EDT; CI run 37643561510 queued |
 
 `main` and integration converged: integration was merged into `main`
@@ -234,6 +234,11 @@ per 100 g, so a per-serving label with kJ logged half its energy. The label's
 first declaration now decides (per serving or per 100 g/ml), with a
 "Nutrition Facts" title counting only when nothing explicit does, and
 Australian and bilingual Canadian panels are read. Core 307.
+
+**Quick add (N05).** `NutritionStore.quickAdd` logs calories and macros for a
+whole portion with no food or weight; `FoodSnapshot.unweighed` marks such
+entries (and Shortcuts items of unknown weight) so screens and the CSV show
+no weight. Core 308, API 261.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

@@ -134,11 +134,37 @@ public final class NutritionStore {
         try copy(entries(on: source).filter { meal == nil || $0.meal == meal }.map(\.id), to: target, meal: newMeal)
     }
 
+    /// Calories and macros for a whole portion, logged without a food or a
+    /// weight (a quick add). At least energy or one macro is needed. The
+    /// snapshot is `unweighed`, and quick adds stay out of recent foods and
+    /// suggestions, since there's no food to log again.
+    @discardableResult
+    public func quickAdd(_ nutrients: NutrientAmounts, name: String = "Quick add", on date: LocalDate, meal: String,
+                         at time: Date? = nil) throws -> FoodEntry {
+        var problems = nutrients.problems
+        if [Nutrient.energy, .protein, .carbohydrate, .fat].allSatisfy({ nutrients[$0] == nil }) {
+            problems.append("give calories or a macronutrient")
+        }
+        guard problems.isEmpty else { throw StoreError.invalid(problems) }
+        let id = UUID()
+        let label = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var snapshot = FoodSnapshot(foodID: Self.quickAddPrefix + id.uuidString, name: label.isEmpty ? "Quick add" : label,
+                                    source: .custom, per100g: nutrients)
+        snapshot.unweighed = true
+        let entry = FoodEntry(id: id, date: date, meal: meal, loggedAt: time?.roundedToMilliseconds ?? now(), food: snapshot,
+                              grams: 100)
+        try saveEntry(entry)
+        return entry
+    }
+
+    static let quickAddPrefix = "quick:"
+
     /// Foods logged most recently first, one row each, for "recent" and quick re-logging.
     public func recentFoods(limit: Int = 20) -> [FoodSnapshot] {
         var seen = Set<String>()
         var result: [FoodSnapshot] = []
-        for entry in entries.reversed() where seen.insert(entry.food.foodID).inserted {
+        for entry in entries.reversed() where !entry.food.foodID.hasPrefix(Self.quickAddPrefix)
+            && seen.insert(entry.food.foodID).inserted {
             result.append(entry.food)
             if result.count == limit { break }
         }
@@ -240,6 +266,7 @@ public final class NutritionStore {
         let today = LocalDate(time, in: timeZone), target = minute(time)
         let skipped = Set(entries(on: today).map(\.food.foodID))
             .union(foods.filter { $0.archivedAt != nil }.map(\.id))
+            .union(entries.map(\.food.foodID).filter { $0.hasPrefix(Self.quickAddPrefix) })
         var dates: [String: Set<LocalDate>] = [:]
         var latest: [String: FoodEntry] = [:]
         for entry in entries where entry.date >= today.adding(days: -days) && entry.date < today

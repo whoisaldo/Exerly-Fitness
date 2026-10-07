@@ -90,6 +90,35 @@ enum Foods {
         #expect(Foods.oats.recipeGrams == nil && Foods.oats.recipeServing == nil)
     }
 
+    @Test func aQuickAddLogsWholePortionNutrientsWithoutAFoodOrAWeight() throws {
+        let nutrition = try store()
+        try nutrition.saveFood(Foods.oats)
+        _ = try nutrition.log(Foods.oats, grams: 80, on: monday, meal: "Breakfast")
+        let quick = try nutrition.quickAdd(NutrientAmounts([.energy: 450, .protein: 30, .fat: 15]), name: "  Restaurant lunch ",
+                                           on: monday, meal: "Lunch")
+        #expect(quick.nutrients == NutrientAmounts([.energy: 450, .protein: 30, .fat: 15]))
+        #expect(quick.nutrients[.carbohydrate] == nil, "an unknown macro stays unknown")
+        #expect(quick.food.unweighed == true && quick.food.name == "Restaurant lunch" && quick.serving == nil)
+        #expect(quick.food.foodID == "quick:\(quick.id.uuidString)" && nutrition.food(quick.food.foodID) == nil)
+        #expect(nutrition.foods.count == 1, "no reusable food is created")
+        #expect(nutrition.recentFoods().map(\.foodID) == [Foods.oats.id])
+        #expect(try nutrition.quickAdd(NutrientAmounts([.energy: 200]), name: " ", on: monday, meal: "Snacks").food.name == "Quick add")
+
+        let corrected = quick.editingNutrients(NutrientAmounts([.energy: 500, .protein: 30, .fat: 15]))
+        try nutrition.saveEntry(corrected)
+        #expect(nutrition.entries(on: monday).first { $0.id == quick.id }?.nutrients[.energy] == 500)
+        #expect(try ExerlyJSON.decoder.decode(FoodEntry.self, from: ExerlyJSON.canonical(corrected)) == corrected)
+        let copied = try nutrition.copy([quick.id], to: monday.adding(days: 1))
+        #expect(copied.first?.food.unweighed == true && copied.first?.nutrients[.energy] == 500)
+
+        #expect(throws: NutritionStore.StoreError.invalid(["give calories or a macronutrient"])) {
+            try nutrition.quickAdd(NutrientAmounts([.sodium: 300]), on: monday, meal: "Lunch")
+        }
+        #expect(throws: NutritionStore.StoreError.self) {
+            try nutrition.quickAdd(NutrientAmounts([.energy: -10]), on: monday, meal: "Lunch")
+        }
+    }
+
     @Test func switchingAnAmountToANamedServingKeepsTheAmount() throws {
         let soup = Food(name: "Synthetic soup", per100g: NutrientAmounts([.energy: 50, .sodium: 300]),
                         servings: [Serving("1 cup", grams: 240)])
