@@ -2,22 +2,70 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 05:07 EDT.
+milestone. Current date 2026-10-07, updated 05:50 EDT.
 
 ## Merge status
 
-Integration is `f7b92d41`; app primary is rebased onto it through `0a15b7fe`.
+Integration advanced to `71604c45`; app primary has `c1456da0` on `2edab7c8`.
 Last app landing was `87abfb67` at 04:11 EDT. Primary plus one fixed release
-worktree. No integration hold. The final review suite runs from `0a15b7fe`.
+worktree. No integration hold. The final review suite runs from `fe86bec0`.
 
-| App branch                         | Unlanded work                                                                    | Last landed / cleanup                                                                                           |
-| ---------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped         | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                         | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                         | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                    | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | Seven Health/design/privacy commits through 0a15b7fe, after rebase onto f7b92d41 | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
-| `release/app-design`               | Fixed 0a15b7fe, same source as primary                                           | 4186 complete suite passed; final 49-method suite runs in three groups                                          |
+| App branch                         | Unlanded work                                                            | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                 | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                 | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                            | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | Health/design/privacy work through c1456da0; rebasing onto 71604c45 next | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
+| `release/app-design`               | Fixed fe86bec0, same code as primary                                     | 0a15b7fe full suite passed; final fe86bec0 49-method suite now running                                          |
+
+## Complete review suite passed; final corrections, 2026-10-07 05:39 EDT
+
+05:50 update: signed 2610070937 passes archive checks but is superseded, not
+uploaded. Reviewing default program images found a validation message that
+stayed after correcting the draft. Clear prior errors on edits and assert the
+corrected message disappears. The largest-type agent journey exposed Return
+inserting a newline into the new wrapping name field rather than dismissing
+the keyboard. c1456da0 treats that Return as Done while preserving wrapping.
+Stopped only the failing AX run, retained its red bundle, and will rerun the
+affected flows. The fixed fe86 full suite continues independently, with 167
+active hosted tests passing and one credential skip. New USDA API work landed
+71604c45; its review and corrected cache privacy text are in to-logic.
+
+All critique-complete groups pass at0a15b7fe:166 active hosted plus one credential
+skip,40 active UI plus nine optional/cross-client skips. API256 and Core299 pass;
+device build and branch push hooks pass. The new U.S. water test passes90.618s
+and verifies607ml stored after20.5fl oz offline/relaunch/reconnection. Hosted
+stale-offline regression passes1.584s. Small light default native audit passes
+41.861s; program builder365.779s and proposal111.070s pass. Small dark AX's five
+flows all pass, including account export134.453s and agent connection199.318s.
+
+37 AX captures inspected in13 contact sheets. Found actions displaced by copy
+in export/connections/empty states, a truncated agent name, and a blank date
+region before weight input. Fixed these in001d5a8d. Actions precede explanatory
+copy at AX, the name wraps, and the weight input precedes a separate compact
+date card. These are final design corrections, not new nutrition features.
+Native default tests still use0a sources until refreshed; don't call those new
+layout images. The gallery includes both sources and keeps originals.
+
+Logic2edab7c8 resets sync state on account changes and purge; its hosted
+regression is adopted in fe86bec0. Staging API now matchesf7b92d41, including
+food validation. No legacy Health reader/authorization callers remain in app;
+Logic will remove the old Core methods after this branch lands.
+
+Fixed fe86bec0 now runs final-design-complete-{1,2,3} with49UI methods exactly
+once and every hosted test in group1. Restarted the three isolated fixtures to
+this source. Primary runs final-actions-small-dark-ax with account, connections,
+empty/secondary screens and real synthetic photo import. New signed archive is
+preparing; build number lives in release artifacts/design/final-design-build.txt.
+Do not upload0818 or call the new archive available before Apple confirms it.
+Current TestFlight remains2610070024. Keep going after the design upload.
+
+Stopped nine unused app fixture servers after checking PID/command/cwd. Kept
+39222/24/25/26 and the39215 gallery; no protected services changed. Primary plus
+one release worktree remains. Own branch was pushed92180e55 with checks passing;
+the latest rebase will need force-with-lease again. Initial failed critique
+compile bundles remain marked red, superseded by the passing full runs.
 
 ## Final critique implemented, 2026-10-07 05:07 EDT
 

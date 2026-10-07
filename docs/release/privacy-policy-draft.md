@@ -34,12 +34,17 @@ Account JSON exports do not include these photos.
 
 ## Food search and connected agents
 
-Food searches and barcodes are sent through Exerly's service to the food
-provider named in the result. The current native search uses Open Food Facts.
-The provider receives the search text or barcode, not your Exerly food diary.
-Exerly's native food service does not keep a cache of those searches. Its
-request limits count requests without saving search text. The provider's own
-retention policies apply. Avoid including personal information in a food search.
+Food searches use a USDA food table held by Exerly and request packaged foods
+from Open Food Facts. Barcode lookups also use Open Food Facts. That provider
+receives the search text or barcode, not your Exerly food diary. A USDA result
+does not mean the same search was kept from Open Food Facts.
+
+Exerly keeps up to 200 Open Food Facts search texts and their results in server
+memory, reusing them for five minutes. They are not linked to an account or
+written to the database. New searches can replace them, and restarting the
+service clears them. Request limits separately count requests without saving
+search text. The provider's own retention policies apply. Avoid including
+personal information in a food search.
 
 Connecting an agent is optional. An agent can access only the permissions you
 grant to its token. Proposed changes wait for your review; direct write access
