@@ -90,6 +90,7 @@ function createApp({ logger = console } = {}) {
   app.use('/api/admin', require('./routes/admin'));
   app.use('/v1/tokens', require('./routes/tokens'));
   app.use('/v1/webhooks', require('./routes/webhooks'));
+  app.use('/v1/nutrition', require('./routes/nutritionPlans'));
   app.use('/v1/foods', require('./routes/foods'));
   app.use('/v1', require('./routes/documents'));
 

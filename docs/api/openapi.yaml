@@ -383,6 +383,34 @@ paths:
               schema: { $ref: '#/components/schemas/Webhook' }
         '404': { $ref: '#/components/responses/Problem' }
 
+  /v1/nutrition/plans/from-legacy:
+    post:
+      tags: [Sync]
+      operationId: adoptLegacyTargets
+      summary: Keep an older account's saved targets as manual nutrition plans
+      description: |
+        For an account whose targets were set before nutrition plans existed.
+        Each accepted target version (or, without any, the current legacy
+        targets) becomes a manual `nutrition_plan` with the same numbers, from
+        its effective date. Nothing happens if the account has ever had a
+        nutrition plan. Plan IDs come from the account and version, so calling
+        twice, from two devices, is safe. The app only: tokens get 403.
+      responses:
+        '201':
+          description: Plans created; they also arrive through /v1/changes.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [created, reason, plans]
+                properties:
+                  created: { type: integer }
+                  reason: { type: string, enum: [adopted] }
+                  plans: { type: array, items: { type: object } }
+        '200':
+          description: Nothing to do, because of `has_plan` or `no_targets`.
+        '403': { $ref: '#/components/responses/Problem' }
+
   /v1/documents/{kind}/{id}:
     parameters:
       - $ref: '#/components/parameters/Kind'

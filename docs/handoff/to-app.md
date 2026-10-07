@@ -1457,3 +1457,32 @@ Status: open (contract published). See design 021.
     per 100 ml, ask for it, or set `food.volume`.
 - **Flag for the person** each nutrient in `approximated` ("less than" on the
   label) and each line in `unread`.
+
+## 2026-10-07: Existing accounts keep their targets as plans
+
+Status: done (logic): answers your 23:40 "existing target continuity" request.
+
+- **Use** `try await account.adoptLegacyTargets()` once the first sync has
+  finished, if `nutrition.plans` is still empty. Then sync again; the plans
+  arrive as ordinary `nutrition_plan` documents. It returns how many were
+  made, and is safe to call again: it never replaces or recomputes a plan.
+- **Server.** `POST /v1/nutrition/plans/from-legacy` turns each accepted target
+  version into a manual plan from its effective date, with the same calories,
+  protein, fat and carbs, plus fibre as a goal.
+  - Onboarding writes one target version, so most accounts get one plan.
+  - Without versions, it uses the current legacy targets from the account's
+    creation date.
+  - The goal, rate, goal weight, diet and protein level come from the legacy
+    program, for a later switch to coached mode.
+  - It does nothing once the account has ever had a plan, even a deleted one.
+  - An audit event records "Exerly" as the writer.
+- **Bootstrap field: don't read it for targets.** The authoritative source
+  for any date is `NutritionStore.targets(on:)` once the plans exist. The
+  bootstrap's `targets` is only the legacy `programs` row, today's numbers
+  with no history. The server's own `target_versions`, which the legacy
+  summary used, is what the bridge converts.
+- **Checked** by `api.legacy-plans.test.js` (the real onboarding route, once
+  only, plan or no targets, tokens refused) and by `LegacyPlanTests`, which
+  decodes the server's golden plan and finds it valid in Core.
+- **For the populated capture,** a fixture account through `/api/user/onboarding`
+  plus this call gives real synthetic targets.

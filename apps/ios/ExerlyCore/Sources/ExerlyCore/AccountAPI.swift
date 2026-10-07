@@ -149,6 +149,20 @@ public struct AccountAPI: DocumentAPI {
         return try Webhook(json: row)
     }
 
+    // MARK: Nutrition plans
+
+    /// For an account set up before nutrition plans existed: the server turns
+    /// its saved targets into manual plans with the same numbers, unless the
+    /// account already has a plan. Returns how many it created; sync then
+    /// brings them to `NutritionStore`. Safe to call again.
+    public func adoptLegacyTargets() async throws -> Int {
+        let (status, json) = try await sendJSON("POST", "/v1/nutrition/plans/from-legacy", body: [:])
+        guard status == 200 || status == 201, let created = (json as? [String: Any])?["created"] as? Int else {
+            throw Wire.failure(status, json)
+        }
+        return created
+    }
+
     // MARK: Food database
 
     /// Foods matching a search, from a public food database (Open Food Facts),

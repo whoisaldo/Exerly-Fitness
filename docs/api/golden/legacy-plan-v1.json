@@ -1,0 +1,76 @@
+{
+  "id": "38FA9DFE-E577-591B-B1D8-C58147F376A7",
+  "startDate": "2026-09-01",
+  "createdAt": "2026-09-01T12:00:00.000Z",
+  "goal": {
+    "direction": "lose",
+    "weeklyRate": 0.0059,
+    "goalWeight": {
+      "value": 78,
+      "unit": "kg"
+    }
+  },
+  "mode": "manual",
+  "diet": "lowCarb",
+  "protein": "high",
+  "weekdayWeights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "checkInDay": 2,
+  "allowBelowFloor": false,
+  "targets": [
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    },
+    {
+      "energy": 2150,
+      "protein": 170,
+      "fat": 80,
+      "carbohydrate": 190
+    }
+  ],
+  "nutrientGoals": {
+    "fiber": {
+      "target": 30
+    }
+  }
+}
