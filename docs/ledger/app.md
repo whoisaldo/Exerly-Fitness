@@ -2,25 +2,48 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 19:17 EDT.
+Current date 2026-10-07, updated 19:33 EDT.
 
 ## Merge status
 
-Integration and agent/app-nutrition are pushed at 181eac03. The Quick add
-slice has passed its final checks and is landing next. A14 candidate
-2610072240 must not upload: its fixed full UI gate found a hidden exercise
-search toolbar on the largest phone. Its signed archive/IPA checks pass, but
-that is not a passing release. A13 build 2610072129 remains live internally.
+Quick add is merged and pushed at ce9c7b21. The exercise-search toolbar fix
+passes default light/dark and largest-text gym journeys and is landing next.
+A14 candidate 2610072240 remains withheld after its fixed UI failure. Its
+other two groups finished successfully, but the candidate is not a release.
+A13 build 2610072129 remains live. A15 will combine gyms, Quick add and the
+search fix at a new fixed commit. Explicit label portions are in progress.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
-| `agent/app-nutrition`              | Quick add passed; landing now                                                                      | Gyms landed/pushed 181eac03, 18:40 EDT     |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
-| `release/app-design`               | None; fixed A14 candidate failed its UI gate                                                       | Fixed 181eac03; candidate 2610072240       |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                    |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed  |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted          |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted  |
+| `agent/app-nutrition`              | Exercise-search fix passed; label portions in progress                                             | Quick add landed/pushed ce9c7b21, 19:20 EDT |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                |
+| `release/app-design`               | None; fixed A14 candidate failed its UI gate                                                       | Fixed 181eac03; candidate 2610072240        |
+
+## Search toolbar corrected, 2026-10-07 19:33 EDT
+
+The same largest-phone gym journey now passes in 269.850 seconds. Default
+SE light passes in 198.751 seconds with all 205 active hosted tests and one
+credential skip. Largest text passes in 519.243 seconds, and all seven final attachments
+were inspected. Close stays visible and the inventory headings wrap cleanly. The device build and changed-file SwiftLint pass.
+The fix keeps Close visible during active exercise search on iOS 17.1+.
+The regression explicitly requires the button to be visible and tappable.
+The default light/dark captures, eight and seven attachments, were inspected.
+
+A14 group 1 passed all 15 methods. Group 2 completed all 25 declared methods,
+including its expected context skips. Group 3 is an interrupted failure and
+must not count as a full pass. A fresh A15 full gate will run all 61 methods
+from a fixed source with Quick add included. Integration remains open.
+
+Label portions are the next slice, separate from the staged search fix.
+Three new hosted tests pass with the complete 208 active hosted suite, one
+credential skip. Initial native light/dark journeys pass; their six captures
+were reviewed. Review found that the current nutrient summary sits too low
+and the label weight is overprecise. Fix that hierarchy and display before
+landing; stored weights must remain exact. No portion release claim yet.
 
 ## Quick add ready; A14 navigation failure, 2026-10-07 19:17 EDT
 

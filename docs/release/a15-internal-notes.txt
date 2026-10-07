@@ -2,7 +2,7 @@ Quick Calories and macros, plus saved gyms
 
 Log a meal total without creating a food or entering its weight. Open Diary actions or More food options, then Quick calories & macros. Enter Calories, macros, or both. Blank means unknown; zero means a known zero. The chosen meal is visible in the header and Log button. Totals stay editable after saving offline and reopening the app.
 
-Training > Gyms & equipment saves your available equipment and weights. Pounds are the default; saved kilograms stay kilograms. Choose a gym for exercise filtering and workout targets, or archive and restore it later. Large-text section headings now wrap cleanly.
+Training > Gyms & equipment saves your available equipment and weights. Pounds are the default; saved kilograms stay kilograms. Choose a gym for exercise filtering and workout targets, or archive and restore it later. Large-text section headings now wrap cleanly. Exercise search keeps its Close action visible.
 
 Barcode scanning stays the first food action, followed by search. The guided first-time setup and workout builder remain included. Please try a quick entry offline, edit it later, and review a workout using your gym's equipment.
 

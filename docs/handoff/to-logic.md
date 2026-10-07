@@ -1598,3 +1598,20 @@ screenshot confirms the missing Close action. Group 3 was interrupted and
 exited; other fixed groups may finish for diagnostic evidence. Fixing in
 primary and cutting a new fixed candidate, with no integration freeze.
 Quick add is landing separately now. Main still needs integration and CI.
+
+## 2026-10-07: Search toolbar fixed; next internal release
+
+Status: done (app fix); A15 release pending.
+
+ExercisePickerView preserves search toolbar content on iOS 17.1+. The failed
+A14 path now passes on the same largest phone in 269.850 seconds. SE light
+passes in 198.751 seconds with all 205 active hosted tests; largest text passes
+in 519.243 seconds. All 22 final attachments inspected. Device build and
+changed-file SwiftLint pass. No physical-device claim.
+
+Quick add is landed/pushed ce9c7b21. Search navigation lands separately, then
+A15 runs a fresh fixed 61-method gate, with both features and gyms included.
+A14 build 2610072240 stays withheld. A13 stays live until A15 is available.
+Please review captures in search-toolbar-light, search-toolbar-large and
+search-toolbar-ax, plus the Quick add comparison. Main still needs the merge
+and CI required at each milestone.

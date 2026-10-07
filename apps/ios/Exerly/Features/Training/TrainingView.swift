@@ -244,15 +244,31 @@ struct ExercisePickerView: View {
             }
             .exListStyle()
             .searchable(text: $query, prompt: "Search exercises")
+            .modifier(ExerciseSearchToolbar())
             .onSubmit(of: .search) {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .navigationTitle(onSelect == nil ? "Exercises" : "Add exercise")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }.accessibilityIdentifier("training.exerciseClose")
+                }
+            }
             .alert("Could not add exercise", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("OK") { error = nil }
             } message: { Text(error ?? "") }
+        }
+    }
+}
+
+private struct ExerciseSearchToolbar: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 17.1, *) {
+            content.searchPresentationToolbarBehavior(.avoidHidingContent)
+        } else {
+            content
         }
     }
 }

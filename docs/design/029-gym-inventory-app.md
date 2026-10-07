@@ -45,3 +45,10 @@ Public references reviewed on October 7, 2026:
 Reference images are in artifacts/design/references/macrofactor-gym-profiles.png
 and macrofactor-gym-weights.png. The public App Store workout screenshots stay
 in that directory for the overall hierarchy comparison.
+
+The fixed A14 release gate exposed hidden exercise navigation while searching
+on the largest phone. Exercise search now keeps toolbar content visible on
+iOS 17.1 and later, using Apple's searchPresentationToolbarBehavior. iOS 17.0
+keeps its original presentation. The gym journey requires Close to be visible
+and tappable while results remain filtered, then finishes archive/restore.
+Reference: https://developer.apple.com/documentation/swiftui/view/searchpresentationtoolbarbehavior(_:).

@@ -835,8 +835,12 @@ final class ProductionUITests: XCTestCase {
         reveal(app.staticTexts["Barbell Bench Press"], in: app)
         XCTAssertTrue(app.staticTexts["Barbell Bench Press"].waitForExistence(timeout: 5))
         capture(app, "gym-library-all-exercises")
-        if app.buttons["Cancel"].firstMatch.exists { tap(app.buttons["Cancel"].firstMatch, in: app) }
-        tap(app.buttons["Close"], in: app)
+        let closeSearch = app.buttons["training.exerciseClose"]
+        guard closeSearch.waitForExistence(timeout: 5), closeSearch.isHittable else {
+            XCTFail("Exercise search must keep its Close action visible")
+            return
+        }
+        closeSearch.tap()
         tap(app.buttons["gyms.open"], in: app)
         tap(app.buttons["gyms.editCurrent"], in: app)
         tap(app.buttons["gym.weights.dumbbell"], in: app)
