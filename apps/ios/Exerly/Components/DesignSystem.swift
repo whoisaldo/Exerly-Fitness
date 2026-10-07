@@ -222,13 +222,16 @@ struct ExNavigationLabel: View {
     let icon: String
     var detail: String?
     var showChevron = true
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         HStack(spacing: ExSpacing.item) {
-            Image(systemName: icon).font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color.exPrimaryText).frame(width: 42, height: 42)
-                .background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))
-                .accessibilityHidden(true)
+            if !typeSize.isAccessibilitySize {
+                Image(systemName: icon).font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.exPrimaryText).frame(width: 42, height: 42)
+                    .background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))
+                    .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: ExSpacing.tight) {
                 Text(title).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                 if let detail { Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
