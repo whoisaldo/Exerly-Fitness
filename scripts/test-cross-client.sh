@@ -21,7 +21,9 @@ EXTRA_CORS_ORIGINS=http://127.0.0.1:3303 node scripts/ios-fixture-api.cjs > "$ev
 fixture_pid=$!
 (
   cd apps/web
-  VITE_API_URL=http://127.0.0.1:39001 exec node ../../node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3303 --strictPort
+  # Wherever npm put Vite: the workspace's node_modules or the root's.
+  vite=$(node -p "require('path').join(require('path').dirname(require.resolve('vite/package.json')), 'bin/vite.js')")
+  VITE_API_URL=http://127.0.0.1:39001 exec node "$vite" --host 0.0.0.0 --port 3303 --strictPort
 ) > "$evidence/web.log" 2>&1 &
 web_pid=$!
 for attempt in {1..100}; do
