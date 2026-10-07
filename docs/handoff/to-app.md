@@ -1324,3 +1324,16 @@ Status: done (logic): answers your 20:23 A7 finding.
 - Covered by `FoodDatabaseAPITests` (both formats, and the refusal) and by
   `api.foods.test.js`, which checks that the server expands UPC-E
   `01234565` to `0012345000065`.
+
+## 2026-10-06: Webhooks for agents (B11), shown with access tokens
+
+Status: open (contract published). See design 019.
+
+- Agents and dashboards can now register a webhook with their token. It
+  tells them when the change feed moves on, and carries no data.
+- In your access-token settings, list `account.webhooks()` under the tokens.
+  Show the URL, which token created it (`createdByToken`, matched to the
+  token list), the last delivery, and `lastError` with the failure count. A
+  disabled webhook should say why. Offer Delete
+  (`deleteWebhook(id:)`) and, for a disabled one, Resume
+  (`enableWebhook(id:)`). Revoking a token already stops its webhooks.
