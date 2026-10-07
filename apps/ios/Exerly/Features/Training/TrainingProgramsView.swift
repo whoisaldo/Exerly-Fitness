@@ -94,7 +94,7 @@ private struct TrainingProgramDetailView: View {
                     ExCard(accent: true) {
                     ExEyebrow("Program", color: .exPrimaryText)
                     Text(program.name).font(.exH1)
-                    Text("\(program.cycles) cycles · \(TrainingProgramFormat.deload(program.deload))")
+                    Text("\(program.cycles) \(program.cycles == 1 ? "cycle" : "cycles") · \(TrainingProgramFormat.deload(program.deload))")
                     let progress = ProgramSchedule.progress(of: program, in: workspace.store.history)
                     Text("\(progress.done) of \(progress.total) workouts completed")
                     if progress.total > 0 {
@@ -220,27 +220,8 @@ struct TrainingProgramConfirmation: View {
     let cancel: () -> Void
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text(title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                    Text(message)
-                    Button(role: destructive ? .destructive : nil, action: perform) {
-                        Text(confirm).frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.borderedProminent).tint(Color.exActionFill)
-                    .accessibilityIdentifier("program.confirm")
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                .padding()
-            }
-            .navigationTitle("Confirm").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(cancelLabel, action: cancel).accessibilityIdentifier("program.confirmCancel")
-                }
-            }
-        }
+        ExConfirmation(title: title, message: message, confirm: confirm, cancelLabel: cancelLabel,
+                       destructive: destructive, identifier: "program", perform: perform, cancel: cancel)
     }
 }
 

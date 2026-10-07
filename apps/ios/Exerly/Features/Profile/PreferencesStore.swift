@@ -1,3 +1,4 @@
+import ExerlyCore
 import Foundation
 
 struct PreferencesSnapshot: Codable {
@@ -52,7 +53,7 @@ enum PreferenceFields {
         guard let cm else { return "" }
         // The draft keeps the exact centimeter value separately. Display
         // rounding must never become a change to the saved measurement.
-        return (units == "imperial" ? cm / 2.54 : cm)
+        return (units == "imperial" ? cm / USUnits.centimetersPerInch : cm)
             .formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
     static func text(_ value: JSONValue) -> String {
@@ -244,7 +245,7 @@ final class PreferencesStore: ObservableObject {
         do {
             if key == "height" {
                 if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { next.heightCM = nil } else if let number = UserEnteredNumber.parse(value) {
-                    next.heightCM = number * (next.fields["unitSystem"] == "imperial" ? 2.54 : 1)
+                    next.heightCM = next.fields["unitSystem"] == "imperial" ? USUnits.centimeters(feet: 0, inches: number) : number
                 }
             }
             if key == "unitSystem" {

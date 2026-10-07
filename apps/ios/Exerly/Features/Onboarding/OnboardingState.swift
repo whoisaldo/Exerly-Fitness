@@ -144,12 +144,12 @@ final class OnboardingState: ObservableObject {
         set { weightKg = Mass.lb(newValue).kilograms }
     }
     var heightFeet: Int {
-        get { Int((heightCm / 2.54).rounded()) / 12 }
-        set { heightCm = Double(newValue * 12 + heightInches) * 2.54 }
+        get { USUnits.feetAndInches(centimeters: heightCm).feet }
+        set { heightCm = USUnits.centimeters(feet: newValue, inches: Double(heightInches)) }
     }
     var heightInches: Int {
-        get { Int((heightCm / 2.54).rounded()) % 12 }
-        set { heightCm = Double(heightFeet * 12 + newValue) * 2.54 }
+        get { Int(USUnits.feetAndInches(centimeters: heightCm).inches) }
+        set { heightCm = USUnits.centimeters(feet: heightFeet, inches: Double(newValue)) }
     }
     var bmiPreview: Double { WizardService.calculateBMI(weightKg: weightKg, heightCm: heightCm) }
     var weightRateSafety: WeightRateSafety {

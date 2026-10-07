@@ -38,7 +38,6 @@ struct PlannedWorkoutView: View {
     @State private var bodyweight = ""
     @State private var plan: WorkoutPlan?
     @State private var error: String?
-    @FocusState private var typing: Bool
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -53,15 +52,16 @@ struct PlannedWorkoutView: View {
                         ExCard(accent: true) {
                             ExEyebrow(plan.isDeload ? "Deload session" : "Up next", color: .exPrimaryText)
                             Text(plan.name).font(.exH2)
-                            if let reference = plan.program { Text("Cycle \(reference.cycle + 1) · \(plan.exercises.count) exercises").font(.exCaption) }
+                            if let reference = plan.program {
+                                Text("Cycle \(reference.cycle + 1) · \(plan.exercises.count) \(plan.exercises.count == 1 ? "exercise" : "exercises")").font(.exCaption)
+                            }
                             Button("Start planned workout") { start(plan) }
                                 .buttonStyle(ExActionStyle()).accessibilityIdentifier("program.startPlanned")
                         }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                     Section {
-                        TextField("Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)
-                            .keyboardType(.decimalPad).focused($typing)
-                            .accessibilityIdentifier("program.bodyweight")
+                        NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)",
+                                             text: $bodyweight, identifier: "program.bodyweight")
                         Text("Enter today's bodyweight for bodyweight exercise estimates, or leave it empty. Your profile weight is not filled in automatically.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
@@ -81,7 +81,6 @@ struct PlannedWorkoutView: View {
             .navigationTitle("Next workout").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
             }
             .task { refresh() }
             .onChange(of: bodyweight) { _, _ in refresh() }

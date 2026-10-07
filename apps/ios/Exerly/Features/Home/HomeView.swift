@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 private struct MealLogDestination: Identifiable {
@@ -79,7 +80,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $addingWater) {
             if let summary = viewModel.summary {
-                WaterEntryView(current: waterDay(summary)) {
+                WaterEntryView(current: waterDay(summary), imperial: unitSystem == "imperial") {
                     Task { await viewModel.load(for: selectedDate) }
                 }
             }
@@ -155,7 +156,7 @@ struct HomeView: View {
             HStack {
                 Label("Weight", systemImage: "scalemass")
                 Spacer()
-                if let weight = summary.weight { Text("\(weight.weightKg * (unitSystem == "imperial" ? 2.20462262 : 1), format: .number.precision(.fractionLength(0...2))) \(unitSystem == "imperial" ? "lb" : "kg")") }
+                if let weight = summary.weight { Text("\(Mass.kg(weight.weightKg).value(in: unitSystem == "imperial" ? .pounds : .kilograms), format: .number.precision(.fractionLength(0...2))) \(unitSystem == "imperial" ? "lb" : "kg")") }
                 Button("Log weight") { addingWeight = true }.frame(minHeight: 44)
             }.diaryListRow()
             if let lastDeletedWeight {
@@ -360,7 +361,7 @@ struct HomeView: View {
                     Label("Water", systemImage: "drop")
                         .font(.exBodyMedium)
                     if !typeSize.isAccessibilitySize { Spacer() }
-                    Text("\(water.ml.formatted()) ml")
+                    Text(WaterDisplay.amount(water.ml, imperial: unitSystem == "imperial"))
                         .font(.exStatSmall)
                         .accessibilityIdentifier("water.total")
                 }
@@ -368,12 +369,13 @@ struct HomeView: View {
                 if water.sync_state == "attention" { Text("Review your pending water additions before retrying.").font(.callout) }
                 VStack(spacing: 8) {
                     layout {
-                        Button { addWater(water, ml: 250) } label: {
-                            Text("+250 ml")
-                        }.accessibilityLabel("Add 250 ml of water")
-                        Button { addWater(water, ml: 500) } label: {
-                            Text("+500 ml")
-                        }.accessibilityLabel("Add 500 ml of water")
+                        ForEach(unitSystem == "imperial" ? [8, 16] : [250, 500], id: \.self) { amount in
+                            let unit = WaterDisplay.unit(imperial: unitSystem == "imperial")
+                            Button {
+                                addWater(water, ml: unitSystem == "imperial" ? USUnits.wholeMilliliters(fluidOunces: Double(amount)) : amount)
+                            } label: { Text("+\(amount) \(unit)") }
+                                .accessibilityLabel("Add \(amount) \(unit) of water")
+                        }
                     }
                     Button { addingWater = true } label: {
                         Text("Custom amount")
@@ -600,13 +602,13 @@ struct HomeView: View {
 
     private func waterValue(_ milliliters: Int) -> String {
         if unitSystem == "imperial" {
-            return (Double(milliliters) / 29.5735).formatted(.number.precision(.fractionLength(0)))
+            return USUnits.fluidOunces(milliliters: Double(milliliters)).formatted(.number.precision(.fractionLength(0)))
         }
         return "\(milliliters)"
     }
 
     private func compactWeight(_ kilograms: Double) -> String {
-        let value = unitSystem == "imperial" ? kilograms * 2.20462262 : kilograms
+        let value = Mass.kg(kilograms).value(in: unitSystem == "imperial" ? .pounds : .kilograms)
         return value.formatted(.number.precision(.fractionLength(1)))
     }
 }
@@ -720,20 +722,28 @@ private extension View {
 
 private struct WaterEntryView: View {
     let current: WaterDayDTO
+    let imperial: Bool
     let onSave: () -> Void
     @EnvironmentObject private var sync: SyncEngine
     @Environment(\.dismiss) private var dismiss
-    @State private var amount = "250"
+    @State private var amount: String
     @State private var error: String?
-    @FocusState private var focused: Bool
+    init(current: WaterDayDTO, imperial: Bool, onSave: @escaping () -> Void) {
+        self.current = current
+        self.imperial = imperial
+        self.onSave = onSave
+        _amount = State(initialValue: imperial ? "8" : "250")
+    }
     var body: some View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
                     ExEyebrow("Hydration", color: .exPrimaryText)
-                    ExQuantityControl(title: "Amount (ml)", text: $amount, step: 50, presets: [250, 500, 750], unit: "ml", identifier: "water.amount", integer: true)
+                    ExQuantityControl(title: "Amount (\(WaterDisplay.unit(imperial: imperial)))", text: $amount,
+                                      step: imperial ? 1 : 50, presets: imperial ? [8, 16, 24] : [250, 500, 750],
+                                      unit: WaterDisplay.unit(imperial: imperial), identifier: "water.amount", integer: !imperial)
                         .onChange(of: amount) { _, _ in error = nil }
-                    Text("Adds to your day's total. Enter 1 to 5,000 ml.")
+                    Text(imperial ? "Adds to your day's total. Enter 0.1 to 169 fl oz." : "Adds to your day's total. Enter 1 to 5,000 ml.")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
                 if let error { Text(error).foregroundStyle(Color.exError) }
@@ -743,14 +753,13 @@ private struct WaterEntryView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save water") {
-                        guard let ml = Int(amount.trimmingCharacters(in: .whitespaces)), (1...5000).contains(ml) else {
-                            error = "Enter a whole number from 1 to 5,000 ml."
+                        guard let ml = WaterDisplay.milliliters(amount, imperial: imperial) else {
+                            error = imperial ? "Enter an amount from 0.1 to 169 fl oz." : "Enter a whole number from 1 to 5,000 ml."
                             return
                         }
                         do { try sync.addWater(current, milliliters: ml); onSave(); dismiss() } catch { self.error = error.localizedDescription }
                     }
                 }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
             }
         }
     }
@@ -830,5 +839,25 @@ private struct ActivitySleepRows: View {
     @ViewBuilder private func syncLabel(_ state: String?) -> some View {
         if state == "pending" { Text("Saved on this device. Waiting to sync.").font(.caption) }
         if state == "attention" { Text("Needs review").font(.caption) }
+    }
+}
+
+/// Water fields accept the chosen display unit; the existing store keeps ml.
+enum WaterDisplay {
+    static func unit(imperial: Bool) -> String { imperial ? "fl oz" : "ml" }
+
+    static func amount(_ milliliters: Int, imperial: Bool) -> String {
+        let number = imperial ? USUnits.fluidOunces(milliliters: Double(milliliters)) : Double(milliliters)
+        return "\(number.formatted(.number.precision(.fractionLength(0...1)))) \(unit(imperial: imperial))"
+    }
+
+    static func milliliters(_ text: String, imperial: Bool) -> Int? {
+        guard let value = TrainingInput.number(text) else { return nil }
+        if imperial {
+            guard (0.1...169).contains(value) else { return nil }
+            return USUnits.wholeMilliliters(fluidOunces: value)
+        }
+        guard (1...5000).contains(value), value.rounded() == value else { return nil }
+        return Int(value)
     }
 }

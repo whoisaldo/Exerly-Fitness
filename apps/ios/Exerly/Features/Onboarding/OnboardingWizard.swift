@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 struct OnboardingWizard: View {
@@ -125,9 +126,15 @@ struct OnboardingWizard: View {
     }
 
     private func draftSummary(_ answers: OnboardingRequest) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let unit: MassUnit = answers.unitSystem == "metric" ? .kilograms : .pounds
+        let height = USUnits.feetAndInches(centimeters: answers.height, inchStep: 0.1)
+        let heightLabel = unit == .pounds
+            ? "\(height.feet) ft \(height.inches.formatted(.number.precision(.fractionLength(0...1)))) in"
+            : "\(answers.height.formatted(.number.precision(.fractionLength(0...1)))) cm"
+        let weight = Mass.kg(answers.weight).value(in: unit).formatted(.number.precision(.fractionLength(0...2)))
+        return VStack(alignment: .leading, spacing: 8) {
             Text(answers.name ?? "Name not entered")
-            Text("Age \(answers.age) · \(answers.height, format: .number) cm · \(answers.weight, format: .number) kg")
+            Text("Age \(answers.age) · \(heightLabel) · \(weight) \(unit.rawValue)")
             Text("Goal: \(answers.goal.replacingOccurrences(of: "_", with: " "))")
             Text("Activity: \(answers.activityLevel)")
         }.font(.body).accessibilityElement(children: .combine)

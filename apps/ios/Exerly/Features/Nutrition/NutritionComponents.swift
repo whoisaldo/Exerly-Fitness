@@ -5,13 +5,13 @@ struct NutritionNumberInput: View {
     let title: String
     @Binding var text: String
     var identifier = ""
+    var integer = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            TextField("Unknown", text: $text).keyboardType(.decimalPad).font(.exStatMedium)
+            ExNumericTextField(title: title, text: $text, placeholder: "Unknown", integer: integer, identifier: identifier)
                 .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
-                .accessibilityLabel(title).accessibilityIdentifier(identifier)
         }
     }
 }
@@ -45,29 +45,9 @@ struct NutritionConfirmation: View {
     var destructive = false
     let perform: () -> Void
     let cancel: () -> Void
-    @Environment(\.dynamicTypeSize) private var typeSize
-
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text(title).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-                    Text(message)
-                    Button(role: destructive ? .destructive : nil, action: perform) {
-                        Text(confirm).frame(maxWidth: .infinity, alignment: .leading)
-                    }.buttonStyle(.borderedProminent).tint(Color.exActionFill).accessibilityIdentifier("nutrition.confirm")
-                }.fixedSize(horizontal: false, vertical: true).padding()
-            }
-            .navigationTitle("Confirm").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(cancelLabel, action: cancel).accessibilityIdentifier("nutrition.confirmCancel")
-                }
-            }
-            .background(Color.exBackground)
-        }
-        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
-        .presentationDragIndicator(.visible)
+        ExConfirmation(title: title, message: message, confirm: confirm, cancelLabel: cancelLabel,
+                       destructive: destructive, identifier: "nutrition", perform: perform, cancel: cancel)
     }
 }
 
@@ -102,10 +82,15 @@ struct NutritionAmountsView: View {
 struct NutritionDailySummary: View {
     let amounts: NutrientAmounts
     let targets: DailyTargets?
+    var progress: DayProgress?
     var showHeading = true
     var showTargetNote = true
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .largeTitle) private var energySize: CGFloat = 46
+
+    private func amount(_ nutrient: Nutrient) -> Double? {
+        NutritionFormat.summaryAmount(nutrient, amounts: amounts, progress: progress)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -114,7 +99,7 @@ struct NutritionDailySummary: View {
                 : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
             energyLayout {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(amounts[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
+                Text(amount(.energy).map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
                     .font(.system(size: energySize, weight: .bold, design: .rounded)).foregroundStyle(Color.exTextPrimary)
                     .contentTransition(.numericText())
                 Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -128,12 +113,22 @@ struct NutritionDailySummary: View {
                 }
             }
             if let targets { ExProgressBar(value: amounts[.energy] ?? 0, total: targets.energy) }
+            if let energy = progress?.energy, let remaining = energy.remaining {
+                let over = energy.over ?? 0
+                Text("\((over > 0 ? over : remaining).formatted(.number.precision(.fractionLength(0)))) kcal \(over > 0 ? "over" : "left")")
+                    .font(.exCaption.weight(.medium)).foregroundStyle(Color.exTextSecondary)
+                    .accessibilityIdentifier("nutrition.energyRemaining")
+            }
             let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
                 : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.item))
             layout {
                 macro(.protein, label: "Protein", target: targets?.protein, color: .exPrimaryText)
                 macro(.carbohydrate, label: "Carbs", target: targets?.carbohydrate, color: .exAccent)
                 macro(.fat, label: "Fat", target: targets?.fat, color: .exSecondary)
+            }
+            if let progress, [progress.energy, progress.protein, progress.carbohydrate, progress.fat].contains(where: { $0.unreported > 0 }) {
+                Text("Some food labels omit nutrients. Totals may be low.")
+                    .font(.exSmall).foregroundStyle(Color.exTextSecondary)
             }
             if targets == nil && showTargetNote {
                 NavigationLink { ProgramView() } label: {
@@ -150,7 +145,7 @@ struct NutritionDailySummary: View {
                 Circle().fill(color).frame(width: 5, height: 5).accessibilityHidden(true)
                 Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
-            Text(amounts[nutrient].map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) g" } ?? "—")
+            Text(amount(nutrient).map { "\($0.formatted(.number.precision(.fractionLength(0)))) g" } ?? "—")
                 .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
             if let target {
                 ExProgressBar(value: amounts[nutrient] ?? 0, total: target, color: color)
@@ -159,18 +154,27 @@ struct NutritionDailySummary: View {
             }
         }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .ignore)
             .accessibilityLabel(nutrient.name)
-            .accessibilityValue(amounts[nutrient].map { "\(TrainingFormat.number($0)) grams" } ?? "Not reported")
+            .accessibilityValue((amount(nutrient).map { "\($0.formatted(.number.precision(.fractionLength(0)))) grams" } ?? "Not reported") +
+                                (target.map { ", target \($0.formatted(.number.precision(.fractionLength(0)))) grams" } ?? ""))
     }
 }
 
 enum NutritionFormat {
-    /// Preserve reviewed account targets while the account has no Core plan.
-    /// This is a read-only field mapping; it never estimates or saves a target.
-    static func displayTargets(current: DailyTargets?, saved: SummaryTargetsDTO?, savedDate: String?, on date: LocalDate) -> DailyTargets? {
-        if let current { return current }
-        guard savedDate == date.description, let saved, let energy = saved.calories,
-              let protein = saved.proteinG, let fat = saved.fatG, let carbohydrate = saved.carbsG else { return nil }
-        return DailyTargets(energy: Double(energy), protein: protein, fat: fat, carbohydrate: carbohydrate)
+    static func summaryAmount(_ nutrient: Nutrient, amounts: NutrientAmounts, progress: DayProgress?) -> Double? {
+        if let amount = amounts[nutrient] { return amount }
+        guard let progress else { return nil }
+        let value: NutrientProgress?
+        switch nutrient {
+        case .energy: value = progress.energy
+        case .protein: value = progress.protein
+        case .carbohydrate: value = progress.carbohydrate
+        case .fat: value = progress.fat
+        default: value = nil
+        }
+        // A day with no entries has zero logged intake. A food that omits a
+        // nutrient still leaves that nutrient unknown, never an invented zero.
+        guard let value, value.unreported == 0 else { return nil }
+        return value.consumed
     }
 
     static func status(_ status: DayStatus) -> String {

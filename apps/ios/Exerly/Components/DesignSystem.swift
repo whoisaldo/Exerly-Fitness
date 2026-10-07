@@ -64,6 +64,7 @@ struct ExCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ExSpacing.content) { content }
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(ExSpacing.page)
             .background(accent ? Color.exPrimary.opacity(0.07) : Color.exSurface1)
@@ -135,6 +136,7 @@ struct ExSearchField: View {
 
 struct ExActionStyle: ButtonStyle {
     var secondary = false
+    var destructive = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -145,9 +147,42 @@ struct ExActionStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 24)
             .padding(.horizontal, ExSpacing.content).padding(.vertical, 14)
             .foregroundStyle(secondary ? Color.exPrimaryText : Color.white)
-            .background(secondary ? Color.exPrimary.opacity(0.1) : Color.exActionFill)
+            .background(secondary ? Color.exPrimary.opacity(0.1) : destructive ? Color.exDestructiveFill : Color.exActionFill)
             .clipShape(RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
             .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+struct ExConfirmation: View {
+    let title: String
+    let message: String
+    let confirm: String
+    var cancelLabel = "Cancel"
+    var destructive = false
+    let identifier: String
+    let perform: () -> Void
+    let cancel: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        NavigationStack {
+            ExScreen {
+                ExCard {
+                    Text(title).font(.exH2).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
+                    Text(message).font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }
+                Button(role: destructive ? .destructive : nil, action: perform) { Text(confirm) }
+                    .buttonStyle(ExActionStyle(destructive: destructive)).accessibilityIdentifier("\(identifier).confirm")
+            }
+            .navigationTitle("Review change").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(cancelLabel, action: cancel).accessibilityIdentifier("\(identifier).confirmCancel")
+                }
+            }
+        }
+        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -178,6 +213,7 @@ struct ExNavigationLabel: View {
     let title: String
     let icon: String
     var detail: String?
+    var showChevron = true
 
     var body: some View {
         HStack(spacing: ExSpacing.item) {
@@ -190,8 +226,10 @@ struct ExNavigationLabel: View {
                 if let detail { Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
             }.fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-                .foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
+            if showChevron {
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
+            }
         }.frame(minHeight: 48).contentShape(Rectangle()).multilineTextAlignment(.leading)
     }
 }
@@ -317,8 +355,8 @@ struct ExSegmentedControl<Value: Hashable>: View {
                     Text(title(value)).font(.exLabel).multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, minHeight: 44).padding(.horizontal, 6)
-                        .foregroundStyle(value == selection ? Color.exTextPrimary : Color.exTextSecondary)
-                        .background(value == selection ? Color.exSurface1 : .clear,
+                        .foregroundStyle(value == selection ? Color.white : Color.exTextSecondary)
+                        .background(value == selection ? Color.exActionFill : .clear,
                                     in: RoundedRectangle(cornerRadius: ExRadius.control - 3))
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityAddTraits(value == selection ? .isSelected : [])

@@ -144,7 +144,7 @@ private struct SavedChangeReviewView: View {
 
     private func waterSummary(_ row: WaterDayDTO) -> some View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
-            Text("\(row.ml.formatted()) ml").font(.exStatMedium)
+            Text(WaterDisplay.amount(row.ml, imperial: unitSystem == "imperial")).font(.exStatMedium)
             Text(date(row.entry_date)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
         }
     }

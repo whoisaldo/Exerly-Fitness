@@ -3,8 +3,7 @@ import ExerlyCore
 import SwiftData
 import SwiftUI
 
-private let poundsPerKilogram = 2.20462262
-private let centimetersPerInch = 2.54
+private let centimetersPerInch = USUnits.centimetersPerInch
 
 private enum WeightRange: Int, CaseIterable, Identifiable {
     case month = 30
@@ -128,6 +127,7 @@ struct MeasurementsTab: View {
             .padding(20)
             .padding(.bottom, ExSpacing.major)
         }
+        .exScrollEdges()
         .refreshable { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -383,7 +383,7 @@ struct MeasurementsTab: View {
     }
 
     private func displayValue(_ kilograms: Double) -> Double {
-        unitSystem == "imperial" ? kilograms * poundsPerKilogram : kilograms
+        Mass.kg(kilograms).value(in: unitSystem == "imperial" ? .pounds : .kilograms)
     }
 
     private func formatWeight(_ kilograms: Double, digits: Int) -> String {
@@ -657,7 +657,7 @@ struct WeightEntrySheet: View {
                             TextField("Optional note", text: $note, prompt: Text("Optional note").foregroundColor(.exTextSecondary), axis: .vertical)
                                 .focused($focused).accessibilityIdentifier("weight.note")
                             if current.exists {
-                                Text("Saved: \((current.weight_kg ?? 0) * (unitSystem == "imperial" ? poundsPerKilogram : 1), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
+                                Text("Saved: \(Mass.kg(current.weight_kg ?? 0).value(in: unitSystem == "imperial" ? .pounds : .kilograms), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
                                     .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                                 Button("Delete weight reading", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
                             }

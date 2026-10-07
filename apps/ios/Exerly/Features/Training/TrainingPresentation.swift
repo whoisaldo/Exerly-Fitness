@@ -15,6 +15,10 @@ final class TrainingWorkspace: ObservableObject {
     let entryChecks: TrainingEntryChecks
     private let persistence: SQLiteTrainingPersistence
     @Published private(set) var sync: ExerlyCore.SyncEngine?
+    @Published private(set) var nutritionSetupError: String?
+    private var accountAPI: AccountAPI?
+    private var checkedLegacyTargets = false
+    private var adoptingLegacyTargets = false
     let unreadableCount: Int
 
     enum AccessError: Error { case missingAccount }
@@ -43,6 +47,7 @@ final class TrainingWorkspace: ObservableObject {
 
     func resumeSync(api: AccountAPI) {
         guard api.accountID == accountID, !persistence.isClosed else { return }
+        accountAPI = api
         sync = ExerlyCore.SyncEngine(hosts: [store, programs, nutrition, agent], state: persistence, api: api)
     }
 
@@ -51,12 +56,31 @@ final class TrainingWorkspace: ObservableObject {
         // account changes and when the scene moves to the background.
         guard !persistence.isClosed, !Task.isCancelled else { return }
         await entryChecks.refresh()
-        try? await sync?.sync()
+        do {
+            try await sync?.sync()
+            guard !persistence.isClosed, !Task.isCancelled else { return }
+            if !checkedLegacyTargets, !adoptingLegacyTargets, let accountAPI {
+                adoptingLegacyTargets = true
+                defer { adoptingLegacyTargets = false }
+                if nutrition.plans.isEmpty {
+                    _ = try await accountAPI.adoptLegacyTargets()
+                    guard !persistence.isClosed, !Task.isCancelled else { return }
+                    try await sync?.sync()
+                }
+                checkedLegacyTargets = true
+                nutritionSetupError = nil
+            }
+        } catch {
+            if !checkedLegacyTargets, nutrition.plans.isEmpty, !persistence.isClosed {
+                nutritionSetupError = "Your nutrition targets could not load. Pull down to retry."
+            }
+        }
         guard !persistence.isClosed, !Task.isCancelled else { return }
         if await entryChecks.refresh() { try? await sync?.sync() }
     }
 
     func close() async {
+        accountAPI = nil
         entryChecks.stop()
         await sync?.shutdown()
         persistence.close()

@@ -18,7 +18,7 @@ struct AgentReviewView: View {
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
                     NavigationLink {
                         AgentAuditView(workspace: workspace, unit: unit)
-                    } label: { ExNavigationLabel(title: "Activity history", icon: "clock.arrow.circlepath") }
+                    } label: { ExNavigationLabel(title: "Activity history", icon: "clock.arrow.circlepath", showChevron: false) }
                         .accessibilityIdentifier("suggestions.audit")
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }

@@ -7,6 +7,7 @@ extension Color {
     // The original brand, chart and logo colours stay unchanged.
     static let exPrimaryText = adaptive(0x7C3AED, 0xA78BFA)
     static let exActionFill = Color(hex: "7C3AED")
+    static let exDestructiveFill = Color(hex: "AE2834")
     static let exSecondary = adaptive(0x9333EA, 0xA855F7)
     static let exAccent = adaptive(0xBE185D, 0xEC4899)
     static let exBackground = adaptive(0xF8F7FC, 0x0A0A0F)

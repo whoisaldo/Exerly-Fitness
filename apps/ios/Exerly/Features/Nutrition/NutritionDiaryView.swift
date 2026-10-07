@@ -34,7 +34,6 @@ struct NutritionDiaryView: View {
     @State private var date: LocalDate
     @State private var destination: Destination?
     @StateObject private var actions: NutritionDiaryActions
-    @StateObject private var savedDay = DiaryViewModel()
     @EnvironmentObject private var dailySync: SyncEngine
     @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var errorFocused: Bool
@@ -74,7 +73,11 @@ struct NutritionDiaryView: View {
                 dateNavigation
                 VStack(spacing: ExSpacing.tight) {
                 ExCard(accent: true) {
-                    NutritionDailySummary(amounts: store.summary(on: date).totals, targets: displayTargets, showHeading: false)
+                    NutritionDailySummary(amounts: store.summary(on: date).totals, targets: store.targets(on: date),
+                                          progress: store.progress(on: date), showHeading: false)
+                    if let error = workspace.nutritionSetupError {
+                        Text(error).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }
                 }
                 HStack(spacing: ExSpacing.item) {
                     dayStatus
@@ -175,14 +178,6 @@ struct NutritionDiaryView: View {
         }
         .sheet(item: $destination) { destination in sheet(destination) }
         .task { await workspace.synchronize() }
-        .task(id: date.description) {
-            if let day = CalendarDay(rawValue: date.description) { await savedDay.load(for: day) }
-        }
-    }
-
-    private var displayTargets: DailyTargets? {
-        NutritionFormat.displayTargets(current: store.targets(on: date), saved: savedDay.summary?.targets,
-                                       savedDate: savedDay.summary?.date, on: date)
     }
 
     private var store: NutritionStore { workspace.nutrition }
@@ -202,7 +197,7 @@ struct NutritionDiaryView: View {
                             Text(NutritionFormat.day(date, timeZone: timeZone)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }
                     }.fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.center)
-                }.accessibilityLabel("Diary date, \(NutritionFormat.day(date, timeZone: timeZone))")
+                }.accessibilityLabel("Diary date, \(date == LocalDate(Date(), in: timeZone) ? "Today, " : "")\(NutritionFormat.day(date, timeZone: timeZone))")
                     .accessibilityIdentifier("diary.selected-day").accessibilityValue(date.description)
                 Spacer(minLength: 0)
                 Button { date = date.adding(days: 1) } label: {

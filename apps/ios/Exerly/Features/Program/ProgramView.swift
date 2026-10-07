@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 private struct ProgramChoice: Identifiable {
@@ -448,7 +449,7 @@ struct ProgramView: View {
     }
 
     private func rateLabel(_ kilograms: Double, goal: String) -> String {
-        let displayed = unitSystem == "imperial" ? kilograms * 2.20462262 : kilograms
+        let displayed = Mass.kg(kilograms).value(in: unitSystem == "imperial" ? .pounds : .kilograms)
         let unit = unitSystem == "imperial" ? "lb" : "kg"
         let direction = goal == "lose" ? "down" : "up"
         return "\(displayed.formatted(.number.precision(.fractionLength(2)))) \(unit)/week \(direction)"
@@ -470,7 +471,7 @@ struct ProgramView: View {
     private func historyDetail(_ checkin: CheckinDTO) -> String {
         var parts = ["expenditure \(checkin.expenditure) · \(checkin.expenditureConfidence)"]
         if let weight = checkin.trendWeightKg {
-            let displayed = unitSystem == "imperial" ? weight * 2.20462262 : weight
+            let displayed = Mass.kg(weight).value(in: unitSystem == "imperial" ? .pounds : .kilograms)
             let unit = unitSystem == "imperial" ? "lb" : "kg"
             parts.append("trend \(displayed.formatted(.number.precision(.fractionLength(1)))) \(unit)")
         }

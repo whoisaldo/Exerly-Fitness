@@ -40,8 +40,8 @@ struct TrainingProgramEditor: View {
                         }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
                     Section("Schedule") {
-                        ProgramNumberField("Cycles", text: $draft.cycles, integer: true)
-                            .focused($typing).accessibilityIdentifier("program.cycles")
+                        ExQuantityControl(title: "Cycles", text: $draft.cycles, step: 1, presets: [1, 2, 4, 6],
+                                          identifier: "program.cycles", integer: true)
                         ProgramChoiceField("Deload", value: TrainingProgramFormat.deload(draft.program.deload)) {
                             Picker("Deload", selection: $draft.program.deload) {
                                 ForEach(DeloadPlacement.allCases, id: \.self) {
@@ -378,30 +378,8 @@ private struct ProgramTargetEditor: View {
     }
     @ViewBuilder
     private var repBounds: some View {
-        NutritionNumberInput(title: "Minimum reps", text: $fields.minReps, identifier: "program.minReps")
-        NutritionNumberInput(title: "Maximum reps", text: $fields.maxReps, identifier: "program.maxReps")
+        NutritionNumberInput(title: "Minimum reps", text: $fields.minReps, identifier: "program.minReps", integer: true)
+        NutritionNumberInput(title: "Maximum reps", text: $fields.maxReps, identifier: "program.maxReps", integer: true)
     }
 
-}
-
-private struct ProgramNumberField: View {
-    let title: String
-    @Binding var text: String
-    var integer: Bool
-
-    init(_ title: String, text: Binding<String>, integer: Bool = false) {
-        self.title = title
-        _text = text
-        self.integer = integer
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.subheadline).foregroundStyle(.secondary)
-            TextField(title, text: $text).keyboardType(integer ? .numberPad : .decimalPad)
-                .font(.exStatSmall).padding(ExSpacing.item)
-                .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
-                .accessibilityLabel(title)
-        }
-    }
 }
