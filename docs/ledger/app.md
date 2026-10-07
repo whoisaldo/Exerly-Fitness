@@ -2,25 +2,86 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 16:37 EDT.
+Current date 2026-10-07, updated 17:16 EDT.
 
 ## Merge status
 
-Integration is pushed at 7f6ccf9e. A11 scanner build 2610071910 is live in
-Ali-only TestFlight from fixed 1ad05bbf. Scanner branch cleanup is complete.
-N04 landed at 7f6ccf9e and both integration and the app branch are pushed. Its
-58-method full UI release gate passed; A12 build 2610072011 is live in the
-Ali-only group. Primary work simplifies barcode logging and first-time setup.
+Integration is pushed at 30bc0aed. Barcode-first diary and meal scanning are
+landed. A12 build 2610072011 remains live in the Ali-only TestFlight group,
+from fixed 7f6ccf9e. Guided setup passes and is landing separately from the workout-plan
+builder. Neither is in A12.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
-| `agent/app-nutrition`              | Barcode-first logging and eight-question setup in verification                                     | N04 landed and pushed 7f6ccf9e, 15:46 EDT  |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
-| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed    |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                           |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                        |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed      |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted              |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted      |
+| `agent/app-nutrition`              | Guided workout builder and its release notes remain unstaged                                       | Barcode-first landed/pushed 30bc0aed, 16:48 EDT |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                    |
+| `release/app-design`               | None; fixed N04 full gate passed, A12 shipped                                                      | Fixed 7f6ccf9e; A12 shipped, tag pushed         |
+
+## Setup ready to land, 2026-10-07 17:16 EDT
+
+The final setup passes in light, 304.791 seconds, dark, 215.134 seconds, and
+largest dark type, 668.903 seconds. All 13 light captures, 30 combined dark
+captures and 13 AX captures were inspected. The corrected AX journey selects
+More carbs and verifies low_fat on the server after completion. Its exact
+training question, measurements and chosen units survive relaunch.
+
+Core 308 and API 261 pass. The combined hosted suite passes 197 active tests
+plus one credential skip, and the device build passes. The setup slice adds
+two hosted tests; the other four belong to the forthcoming plan slice.
+The manual program lifecycle still passes, 140.430 seconds. The guided-plan
+AX journey also finished successfully; inspect its captures before landing.
+
+The public comparison at contact-review/a13-barcode-reference.png shows the
+logging entry point beside MacroFactor's public App Store screenshot. Exerly
+now exposes scanning from the diary, and unavailable-camera fallback starts
+with search. MacroFactor's screenshot still fits more food choices on screen.
+No physical scan or speed superiority is claimed. Named-serving defaults are
+still a follow-up with Logic. The new setup review puts Calories and macros
+before expandable explanations and keeps Finish visible at large type. One
+iOS 26 capture caught a changing progress label and disclosure chevron; the
+capture helper now waits for those setup transitions as it already does for
+primary design captures. The fixed release run will recapture them.
+
+## Beginner setup and workout builder, 2026-10-07 17:06 EDT
+
+Barcode-first logging landed as 30bc0aed and integration is pushed. The
+setup slice is staged separately. Do not add the full UI-test file to that
+commit: its guided-workout method belongs to the following training slice.
+
+Default light and dark signup preserve appearance after relaunch and pass.
+All 29 captures from each beginner-review-light/dark run were reviewed.
+The AX rerun reached the correct training question after restoration, then
+exposed a test-helper error: a partially visible More carbs choice was tapped
+through the fixed Continue button. The captured review still said Balanced.
+The helper now excludes all fixed setup and plan actions when scrolling and
+checks that More carbs is selected. The red result remains in
+beginner-ax-restored.xcresult. Fresh tests are beginner-ax-footer and
+beginner-footer-light/dark.
+
+The review also required too much scrolling at largest type. Finish setup
+now stays visible, the target explanation expands on request, and training
+preferences sit below the Calorie and macro summary. The default appearance
+checks are being repeated for this final layout. The goal selection no
+longer forces a spring animation when Reduce Motion is enabled.
+
+The first guided-plan journey passes in default light, 165.377 seconds, and
+default dark, 127.599 seconds. It loads four days, intermediate experience,
+dumbbells and a flat bench from saved setup; previews without writing; saves
+offline; relaunches; undoes the accepted proposal; then verifies the server
+export. All eight light captures were reviewed. The proposed plan has one
+summary, readable days and a persistent Save action. The manual lifecycle
+and largest-type plan checks continue. Four new hosted tests pass within the
+197 active hosted suite, with one credential skip. The device build passes.
+This is app presentation over Core's published generator, not app-side
+exercise selection. GymStore is included in account sync and export.
+
+Next: finish setup and plan capture checks, land each passing piece, then
+cut the next internal release from a fixed commit. Keep integration moving.
+P02 still needs advanced program work and physical-device verification.
 
 ## Final beginner review, 2026-10-07 16:37 EDT
 

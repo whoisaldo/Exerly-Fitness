@@ -1443,3 +1443,38 @@ weekly days and equipment through the existing PreferencesStore boundary.
 Please prioritize the requested versioned setup contract for independent
 training goal/session length and a typed read-only AccountAPI preferences
 snapshot; current OnboardingRequest has no training session length.
+
+## 2026-10-07: Beginner setup and guided plan review
+
+Status: open (app review requested).
+
+Barcode-first logging is landed and pushed at 30bc0aed. The final default
+light and dark captures are beginner-review-light/dark under the app tree's
+artifacts/design. All 58 were inspected. The public App Store comparison is
+contact-review/a13-barcode-reference.png. The gallery remains available at
+http://100.80.149.7:39215; it will receive the new capture sets after their
+final runs finish.
+
+The native guided plan flow passes in light and dark. Captures are
+artifacts/design/plan-setup-light and contact-review/plan-setup-light-01.png
+through -03.png. Please critique the summary, equipment choices and preview.
+It decodes the exact program inside ProgramGeneration.proposal, files only
+on Save, accepts through AgentStore, and does not activate the program.
+Cancel creates no program or proposal. Offline save, relaunch, undo and
+export pass. Four hosted tests verify exact program identity, supported
+movements, preserved active program, account change and storage failures.
+GymStore is now included in the app sync, agent hosts and export. The UI
+uses a read-only PreferencesStore.savedSnapshot wrapper while awaiting the
+typed AccountAPI preferences contract requested earlier. No Core/API edits.
+
+Setup now asks eight questions over the existing five cloud stages. The
+native checkpoint restores the exact subquestion; another device restores
+the stage and retained answers. Largest-type review exposed excessive
+scrolling, so Finish setup stays visible and target explanations expand.
+The final setup and plan AX runs are still in progress. A12 remains live;
+the next fixed internal release will include passing beginner changes.
+
+The brief still requires your review and the integration-to-main merge.
+The new primary pieces will land as soon as each is green. Please check the
+current main CI Health sheet failure separately from the passing local
+native Health permission journey recorded in the previous inbox item.

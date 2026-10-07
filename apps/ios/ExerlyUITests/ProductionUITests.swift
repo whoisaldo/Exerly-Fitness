@@ -3004,11 +3004,11 @@ final class ProductionUITests: XCTestCase {
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
         XCTAssertTrue(app.staticTexts["Repair 1 of 2"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["Activity Level"].exists)
+        XCTAssertTrue(app.staticTexts["Your everyday activity"].exists)
         XCTAssertFalse(app.textFields["Your name"].exists)
         tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Lightly Active")).firstMatch, in: app)
         capture(app, "legacy-repair-missing-activity")
-        tap(app.buttons["Continue"], in: app)
+        tap(app.buttons["setup.continueWeek"], in: app)
         XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 10))
         capture(app, "legacy-repair-target-review")
         tap(app.buttons["Finish setup"], in: app)
@@ -3080,12 +3080,10 @@ final class ProductionUITests: XCTestCase {
         replace(app.textFields["Height, cm"], with: "178.5", in: app)
         replace(app.textFields["Weight, kg"], with: "82.5", in: app)
         dismissKeyboard(app)
-        let formula = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Formula parameter")).firstMatch
-        tap(formula, in: app)
         tap(app.buttons["Male parameter"], in: app)
         capture(app, "setup-answers-before-relaunch")
         app.terminate()
-        app.launchArguments = []
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
         app.launch()
         XCTAssertTrue(app.textFields["Height, cm"].waitForExistence(timeout: 15))
         XCTAssertEqual(app.textFields["Height, cm"].value as? String, "178.5")
@@ -3094,8 +3092,26 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Lose Weight")).firstMatch, in: app)
         replace(app.textFields["Target weight"], with: "78", in: app)
         dismissKeyboard(app)
+        capture(app, "setup-independent-goals")
         tap(app.buttons["Continue"], in: app)
-        tap(app.buttons["Continue"], in: app)
+        capture(app, "setup-everyday-activity")
+        tap(app.buttons["setup.continueWeek"], in: app)
+        tap(app.buttons["setup.workouts.4"], in: app)
+        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "I train regularly")).firstMatch, in: app)
+        capture(app, "setup-training-week")
+        app.terminate(); app.launch()
+        reveal(app.buttons["setup.workouts.4"], in: app)
+        XCTAssertTrue(app.buttons["setup.workouts.4"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["setup.workouts.4"].isSelected)
+        tap(app.buttons["setup.continueWeek"], in: app)
+        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "A full gym")).firstMatch, in: app)
+        capture(app, "setup-equipment")
+        tap(app.buttons["setup.continueWeek"], in: app)
+        let moreCarbs = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "More carbs")).firstMatch
+        tap(moreCarbs, in: app)
+        XCTAssertTrue(moreCarbs.isSelected, "The macro style choice must be selected before continuing")
+        capture(app, "setup-nutrition-style")
+        tap(app.buttons["setup.continueWeek"], in: app)
         XCTAssertTrue(app.staticTexts["Review your targets"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 10))
         capture(app, "setup-target-review")
@@ -3129,8 +3145,13 @@ final class ProductionUITests: XCTestCase {
         let bootstrap = try await request("GET", "/api/bootstrap", token: token)
         let status = try XCTUnwrap(bootstrap["onboarding"] as? [String: Any])
         XCTAssertEqual(status["complete"] as? Bool, true)
+        let configured = try XCTUnwrap(bootstrap["account"] as? [String: Any])
+        XCTAssertEqual(configured["experienceLevel"] as? String, "intermediate")
+        XCTAssertEqual(configured["workoutDaysPerWeek"] as? Int, 4)
+        XCTAssertEqual(configured["equipmentAccess"] as? String, "full_gym")
         let program = try await request("GET", "/api/program", token: token)
         XCTAssertEqual(program["goal_type"] as? String, "lose")
+        XCTAssertEqual(program["diet_type"] as? String, "low_fat")
         let targetSummary = try await request("GET", "/api/summary", token: token)
         let targets = try XCTUnwrap(targetSummary["targets"] as? [String: Any])
         let expectedEnergy = try XCTUnwrap(targets["calories"] as? Double)
@@ -3516,7 +3537,7 @@ final class ProductionUITests: XCTestCase {
             // Persistent meal actions are outside the scrolling viewport.
             // Tap them directly when visible, while keeping other drags above them.
             if visibleFrame(element) && element.isHittable,
-               ["nutrition.plateAddFoods", "nutrition.reviewPlate"].contains(element.identifier) { return }
+               persistentActionIDs.contains(element.identifier) { return }
             // Stacked sheets expose the diary's navigation bar as well as
             // their own. Find the control in any bar instead of assuming
             // the last accessibility node is the frontmost navigation bar.
@@ -3556,10 +3577,14 @@ final class ProductionUITests: XCTestCase {
     private func fixedFooterTop(in app: XCUIApplication) -> CGFloat {
         // Stacked sheets can expose the scroll view underneath. Never start a
         // content drag inside the current sheet's persistent action buttons.
-        ["nutrition.plateAddFoods", "nutrition.reviewPlate"].compactMap { identifier in
+        persistentActionIDs.compactMap { identifier in
             let button = app.buttons[identifier]
             return button.exists && button.isHittable ? button.frame.minY - 12 : nil
         }.min() ?? app.frame.height
+    }
+    private var persistentActionIDs: [String] {
+        ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
+         "planSetup.continue", "planSetup.accept"]
     }
     private func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
@@ -3624,7 +3649,9 @@ final class ProductionUITests: XCTestCase {
         else { app.swipeUp() }
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        if name.hasPrefix("design") { Thread.sleep(forTimeInterval: 0.5) }
+        if name.hasPrefix("design") || name.hasPrefix("setup") || name.hasPrefix("guided-plan") {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
         if dismissPasswordPrompt(in: app) { Thread.sleep(forTimeInterval: 0.8) }
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

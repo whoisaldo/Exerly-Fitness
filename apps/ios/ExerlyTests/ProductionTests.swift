@@ -300,6 +300,61 @@ final class ProductionTests: XCTestCase {
         XCTAssertEqual(state.request().height, 187.96, accuracy: 0.000001)
     }
 
+    func testGuidedSetupKeepsTheExactQuestionAndTrainingAnswersAfterRelaunch() {
+        let state = OnboardingState(defaults: defaults)
+        state.restoreCheckpoint(accountID: "guided-setup")
+        state.name = "Taylor"
+        state.physiologicalSex = "female"
+        state.experienceLevel = "intermediate"
+        state.workoutDaysPerWeek = 4
+        state.workoutDays = ["monday", "tuesday", "thursday", "friday"]
+        state.equipment = [.dumbbells, .bench]
+        state.dietType = "low_fat"
+        state.step = 3
+        for page in 0...3 {
+            XCTAssertEqual(state.planningPage, page)
+            let restored = OnboardingState(defaults: defaults)
+            restored.restoreCheckpoint(accountID: "guided-setup")
+            XCTAssertEqual(restored.step, 3)
+            XCTAssertEqual(restored.planningPage, page)
+            XCTAssertEqual(restored.questionNumber, 4 + page)
+            XCTAssertEqual(restored.request().experienceLevel, "intermediate")
+            XCTAssertEqual(restored.request().workoutDaysPerWeek, 4)
+            XCTAssertEqual(restored.request().workoutDays, state.workoutDays)
+            XCTAssertEqual(Set(restored.request().equipment), ["dumbbells", "bench"])
+            XCTAssertEqual(restored.request().dietType, "low_fat")
+            if page < 3 { state.nextStep() }
+        }
+        state.nextStep()
+        XCTAssertEqual(state.step, 4)
+        XCTAssertEqual(state.questionNumber, 8)
+        state.prevStep()
+        XCTAssertEqual(state.step, 3)
+        XCTAssertEqual(state.planningPage, 3)
+        state.prevStep()
+        XCTAssertEqual(state.step, 3)
+        XCTAssertEqual(state.planningPage, 2)
+    }
+
+    func testOptionalProfilePreferencesDoNotReplaceExplicitManualTargets() {
+        let state = OnboardingState(defaults: defaults)
+        state.restoreCheckpoint(accountID: "manual-setup")
+        state.name = "Taylor"
+        state.manualTargetMode = true
+        state.manualTargets = SetupTargets(calories: 2345.5, protein_g: 143.25, carbs_g: 220, fat_g: 71.5)
+        state.workoutDaysPerWeek = 0
+        state.dietaryStyle = .vegetarian
+        state.dietType = "low_fat"
+        let restored = OnboardingState(defaults: defaults)
+        restored.restoreCheckpoint(accountID: "manual-setup")
+        XCTAssertEqual(restored.request().targetMode, "manual")
+        XCTAssertEqual(restored.request().manualTargets, state.manualTargets)
+        XCTAssertEqual(restored.request().workoutDaysPerWeek, 0)
+        XCTAssertEqual(restored.request().dietaryStyle, "vegetarian")
+        XCTAssertEqual(restored.request().unitSystem, "imperial")
+        XCTAssertEqual(restored.request().gender, "other", "A new profile must not invent a gender identity")
+    }
+
     func testLegacySetupDraftMigratesWithoutLosingPersonalization() throws {
         let productionAPI = APIClient(baseURL: "https://exerly-fitness-93dyl.ondigitalocean.app", keychain: keychain, defaults: defaults)
         let state = OnboardingState(defaults: defaults, api: productionAPI)

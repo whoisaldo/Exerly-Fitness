@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 struct Step4Goals: View {
@@ -13,7 +14,7 @@ struct Step4Goals: View {
                     Text("What's your goal?")
                         .font(.exH2)
                         .foregroundStyle(.exTextPrimary)
-                    Text("We'll build your plan around this")
+                    Text("Start with what matters most to you. Your food and training goals can be different.")
                         .font(.exBody)
                         .foregroundStyle(.exTextSecondary)
                 }
@@ -46,7 +47,7 @@ struct Step4Goals: View {
                             inputError = "Enter a valid target weight."
                             return
                         }
-                        state.targetWeightKg = state.useMetric ? value : value * 0.45359237
+                        state.targetWeightKg = state.useMetric ? value : Mass.lb(value).kilograms
                     }
                     inputError = nil
                     state.nextStep()
@@ -70,7 +71,7 @@ struct Step4Goals: View {
                     icon: goal.icon,
                     isSelected: !state.unansweredFields.contains("goal") && state.goal == goal
                 ) {
-                    withAnimation(.spring(response: 0.3)) { state.goal = goal }
+                    state.goal = goal
                 }
             }
         }
@@ -83,12 +84,14 @@ struct Step4Goals: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Target weight, \(state.useMetric ? "kg" : "lb")").font(.headline)
                     TextField("Target weight", text: $targetWeightText)
-                        .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .keyboardType(.decimalPad).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+                        .padding(ExSpacing.item)
+                        .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                         .focused($editingWeight)
                         .frame(minHeight: 44).accessibilityLabel("Target weight")
                         .onChange(of: targetWeightText) { _, text in
                             if let value = UserEnteredNumber.parse(text) {
-                                state.targetWeightKg = state.useMetric ? value : value * 0.45359237
+                                state.targetWeightKg = state.useMetric ? value : Mass.lb(value).kilograms
                             }
                         }
                     Text("Your initial targets will be shown for review. You can adjust your goal in Program.")
@@ -99,7 +102,7 @@ struct Step4Goals: View {
     }
 
     private func refreshWeightText() {
-        let value = state.useMetric ? state.targetWeightKg : state.targetWeightKg / 0.45359237
+        let value = Mass.kg(state.targetWeightKg).value(in: state.useMetric ? .kilograms : .pounds)
         targetWeightText = value.formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 }
