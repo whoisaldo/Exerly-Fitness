@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 02:30 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 04:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                         |
 | --------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 02:30 EDT, integration (U.S. units, progress, plan continuity)           |
-| `main`                                        | –        | `3425db1d`, 2026-10-07 00:30 EDT; CI run 37569162426 in progress; integration ahead |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:30 EDT, integration (M14 export and import)                           |
+| `main`                                        | –        | `ad767e2a`, 2026-10-07 02:45 EDT; CI run 37580092392 in progress; integration ahead |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -173,12 +173,18 @@ plans (app agent, 23:40).
 defaults and `USUnits` (Ali, through the app agent), `NutritionStore.progress(on:)`,
 and bridged plans following the legacy Program screen.
 
+**M14: CSV exports and import.** Landed 2026-10-07 (design 022, I14): seven CSV
+files with units and empty unknowns, and an idempotent import of a JSON export,
+checked by a live round trip between two accounts.
+
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
 merged lockfile installs Vite under `apps/web` and the script expected the
 root. That is fixed. Earlier integration runs had failed at the same step for
 want of `rg`. Only one macOS job runs at a time, and the iOS job takes about
-two hours.
+two hours. The rerun on `3425db1d` passed unit tests and 36 of 37 UI tests; the
+failure was a typing flake in the app agent's program builder test, reported to
+them.
 
 Staging was redeployed with migration 0007.
 
