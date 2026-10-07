@@ -117,6 +117,50 @@ test('an account with a plan of its own, or without targets, is left alone', asy
   assert.equal((await adopt({ token: minted.body.token })).status, 403);
 });
 
+test('Program screen changes reach the diary until the person sets a plan in the app', async () => {
+  const user = await signUp(api);
+  await api.post('/api/user/onboarding', answers, { token: user.token });
+  const [bridged] = (await adopt(user)).body.plans;
+  const plans = async () =>
+    (await api.get('/v1/changes?after=0', { token: user.token })).body.changes
+      .filter((c) => c.kind === 'nutrition_plan' && !c.deleted)
+      .map((c) => c.payload);
+
+  const changed = await api.post(
+    '/api/goals',
+    { daily_calories: 2500, protein_g: 180, carbs_g: 250, fat_g: 80 },
+    { token: user.token }
+  );
+  assert.ok(changed.status < 300, JSON.stringify(changed.body));
+  const followed = (await plans()).find((p) => p.id !== bridged.id);
+  assert.ok(followed, 'a new manual version follows the Program screen');
+  assert.equal(followed.mode, 'manual');
+  assert.deepEqual(followed.targets[0], { energy: 2500, protein: 180, fat: 80, carbohydrate: 250 });
+  assert.ok(followed.startDate >= bridged.startDate);
+
+  // A plan the person sets in the app wins, and the Program screen no longer writes plans.
+  const id = randomUUID().toUpperCase();
+  const native = {
+    ...followed,
+    id,
+    createdAt: new Date(Date.now() + 60_000).toISOString(),
+    targets: followed.targets.map((t) => ({ ...t, energy: 2300 })),
+  };
+  const saved = await api.put(
+    `/v1/documents/nutrition_plan/${id}`,
+    { base_revision: 0, payload: native },
+    { token: user.token, headers: { 'Idempotency-Key': randomUUID() } }
+  );
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  const before = (await plans()).length;
+  await api.post(
+    '/api/goals',
+    { daily_calories: 2700, protein_g: 180, carbs_g: 290, fat_g: 80 },
+    { token: user.token }
+  );
+  assert.equal((await plans()).length, before);
+});
+
 test('the plan written matches the golden file ExerlyCore decodes', () => {
   const file = path.join(__dirname, '../../../docs/api/golden/legacy-plan-v1.json');
   const user = {

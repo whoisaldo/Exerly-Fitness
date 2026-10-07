@@ -59,7 +59,7 @@ async function accept(user, targets, { date, reason, checkinID = null } = {}) {
         updated_at: now,
       }
     );
-    return store.insert('target_versions', {
+    const version = await store.insert('target_versions', {
       account_id: user.id,
       email: user.email,
       effective_date: date || dates.today(user.timezone || 'UTC'),
@@ -68,6 +68,9 @@ async function accept(user, targets, { date, reason, checkinID = null } = {}) {
       checkin_id: checkinID,
       created_at: now,
     });
+    // An account whose plans came from these targets keeps following them.
+    await require('./nutrition/legacyPlans').followLegacyVersion(user, version, { now });
+    return version;
   });
 }
 

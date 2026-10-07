@@ -140,4 +140,61 @@ async function adoptLegacyTargets(user, { now = new Date() } = {}) {
   });
 }
 
-module.exports = { adoptLegacyTargets, planFrom, uuid5 };
+const planOrder = (a, b) =>
+  a.startDate !== b.startDate
+    ? a.startDate.localeCompare(b.startDate)
+    : a.createdAt !== b.createdAt
+      ? a.createdAt.localeCompare(b.createdAt)
+      : a.id.localeCompare(b.id);
+
+/**
+ * After a legacy screen accepts new targets (`version`, a target_versions
+ * row): when the plan in force on its date is one this bridge made, add a plan
+ * version with the new numbers, so the diary follows. A plan the person made
+ * in the app is never overridden, and an account that hasn't adopted yet is
+ * left for adoption, which reads every version.
+ */
+async function followLegacyVersion(user, version, { now = new Date() } = {}) {
+  const rows = await store.find('documents', { account_id: user.id, kind: 'nutrition_plan' });
+  const live = rows.filter((row) => !row.deleted_at && row.payload).map((row) => row.payload);
+  const inForce = live
+    .filter((plan) => plan.startDate <= version.effective_date)
+    .sort(planOrder)
+    .at(-1);
+  if (!inForce || !usable(version.targets)) return null;
+  const versions = await store.find('target_versions', { account_id: user.id });
+  const bridged = new Set(
+    [...versions.map((v) => v.id), 'current'].map((key) =>
+      uuid5(`${user.id}/legacy-targets/${key}`)
+    )
+  );
+  if (!bridged.has(inForce.id)) return null;
+  const program = await store.findOne('programs', { email: user.email });
+  const plan = planFrom(user, program, {
+    key: version.id,
+    startDate: version.effective_date,
+    targets: version.targets,
+    createdAt: version.created_at ?? now,
+  });
+  if (rows.some((row) => row.document_id === plan.id)) return null;
+  const row = await store.insert('documents', {
+    account_id: user.id,
+    kind: 'nutrition_plan',
+    document_id: plan.id,
+    revision: 1,
+    payload: plan,
+    deleted_at: null,
+    created_at: now,
+    updated_at: now,
+  });
+  await docs.record(user, row);
+  await docs.appendAudit(user, {
+    action: 'directWrite',
+    actor: { kind: 'builtIn', name: 'Exerly' },
+    targets: [{ kind: 'nutrition_plan', id: plan.id }],
+    note: 'Targets changed on the Program screen, kept as a new manual plan version.',
+  });
+  return plan;
+}
+
+module.exports = { adoptLegacyTargets, followLegacyVersion, planFrom, uuid5 };
