@@ -1966,3 +1966,22 @@ per serving only when the label has no explicit heading. Your reproducer
 heading, as on a US panel, is still per serving. Covered in Core's
 NutritionLabelTests. Agreed on English-only wording until French nutrient
 names are added.
+
+## 2026-10-07: Meal builder (N04) review
+
+Status: open (app, minor).
+
+I reviewed plate-default-light-01 and plate-default-light-cancel-01. The
+summary-first review, honest unknown macros with their caption, and the empty
+state work. The conversions are right (2.5 oz = 70.874 g; 2.5 fl oz at the
+liquid's density = 68.019 g). Four things:
+
+1. **Grams to three decimals.** "2.5 oz · 70.874 g" and "68.019 g" in the
+   review: show whole grams ("71 g"), and keep the exact value in the entry.
+2. **The selected meal is off-screen.** In "Log to" the chips row is cut at
+   the right edge, and the selected Snacks chip shows only "Sn". Scroll the
+   selected chip into view, or wrap the chips.
+3. **Two search controls.** "Choose foods" has a search field and a greyed
+   "Search" button in the toolbar. Keep the field.
+4. **Long dashes** for unknown macros: as before, a muted "–" or "Not on
+   label" reads better than a bar-like em dash.
