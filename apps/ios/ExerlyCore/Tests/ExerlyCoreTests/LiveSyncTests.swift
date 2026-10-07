@@ -87,6 +87,34 @@ struct LiveSyncTests {
         }
     }
 
+    @Test func anExportImportsIntoAnotherAccountAndSyncsToItsPhone() async throws {
+        let (fromEmail, fromPassword) = try await signUp()
+        let (toEmail, toPassword) = try await signUp()
+        let from = try LiveDevice(base: base)
+        _ = try await from.signIn(email: fromEmail, password: fromPassword)
+        let day = LocalDate("2026-10-06")!
+        try from.nutrition.log(Food(name: "Synthetic oats, rolled", per100g: NutrientAmounts([.energy: 380, .protein: 13])),
+                               grams: 80, on: day, meal: "Breakfast")
+        try from.nutrition.logWeight(.lb(180.4), timeZone: .gmt)
+        try from.store.startSession(name: "Live export", bodyweight: .kg(80), timeZone: .gmt)
+        try from.store.addExercise("barbell-bench-press")
+        try from.logSet(reps: 5, kg: 100)
+        try from.store.finishSession()
+        try await from.engine.sync()
+        let account = try await from.api.account()
+        let csv = String(bytes: try await account.exportCSV(.foodEntries), encoding: .utf8) ?? ""
+        #expect(csv.contains("\"Synthetic oats, rolled\"") && csv.contains("energy_kcal"))
+
+        let to = try LiveDevice(base: base)
+        _ = try await to.signIn(email: toEmail, password: toPassword)
+        let result = try await to.api.account().importExport(try await account.exportAccount())
+        #expect(result.imported >= 3 && result.skipped.isEmpty)
+        try await to.engine.sync()
+        #expect(to.nutrition.entries == from.nutrition.entries && to.nutrition.weights == from.nutrition.weights)
+        #expect(to.store.history.sessions == from.store.history.sessions)
+        #expect(try await to.api.account().importExport(try await account.exportAccount()).imported == 0)
+    }
+
     @Test func twoDevicesSyncMergeAndDeleteThroughTheRealAPI() async throws {
         let (email, password) = try await signUp()
         let phone = try LiveDevice(base: base)

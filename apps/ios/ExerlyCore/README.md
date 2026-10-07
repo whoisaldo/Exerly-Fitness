@@ -254,6 +254,10 @@ try await api.signOut()
     `revokeAccessToken(id:)` for the person's own agents. Every token can read;
     `.propose` files proposals, and `.write` changes data. The secret in
     `CreatedAccessToken.secret` is shown once and never again.
+  - `exportCSV(.foodEntries)` (and `.savedFoods`, `.weighIns`, `.days`,
+    `.sets`, `.metricValues`, `.metrics`) returns a CSV file, and
+    `importExport(_:)` restores an `exportAccount()` file into this account,
+    returning an `ImportResult`. See design 022.
   - `adoptLegacyTargets()` keeps an older account's saved targets as manual
     `nutrition_plan`s with the same numbers, unless it has a plan already.
     It returns how many were made; sync brings them in.

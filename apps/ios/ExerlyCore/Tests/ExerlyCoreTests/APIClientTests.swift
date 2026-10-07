@@ -351,3 +351,28 @@ struct KeychainCredentialStoreTests {
     }
 }
 #endif
+
+@Suite struct PortabilityClientTests {
+    @Test func exportsACSVAndImportsAnExport() async throws {
+        let store = InMemoryCredentialStore()
+        let start = Date.milliseconds(1_791_223_200_000)
+        try store.save(Credentials(accessToken: "t", refreshToken: "r", accessExpiresAt: start.addingTimeInterval(600),
+                                   sessionID: "s", accountID: "a"))
+        let transport = FakeTransport { request in
+            switch (request.method, request.path) {
+            case ("GET", "/v1/export/food_entries.csv"): return (200, ["unused": true])
+            case ("POST", "/v1/import"):
+                #expect(request.body?["version"] as? Int == 3)
+                return (200, ["imported": 7, "kept": 0, "skipped": [["kind": "x", "id": "y", "reason": "Unknown document kind x"]],
+                              "ignored_tables": ["food"]])
+            default: return (404, ["error": "Not found"])
+            }
+        }
+        let account = try await ExerlyAPI(baseURL: URL(string: "https://api.exerly.test")!, transport: transport, credentials: store,
+                                          now: { start }).account()
+        #expect(try await account.exportCSV(.foodEntries).isEmpty == false)
+        let result = try await account.importExport(Data(#"{"version":3,"documents":[]}"#.utf8))
+        #expect(result == ImportResult(imported: 7, kept: 0, skipped: ["Unknown document kind x"], ignoredTables: ["food"]))
+        await #expect(throws: APIError.self) { try await account.exportCSV(.metrics) }
+    }
+}

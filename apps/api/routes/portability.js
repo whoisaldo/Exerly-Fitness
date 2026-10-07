@@ -1,0 +1,42 @@
+// /v1/export/<name>.csv: one kind of data as a CSV file. /v1/import: restore an
+// Exerly JSON export. See lib/portability.js.
+
+const express = require('express');
+const { asyncHandler, badRequest, forbidden, notFound } = require('../lib/errors');
+const { authenticate } = require('../lib/auth');
+const { FILES, exportCSV, importExport } = require('../lib/portability');
+
+const router = express.Router();
+
+router.get(
+  '/export/:file',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const name = req.params.file.replace(/\.csv$/, '');
+    const text = await exportCSV(req.account, name);
+    if (text == null) {
+      throw notFound(
+        `Exports are ${Object.keys(FILES)
+          .map((f) => `${f}.csv`)
+          .join(', ')}`
+      );
+    }
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.set('Content-Disposition', `attachment; filename="exerly-${name}.csv"`);
+    res.send(text);
+  })
+);
+
+// Only the person's own app may import into the account.
+router.post(
+  '/import',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (req.pat) throw forbidden('Only the Exerly app can import an export.');
+    const result = await importExport(req.account, req.body);
+    if (result.error) throw badRequest(result.error);
+    res.json(result);
+  })
+);
+
+module.exports = router;

@@ -1579,3 +1579,17 @@ Typing on GitHub's slower simulators drops characters. Please type and then
 assert-and-retype, or paste the value. The test's length suggests waits that
 time out before passing; worth a look. The native and browser round trip never
 ran, because this step failed first. Its Vite and `rg` fixes are in.
+
+## 2026-10-07: CSV exports and importing an export (I14)
+
+Status: open (contract published). See design 022.
+
+- **In account settings, next to the JSON export,** offer "Export as
+  spreadsheets". Call `account.exportCSV(file)` for each `CSVExport` case and
+  share the files, or offer them one by one. Nutrients that a food doesn't
+  report are empty cells, not zeros.
+- **"Import an Exerly export"** reads a JSON file from the document picker
+  and calls `account.importExport(data)`. Show `imported`, `kept` (already
+  here) and any `skipped` reasons, then sync. Importing twice is safe.
+- The live tests cover a round trip between two accounts through the
+  client.

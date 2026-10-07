@@ -80,6 +80,27 @@ public struct AccountAPI: DocumentAPI {
         return data
     }
 
+    /// One kind of data as a CSV file for spreadsheets, such as
+    /// `.foodEntries`. Unknown nutrients are empty cells, not zeros.
+    public func exportCSV(_ file: CSVExport) async throws -> Data {
+        let (status, data) = try await send("GET", "/v1/export/\(file.rawValue).csv")
+        guard status == 200 else { throw Wire.failure(status, try? JSONSerialization.jsonObject(with: data)) }
+        return data
+    }
+
+    /// Restores an Exerly JSON export, as `exportAccount()` returns it, into
+    /// this account. Documents the account already has are kept; importing
+    /// twice changes nothing.
+    public func importExport(_ export: Data) async throws -> ImportResult {
+        let (status, data) = try await send("POST", "/v1/import", body: export, headers: ["Content-Type": "application/json"])
+        let json = try? JSONSerialization.jsonObject(with: data)
+        guard status == 200, let result = json as? [String: Any], let imported = result["imported"] as? Int,
+              let kept = result["kept"] as? Int else { throw Wire.failure(status, json) }
+        let skipped = (result["skipped"] as? [[String: Any]] ?? []).compactMap { $0["reason"] as? String }
+        return ImportResult(imported: imported, kept: kept, skipped: skipped,
+                            ignoredTables: result["ignored_tables"] as? [String] ?? [])
+    }
+
     /// Deletes the account and everything in it on the server. Throws
     /// `appleReauthorizationRequired` when the server needs a fresh Sign in
     /// with Apple authorization code. The session owner then forgets the session.
@@ -213,6 +234,23 @@ public struct AccountAPI: DocumentAPI {
         let (status, data) = try await send(method, path, body: try body.map { try JSONSerialization.data(withJSONObject: $0) })
         return (status, try? JSONSerialization.jsonObject(with: data))
     }
+}
+
+/// The CSV files the server can export.
+public enum CSVExport: String, Sendable, Hashable, CaseIterable {
+    case foodEntries = "food_entries", savedFoods = "saved_foods", weighIns = "weigh_ins", days, sets
+    case metricValues = "metric_values", metrics
+}
+
+/// What an import did.
+public struct ImportResult: Sendable, Hashable {
+    public var imported: Int
+    /// Already in the account, so left as they were.
+    public var kept: Int
+    /// Documents that failed the server's checks, with the reasons (at most 50).
+    public var skipped: [String]
+    /// Legacy tables in the export, which aren't imported.
+    public var ignoredTables: [String]
 }
 
 /// A personal access token for the person's own agent, without its secret.

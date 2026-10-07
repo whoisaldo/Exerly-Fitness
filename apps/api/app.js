@@ -37,6 +37,8 @@ function createApp({ logger = console } = {}) {
 
   // A body cap. Without one, a single large POST can exhaust the 512MB
   // instance the API runs on.
+  // An import carries a whole export, so it gets a larger cap of its own.
+  app.use('/v1/import', express.json({ limit: '25mb' }));
   app.use(express.json({ limit: '256kb' }));
 
   app.use(
@@ -91,6 +93,7 @@ function createApp({ logger = console } = {}) {
   app.use('/v1/tokens', require('./routes/tokens'));
   app.use('/v1/webhooks', require('./routes/webhooks'));
   app.use('/v1/nutrition', require('./routes/nutritionPlans'));
+  app.use('/v1', require('./routes/portability'));
   app.use('/v1/foods', require('./routes/foods'));
   app.use('/v1', require('./routes/documents'));
 

@@ -411,6 +411,64 @@ paths:
           description: Nothing to do, because of `has_plan` or `no_targets`.
         '403': { $ref: '#/components/responses/Problem' }
 
+  /v1/export/{file}:
+    get:
+      tags: [Sync]
+      operationId: exportCSV
+      summary: One kind of data as CSV
+      description: |
+        `food_entries.csv`, `saved_foods.csv`, `weigh_ins.csv`, `days.csv`,
+        `sets.csv`, `metric_values.csv` or `metrics.csv`. Rows carry IDs,
+        revisions and UTC times. Nutrient columns name their unit; an unknown
+        nutrient is empty, never 0. See docs/design/022-export-import.md.
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema: { type: string, example: food_entries.csv }
+      responses:
+        '200':
+          description: The CSV file.
+          content:
+            text/csv: { schema: { type: string } }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /v1/import:
+    post:
+      tags: [Sync]
+      operationId: importExport
+      summary: Restore an Exerly JSON export into this account
+      description: |
+        The body is `/api/export`'s JSON, up to 25 MB. Documents are checked as
+        writes, then added with their exported revisions; one the account
+        already has is kept, so a second import changes nothing. Legacy tables
+        are listed, not imported. The app only: tokens get 403.
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { type: object } }
+      responses:
+        '200':
+          description: What was imported.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported: { type: integer }
+                  kept: { type: integer }
+                  skipped:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind: { type: string }
+                        id: { type: string }
+                        reason: { type: string }
+                  ignored_tables: { type: array, items: { type: string } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
   /v1/documents/{kind}/{id}:
     parameters:
       - $ref: '#/components/parameters/Kind'
