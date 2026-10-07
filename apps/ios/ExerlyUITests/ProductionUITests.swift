@@ -84,7 +84,7 @@ final class ProductionUITests: XCTestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.dailyHealth"], in: app)
-        XCTAssertTrue(app.buttons["Log activity"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["diary.selected-day"].waitForExistence(timeout: 10))
         capture(app, "design-11-daily-health")
         tap(app.buttons["Log activity"], in: app)
         capture(app, "design-12-activity-editor")
@@ -116,6 +116,70 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Cancel"].firstMatch, in: app)
         tap(app.buttons["Apple Health"], in: app)
         capture(app, "design-21-health-permissions")
+    }
+
+    func testDesignAdminScreenCapture() async throws {
+        guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
+            throw XCTSkip("Opt-in visual review of admin screens")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "design-admin", units: "imperial")
+        try await control(["designAdminEmail": person.email])
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["Admin Panel"], in: app)
+        XCTAssertTrue(app.staticTexts["Recorded entries"].waitForExistence(timeout: 15))
+        capture(app, "design-admin-overview")
+        tap(app.buttons["Users"], in: app)
+        XCTAssertTrue(app.staticTexts[person.email].waitForExistence(timeout: 10))
+        capture(app, "design-admin-accounts")
+    }
+
+    func testDesignProgressPhotosCapture() async throws {
+        guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_PHOTOS"] == "1" else {
+            throw XCTSkip("Opt-in photo import review on a simulator with synthetic media")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "design-photos", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Progress"], in: app)
+        tap(app.buttons["Photos"], in: app)
+        tap(app.buttons["Add photo"], in: app)
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 10))
+        // The opt-in simulator has two freshly imported geometric PNGs first.
+        let libraryPhotos = app.images.matching(identifier: "PXGGridLayout-Info")
+        XCTAssertTrue(libraryPhotos.element(boundBy: 0).waitForExistence(timeout: 10))
+        libraryPhotos.element(boundBy: 0).tap()
+        let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "progress.photo."))
+        XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
+        tap(app.buttons["progress.addPhoto"], in: app)
+        XCTAssertTrue(libraryPhotos.element(boundBy: 1).waitForExistence(timeout: 10))
+        libraryPhotos.element(boundBy: 1).tap()
+        XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
+        XCTAssertEqual(photos.count, 2)
+        capture(app, "design-photos-populated")
+        tap(app.buttons["Compare"], in: app)
+        tap(photos.element(boundBy: 0), in: app)
+        tap(photos.element(boundBy: 1), in: app)
+        revealAbove(app.staticTexts["Side by side"], in: app)
+        XCTAssertTrue(app.staticTexts["Side by side"].exists)
+        capture(app, "design-photos-comparison")
+        tap(app.buttons["Done"], in: app)
+        tap(photos.firstMatch, in: app)
+        XCTAssertTrue(app.navigationBars["Progress photo"].waitForExistence(timeout: 5))
+        capture(app, "design-photo-detail")
+        tap(app.buttons["Close"], in: app)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Progress"], in: app)
+        tap(app.buttons["Photos"], in: app)
+        XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
+        XCTAssertEqual(photos.count, 2)
+        capture(app, "design-photos-relaunched")
     }
 
     func testNutritionManualFoodKeepsUnknownsAndSurvivesOfflineEditing() async throws {
@@ -959,9 +1023,9 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
         tap(app.buttons["Train"], in: app)
         tap(app.buttons["suggestions.open"], in: app)
-        let empty = app.staticTexts["No suggestions to review"]
+        let empty = app.staticTexts["suggestions.pendingSummary"]
         reveal(empty, in: app)
-        XCTAssertTrue(empty.exists)
+        XCTAssertEqual(empty.label, "You're up to date")
         tap(app.buttons[rowID], in: app)
         let status = app.staticTexts["suggestions.status"]
         reveal(status, in: app)
@@ -1009,8 +1073,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["observations.open"], in: app)
         tap(app.buttons["observations.suggestions"], in: app)
-        reveal(app.staticTexts["No suggestions to review"], in: app)
-        XCTAssertTrue(app.staticTexts["No suggestions to review"].waitForExistence(timeout: 10))
+        reveal(app.staticTexts["suggestions.pendingSummary"], in: app)
+        XCTAssertEqual(app.staticTexts["suggestions.pendingSummary"].label, "You're up to date")
         capture(app, "entry-checks-off-manual-saved")
         app.terminate()
         app.launchArguments.removeAll { $0 == "--ui-testing" }
@@ -1307,7 +1371,7 @@ final class ProductionUITests: XCTestCase {
         let token = try XCTUnwrap(signup["token"] as? String)
         _ = try await request("POST", "/api/onboarding/complete", body: [
             "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
-            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
+            "goal": "maintain", "activityLevel": "light", "unitSystem": units, "timezone": "America/New_York"
         ], token: token)
         return (email, token)
     }
@@ -1329,7 +1393,7 @@ final class ProductionUITests: XCTestCase {
         let token = try XCTUnwrap(signup["token"] as? String)
         _ = try await request("POST", "/api/onboarding/complete", body: [
             "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
-            "goal": "maintain", "activityLevel": "light", "unitSystem": units, "timezone": "America/New_York"
+            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
         ], token: token)
         let app = launch(resetSession: true)
         tap(app.buttons["I already have an account"], in: app)
@@ -2258,6 +2322,8 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["I agree to the Terms of Service & Privacy Policy"], in: app)
         tap(app.buttons["Create Account"], in: app)
         XCTAssertTrue(app.textFields["Your name"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["U.S."].isSelected)
+        capture(app, "design-setup-us-default")
         tap(app.buttons["Metric"], in: app)
         tap(app.buttons["Continue"], in: app)
         replace(app.textFields["Height, cm"], with: "178.5", in: app)
@@ -2316,14 +2382,16 @@ final class ProductionUITests: XCTestCase {
         let targetSummary = try await request("GET", "/api/summary", token: token)
         let targets = try XCTUnwrap(targetSummary["targets"] as? [String: Any])
         let expectedEnergy = try XCTUnwrap(targets["calories"] as? Double)
-        revealAbove(app.staticTexts["nutrition.targetEnergy"], in: app)
+        revealAbove(app.buttons["Back to today"], in: app)
+        tap(app.buttons["Back to today"], in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.targetEnergy"].waitForExistence(timeout: 15))
         XCTAssertEqual(Double(app.staticTexts["nutrition.targetEnergy"].value as? String ?? ""), expectedEnergy)
+        tap(app.buttons["Previous day"], in: app)
+        XCTAssertTrue(app.staticTexts["No targets set for this day"].waitForExistence(timeout: 15))
 
         let calendar = Calendar.current
         let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
         let formatter = DateFormatter()
-        XCTAssertTrue(app.buttons["U.S."].isSelected)
-        capture(app, "design-setup-us-default")
         formatter.calendar = calendar
         formatter.dateFormat = "yyyy-MM-dd"
         let day = formatter.string(from: yesterday)
@@ -2735,6 +2803,13 @@ final class ProductionUITests: XCTestCase {
         }
     }
     private func replace(_ field: XCUIElement, with text: String, in app: XCUIApplication) {
+        // XCTest can call a partly obscured SwiftUI field hittable while its
+        // tap point falls in the keyboard toolbar. Reveal the whole field
+        // before switching focus, as a person scrolling the editor would.
+        if field.exists, app.keyboards.firstMatch.exists,
+           field.frame.maxY > app.keyboards.firstMatch.frame.minY - 50 {
+            dismissKeyboard(app)
+        }
         tap(field, in: app)
         let existing = field.value as? String ?? ""
         // Tapping a populated field can put the caret at its start, including
@@ -2752,8 +2827,8 @@ final class ProductionUITests: XCTestCase {
         else { app.swipeUp() }
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        dismissPasswordPrompt(in: app)
-        if name.hasPrefix("design") { Thread.sleep(forTimeInterval: 0.35) }
+        if name.hasPrefix("design") { Thread.sleep(forTimeInterval: 0.5) }
+        if dismissPasswordPrompt(in: app) { Thread.sleep(forTimeInterval: 0.8) }
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways

@@ -82,6 +82,14 @@ providers.lookupBarcode = async (identity) => ({
     if (req.get('X-Test-Fixture') !== 'isolated-simulator') return res.sendStatus(403);
     try {
       if (req.body.resetFoodDatabaseRequests) foodDatabaseRequests.length = 0;
+      if (req.body.designAdminEmail) {
+        const email = String(req.body.designAdminEmail);
+        if (!email.startsWith('design-admin-') || !email.endsWith('@exerly.test'))
+          return res.sendStatus(400);
+        const user = await store.findOne('users', { email });
+        if (!user) return res.sendStatus(404);
+        await store.update('users', { id: user.id }, { is_admin: true });
+      }
       if (req.body.repairLegacyEmail) {
         const email = String(req.body.repairLegacyEmail);
         if (!email.endsWith('@exerly.test')) return res.sendStatus(400);
