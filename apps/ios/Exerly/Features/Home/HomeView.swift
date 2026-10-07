@@ -154,7 +154,7 @@ struct HomeView: View {
             HStack {
                 Label("Weight", systemImage: "scalemass")
                 Spacer()
-                if let weight = summary.weight { Text("\(weight.weightKg * (unitSystem == "imperial" ? 2.20462262 : 1), format: .number.precision(.fractionLength(0...2))) \(unitSystem == "imperial" ? "lb" : "kg")").monospacedDigit() }
+                if let weight = summary.weight { Text("\(weight.weightKg * (unitSystem == "imperial" ? 2.20462262 : 1), format: .number.precision(.fractionLength(0...2))) \(unitSystem == "imperial" ? "lb" : "kg")") }
                 Button("Log weight") { addingWeight = true }.frame(minHeight: 44)
             }.diaryListRow()
             if let lastDeletedWeight {
@@ -283,7 +283,7 @@ struct HomeView: View {
                                 .foregroundStyle(.exTextPrimary)
                             if let target = summary.targets.calories {
                                 Text("/ \(target.formatted())")
-                                    .font(.exMono)
+                                    .font(.exStatSmall)
                                     .foregroundStyle(.exTextMuted)
                             }
                         }
@@ -353,7 +353,7 @@ struct HomeView: View {
                         .font(.headline)
                     Spacer()
                     Text("\(water.ml.formatted()) ml")
-                        .monospacedDigit()
+                        
                         .accessibilityIdentifier("water.total")
                 }
                 if water.sync_state == "pending" { Text("Saved on this device. Waiting to sync.").font(.callout) }
@@ -425,7 +425,7 @@ struct HomeView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.exPrimary)
             Text(value)
-                .font(.exMono)
+                .font(.exStatSmall)
                 .foregroundStyle(.exTextPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -493,7 +493,7 @@ struct HomeView: View {
                 .foregroundStyle(.exTextPrimary)
             Spacer()
             Text("\(calories) kcal")
-                .font(.exMono)
+                .font(.exStatSmall)
                 .foregroundStyle(.exTextSecondary)
             if meal != "uncategorized" {
                 Button {
@@ -523,11 +523,11 @@ struct HomeView: View {
                         .foregroundStyle(.exTextPrimary)
                         .lineLimit(1)
                     Text("× \(servingText(food.servings))")
-                        .font(.exMono)
+                        .font(.exStatSmall)
                         .foregroundStyle(.exTextMuted)
                 }
                 Text(macroText(food))
-                    .font(.exSmall.monospacedDigit())
+                    .font(.exSmall)
                     .foregroundStyle(.exTextMuted)
                     .lineLimit(1)
                 if food.syncState == "pending" { Text("Saved on device · Pending sync").font(.caption).foregroundStyle(.exTextSecondary) }
@@ -535,7 +535,7 @@ struct HomeView: View {
             }
             Spacer()
             Text(food.calories.formatted())
-                .font(.exMono)
+                .font(.exStatSmall)
                 .foregroundStyle(.exTextSecondary)
         }
     }
@@ -628,10 +628,10 @@ private struct DiaryMacroBar: View {
                     .foregroundStyle(.exTextSecondary)
                 Spacer()
                 Text(value.formatted(.number.precision(.fractionLength(0))))
-                    .font(.exSmall.monospacedDigit())
+                    .font(.exSmall)
                     .foregroundStyle(isOver ? .exWarning : .exTextPrimary)
                 Text(target.map { "/ \(Int($0))g" } ?? "g")
-                    .font(.exSmall.monospacedDigit())
+                    .font(.exSmall)
                     .foregroundStyle(.exTextMuted)
             }
 
@@ -667,7 +667,7 @@ private struct DiaryDayEditor: View {
         NavigationStack {
             ExForm {
                 Section {
-                    Text(current.entry_date).monospacedDigit()
+                    Text(current.entry_date)
                     Picker("Logging status", selection: $status) {
                         ForEach(DiaryLoggingStatus.allCases) { value in Text(value.title).tag(value) }
                     }
@@ -677,7 +677,7 @@ private struct DiaryDayEditor: View {
                 Section("Optional note") {
                     TextField("Note", text: $note, axis: .vertical).lineLimit(3...6)
                         .accessibilityIdentifier("diary.note")
-                    Text("\(note.count) / 500 characters").font(.caption).monospacedDigit()
+                    Text("\(note.count) / 500 characters").font(.caption)
                 }
                 if let error { Text(error).foregroundStyle(.red) }
             }
@@ -775,8 +775,8 @@ private struct ActivitySleepRows: View {
                 Button { editingActivity = row } label: {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(row.type).font(.headline)
-                        Text("\(row.duration, format: .number) minutes").monospacedDigit()
-                        if let calories = row.calories { Text("\(calories, format: .number) kcal").monospacedDigit() }
+                        Text("\(row.duration, format: .number) minutes")
+                        if let calories = row.calories { Text("\(calories, format: .number) kcal") }
                         else { Text("Energy not recorded") }
                         syncLabel(row.syncState)
                     }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.vertical, 8)
@@ -799,7 +799,7 @@ private struct ActivitySleepRows: View {
             ForEach(sleep, id: \.clientID) { row in
                 Button { editingSleep = row } label: {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(row.hours, format: .number) hours").font(.headline).monospacedDigit()
+                        Text("\(row.hours, format: .number) hours").font(.headline)
                         if let quality = row.qualityLabel { Text(quality.capitalized) }
                         if let bedtime = row.bedtime, let wakeTime = row.wakeTime { Text("\(bedtime) to \(wakeTime)") }
                         syncLabel(row.syncState)
