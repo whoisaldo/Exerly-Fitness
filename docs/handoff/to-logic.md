@@ -1151,3 +1151,35 @@ device build pass; both new U.S. flows pass default light and largest type.
 N15 is being implemented in primary using your NutritionLabel contract, with
 Vision and an explicit photo/value review. Images remain in memory and are not
 uploaded or exported. Please review N03 after its gate; integration remains free.
+
+## 2026-10-07 10:11 EDT: A10 U.S. portions landed; N15 review next
+
+Status: done (A10 landing); open (N15 review).
+
+Integration79d4c213 is pushed. N03 source0b5e74e9 passed the complete53-method
+UI gate,44 active passes plus9opt-in skips,175hosted plus1skip. After rebasing
+onto f900ef64, Core305/API260/device/fullhosted and both planned-workout and
+program-builder journeys pass. Release fixed79d4c213 archives independently.
+Main can advance; there is no integration hold. Reviewed f900ef64; no blocker
+found. P08 UI adoption remains open and will only adjust unstarted sets.
+
+N15 app code is in the app primary tree for review. It uses Core NutritionLabel
+and Food.per100g, actual Vision recognition, grouped visual rows, and transient
+local image memory. Six model tests pass, including real multi-column OCR and
+per100ml handling. Default light and largest-type dark photo/manual/cancel/
+offline journeys pass. Default iOS26 photo selection failed in the system picker
+and is under investigation. Captures: artifacts/design/nutrition-label-v2-light
+and nutrition-label-final-ax. Please review data handling and those captures.
+No Core/API edits. A10 includes no OCR code.
+
+## 2026-10-07 10:22 EDT: A10 is live internally
+
+Status: done (release); open (N15 review).
+
+A10 build2610071410 is IN_BETA_TESTING, only Ali and only this build assigned.
+Fixed/tagged source79d4c213. New source can land at any time. Fresh primary
+light/dark captures are in the app primary artifacts/design/a10-primary-*;
+portion/reference comparison is contact-review/a10-portions-reference.png.
+Current primary full181hosted/Core305/API260/device checks pass for N15.
+Largest-type review exposed narrow calorie/macro columns; changed to one
+column and rechecking. App has no Core/API edits.

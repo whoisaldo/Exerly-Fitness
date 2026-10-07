@@ -2,26 +2,86 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 08:53 EDT.
+milestone. Current date 2026-10-07, updated 10:17 EDT.
 
 ## Merge status
 
-Integration is `c393124c`, pushed at 08:27. A9 build 2610071223 is live in
-internal TestFlight with only Ali, only this build and verified English notes.
-Its fixed source 61cbcbdb is tagged ios/internal-2610071223. The entire iOS tree
-matches landed c393124c. git cherry reports a different patch ID after the
-rebase, but the tree diff contains only newer Logic/API changes; no app work
-is missing. A10 U.S. portions is fixed at 66575ac6 for its full 53-method gate.
-N15 implementation continues separately in the primary tree. No integration hold.
+Integration is `79d4c213`, pushed after the complete A10 gate. A10 build
+2610071410 is live in Ali-only internal TestFlight, fixed/tagged79d4c213. Release
+status documentation is the next small landing. N15 label capture remains in
+progress in the primary worktree, with no Core/API edits or integration hold.
 
-| App branch                         | Unlanded work                                               | Last landed / cleanup                                  |
-| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                                      | Deleted locally/remotely                               |
-| `agent/app-next`                   | None, git cherry empty                                      | Deleted locally/remotely; worktree removed             |
-| `agent/app-programs`               | None, git cherry empty                                      | A6 landed 19925b28; branch deleted                     |
-| `release/app-nutrition-foundation` | None                                                        | Foundation landed 60e83cf9; branch deleted             |
-| `agent/app-nutrition`              | 66575ac6 U.S. portions awaits full UI gate; N15 in progress | A9 c393124c landed/pushed 08:27                        |
-| `release/app-design`               | Fixed 66575ac6 for A10 gate                                 | A9 archived, tagged and shipped; only release worktree |
+| App branch                         | Unlanded work                                      | Last landed / cleanup                                   |
+| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                             | Deleted locally/remotely                                |
+| `agent/app-next`                   | None, git cherry empty                             | Deleted locally/remotely; worktree removed              |
+| `agent/app-programs`               | None, git cherry empty                             | A6 landed 19925b28; branch deleted                      |
+| `release/app-nutrition-foundation` | None                                               | Foundation landed 60e83cf9; branch deleted              |
+| `agent/app-nutrition`              | N15 label capture in progress; no unlanded commits | A10 0b5e74e9 and A9 release docs 79d4c213 landed/pushed |
+| `release/app-design`               | None, fixed79d4c213 for A10 archive                | Only release worktree; A9 shipped                       |
+
+## A10 shipped; N15 full checks, 2026-10-07 10:22 EDT
+
+Build2610071410 is VALID and IN_BETA_TESTING. Exact English notes, one tester
+and one assigned build verified in release artifacts/nutrition/a10-internal-
+2610071410.json. Previous1223 detached only after1410 was available. Apple build
+and delivery UUID4b0598ef-61f7-469b-96c7-1f76ac5724b5. Do not archive or upload
+this build again. Fixed source79d4c213. Continue N15 and then multi-food plates.
+
+N15 Core305, API260, device build and all181 active hosted tests plus one
+credential skip pass. Default small light photo/manual journeys pass60.511s
+and153.467s. Current AX rerun covers the widened nutrient fields; dark rerun
+uses a verified visible-center tap for the iOS26 Photos accessibility issue.
+Full UI release gate remains pending. Scanner images stay transient and on
+this device; saved custom food nutrients sync normally.
+
+## A10 release review, 2026-10-07 10:17 EDT
+
+Signed build2610071410 passed archive/export checks and is uploading from fixed
+79d4c213. All20 primary light/dark captures were reviewed in eight contact
+sheets, then the diary, training, library and progress were compared with the
+public App Store references. The new portion controls were compared separately
+in contact-review/a10-portions-reference.png. Selected presets now have a check,
+the unit name precedes the amount, and estimated density appears beside the
+control. Calories and the unknown macro state remain distinct below it.
+
+MacroFactor's logger fits more foods on one screen. Multi-food staging remains
+our next speed improvement; the single-food editor now gives its portion and
+meal choices clear priority. The primary summaries, small type, row alignment
+and original purple/pink identity remain consistent across light and dark. No
+new visual release blocker found. Gallery196 namedviews on port39215.
+
+N15 AX review found Calories and carbohydrate headings split across two narrow
+columns. The food editor now uses one column at accessibility sizes and a
+focused rerun is in progress. Choosing another photo now cancels an earlier
+recognition request before opening the picker. iOS26 photo-grid automation still
+reports a visible thumbnail as not hittable after its privacy banner closes.
+The helper will tap the verified visible center, still using the actual Photos
+picker and Vision pipeline. Original red runs remain in artifacts/nutrition.
+
+## A10 landed, N15 verification, 2026-10-07 10:10 EDT
+
+U.S. portions passed the full fixed66575ac6 release gate: 175 active hosted
+tests plus one credential skip, 44 active UI journeys plus nine opt-in skips.
+All53 UI methods were assigned exactly once. After rebasing onto f900ef64,
+Core305, API260, device build, all175 hosted tests and both affected planned
+workout/program journeys passed again. App and UI sources were unchanged by
+the rebase. Landed source0b5e74e9, release source79d4c213. Manifest and logs are
+in the release worktree artifacts/nutrition/a10-verified-*.
+
+Reviewed Logic's f900ef64 progression contract. Set-by-set adoption remains
+open in the app; the Core change alone is not a P08 UI claim. N03 also marks
+selected presets, addressing the earlier program-control critique.
+
+N15 runs Vision on a resized local image, groups visual rows, and sends the
+recognized text to Core's NutritionLabel parser. The image stays in memory.
+All six model tests pass, including real recognition of aligned label columns,
+unknown versus zero, per-100ml weight, cancellation, invalid images and stale
+results. Default-light photo/cancel/manual journeys pass. Latest large-type
+small-phone journeys pass117.641s and341.837s. The iOS26 default-dark photo
+journey failed in the system photo picker after it could not tap a thumbnail;
+its fallback journey passed77.267s. Investigate and rerun, retain the failed
+result. No OCR release claim yet. A10 has no OCR code.
 
 ## A9 shipped, A10 full gate, 2026-10-07 08:53 EDT
 

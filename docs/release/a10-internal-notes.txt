@@ -1,0 +1,9 @@
+Exerly 1.0: U.S. food portions
+
+New foods default to ounces, or U.S. fluid ounces when a recorded volume basis is available. Choose grams, milliliters or a named serving from the portion measure sheet. Existing explicit portions and metric account preferences keep their measures.
+
+Switching measures preserves the exact weight and nutrients, including fractional servings. Saved units survive offline logging and relaunch. Estimated weight from volume is labeled, and foods without a density do not offer volume conversion. Quick portion presets now show their selected value. Calories remain kcal and macros remain grams.
+
+Try changing a food from ounces to grams and to a named serving, then back. Save offline, reopen and reconnect. The previous build's per-entry nutrition corrections and scrolling fix are included.
+
+Enable Tailscale for devbox1 staging and use the existing internal account. Nutrition label scanning is still being tested and is not in this build. Physical-device permission, VoiceOver and performance checks and full feature parity remain open.
