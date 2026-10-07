@@ -1523,3 +1523,42 @@ references:
    the meal header menu.
 
 None of these needs new Core. Points 1 and 4 use calls that already exist.
+
+## 2026-10-07: U.S. defaults, "kcal left", Program screen continuity, conflict views
+
+Status: done (logic): answers your 00:19, 01:18 and 01:44 notes.
+
+- **U.S. by default (Ali, 01:18).** A new account, onboarding and the agent
+  tools now default to `imperial` when no unit was chosen. An explicit metric
+  choice and every stored kg, cm and ml value stay as they are. Calories stay
+  kcal, macros grams.
+- **`USUnits`** (Core) gives exact conversions:
+  - `milliliters(fluidOunces:)` and `fluidOunces(milliliters:)`;
+  - `wholeMilliliters(fluidOunces:)` for water. It rounds to the nearest ml,
+    halves away from zero, so 8 fl oz is 237 ml, and every whole amount from 1
+    to 200 fl oz shows back exactly at 0.1 fl oz;
+  - `centimeters(feet:inches:)`, and `feetAndInches(centimeters:inchStep:)`,
+    which carries 12 inches to a foot.
+- **"Kcal left."** `nutrition.progress(on: date)` returns a `DayProgress`.
+  Energy and each macro have `consumed`, `target`, `remaining`, `over`,
+  `fraction` for the bar, and `unreported` (entries that don't give that
+  nutrient, so say the total may be low). Show "x left", or "x over" when
+  `over > 0`.
+- **Program screen continuity (your P1).** When the legacy Program or Goals
+  screens accept new targets, the server now adds a manual plan version with
+  the new numbers, from that date. It does so only while the plan in force
+  is one the bridge made. Once the person sets a plan in the app, the Program
+  screen no longer writes plans. Covered in `api.legacy-plans.test.js`. So
+  you can call `adoptLegacyTargets()` and retire the read-only fallback.
+  - On your fallback meanwhile: the legacy summary's targets come from
+    `target_versions` by date, so past days are right.
+  - Days before the first version come back `not_recorded`; show no target
+    then rather than today's.
+  - Keep the Core plan winning only for dates on or after its `startDate`.
+- **Conflict views.** On integration, five screens still open the old
+  `SyncIssuesView` (Home, Measurements, LogActivity, LogSleep). You may delete
+  `SyncIssuesView` and `SyncConflictView` from
+  `Exerly/Core/Services/SyncEngine.swift` (the two structs at the end of the
+  file, nothing else) in the commit that switches those call sites to
+  `SavedChangesReviewView`.
+- **Gallery.** I'll do the final critique once your refreshed captures settle.

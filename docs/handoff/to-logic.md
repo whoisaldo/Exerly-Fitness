@@ -758,3 +758,136 @@ extract those SwiftUI view declarations unchanged into an app Features/Account
 file, or send me the exact removal patch to apply with your authorization. I
 will register the extracted file in project.pbxproj and handle its UI styling.
 Other secondary screens are being moved onto shared native list/form surfaces.
+
+### Target continuity update
+
+I found the existing published legacy `SyncEngine.diary(for:)` interface already
+returns the exact reviewed `SummaryTargetsDTO` for a date, including cached
+values. The new diary now uses those four values read-only when Core has no
+plan, via the existing DiaryViewModel, and a Core plan always takes precedence.
+It does not recalculate or save a plan, and refuses stale-day or incomplete
+values. A hosted regression and real signup/API/UI target comparison are being
+run. This restores the existing design without starting the paused coaching
+feature. The persistent plan bridge can wait for resumed nutrition work; please
+review this mapping for any date/account lifecycle concern.
+
+## 2026-10-07 00:19: Design review fixes and target continuity follow-up
+
+Status: done (logic): "kcal left" (`progress(on:)`), Program screen continuity, and
+the conflict views are answered in to-app.md, 2026-10-07. Was: in progress (app).
+
+Thanks for the capture critique. The latest prototype has calorie and macro
+bars against the exact saved targets, whole-gram display, the session/day title,
+singular set count and RIR rows. I am compacting day status beside a diary-actions
+menu, adding recent/time-of-day library rows, and adding Core's working sets and
+volume to the last-session card. Keypad Done now renders on the SE. Progress tab
+labels no longer wrap into broken words. A fresh comparison gallery follows.
+
+The read-only, date-checked summary target fallback is tested and preserves
+onboarding targets during this design pass. Before adopting the new bridge,
+please check this P1 continuity issue: Profile still opens the existing
+Features/Program/ProgramView.swift. Its goal/diet/rate/check-in actions update
+legacy targets. Once adoptLegacyTargets() creates a manual plan, those changes
+would leave NutritionStore.targets(on:) at the old value. The bridge currently
+refuses further writes once any plan existed. Please publish the intended way
+for these existing program actions to keep the Core plans in sync, without
+overwriting deliberate native plans. I will keep the read-only fallback until
+that contract is safe. No new target/coaching features are being started.
+
+For the requested "kcal left" label, NutritionSummary exposes totals but no
+remaining-versus-target result. Please add a Core presentation result for
+remaining/over values if you want this before the design release. I am keeping
+the current totals/target bar without adding domain arithmetic in the view.
+
+SyncIssuesView/SyncConflictView are still in your Core/Services/SyncEngine.swift.
+Please extract those unchanged UI declarations into an app-owned Features file,
+or authorize the exact removal patch, so I can finish the conflict design pass.
+
+Foundation 49164782 passed 143 active hosted and 30 active UI tests, 8 total
+optional skips. Integration advanced to 3425db1d during the run. The rebased
+foundation is now 60e83cf9, Core 290/API 246/device gates pass, full native running.
+The 49164782 secondary light capture run continues from its already compiled
+binary. No integration freeze; will fast-forward the foundation as soon as green.
+
+## 2026-10-07 00:41: Review gallery and new capture matrix
+
+Status: open (app requests final critique when the refreshed captures settle).
+
+Gallery is http://100.80.149.7:39215. Originals and manifest files are in
+primary artifacts/design. The compact-small-light, compact-small-dark and
+compact-large-light bundles each have 27 views and passing capture journeys.
+I have fixed each visual item in your intermediate review, except kcal-left
+arithmetic, for which totals/target bars remain until Core exposes the result.
+The existing Program screen is linked from the no-target state.
+
+Follow-up screenshot review reduced diary height, removed the repeated empty
+weight chart, and made library repeat rows distinct from label-editing rows.
+Latest focus/placeholder/contrast refinements are still being captured. The
+original purple/pink/chart/logo values stay unchanged; text and filled controls
+now have separate purple roles to meet contrast. Please review the eventual
+refreshed files rather than treating these prototypes as release-approved.
+
+## 2026-10-07 01:02 EDT: Foundation landed; final design fixes underway
+
+Status: done (logic): main advanced to integration with the next logic landing.
+Was: open (heads-up and review request).
+
+App foundation `60e83cf9` is fast-forwarded and pushed to integration. Four
+commits only. Full native: 143 active hosted and 30 active UI, eight optional
+skips, zero failures. Core 290/API 246/device pass. No integration hold.
+Primary is already based on it. Please advance main when your gates permit.
+
+Design captures remain at http://100.80.149.7:39215. Dark largest-type runs
+pass both sizes; light secondary's offscreen wait is fixed and passes. Review
+found squeezed food rows and water amounts at largest type, fixing now.
+Contrast audit now passes all 74 text/fill pairs, minimum 4.51:1. Brand values
+and logo unchanged; purple text uses the lighter role.
+
+Full primary native found an empty-suggestions assertion after rejection;
+checking the screen and selector before retest. Target-plan continuity and
+Core conflict-view ownership requests above remain open.
+
+## 2026-10-07 01:18 EDT: Ali requests U.S. defaults; conflict UI ownership resolved
+
+Status: done (logic): imperial defaults and `USUnits`; see to-app.md. Was: open
+(priority contract/default request).
+
+Ali just said: "keep cals and everything defaulted to U.S values". I am
+setting fresh app setup and missing UI unit preferences to U.S. rather than
+locale-based/metric defaults. Energy remains nutritional Calories, macros
+in grams. Existing explicit preferences remain respected.
+
+Please make backend/Core missing unitSystem defaults `imperial`, including
+OnboardingRequest and session/bootstrap handling, without converting stored
+kg/cm/ml. We need Core public unit conversion for US fluid ounces to/from
+ml and feet/inches to/from cm. Existing Mass covers lb. ShortcutsJSON has
+exact US fluid-ounce factors privately; please expose a tested small unit
+API so water entry/display can use it without app arithmetic. For water
+logging the legacy sync API takes integer ml; specify rounding at conversion.
+
+The design conflict-view request can be closed without moving Core code.
+App now owns `Features/Account/SavedChangesReviewView.swift` and calls the
+existing Issue/serverVersion/resolveIssue methods. All app call sites use
+it; original Core UI is untouched and now unreachable. Guards/reviewed
+revisions are preserved, Mass converts displayed weight, and both versions
+get separate cards. Device build passes; conflict journeys are next. You
+can remove the old Core UI at a convenient boundary.
+
+## 2026-10-07 01:44 EDT: Fixed design candidate and U.S. progress
+
+Status: U.S. contract done (logic); the final critique waits for the refreshed
+captures. Was: open, final critique and U.S. Core contract still requested.
+
+App candidate 67ed9442 is fixed in the single release worktree. Full native
+runs there, no integration hold. Foundation 60e83cf9 has landed and is pushed.
+Device build passes; 59 changed app Swift files have zero lint violations.
+The manual-food and interrupted signup/offline journeys both pass on iOS 26.
+New setup defaults to U.S.; height uses feet/inches, mass uses Core Mass.
+Water still waits for your fluid-ounce conversion/default contract from 01:18.
+
+Gallery remains http://100.80.149.7:39215. us-ax-small-light/dark contain current
+primary U.S. captures. release-large-light and release-ax-small-dark are now
+refreshing the last secondary layouts and real photo import/comparison. Source
+folders are under primary artifacts/design. Review request remains open; no
+claim of visual approval yet. Core conflict screens have been replaced at all
+owned call sites by app SavedChangesReviewView using the existing Core guards.

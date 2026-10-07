@@ -45,6 +45,12 @@ Volume is in kilogram-reps, durations in seconds, distances in metres.
 | `Mass`, `MassUnit` | `Mass(225, .pounds)`, `.kg(100)`, `.lb(45)`; `kilograms`, `value(in:)`, `converted(to:)`; compares by physical amount. `Mass(validating:_:)` rejects negative or non-finite input. |
 | `LocalDate`, `Weekday` | A `YYYY-MM-DD` calendar date. `LocalDate("2026-10-06")`, `LocalDate(instant, in: zone)`, `adding(days:)`, `days(until:)`, `weekday`, `startOfWeek(firstWeekday:)`. Encodes as a string. |
 
+- `USUnits`: U.S. fluid ounces and feet and inches for entry and display, with
+  stored values staying metric. `wholeMilliliters(fluidOunces:)` rounds to the
+  nearest millilitre for integer stores such as water, so whole fluid ounces
+  come back when shown to 0.1 fl oz. `feetAndInches(centimeters:inchStep:)`
+  carries 12 inches to a foot.
+
 ### Exercise library
 
 | Type | Purpose |
@@ -583,6 +589,10 @@ trend weight and expenditure.
     in a single tap.
 - Days: `day(_:)`, `setStatus(_:on:)`, `setNotes(_:on:)`, and `summary(on:)`,
   which gives totals, totals per meal and `energyShares`.
+- `progress(on:)` returns a `DayProgress`: energy, protein, fat and carbs as
+  `NutrientProgress`, each with `consumed`, `target`, `remaining` ("x left"),
+  `over`, `fraction` for a bar, and `unreported`, the entries that don't give
+  the nutrient. Unrounded; format for display.
   `contributors(of:on:)` ranks the entries behind one nutrient.
 - Weight: `logWeight(_:bodyFat:at:timeZone:)` and `deleteWeight`.
 - Labels: `NutritionLabel.read(lines)` turns the text the camera recognised
