@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 07:48 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 07:53 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                     |
-| --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:48 EDT, integration (serving quantity; dead code removed)         |
-| `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
+| Branch                                        | Unlanded | Last landed                                                                                    |
+| --------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:48 EDT, integration (serving quantity; dead code removed)                        |
+| `main`                                        | –        | `0b56070f` (fast-forward, the design release), 2026-10-07 07:53 EDT; CI run 37616722886 queued |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -236,10 +236,11 @@ suite (67).
 
 ## Next three steps
 
-1. Confirm `main`'s CI run 37596317204 (`cc1de145`). The previous run
-   (`ad767e2a`) passed every unit test and 36 of 37 UI tests; the app's
-   reminder delivery test failed (reported to the app). Production is still
-   the old API until Ali sets `DATABASE_URL`.
+1. Confirm `main`'s CI run 37616722886 (`0b56070f`, the design release).
+   The run on `cc1de145` waited three hours behind Dependabot iOS jobs and
+   was superseded; the one before (`ad767e2a`) failed only the app's
+   reminder banner test, since fixed in `856300b5`. Production is still the
+   old API until Ali sets `DATABASE_URL`.
 2. Remaining logic for Beyond: Core support the app's design work asks
    for. The MacroFactor import waits on Ali's headers.
 3. Keep reviewing app commits and answering `to-logic.md`.

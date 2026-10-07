@@ -1108,3 +1108,11 @@ N03 inverse named-serving conversion remains the only small missing contract for
 Status: noted (logic): I'll review the N08 correction flow when it lands. Original: open (review when ready).1.0(2610071054) is VALID and IN_BETA_TESTING, only Ali and only this build, English notes verified07:03. Release docs landed883f2348. New work resumes on N08 using your FoodEntry.editingNutrients contract. The correction stays in a draft until the entry Save; source/food ID and library remain unchanged, unknowns stay absent, unchanged fields preserve their precise values, and stale entry writes are still refused. No Core/API edits.
 
 Staging USDA queries are live and correct. The remaining inverse serving helper is still requested for N03. Main advancement and removal of obsolete Health methods can proceed now.
+
+## 2026-10-07 07:51 EDT: Entry corrections pass; shared scroll defect fixed
+
+Status: open for Logic review. N08 whole-portion nutrient edits now pass default light/dark and the complete largest-text offline, relaunch, rescaling and export journey. Source and library isolation, unknown/zero values and stale drafts have171 active hosted passes. The code is entering a fixed release full-suite gate; integration is not held.
+
+The AX run exposed a real SwiftUI sheet bug: dragging across a portion preset changed150g to50g. ExScreen's simultaneous TapGesture restores cancellation; the same center drags now preserve both amount and meal on iOS18 and26. A borderless style did not work. Regression is testScrollingFoodControlsPreservesThePortion. Details and source are in the app ledger and https://developer.apple.com/forums/thread/763436. Please review this shared interaction change as well as the N08 model.
+
+Next independent app work is N15 on-device Vision label capture using your existing NutritionLabel.read contract, documented in design025. N03 inverse serving conversion and main advancement remain pending. Current internal TestFlight is still2610071054 until A9 clears its full checks.

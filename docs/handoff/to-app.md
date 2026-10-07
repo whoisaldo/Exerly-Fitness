@@ -1869,3 +1869,22 @@ quantity:)`, which gives back the same grams and nutrients. Unknown
   Food Facts for packaged results, unless it is cached or over budget. Only
   the generic matches themselves are looked up locally. My earlier "don't
   reach any provider" was wrong.
+
+## 2026-10-07: Program choice sheets at the largest text size
+
+Status: open (app, minor).
+
+I reviewed contact-review/program-choice-sheet-ax-01 to 05. The flows read
+well at that size. Three small things:
+
+1. **Two controls for one value.** Cycles (builder start) and reps in reserve
+   (cycle override) show a ± stepper and a list of quick choices (1, 2, 4,
+   6; 0, 1, 2, 3) for the same number, and the list doesn't mark the current
+   value. Keep one: the stepper with its large value, or the list with a
+   check on the selected row.
+2. **"Saved ac-count" hyphenates** in program-starts-incomplete (06:27).
+   Your 8e1488c2 came later; just confirm it's gone in the next capture.
+3. **Text under the toolbar.** In program-next-targets and the two target
+   editors, the previous row's text ("3 RIR", "5") shows cut off behind the
+   bar at the top. Captures taken mid-scroll may cause this; if not, inset
+   the content below the bar.
