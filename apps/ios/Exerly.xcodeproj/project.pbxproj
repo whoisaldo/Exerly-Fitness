@@ -129,6 +129,8 @@
 		589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */; };
 		33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAACDF4879A569D2277D0FB; };
         9570FCD95FEA47E3A1535337 /* NutritionEntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD78D7DC40B04CEAB225542D; };
+		5C0DCAE835074EA59C08DACA /* Components/DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1947B59E11FC4D7EAE9A7490 /* Components/DesignSystem.swift */; };
+		DB622B2A4346494B89AE3084 /* Components/NumericKeypad.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47031C7CCF74990AF979506 /* Components/NumericKeypad.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -257,6 +259,8 @@
 		E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
 		3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/AccountCalendar.swift; sourceTree = SOURCE_ROOT; };
         DD78D7DC40B04CEAB225542D /* NutritionEntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionEntryEditor.swift; sourceTree = SOURCE_ROOT; };
+		1947B59E11FC4D7EAE9A7490 /* Components/DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		C47031C7CCF74990AF979506 /* Components/NumericKeypad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumericKeypad.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -512,6 +516,8 @@
 				D294BE7AC438C5DDD9DBBC62 /* Components/CalorieRing.swift */,
 				F9C881D86911F287616648EB /* Components/ConfettiView.swift */,
 				C29AE140B8C1701D31C9D9A8 /* Components/FloatingLabelTextField.swift */,
+				1947B59E11FC4D7EAE9A7490 /* Components/DesignSystem.swift */,
+				C47031C7CCF74990AF979506 /* Components/NumericKeypad.swift */,
 				42A13925BF048FB7DFE2A07C /* Components/GlassCard.swift */,
 				E1B39599FA4F18D51D8DBFFF /* Components/LoadingStateView.swift */,
 				CE4F0F0A126543E37867EA3A /* Components/SelectionCard.swift */,
@@ -756,6 +762,8 @@
 				A311BB0213367302B6913900 /* Components/CalorieRing.swift in Sources */,
 				5C6B7743D73F3AED57034C19 /* Components/ConfettiView.swift in Sources */,
 				BB82E2E5B9E2FD4A6D799965 /* Components/FloatingLabelTextField.swift in Sources */,
+				5C0DCAE835074EA59C08DACA /* Components/DesignSystem.swift in Sources */,
+				DB622B2A4346494B89AE3084 /* Components/NumericKeypad.swift in Sources */,
 				0B86B118DCE41A3081A4BF34 /* Components/GlassCard.swift in Sources */,
 				651746AC2E6E8CB20CCB3761 /* Components/LoadingStateView.swift in Sources */,
 				721707A6898E2D7310874265 /* Components/SelectionCard.swift in Sources */,

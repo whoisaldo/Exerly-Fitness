@@ -5,6 +5,7 @@ struct CalorieRing: View {
     let target: Double
     var lineWidth: CGFloat = 12
     var size: CGFloat = 120
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var progress: Double {
         guard target > 0 else { return 0 }
@@ -14,7 +15,7 @@ struct CalorieRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
+                .stroke(Color.exPrimary.opacity(0.12), lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: progress)
@@ -23,7 +24,7 @@ struct CalorieRing: View {
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.8), value: progress)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: progress)
 
             VStack(spacing: 2) {
                 Text("\(Int(consumed))")

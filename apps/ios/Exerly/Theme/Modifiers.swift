@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Glass Card
 
 struct GlassCardModifier: ViewModifier {
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = ExRadius.card
 
     func body(content: Content) -> some View {
         content
@@ -11,13 +11,13 @@ struct GlassCardModifier: ViewModifier {
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.exGlassBorder, lineWidth: 1)
+                    .strokeBorder(Color.exGlassBorder.opacity(0.5), lineWidth: 0.5)
             )
     }
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 16) -> some View {
+    func glassCard(cornerRadius: CGFloat = ExRadius.card) -> some View {
         modifier(GlassCardModifier(cornerRadius: cornerRadius))
     }
 }

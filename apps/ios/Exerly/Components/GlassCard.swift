@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct GlassCard<Content: View>: View {
-    var cornerRadius: CGFloat = 16
-    var padding: CGFloat = 16
+    var cornerRadius: CGFloat = ExRadius.card
+    var padding: CGFloat = ExSpacing.page
     @ViewBuilder let content: () -> Content
 
     var body: some View {

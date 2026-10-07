@@ -13,10 +13,10 @@ extension Font {
     static let exCaption = Font.system(.caption, design: .default, weight: .regular)
     static let exSmall = Font.system(.caption2, design: .default, weight: .regular)
 
-    // Mono for stats/numbers
-    static let exStat = Font.system(.largeTitle, design: .monospaced, weight: .bold)
-    static let exStatMedium = Font.system(.title2, design: .monospaced, weight: .semibold)
-    static let exStatSmall = Font.system(.body, design: .monospaced, weight: .medium)
+    // Proportional figures for reading; reserve mono for timers and aligned data.
+    static let exStat = Font.system(.largeTitle, design: .rounded, weight: .bold)
+    static let exStatMedium = Font.system(.title2, design: .rounded, weight: .semibold)
+    static let exStatSmall = Font.system(.body, design: .rounded, weight: .semibold)
     static let exMono = Font.system(.subheadline, design: .monospaced, weight: .regular)
 }
 
