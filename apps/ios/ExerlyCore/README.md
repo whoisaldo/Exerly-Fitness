@@ -580,6 +580,8 @@ trend weight and expenditure.
 - Logging: `log(_:grams:serving:quantity:on:meal:)`, `saveEntry`,
   `deleteEntry`, `entries(on:)` and `copy(from:meal:to:meal:)` for a meal or a
   whole day. `NutritionStore.defaultMeals` names the usual four.
+  `Serving.quantity(grams:)` gives how many of a serving weigh an amount, so
+  switching an entry to a named serving keeps the amount.
 - Faster logging. Each call checks everything first, then saves all or
   nothing:
   - `log(_ plate: [PlateItem], on:meal:at:)` logs several foods at once. Each

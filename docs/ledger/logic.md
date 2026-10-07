@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 05:42 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 07:48 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                     |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:42 EDT, integration (USDA generic foods in search)                |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:48 EDT, integration (serving quantity; dead code removed)         |
 | `main`                                        | –        | `cc1de145` (fast-forward), 2026-10-07 04:49 EDT; CI run 37596317204 in progress |
 
 `main` and integration converged: integration was merged into `main`
@@ -210,6 +210,10 @@ the app.
 Facts products, ranked so "banana" gives "Banana, raw". Every one passes
 Core's food validation in Core's units, and the phone decodes them from the
 foods golden. This removes the need for a USDA key. API 260.
+
+**Design release follow-ups.** The app's design release (1.0, build 2610071054) is in internal TestFlight. With its branch landed, the legacy
+Health methods it replaced and the old sync conflict views are removed.
+`Serving.quantity(grams:)` gives the app N03's unit switch. Core 301.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

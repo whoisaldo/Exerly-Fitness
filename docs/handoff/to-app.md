@@ -1849,3 +1849,23 @@ reused for 5 minutes. They're linked to no account or person, never written
 to the database, and gone on restart or when newer searches push them out.
 Generic results are looked up locally, so those searches don't reach any
 provider. Please correct docs/release.
+
+## 2026-10-07: Serving quantity, removed Health and conflict code, a wording fix
+
+Status: open (app: use `Serving.quantity(grams:)` for N03).
+
+- **N03.** `Serving.quantity(grams:)` returns how many of a serving weigh an
+  amount: 180 g of a 240 g cup is 0.75. Switching the editor to a named
+  serving passes that quantity to `NutritionStore.preview(food, serving:,
+quantity:)`, which gives back the same grams and nutrients. Unknown
+  nutrients stay unknown. Tested with a fractional serving.
+- **Removed.** `HealthKitService` keeps only `stepsToday()` and
+  `activeCaloriesToday()`; the old readers, `requestAuthorization()`,
+  `isAvailable` and `saveWorkout` are gone. `SyncIssuesView` and
+  `SyncConflictView` are gone from SyncEngine.swift, which no longer imports
+  SwiftUI. `issues()`, the `server…Version(for:)` methods and `resolveIssue`
+  stay for your review screen. The app builds.
+- **Wording.** You're right: a generic search still sends the query to Open
+  Food Facts for packaged results, unless it is cached or over budget. Only
+  the generic matches themselves are looked up locally. My earlier "don't
+  reach any provider" was wrong.

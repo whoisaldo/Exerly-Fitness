@@ -2,7 +2,7 @@ import ExerlyCore
 import Foundation
 import SwiftData
 import Network
-import SwiftUI
+import Combine
 
 struct LegacyMeasurementImport {
     let recordID: PersistentIdentifier
@@ -1107,124 +1107,5 @@ final class SyncEngine: ObservableObject {
         entry["serving_size"] = body["servingSize"]
         entry["nutrition_snapshot"] = body
         return try JSONSerialization.data(withJSONObject: entry)
-    }
-}
-
-struct SyncIssuesView: View {
-    @EnvironmentObject private var sync: SyncEngine
-    var body: some View {
-        List {
-            ForEach((try? sync.issues()) ?? []) { issue in
-                NavigationLink(issue.name) { SyncConflictView(issue: issue) }
-            }
-        }.navigationTitle("Changes to review")
-        .overlay { if sync.attentionCount == 0 { ContentUnavailableView("All changes are synced", systemImage: "checkmark.circle") } }
-    }
-}
-
-private struct SyncConflictView: View {
-    let issue: SyncEngine.Issue
-    @EnvironmentObject private var sync: SyncEngine
-    @AppStorage("unitSystem") private var unitSystem = "metric"
-    @Environment(\.dismiss) private var dismiss
-    @State private var server: FoodDTO?
-    @State private var serverMeasurement: BodyMeasurementDTO?
-    @State private var serverDay: DiaryDayDTO?
-    @State private var serverWater: WaterDayDTO?
-    @State private var serverWeight: WeightDayDTO?
-    @State private var serverActivity: ActivityDTO?
-    @State private var serverSleep: SleepDTO?
-    @State private var deleted = false
-    @State private var loaded = false
-    @State private var isSaving = false
-    @State private var error: String?
-    var body: some View {
-        Form {
-            Section("Your saved change") {
-                Text(issue.name)
-                if let food = issue.local { Text("\(food.servings, format: .number) servings · \(food.calories) kcal") }
-                if let measurement = issue.measurement { measurementSummary(measurement) }
-                if let day = issue.diaryDay { daySummary(day) }
-                if let water = issue.water { Text("\(water.ml) ml · \(water.entry_date)") }
-                if let weight = issue.weight { weightSummary(weight) }
-                if let activity = issue.activity { activitySummary(activity) }
-                if let sleep = issue.sleep { sleepSummary(sleep) }
-                Text(issue.message).font(.callout)
-            }
-            if loaded {
-                Section("Server version") {
-                    if deleted { Text("This entry was deleted on another device.") }
-                    else if let server { Text("\(server.servings, format: .number) servings · \(server.calories) kcal") }
-                    else if let serverMeasurement { measurementSummary(serverMeasurement) }
-                    else if let serverDay { daySummary(serverDay) }
-                    else if let serverWater { Text("\(serverWater.ml) ml · \(serverWater.entry_date)") }
-                    else if let serverWeight { weightSummary(serverWeight) }
-                    else if let serverActivity { activitySummary(serverActivity) }
-                    else if let serverSleep { sleepSummary(serverSleep) }
-                    else { Text("This entry has not reached the server.") }
-                }
-                Section {
-                    if !deleted || issue.intent == .restore {
-                        Button(issue.kind == "water" ? "Retry pending additions" : issue.intent == .restore ? "Restore reviewed entry" : issue.intent == .delete ? "Delete reviewed entry" : "Save my changes", role: issue.intent == .delete ? .destructive : nil) { resolve(useServer: false) }
-                    }
-                    Button(deleted ? "Keep the deletion" : server == nil && serverMeasurement == nil && serverDay == nil && serverWater == nil && serverWeight == nil && serverActivity == nil && serverSleep == nil ? "Discard my unsynced entry" : "Use the server version", role: .destructive) { resolve(useServer: true) }
-                }.disabled(isSaving)
-            } else if error == nil { ProgressView("Loading current entry") }
-            if let error { Text(error).foregroundStyle(.red) }
-        }.navigationTitle("Review change")
-        .task {
-            do {
-                if issue.kind == "measurement" { (serverMeasurement, deleted) = try await sync.serverMeasurementVersion(for: issue) }
-                else if issue.kind == "diary_day" { (serverDay, deleted) = try await sync.serverDiaryDayVersion(for: issue) }
-                else if issue.kind == "water" { (serverWater, deleted) = try await sync.serverWaterVersion(for: issue) }
-                else if issue.kind == "weight" { (serverWeight, deleted) = try await sync.serverWeightVersion(for: issue) }
-                else if issue.kind == "activity" { (serverActivity, deleted) = try await sync.serverActivityVersion(for: issue) }
-                else if issue.kind == "sleep" { (serverSleep, deleted) = try await sync.serverSleepVersion(for: issue) }
-                else { (server, deleted) = try await sync.serverVersion(for: issue) }
-                loaded = true
-            }
-            catch { self.error = error.localizedDescription }
-        }
-    }
-    private func measurementSummary(_ item: BodyMeasurementDTO) -> some View {
-        Text("\(item.value, format: .number) \(item.unit) · \(item.entry_date)")
-    }
-    private func weightSummary(_ row: WeightDayDTO) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let kg = row.weight_kg { Text("\(kg * (unitSystem == "imperial" ? 2.20462262 : 1), format: .number.precision(.fractionLength(0...2))) \(unitSystem == "imperial" ? "lb" : "kg") · \(row.entry_date)") }
-            else { Text("No reading for \(row.entry_date)") }
-            if let note = row.note, !note.isEmpty { Text(note) }
-            Text("Source: \(row.source ?? "manual") · Revision \(row.revision)").font(.callout)
-        }
-    }
-    private func activitySummary(_ row: ActivityDTO) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(row.type)
-            Text("\(row.duration, format: .number) minutes · \(row.date ?? "")")
-            if let calories = row.calories { Text("\(calories, format: .number) kcal") }
-            else { Text("Energy not recorded") }
-            if let intensity = row.intensity { Text(intensity.capitalized) }
-        }
-    }
-    private func sleepSummary(_ row: SleepDTO) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(row.hours, format: .number) hours · \(row.date ?? "")")
-            if let quality = row.qualityLabel { Text("Quality: \(quality)") }
-            if let bedtime = row.bedtime { Text("Bedtime: \(bedtime)") }
-            if let wakeTime = row.wakeTime { Text("Wake time: \(wakeTime)") }
-        }
-    }
-    private func daySummary(_ day: DiaryDayDTO) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(day.status.title) · \(day.entry_date)")
-            if let note = day.note, !note.isEmpty { Text(note) }
-        }
-    }
-    private func resolve(useServer: Bool) {
-        isSaving = true
-        Task {
-            do { try await sync.resolveIssue(issue.id, useServer: useServer, reviewedRevision: server?.revision ?? serverMeasurement?.revision ?? serverDay?.revision ?? serverWeight?.revision ?? serverActivity?.revision ?? serverSleep?.revision); dismiss() }
-            catch { self.error = error.localizedDescription; isSaving = false }
-        }
     }
 }

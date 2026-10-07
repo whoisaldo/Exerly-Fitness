@@ -13,6 +13,11 @@ public struct Serving: Sendable, Codable, Hashable {
         self.name = name
         self.grams = grams
     }
+
+    /// How many of this serving weigh `grams`: the inverse of `grams *
+    /// quantity`, so switching an amount to this serving keeps it. 180 g of
+    /// a 240 g cup is 0.75.
+    public func quantity(grams amount: Double) -> Double { amount / grams }
 }
 
 /// What a log entry keeps of a food, so editing the food later doesn't

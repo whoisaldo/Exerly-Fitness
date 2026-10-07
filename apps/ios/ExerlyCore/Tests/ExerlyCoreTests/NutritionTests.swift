@@ -90,6 +90,23 @@ enum Foods {
         #expect(Foods.oats.recipeGrams == nil && Foods.oats.recipeServing == nil)
     }
 
+    @Test func switchingAnAmountToANamedServingKeepsTheAmount() throws {
+        let soup = Food(name: "Synthetic soup", per100g: NutrientAmounts([.energy: 50, .sodium: 300]),
+                        servings: [Serving("1 cup", grams: 240)])
+        let cup = soup.servings[0]
+        let entered = try NutritionStore.preview(soup, grams: 180)
+        let quantity = cup.quantity(grams: entered.grams)
+        #expect(quantity == 0.75)
+        let switched = try NutritionStore.preview(soup, serving: cup, quantity: quantity)
+        #expect(switched.grams == 180 && switched.quantity == 0.75 && switched.serving == cup)
+        #expect(switched.nutrients == entered.nutrients)
+        #expect(switched.nutrients[.protein] == nil, "an unknown nutrient stays unknown")
+        for tenths in 1...100 {
+            let grams = Double(tenths) * 7.3
+            #expect(abs(cup.quantity(grams: grams) * cup.grams - grams) < 1e-9)
+        }
+    }
+
     @Test func anEntrysNutrientsCanBeCorrectedWithoutChangingItsFood() throws {
         let nutrition = try store()
         try nutrition.saveFood(Foods.oats)
