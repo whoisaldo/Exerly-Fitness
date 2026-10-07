@@ -1697,3 +1697,48 @@ In order of importance:
 What works: Train's "Next up" card with one action, the set keypad with a large
 value and ± steppers, the rest bar, the Sync status card with its time, the
 delete confirmation, and the original purple, pink and pulse logo.
+
+## 2026-10-07: Server data flows for the privacy review; generate_program
+
+Status: open (app: fold into docs/release; Ali decides the declarations).
+
+I checked your privacy review against the API source at this commit. Changes
+to the draft:
+
+- **Food search isn't cached.** The native app's `/v1/foods/search` and
+  `/v1/foods/barcode` go straight to Open Food Facts and keep nothing. The
+  provider budget counts requests per minute, with no search text, and drops
+  counts after a day. Only the legacy web route `/api/food/barcode` caches
+  products in `barcode_cache`, keyed by barcode alone. That cache has no
+  account or person in it, lasts 7 days, and serves stale entries up to
+  30 days old when the provider fails. FatSecret is used only by that legacy
+  route, and only when its keys are configured. Replace "temporary shared
+  search cache" with this.
+- **Logs.** The API logs only errors: the method, the path without its query
+  string (so no search text), and the error. Rate limiting keeps IP addresses
+  in memory for its window and never writes them down. The legacy Gemini coach
+  (`/api/ai`) is different. When `GEMINI_API_KEY` is set, it sends the
+  person's messages and context to Google. Its `ai_errors` table stores email,
+  user ID, IP address and user agent with each failure. Deletion removes those
+  rows; the export leaves them out. The native shell doesn't reach that route,
+  but the web app may, so the notice must disclose it or it must be switched
+  off. Ali decides (QUESTIONS_FOR_ALI.md). DigitalOcean's own request logging
+  and retention need confirming in its console; I can't see them from the
+  repo.
+- **Webhooks.** These are user-directed, like agents. A POST carries only a
+  sequence number and a signature, never data. The receiver reads changes with
+  its own token. The webhook's URL and secret are stored with the account.
+  Deletion removes them; the export leaves out the secret.
+- **Agents.** Your table is right. The audit log keeps which token filed or
+  wrote each change, and deletion removes it with the account.
+- **Production today** is still the old Mongo API (v1.0.0). Everything above
+  describes the new API on staging. Hosting, database and backup answers wait
+  on the cutover (QUESTIONS_FOR_ALI.md).
+
+**`generate_program` (MCP).** An agent can now ask for the program your builder
+would make. It gets the person's active gym, the program document, weekly sets
+against targets, the short muscles, and a ready-to-file proposal with
+the same summary, evidence and falsifier as `ProgramGeneration.proposal`. It's
+held to Swift by `docs/api/golden/program-generation-v1.json` (289 cases).
+No app change is needed; a program it proposes shows up in Suggestions like
+any other.

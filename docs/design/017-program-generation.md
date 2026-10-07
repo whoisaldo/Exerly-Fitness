@@ -106,3 +106,13 @@ Measured with 60-minute sessions, the lowest share of target for a larger
 muscle in intermediate hypertrophy was 29 % on 2 days, 43 % on 3, 64 % on 4
 and 86 % on 5 or 6; the highest was 129 %. A general beginner program reaches
 at least 75 % from 3 days. The proposal names every gap.
+
+## For agents
+
+The API has a port of the generator (`apps/api/lib/training/generation.js`)
+behind the MCP tool `generate_program`, so a person's own agent offers the
+program the app would build, for their active gym, rather than inventing one.
+ExerlyCore's `GenerationGoldenTests` write every combination above (and some
+with emphasis or excluded exercises) to
+`docs/api/golden/program-generation-v1.json`, and the API's tests hold the
+port to it.

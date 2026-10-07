@@ -15,6 +15,7 @@ const { asyncHandler, forbidden } = require('../lib/errors');
 const { rateLimit } = require('../lib/ratelimit');
 const { MUSCLES } = require('../lib/training/library');
 const tools = require('../lib/agentTools');
+const generation = require('../lib/training/generation');
 const nutrition = require('../lib/nutritionTools');
 
 const router = express.Router();
@@ -28,7 +29,8 @@ computing your own. Loads are kilograms and volume is kilogram-reps unless a fie
 otherwise; nutrition is in kcal and grams, weights in kilograms; get_profile says which units the
 person prefers. Trend weight and expenditure come with one standard deviation: report the range. You can't change data directly.
 To suggest a change (fix an entry, adjust a session, add a custom exercise, log a meal), call propose: the
-person reviews the diff, your evidence and your falsifier in Exerly and decides. Label evidence
+person reviews the diff, your evidence and your falsifier in Exerly and decides. For a new
+program, start from generate_program rather than writing one yourself. Label evidence
 honestly: personalData is n=1, and say when data is short or confounded. No medical claims.`;
 
 function result(value) {
@@ -205,6 +207,25 @@ function buildServer(account, pat) {
       annotations: readOnly,
     },
     (ws, input) => tools.nextWorkout(ws, input)
+  );
+
+  tool(
+    'generate_program',
+    {
+      title: 'Generate a program',
+      description:
+        "A training program from Exerly's generator, the same one the app's program builder uses, for the person's active gym (or any equipment with use_gym false). Returns the program document, weekly sets per muscle against Exerly's targets, the muscles it leaves short, and a proposal you can file with propose. Ask the person how many days a week they train, their goal and experience, and how long a session can be, rather than guessing.",
+      inputSchema: {
+        days_per_week: z.number().int().min(2).max(6),
+        goal: z.enum(generation.GOALS),
+        experience: z.enum(generation.EXPERIENCE),
+        emphasis: z.array(muscle).max(6).optional(),
+        minutes: z.number().int().min(30).max(150).optional(),
+        use_gym: z.boolean().optional(),
+      },
+      annotations: readOnly,
+    },
+    (ws, input) => tools.generateProgram(ws, input)
   );
 
   tool(

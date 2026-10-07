@@ -12,6 +12,7 @@ const { ExerciseLibrary } = require('./training/library');
 const training = require('./training/history');
 const { sessionProblems, customExerciseProblems, programProblems } = require('./training/validate');
 const progression = require('./training/progression');
+const generation = require('./training/generation');
 const dates = require('./dates');
 const nutritionTools = require('./nutritionTools');
 const { foodEntryProblems, foodProblems } = require('./nutrition/validate');
@@ -47,7 +48,7 @@ function agentDocumentProblems(kind, id, payload, library) {
 async function workspace(account) {
   const rows = await store.find('documents', {
     account_id: account.id,
-    kind: { in: [...DATA_KINDS, 'proposal', ...nutritionTools.KINDS] },
+    kind: { in: [...DATA_KINDS, 'proposal', 'gym_profile', ...nutritionTools.KINDS] },
     deleted_at: null,
   });
   const of = (kind) => rows.filter((row) => row.kind === kind).map((row) => row.payload);
@@ -60,6 +61,7 @@ async function workspace(account) {
     customExercises: of('custom_exercise'),
     programs: of('program'),
     proposals: of('proposal'),
+    gyms: of('gym_profile'),
     nutrition: nutritionTools.prepare(of),
     history: new training.TrainingHistory(
       sessions.filter((s) => s.endedAt),
@@ -407,6 +409,82 @@ function nextWorkout(ws, { program_id: programID } = {}) {
   };
 }
 
+/** The gym the person last made active, as ExerlyCore's GymStore.active. */
+function activeGym(ws) {
+  return ws.gyms
+    .filter((gym) => gym.activatedAt && !gym.archivedAt)
+    .reduce(
+      (best, gym) =>
+        !best || Date.parse(gym.activatedAt) > Date.parse(best.activatedAt) ? gym : best,
+      null
+    );
+}
+
+// "sideDelts" is "Side delts", as ExerlyCore's Muscle.name.
+const muscleName = (muscle) =>
+  muscle.charAt(0).toUpperCase() + muscle.slice(1).replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`);
+
+/**
+ * A program from Exerly's generator, the one the app's builder would make,
+ * with the proposal the app would file for it. The agent proposes it, or
+ * changes it first; nothing is saved here.
+ */
+function generateProgram(ws, input) {
+  const request = {
+    daysPerWeek: input.days_per_week,
+    goal: input.goal,
+    experience: input.experience,
+    emphasis: input.emphasis ?? [],
+    minutes: input.minutes ?? 60,
+  };
+  const gym = input.use_gym === false ? null : activeGym(ws);
+  const result = generation.generate(request, ws.library, { gym });
+  if (result.problems) throw badRequest(result.problems.join('; '));
+  const { program, shortfalls } = result;
+  let summary =
+    `${program.days.length} training days a cycle for ${request.goal}, ${program.cycles} cycles` +
+    (program.deload === 'last' ? ', the last a deload.' : '.');
+  if (shortfalls.length) {
+    summary +=
+      ' Under 80 % of the weekly target: ' +
+      shortfalls.map(muscleName).join(', ') +
+      (gym ? ", with this gym's equipment and session length." : '.');
+    if (shortfalls.length >= 4) summary += ' More days or longer sessions would cover more.';
+  }
+  return {
+    program,
+    gym: gym ? { id: gym.id, name: gym.name } : null,
+    weekly_sets: Object.entries(result.targets).map(([muscle, target]) => ({
+      muscle,
+      sets: round(result.weeklySets[muscle] ?? 0, 1),
+      target,
+    })),
+    shortfalls,
+    proposal: {
+      title: `New program: ${program.name}`,
+      summary,
+      confidence: 'medium',
+      falsifier: `Your estimated maxes stall for three weeks, or sessions run well past ${request.minutes} minutes.`,
+      evidence: [
+        {
+          claim: 'About 10 or more weekly sets per muscle grow more muscle than fewer.',
+          level: 'humanRCT',
+          caveats: ['A meta-analysis of trials: an average, not a prediction for you'],
+          source: 'Schoenfeld, Ogborn and Krieger 2017, Journal of Sports Sciences',
+        },
+        {
+          claim: 'Training each muscle at least twice a week grows more muscle than once.',
+          level: 'humanRCT',
+          caveats: ['A meta-analysis of trials'],
+          source: 'Schoenfeld, Ogborn and Krieger 2016, Sports Medicine',
+        },
+      ],
+    },
+    how_to_offer:
+      'Call propose with this proposal and changes [{ kind: "program", id: program.id, after: program }]. The person reviews it, can edit it in the builder, and decides.',
+  };
+}
+
 function getDocument(ws, { kind, id }) {
   if (!DATA_KINDS.includes(kind)) throw badRequest(`kind must be ${DATA_KINDS.join(' or ')}`);
   const documents = {
@@ -554,6 +632,7 @@ module.exports = {
   listProposals,
   listPrograms,
   nextWorkout,
+  generateProgram,
   getDocument,
   verifyMetric,
   propose,

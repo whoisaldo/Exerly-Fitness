@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 04:50 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 05:10 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                         |
 | --------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 04:50 EDT, integration (sync P1, food units, recipes, N08)               |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 05:10 EDT, integration (MCP `generate_program`)                          |
 | `main`                                        | –        | `ad767e2a`, 2026-10-07 02:45 EDT; CI run 37580092392 in progress; integration ahead |
 
 `main` and integration converged: integration was merged into `main`
@@ -186,6 +186,14 @@ and `withIngredients` (N11), and per-entry nutrient corrections marked
 `edited` (N08). Core 298, API 251. The final design critique is in
 `to-app.md`.
 
+**MCP `generate_program`.** Landed 2026-10-07 (design 017, B11/B12). The
+generator is ported to `apps/api/lib/training/generation.js` and held to
+`docs/api/golden/program-generation-v1.json` (289 cases, written by
+`GenerationGoldenTests`). The tool returns the program for the active gym with
+the proposal the app would file. The server data flows for the app's privacy
+review are in `to-app.md`, and the legacy AI coach question is in
+QUESTIONS_FOR_ALI.md. Core 299, API 254.
+
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
 merged lockfile installs Vite under `apps/web` and the script expected the
@@ -207,11 +215,10 @@ suite (67).
 
 ## Next three steps
 
-1. Confirm CI on `main` (run 37558851579, `277aaaef`), including the iOS
-   job's native and browser round trip, and production's state after the
-   DigitalOcean deploy.
-2. Remaining logic for Beyond: an MCP tool for program generation, and Core
-   support the app's design work asks for. The MacroFactor import waits on Ali's headers, and
+1. When `main`'s CI run 37580092392 (`ad767e2a`) finishes, fast-forward
+   `main` to integration, push, and confirm CI and production's state.
+2. Remaining logic for Beyond: Core support the app's design work asks
+   for. The MacroFactor import waits on Ali's headers, and
    USDA on a key.
 3. Keep reviewing app commits and answering `to-logic.md`.
 

@@ -109,3 +109,22 @@ When you're ready:
 
 If you'd rather put the old web app back until then, say so and I'll redeploy
 it from the previous `main` commit.
+
+## 2026-10-07 (logic agent): the legacy AI coach and the privacy notice
+
+The web app's AI Coach (`apps/web/src/components/AICoach`) calls the API's
+`/api/ai` routes. When `GEMINI_API_KEY` is set, they send the person's
+messages and context to Google's Gemini. Their error log keeps the email,
+user ID, IP address and user agent with each failure. The iPhone app doesn't
+reach these routes. The draft privacy notice (in the app agent's
+`docs/release`) says the main screens don't need a hosted model, which is
+true for the phone but not for this web screen.
+
+Choose one:
+
+1. **Keep it.** The notice discloses Google as a processor for the web coach.
+   It stays off unless `GEMINI_API_KEY` is set.
+2. **Retire it.** I remove the routes and the error log, and the web coach
+   goes.
+
+Until you choose, nothing changes. Production doesn't run the new API yet.

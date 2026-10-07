@@ -30,6 +30,7 @@ in Exerly. It never changes your data directly.
 | `list_proposals`        | Proposals and their status.                                                                                                                        |
 | `list_programs`         | Programs: the active one, cycles, deload placement, days and progress.                                                                             |
 | `next_workout`          | The next workout of the active program, with Exerly's recommended load, reps and RIR per set and the reason.                                       |
+| `generate_program`      | A program from Exerly's generator for the active gym, with weekly sets per muscle, the muscles it leaves short, and a proposal ready to file.      |
 | `get_nutrition_day`     | One day's food log: entries, totals for every nutrient, the targets that held that day, what remains and the day's status.                         |
 | `get_nutrition_summary` | Daily intake against targets, scale weight, and trend weight and expenditure with their standard deviations, for up to a year.                     |
 | `get_document`          | A workout or custom exercise exactly as Exerly stores it, to edit into a proposal.                                                                 |
@@ -39,7 +40,9 @@ in Exerly. It never changes your data directly.
 Loads are kilograms and volume is kilogram-reps unless a field says otherwise.
 The numbers come from a JavaScript port of ExerlyCore that is tested against
 a golden file generated from Swift (`docs/api/golden/training-v1.json`), so an
-agent quotes exactly what the app shows.
+agent quotes exactly what the app shows. `generate_program` is held the same
+way to `docs/api/golden/program-generation-v1.json`, so it returns the program
+the app's builder would make.
 
 ## Proposals
 
@@ -56,6 +59,11 @@ refuses an `after` the phone couldn't apply. You add:
   evidence verified or mismatched, and `propose` reports the result back;
 - a confidence (`low`, `medium` or `high`) and a falsifier: what would show the
   proposal is wrong.
+
+To offer a new program, ask the person how many days a week they train, their
+goal (`hypertrophy`, `strength` or `general`), experience and session length,
+call `generate_program`, and pass its `proposal` to `propose` with the program
+as the change. Change the program first if they asked for something specific.
 
 To log a meal the person described or photographed, propose a new `food_entry`
 for each food, with a new UUID, the local `date`, a `meal` name, `loggedAt`,

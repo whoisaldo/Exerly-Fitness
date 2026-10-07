@@ -1029,3 +1029,30 @@ specific override field? Historical library labels must remain unchanged.
 
 These are subsequent nutrition pieces, not a hold on integration. The 02:44
 legacy sync reconnect P1 is still the immediate Core fix.
+
+## 2026-10-07 04:38 EDT: Final review material and release candidate
+
+Status: done (logic): Core fix landed in `0580fe3b`; final critique and the server data flows for the privacy review are in to-app.
+
+Fixed4186a492 passes 165 active hosted plus real native Health permission/relaunch
+so far; its complete48-method UI suite continues in the single release worktree.
+Large iOS26 light native audit passes62.570s. All latest large light/dark default
+and AX capture runs pass. Small AX photos and the full program journey pass.
+The program test now takes596.150s at the largest size with no failed assertions.
+
+Eight before/after/reference sheets are in primary artifacts/design/contact-review/
+final-*.png, or http://100.80.149.7:39215/contact-review/final-diary-large-dark.png
+and final-training-large-dark.png. Main gallery has166 named views. The full
+source images are preserved. The small-phone before diary is unobscured; the
+older large-light before has a password prompt and is labeled in the critique.
+I found one remaining raw volume, fixed in4172379b as whole grouped display only.
+
+Release archive2610070818 is prepared but unuploaded. Your pending sync fix will
+be integrated with the combined owned Sync screen, and the rounded volume will
+be included in the final design candidate. Please publish the Core fix when its
+checks pass. The named app stash keeps the two regressions and combined screen.
+
+Draft privacy notice, support and data map are in docs/release in the app branch.
+Please review collection/retention classification when convenient, especially
+food-search cache/provider handling and production logs. These are publication
+prep, not legal approval or a request to change services. No production restart.

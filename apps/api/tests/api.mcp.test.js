@@ -79,6 +79,7 @@ test('a read token gets the read tools, with numbers that match ExerlyCore', asy
   const names = (await client.listTools()).tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     'exercise_history',
+    'generate_program',
     'get_document',
     'get_nutrition_day',
     'get_nutrition_summary',
@@ -667,4 +668,76 @@ test('a write token saves a valid food and is refused a broken one', async () =>
     { token: writer, headers: key() }
   );
   assert.equal(poured.status, 201, JSON.stringify(poured.body));
+});
+
+test("generate_program builds the app's program for the active gym, ready to propose", async () => {
+  const user = await signUp(api);
+  const gym = (name, equipment, extra) => ({
+    id: randomUUID().toUpperCase(),
+    name,
+    equipment,
+    bars: [{ value: 20, unit: 'kg' }],
+    plates: [],
+    loads: {},
+    excluded: [],
+    createdAt: '2026-10-01T12:00:00.000Z',
+    ...extra,
+  });
+  const home = gym('Home', ['dumbbell', 'flatBench', 'pullUpBar'], {
+    activatedAt: '2026-10-03T12:00:00.000Z',
+    excluded: ['dumbbell-bench-press'],
+  });
+  await put(user, 'gym_profile', home);
+  await put(
+    user,
+    'gym_profile',
+    gym('Old gym', ['barbell', 'rack'], {
+      activatedAt: '2026-10-05T12:00:00.000Z',
+      archivedAt: '2026-10-06T12:00:00.000Z',
+    })
+  );
+  const reader = await connect((await token(user, ['read'])).token);
+  const request = { days_per_week: 3, goal: 'general', experience: 'beginner', minutes: 45 };
+  const generated = await call(reader, 'generate_program', request);
+  assert.deepEqual(generated.gym, { id: home.id, name: 'Home' });
+
+  const { ExerciseLibrary } = require('../lib/training/library');
+  const generation = require('../lib/training/generation');
+  const library = ExerciseLibrary.withCustom([]);
+  const program = generated.program;
+  const slots = program.days.flatMap((day) => day.slots);
+  assert.equal(program.name, '3-day Full body');
+  assert.ok(slots.every((slot) => generation.allows(home, library.exercise(slot.exerciseID))));
+  assert.ok(!slots.some((slot) => slot.exerciseID === 'dumbbell-bench-press'));
+  const expected = generation.generate(
+    { daysPerWeek: 3, goal: 'general', experience: 'beginner', minutes: 45 },
+    library,
+    { gym: home }
+  );
+  assert.deepEqual(
+    program.days.map((day) => day.slots.map((slot) => [slot.exerciseID, slot.target])),
+    expected.program.days.map((day) => day.slots.map((slot) => [slot.exerciseID, slot.target]))
+  );
+  assert.deepEqual(generated.shortfalls, expected.shortfalls);
+  assert.equal(generated.weekly_sets.length, 12);
+  assert.equal(
+    generated.proposal.summary,
+    "3 training days a cycle for general, 6 cycles. Under 80 % of the weekly target: Calves, Side delts, Abs, with this gym's equipment and session length."
+  );
+  assert.match(generated.proposal.falsifier, /45 minutes/);
+
+  const anywhere = await call(reader, 'generate_program', { ...request, use_gym: false });
+  assert.equal(anywhere.gym, null);
+  assert.equal(anywhere.program.days[0].slots[0].exerciseID, 'back-squat');
+  const refused = await call(reader, 'generate_program', { ...request, days_per_week: 7 });
+  assert.ok(refused.error);
+  await reader.close();
+
+  const agent = await connect((await token(user, ['propose'])).token);
+  const filed = await call(agent, 'propose', {
+    ...generated.proposal,
+    changes: [{ kind: 'program', id: program.id, after: program }],
+  });
+  assert.equal(filed.status, 'pending', JSON.stringify(filed));
+  await agent.close();
 });
