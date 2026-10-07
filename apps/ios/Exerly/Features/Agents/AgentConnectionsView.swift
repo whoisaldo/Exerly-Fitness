@@ -7,6 +7,7 @@ struct AgentConnectionsView: View {
     @State private var creating = false
     @State private var revoking: AccessToken?
     @AccessibilityFocusState private var errorFocused: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(api: AccountAPI) { _model = StateObject(wrappedValue: AgentConnectionsModel(api: api)) }
 
@@ -15,7 +16,13 @@ struct AgentConnectionsView: View {
             Section {
                 ExCard(accent: true) {
                     Text(model.tokens.isEmpty ? "Bring your own agent" : "\(model.tokens.count) connected").font(.exH2)
-                    Button("Connect an agent", systemImage: "plus") { creating = true }
+                    Button { creating = true } label: {
+                        if typeSize.isAccessibilitySize {
+                            Text("Connect an agent")
+                        } else {
+                            Label("Connect an agent", systemImage: "plus")
+                        }
+                    }
                         .buttonStyle(ExActionStyle()).accessibilityIdentifier("agents.create")
                     Text("Choose what an agent can read or change.")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
