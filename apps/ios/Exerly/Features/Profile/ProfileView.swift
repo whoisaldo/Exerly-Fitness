@@ -286,14 +286,13 @@ struct HealthKitSettingsView: View {
     var body: some View {
         ExScreen {
             ExCard(accent: true) {
-                ExEyebrow("Apple Health", color: .exPrimaryText)
-                Text("Today's activity").font(.exH2).foregroundStyle(Color.exTextPrimary)
-                Text("See steps and active Calories recorded on this device.")
-                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                Toggle("Read today's activity", isOn: Binding(get: { model.isEnabled }, set: { enabled in
+                Text("Daily activity").font(.exH2).foregroundStyle(Color.exTextPrimary)
+                Toggle("Read activity", isOn: Binding(get: { model.isEnabled }, set: { enabled in
                     Task { await model.setEnabled(enabled) }
                 })).tint(.exActionFill).disabled(model.isRequesting)
                     .accessibilityIdentifier("health.readActivity")
+                Text("Steps and active Calories from Health.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 if model.isRequesting { ProgressView("Opening Health access…") }
                 if let message = model.message { Text(message).font(.exCaption).foregroundStyle(Color.exError) }
             }

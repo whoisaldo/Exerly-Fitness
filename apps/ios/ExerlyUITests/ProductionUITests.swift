@@ -208,6 +208,46 @@ final class ProductionUITests: XCTestCase {
         capture(app, "design-admin-accounts")
     }
 
+    func testHealthPermissionChoiceSurvivesRelaunch() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "health-permission", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["Apple Health"], in: app)
+        let reading = app.switches["health.readActivity"]
+        XCTAssertTrue(reading.waitForExistence(timeout: 10))
+        XCTAssertEqual(reading.value as? String, "0")
+        tap(reading, in: app)
+        let allow = app.buttons["Allow"]
+        if allow.waitForExistence(timeout: 5) {
+            XCTAssertTrue(app.switches["UIA.Health.ActiveEnergy.SwitchCell.Switch"].exists)
+            XCTAssertTrue(app.switches["UIA.Health.Steps.SwitchCell.Switch"].exists)
+            XCTAssertEqual(app.cells.matching(NSPredicate(format: "identifier BEGINSWITH %@", "UIA.Health.Read.")).count, 2)
+            XCTAssertEqual(app.cells.matching(NSPredicate(format: "identifier BEGINSWITH %@", "UIA.Health.Write.")).count, 0)
+            if !allow.isEnabled { app.cells["UIA.Health.AuthSheet.AllCategoryButton"].tap() }
+            capture(app, "design-health-native-permission")
+            allow.tap()
+        }
+        // This simulator has no Health samples. Completing authorization must
+        // not make missing measurements appear as recorded zeroes.
+        XCTAssertTrue(app.staticTexts["Available from Health"].waitForExistence(timeout: 10), app.debugDescription)
+        reveal(app.staticTexts["No data available"].firstMatch, in: app)
+        XCTAssertTrue(app.staticTexts["No data available"].firstMatch.exists)
+        capture(app, "design-health-no-readable-data")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["Apple Health"], in: app)
+        XCTAssertEqual(reading.value as? String, "1")
+        tap(reading, in: app)
+        XCTAssertEqual(reading.value as? String, "0")
+        XCTAssertFalse(app.staticTexts["Available from Health"].exists)
+    }
+
     func testDesignProgressPhotosCapture() async throws {
         guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_PHOTOS"] == "1" else {
             throw XCTSkip("Opt-in photo import review on a simulator with synthetic media")
