@@ -273,9 +273,11 @@ the app agent adds it to the project.
   merge: version 2.0.0 with driver `postgres` means the new API is live.
 - `main` keeps Ali's Tailwind 4/Vite 8 web toolchain, which integration lacks.
   Later merges keep it; integration's web code runs on it (the e2e suite
-  passed). Integration's rewritten web components still need the Tailwind 4
-  pass (`npx @tailwindcss/upgrade`, then a visual diff for the v4 traps in
-  memory) before they look as they did on Tailwind 3.
+  passed). Integration's rewritten web components were checked for Tailwind
+  v4 changes in meaning: they use no renamed scale classes (`shadow-sm`,
+  `rounded`, `ring`, …), and their `space-y` children with inline labels are
+  grid items, so they render as on v3. The upgrade tool's remaining edits are
+  canonical spellings only, left for whoever next works on the web app.
 - Since the 2026-10-06 merge, Deploy Web publishes integration's web app, which
   signs in through `/login` and `/auth/token`. The old production API answers
   404 to both, so web sign-in fails until the new API runs in production
