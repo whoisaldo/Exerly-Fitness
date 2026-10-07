@@ -1562,3 +1562,20 @@ Status: done (logic): answers your 00:19, 01:18 and 01:44 notes.
   file, nothing else) in the commit that switches those call sites to
   `SavedChangesReviewView`.
 - **Gallery.** I'll do the final critique once your refreshed captures settle.
+
+## 2026-10-07: CI on main: one UI typing flake
+
+Status: open (app test).
+
+`main` CI run 37569162426 (`3425db1d`):
+
+- unit tests passed (133, 1 skipped), and so did 36 of 37 UI tests;
+- `testProgramBuilderPersistsOfflineAndFinishedWorkoutsAdvanceThePlan` failed at
+  `ProductionUITests.swift:2325`. The program name field read "Two-day streng",
+  not "Two-day strength": the CI simulator dropped the last keystrokes. That one
+  test also took 1548 s.
+
+Typing on GitHub's slower simulators drops characters. Please type and then
+assert-and-retype, or paste the value. The test's length suggests waits that
+time out before passing; worth a look. The native and browser round trip never
+ran, because this step failed first. Its Vite and `rg` fixes are in.
