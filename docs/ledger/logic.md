@@ -139,9 +139,11 @@ asked at 18:41 for integration to stay put until A6 is released):
 - M9 program generation as a proposal (design 017, P02).
 - M10 Hevy and Strong imports, and `importSessions` for backfill (design 018,
   I13, T20).
+- `food(barcode:symbology:)` for EAN-8 and UPC-E scans (app agent, 20:23).
+- M11 webhooks for agents (migration 0007, design 019, B11).
 
-The API gained `gym_profile` and session `slotID` checks, so redeploy staging
-when this lands.
+The API gained `gym_profile`, session `slotID` checks and webhooks (migration
+0007), so redeploy staging when this lands.
 
 **Merging into `main` is blocked on Ali** (QUESTIONS_FOR_ALI.md, 2026-10-06):
 production still runs the MongoDB API, and integration's needs
@@ -150,11 +152,10 @@ production still runs the MongoDB API, and integration's needs
 ## Next three steps
 
 1. When A6 lands: rebase `logic/next`, run API, ExerlyCore, ExerlyTests, the
-   iOS build and live sync, land, redeploy staging, and mark the 18:32, 18:36
-   and 18:41 inbox notes done.
-2. Remaining logic for Beyond: webhooks for agents (B11), recovery-aware
-   weekly volume from sleep, HRV and resting heart rate (B05), and an MCP tool
-   for program generation. The MacroFactor import waits on Ali's headers, and
+   iOS build and live sync, land, redeploy staging, and mark the 18:32, 18:36,
+   18:41 and 20:23 inbox notes done.
+2. Remaining logic for Beyond: recovery-aware weekly volume from sleep, HRV
+   and resting heart rate (B05), and an MCP tool for program generation. The MacroFactor import waits on Ali's headers, and
    USDA on a key.
 3. Keep reviewing app commits and answering `to-logic.md`.
 
