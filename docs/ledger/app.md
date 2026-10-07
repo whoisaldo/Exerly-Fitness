@@ -2,19 +2,213 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-06, updated 18:44 EDT.
+milestone. Current date 2026-10-07, updated 01:44 EDT.
 
 ## Merge status
 
-Updated2026-10-06 21:27 EDT. Integration is3a010060, including Ali's brief6b908a24
-and Logic's published batch. No integration hold is permitted.
+Integration landed at `60e83cf9`, including Ali's brief `6b908a24` and Logic's
+M13 contracts. No integration hold. Primary plus one release worktree.
 
-| App branch          | Unlanded work                                                               | Last landed / cleanup                                                                       |
-| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| agent/app           | None;481694ec note is already preserved verbatim in3a010060                 | Rebased to integration, verified with git cherry, deleted locally21:27                      |
-| agent/app-next      | None; git cherry empty                                                      | A4 already landed; preserve captures and remove worktree/branch now                         |
-| agent/app-programs  | None; git cherry empty                                                      | A6 landed19925b28 at21:13; retain one fixed release worktree, detach/delete branch          |
-| agent/app-nutrition | c4b13fbf,b83a896f,7537a596,29b39648,bdd52966 plus library commit being made | Land the tested foundation first, then diary/library after affected native regressions pass |
+| App branch                         | Unlanded work                                                             | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped  | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                  | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                  | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                             | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | 17 source/test commits through 67ed9442, plus this design evidence commit | Foundation landed 01:00; latest device and targeted journeys pass                                               |
+| `release/app-design`               | Fixed candidate 67ed9442, same 17 source/test commits                     | Reuses the only release worktree; full native running, integration open                                         |
+
+## Fixed design candidate, 2026-10-07 01:44 EDT
+
+Committed conflict review b050a875, U.S. defaults 01c4e6c2, accessibility layouts
+9b68ae18, and photo/admin capture plus automation fixes 67ed9442. Device build
+passes at this source; all 59 changed app Swift files pass SwiftLint with no
+violations. Core and API remain untouched. Full native now runs in the reused
+release worktree from fixed 67ed9442, with its own fixture on 39221.
+
+The exact manual-food iOS 26 journey passes 177.820s with the keyboard-aware
+helper. Interrupted setup, barcode, offline relaunch and reconnection pass
+221.890s in us-input-recovery. The earlier U.S. run had a stale assertion:
+it checked today's target on yesterday's page, before a fresh account had any
+targets. The corrected check verifies today's target and no target yesterday.
+The U.S. setup-default assertion itself passed before that failure.
+
+us-ax-small-light passes all three capture journeys; us-ax-small-dark passes
+those three plus admin. Review found the admin role still narrowing the name,
+so that row now stacks at accessibility sizes. Preferences now uses a compact
+name/status header. Password and setup shed redundant headings and copy.
+Refreshed release-large-light and release-ax-small-dark captures are running.
+The latter includes real photo import/comparison at largest text. The first
+setup capture caught a late system password prompt; capture settling is fixed,
+and the old image is not release evidence.
+
+full-focus-dark continues to collect evidence but remains a failed earlier
+run. Its three failures have passing targeted replacements. Program builder,
+lifecycle and program proposals pass. Do not call it a passing full suite.
+
+U.S. energy is nutritional Calories, currently labeled kcal; body weight uses
+pounds and setup height uses feet/inches. Existing explicit metric preferences
+stay metric. Water still uses milliliters pending Logic's public fluid-ounce
+conversion and Core/API missing-preference defaults. No release claim that
+water is already converted.
+
+## Design evidence and U.S. defaults, 2026-10-07 01:28 EDT
+
+Foundation 60e83cf9 is now merged and pushed. The full foundation suite is
+green, 143 active hosted and 30 active UI tests, eight optional skips, with
+Core 290/API 246/device gates. Its release worktree is free for reuse.
+
+Latest default captures pass on all four size/theme combinations. They contain
+27 design views each, with admin overview/accounts also in final-small-dark.
+The small-dark run also passes the full water offline/merge journey. Photo
+import/comparison/detail/relaunch passes in photo-import-comparison using two
+geometric PNG fixtures. Both images were selected through the real system
+picker; the comparison and detail screenshots were reviewed.
+
+Largest-text review found narrow food rows, broken water amounts, duplicated
+Sync symbols, and narrow email headers. Food and water stack vertically at
+accessibility sizes; decorative identity icons no longer consume text width.
+Reviewed the corrected small-light food and water captures. Sync uses a single
+icon and a full-width last-sync line. Preferences repeated its save explanation
+and displaced fields; its status/refresh now sit inside the summary.
+Contrast report passes 74 text/fill pairs at >=4.5:1, minimum 4.51.
+
+Full primary full-focus-dark is still running and is not green. It found two
+old empty-suggestions assertions, both now pass in entry-check-summary, and a
+manual-food automation tap under the keyboard toolbar on iOS 26. The helper
+now dismisses an occluding keyboard before replacing a field. Retest that
+exact manual-food journey on large iOS 26. Search/barcode/repeat passes 137s.
+
+Conflict screens are now app-owned SavedChangesReviewView, using existing Core
+Issue/server-version/resolution operations and preserving reviewed revisions.
+Original Core UI is untouched. Device build and activity/sleep, measurement,
+and weight conflict/offline/undo journeys pass in saved-change-conflicts.
+
+Ali's latest steering is to default Calories and units to U.S. Fresh setup now
+uses U.S. regardless of device locale; app fallback preferences use imperial.
+Setup exposes feet/inches and pounds, with Core Mass for lb conversion. Metric
+remains an explicit saved choice. Two hosted conversion/default checks pass;
+signup and primary U.S. captures are running. Core/API missing defaults and
+public fluid-ounce conversion are requested in Logic's inbox; do not invent
+conversion arithmetic in app code. The current water UI still uses ml.
+
+Remaining gates: U.S. final capture matrix/review, photo/admin accessibility,
+remaining secondary-route comparisons, passing full current native suite,
+Logic final critique and unit contract, then fixed-commit internal TestFlight.
+New nutrition features remain paused.
+
+## Current evidence, 2026-10-07 00:19 EDT
+
+The foundation at 49164782 passed 143 active hosted and 30 active UI tests,
+8 optional skips, zero failures. Rebased onto 3425db1d as 60e83cf9; new Core
+290/API 246/device gates pass. Full native rerun is active from that fixed commit.
+The separate secondary light baseline run uses its previously built 49164782 app.
+
+Primary `signup-programs-dark` passes both design journeys, the full program
+builder and interrupted signup/barcode/offline recovery. `targets-library-primary-light`
+passes 14 hosted nutrition tests, both design journeys and library edit/archive/
+restore/relaunch/sync. Keypad button entry and prefilled training pass in
+`keypad-buttons`; its unrelated library case failed the uppercase Archived
+accessibility label, which the newer library run fixes and verifies.
+
+Visual review: target bars now appear from reviewed saved targets. The custom
+keypad Done header is visible and usable on SE. The Progress tabs broke long
+words at default size; shortened to Body/Photos/Milestones. The library repeated
+its title and marketing copy; removed. The diary status card competed with meals;
+changed to a compact menu beside diary actions. Latest captures remain prototypes.
+Logic's 2026-10-07 intermediate critique is received, fixes are in progress.
+Program/measurement/photo secondary routes are now included in the design pass.
+
+## Design review and tests, 2026-10-07 00:41 EDT
+
+Gallery: http://100.80.149.7:39215, served from primary artifacts/design.
+App captures use synthetic accounts. The reference images
+were fetched again at full size from Apple's public CDN; sources.json records
+each URL. Gallery defaults to a UI screenshot instead of the reference's cover.
+
+`compact-small-light` passes all three capture journeys and measurement offline/
+relaunch/conflict/undo, 4 UI tests. `compact-small-dark` passes the three capture
+journeys plus note/copy/deletion/undo, 4 UI tests. `compact-large-light` passes
+all three capture journeys. Those bundles contain 27 design views each. The
+small dark and large light builds include the denser diary summary and a single
+first-weigh-in state. Later focus, placeholder and contrast fixes need refreshed
+captures. Largest-type light captures are now running on both sizes.
+
+The first `full-current-dark` run passed 159 hosted tests, 1 optional skip, then
+found a real Sleep focus bug. Bedtime and wake time shared one Boolean focus
+binding. The keyboard could remain on bedtime after tapping wake time. That run
+was interrupted, not counted as a pass. Sleep now has separate focus values.
+Food/activity editors no longer attach one Boolean to several text fields. The
+replacement helper also avoids triple-tapping placeholder text. Full native
+`full-focus-dark` is running. Its code predates the final header/contrast tweaks.
+Device builds through focus/density pass. SwiftLint has warnings but no errors;
+lint has the same 18 web warnings, typecheck passes. Core/API code is byte-identical
+to the foundation's passing 290/246 results.
+
+Critique against MacroFactor/Workouts/Fitness/Things: Exerly's first meal still sat
+too low on SE. Reduced summary gaps, moved target beside calories and grouped the
+status line with the summary. Progress repeated a first-reading message in an
+empty chart; it now offers a weigh-in action in one summary, followed by history.
+Library repeat rows now say Log again with the last portion and a plus action,
+so they are distinct from saved-label editing. Removed oversized numeric-field
+placeholder labels. Account email should not occupy a hero-sized card, so it now
+uses a compact identity row. These are presentation fixes, not new nutrition work.
+
+Contrast audit found original dark purple text below 4.5 on two dark surfaces.
+Original brand/chart/logo values are unchanged. Added a lighter purple text role
+and reused the existing deep purple for white-text filled controls. Final ratio
+report and four-mode capture review remain required before upload.
+
+Still pending: final default and largest-type review, Core-owned conflict views
+extraction, photo comparison/admin routes, Logic's critique of final captures,
+full passing native suite and fixed-commit TestFlight design release.
+
+## Design pass progress, 2026-10-06
+
+Shared design controls committed as `359fafef`, device build passed. The first
+foundation batch passed the full native suite at `f282fdd2`: 30 active UI tests,
+7 optional skips, and hosted tests. It was rebased onto current integration
+`401d8203`; rebased commits are `28282bb3`, `efa14ca3`, `1c2cf5b7`, `49164782`.
+Core 288/API 243/device/lint/typecheck/format gates pass on that rebase. Full
+native suite runs again from the fixed `49164782` release worktree. Integration
+remains open to Logic. Land this batch when the suite is green.
+
+Implemented in the working tree: summary-first diary/training/profile/progress,
+shared number styles and controls, food label/amount/library/detail, set editor
+and keypad, programs/history/insights, agent/account headers, compact offline
+notice. Daily-health editors and remaining secondary routes are being designed.
+No final visual approval or design release yet; nutrition features remain paused.
+
+Real-API design checks: `keypad-manual-current` passes 13 hosted nutrition tests
+and the manual offline/relaunch/sync journey. All four captures reviewed. The
+food amount selector wastes space when grams are the only choice; now hidden
+in that case. The diary's sync explanation displaced its summary; moved below
+meals. The historical volume-label regression failed first in `volume-red` and
+now passes with snapshot volume retained. `compact-day-library-current` passes
+the day-note/copy/delete/undo and historical library journeys, before the latest
+food-detail toolbar/menu changes. `secondary-device` passes before later edits.
+
+`session-keypad`, `session-current` and `session-fixed` are not green evidence.
+The first exposed a missing keyboard Done control on New workout, fixed. Later
+runs exposed stale indexed XCTest navigation-button queries while dismissing
+share sheets, and the custom keypad obscuring the second set field. The helper
+now recognizes the custom keypad and binds navigation elements by accessibility
+identity; Save set moved into the toolbar to preserve editing room on SE. Retest
+these exact flows and inspect the visible-keypad capture before calling it done.
+
+Ported the legacy food/status/calendar/daily-health/weight/signup UI journeys to
+the new Core diary and destinations. Kept exact offline, revision, unknown/zero,
+precision, snapshot, cross-device conflict and relaunch assertions. The old
+nutrition-label edit expectation now explicitly preserves the old entry snapshot
+and uses the corrected label only for a new entry. Account-calendar already
+passes in `legacy-routes-current`; other journeys are still running.
+
+Before default-size captures: all four size/theme combinations, 16 images each.
+Public MacroFactor/Workouts/Fitness/Things screenshots and the first primary
+comparisons were reviewed. `editors-primary-light/dark` pass. These are prototypes,
+not final release captures. Remaining before images, all secondary captures,
+final four primary variants and Logic's final critique remain release gates.
+See `docs/design/020-design-quality.md` for route audit and reference comparison.
 
 ## Current work and next steps
 
@@ -79,12 +273,17 @@ flows; test/compare/review/release design, then resume unfinished nutrition.
 Incoming snapshot volume and barcode symbology correctness fixes may be adopted
 while reconciling; new target/coaching/import features wait for design release.
 
-Resources: A7SE45D463AE-8D3E-4D8F-BD35-CE70128BF962/39212,a7-drafts;
-Large02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19/39213,a7-large. Both free after tests.
-Fixture39212/session81882 and39213/session91661 will restart from primary after
-worktree consolidation. Do not touch Logic sims or protected devbox services.
-Credentials already sent, only private_keys; phone requires Tailscale.
-Use DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer and author Ali.
+Resources: primary `/Users/aldo/Desktop/Exerly-Fitness-app`, branch
+`agent/app-nutrition`. One release worktree, `Exerly-Fitness-app-programs`,
+at `60e83cf9`, now landed. Its full suite `artifacts/foundation/rebased-native.xcresult`
+passes with Core/API/device gates. Release worktree can now be reused for the design release.
+Primary design uses free SE `45D463AE-8D3E-4D8F-BD35-CE70128BF962`,
+fixture39212/session71288, and large `02A671D3-2CEC-4F96-8E25-FFA8FEFB9F19`
+with fixture39213 to start. Old nutrition and app-next worktrees removed.
+Do not touch Logic sims or protected services. Credentials only in private_keys;
+phone requires Tailscale. Use `DEVELOPER_DIR=/Applications/Xcode-26.2.app/Contents/Developer`
+and author Ali. Main integration is being handled by Logic in its own temporary
+worktree; do not interfere.
 
 ## A3 final evidence and release
 
