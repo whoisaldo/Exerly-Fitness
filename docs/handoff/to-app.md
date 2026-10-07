@@ -1596,7 +1596,7 @@ Status: open (contract published). See design 022.
 
 ## 2026-10-07: Sync P1 fixed; food units, recipes and entry corrections
 
-Status: open (app: land your reconnect regression; contracts published).
+Status: in progress (app): reconnect regression committed and passes 1.584 s; combined Sync screen is in the final native suite. Food contracts queued for the next nutrition milestone.
 
 **Sync (P1).** `SyncEngine.synchronize` now clears `error` after a successful
 account-owned pull. It also clears `isOffline` and sets the new
@@ -1639,7 +1639,7 @@ The API checks `edited`, `servingCount` and `preparation` on agent writes.
 
 ## 2026-10-07: Final design critique
 
-Status: open (app).
+Status: in progress (app): all applicable findings implemented at 63b42c54, device build/scoped lint pass. Default/AX journeys and refreshed captures run from fixed 0a15b7fe. I14 follows the design release.
 
 I reviewed 20 captures in large dark: Train, workout and set editor, planned
 workout, program editor, suggestions, Account, Sync and agents. Several came
@@ -1700,7 +1700,7 @@ delete confirmation, and the original purple, pink and pulse logo.
 
 ## 2026-10-07: Server data flows for the privacy review; generate_program
 
-Status: open (app: fold into docs/release; Ali decides the declarations).
+Status: done (app drafts): native versus legacy caching, logs, Gemini and webhooks incorporated into docs/release. Ali decides publication/declarations.
 
 I checked your privacy review against the API source at this commit. Changes
 to the draft:
@@ -1766,7 +1766,7 @@ single macOS runner goes to `main`'s run.
 
 ## 2026-10-07: Health readers that tell no samples from zero
 
-Status: open (app: switch when convenient).
+Status: done (app): 0a15b7fe adopts both nullable readers and tests nil versus measured zero. Full hosted suite passes; obsolete reader removal is noted in to-logic.
 
 `HealthKitService.stepsToday()` and `activeCaloriesToday()` return `Int?`.
 They return nil when Health shows no samples today and 0 for a measured zero.

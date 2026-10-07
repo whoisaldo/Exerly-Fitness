@@ -11,20 +11,20 @@ deletion flow must remain available in the app, as described in Apple's
 
 ## Data map for the current native build
 
-| Data                                            | Current path                                             | Candidate declaration                                                                            |
-| ----------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Name and email                                  | Profile, authentication, account server                  | Linked to account; app functionality                                                             |
-| Account and sign-in identifiers                 | Server identity and session records                      | Linked user ID; app functionality                                                                |
-| Food, weight, measurements, sleep and targets   | Account records and sync                                 | Linked health data; app functionality                                                            |
-| Workouts, sets, programs and activity           | Account records and sync                                 | Linked fitness data; app functionality                                                           |
-| Notes, saved labels, proposals and decisions    | Account records and audit history                        | Linked other user content; app functionality                                                     |
-| Profile age, sex and timezone                   | Account profile, target calculations                     | Confirm the additional category and personalization purpose before submitting                    |
-| Search terms and barcodes                       | Native requests go to Open Food Facts without an Exerly search cache | Review provider retention; native request budgets retain counts, not search text |
-| Steps and active energy read in Health settings | HealthKit to local presentation only                     | This screen does not transmit these readings; manually logged health records above are separate  |
-| Progress photos                                 | System photo picker to local SwiftData records           | No Exerly account upload; device backup settings may apply                                       |
-| IP addresses and request diagnostics            | Network hosts and rate limiting                          | Hosting/log retention must be reviewed before choosing the final diagnostic categories           |
-| TestFlight feedback and crash reports           | Apple beta service                                       | Confirm what Sideband accesses and retains; no additional crash SDK is present                   |
-| Agent-selected data                             | Scoped token/API, to the chosen agent                    | User-directed sharing; document scopes and revocation, plus provider responsibilities            |
+| Data                                            | Current path                                                         | Candidate declaration                                                                           |
+| ----------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Name and email                                  | Profile, authentication, account server                              | Linked to account; app functionality                                                            |
+| Account and sign-in identifiers                 | Server identity and session records                                  | Linked user ID; app functionality                                                               |
+| Food, weight, measurements, sleep and targets   | Account records and sync                                             | Linked health data; app functionality                                                           |
+| Workouts, sets, programs and activity           | Account records and sync                                             | Linked fitness data; app functionality                                                          |
+| Notes, saved labels, proposals and decisions    | Account records and audit history                                    | Linked other user content; app functionality                                                    |
+| Profile age, sex and timezone                   | Account profile, target calculations                                 | Confirm the additional category and personalization purpose before submitting                   |
+| Search terms and barcodes                       | Native requests go to Open Food Facts without an Exerly search cache | Review provider retention; native request budgets retain counts, not search text                |
+| Steps and active energy read in Health settings | HealthKit to local presentation only                                 | This screen does not transmit these readings; manually logged health records above are separate |
+| Progress photos                                 | System photo picker to local SwiftData records                       | No Exerly account upload; device backup settings may apply                                      |
+| IP addresses and request diagnostics            | Network hosts and rate limiting                                      | Hosting/log retention must be reviewed before choosing the final diagnostic categories          |
+| TestFlight feedback and crash reports           | Apple beta service                                                   | Confirm what Sideband accesses and retains; no additional crash SDK is present                  |
+| Agent-selected data                             | Scoped token/API, to the chosen agent                                | User-directed sharing; document scopes and revocation, plus provider responsibilities           |
 
 The existing privacy manifest lists name, email, user ID, health, fitness and
 other user content as linked and used for app functionality, with no tracking.

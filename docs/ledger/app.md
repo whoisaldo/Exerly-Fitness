@@ -2,22 +2,58 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 04:29 EDT.
+milestone. Current date 2026-10-07, updated 05:07 EDT.
 
 ## Merge status
 
-Integration is `87abfb67`, merged and pushed at 04:11 EDT after the complete
-native suite, Core 295, API 250 and device build passed. Primary plus one release
-worktree. No integration hold.
+Integration is `f7b92d41`; app primary is rebased onto it through `0a15b7fe`.
+Last app landing was `87abfb67` at 04:11 EDT. Primary plus one fixed release
+worktree. No integration hold. The final review suite runs from `0a15b7fe`.
 
-| App branch                         | Unlanded work                                                                                                      | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                                           | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                                                           | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                                                           | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                                      | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | Three Health/evidence commits through 4186a492; final volume formatting under review; combined sync in named stash | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
-| `release/app-design`               | Fixed 4186a492, Health delta beyond 87abfb67                                                                       | Previous 87 passed; complete 48-method Health suite now running in three groups                                 |
+| App branch                         | Unlanded work                                                                    | Last landed / cleanup                                                                                           |
+| ---------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped         | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                         | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                         | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                    | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | Seven Health/design/privacy commits through 0a15b7fe, after rebase onto f7b92d41 | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
+| `release/app-design`               | Fixed 0a15b7fe, same source as primary                                           | 4186 complete suite passed; final 49-method suite runs in three groups                                          |
+
+## Final critique implemented, 2026-10-07 05:07 EDT
+
+Health fixed4186 completed all three groups:165 active hosted,39 active UI,
+nine optional UI skips and one credential skip. Signed archive2610070818 is
+superseded and must not upload. Currentfixed0a15b7fe adds Logic0580 sync/food
+contracts, CoreHealth nullable reads, final volume and the last visual critique.
+All49 UI methods are partitioned once in critique-complete-manifest.json in
+release artifacts/design, with every hosted test in group1. API/Core rerun in
+primary, device compilation already passed the revised layouts before the
+small Health nullable adoption. The initial critique builds failed on an
+incorrect SetKind name; corrected to standard and decomposed the large view.
+Those red build bundles are retained, not reported as UI results.
+
+Changes: compact default-size set table with a stacked accessibility layout;
+inline program choices, validation beside days with VoiceOver focus, opaque
+program toolbar; grouped before/after proposal values above program links;
+clear agent name field and filled confirming action; one export route which
+selects local data offline and states omissions. Sync combines both stores and
+shows the older successful time. Logic has the account-reset timestamp finding.
+Measured zero Health values now differ from no visible samples, with coverage.
+Shared numeric placeholders use zero; absent nutritional values remain unknown.
+
+Logic’s privacy review is incorporated: native food search has no Exerly search
+cache, legacy barcode caching is separate, cloud web coach error records and
+webhooks disclosed in the draft. Public legal/hosting choices remain for Ali.
+Evidence labels use Personal report and Your logged data without claiming that
+an anecdote is the user’s or that personal data means exactly one workout.
+
+Old branches remain reconciled and deleted. git cherry reports Health code
+patches from4186 equivalent; its only unmatched ledger commit is superseded by
+this more recent ledger. The named combined-sync stash was committed then
+removed. Own app branch needs a force-with-lease push after the two rebases.
+Next: inspect refreshed light/dark/AX captures, land passing pieces, cut a fresh
+signed internal TestFlight build, then resume nutrition with the new Core food
+units, entry corrections and recipe contracts. Do not end at this milestone.
 
 ## Final Health candidate and comparison, 2026-10-07 04:29 EDT
 
