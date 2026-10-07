@@ -1425,6 +1425,7 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(revoke.exists)
         tap(revoke, in: app)
         tap(app.alerts.buttons["Revoke access"], in: app)
+        revealAbove(app.staticTexts["Bring your own agent"], in: app)
         XCTAssertTrue(app.staticTexts["Bring your own agent"].waitForExistence(timeout: 15))
         let remaining = try await requestArray("GET", "/v1/tokens", token: person.token)
         XCTAssertTrue(remaining.isEmpty)
