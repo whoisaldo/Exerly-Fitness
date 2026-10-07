@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 struct ProfileView: View {
@@ -21,6 +22,7 @@ struct ProfileView: View {
             .padding(.top, 16)
             .padding(.bottom, ExSpacing.major)
         }
+        .exScrollEdges()
         .background(Color.exBackground)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
@@ -43,6 +45,7 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(authVM.currentUser?.name ?? "Your profile").font(.exH2).foregroundStyle(Color.exTextPrimary)
                 Text(authVM.currentUser?.email ?? "").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .accessibilityLabel("Email").accessibilityValue(authVM.currentUser?.email ?? "")
             }.fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -175,7 +178,7 @@ struct ProfileView: View {
     private func displayWeight(_ kilograms: Double?) -> String {
         guard let kilograms else { return "—" }
         if unitSystem == "imperial" {
-            return "\((kilograms * 2.20462262).formatted(.number.precision(.fractionLength(0)))) lb"
+            return "\(Mass.kg(kilograms).value(in: .pounds).formatted(.number.precision(.fractionLength(0)))) lb"
         }
         return "\(kilograms.formatted(.number.precision(.fractionLength(0)))) kg"
     }
@@ -185,8 +188,8 @@ struct ProfileView: View {
         guard unitSystem == "imperial" else {
             return "\(centimeters.formatted(.number.precision(.fractionLength(0)))) cm"
         }
-        let totalInches = Int((centimeters / 2.54).rounded())
-        return "\(totalInches / 12)′ \(totalInches % 12)″"
+        let height = USUnits.feetAndInches(centimeters: centimeters)
+        return "\(height.feet)′ \(Int(height.inches))″"
     }
 }
 

@@ -219,7 +219,7 @@ struct ProgramView: View {
                         .foregroundStyle(.exTextMuted)
                 } else {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(program.targets.calories.map(String.init) ?? "—").font(.exStat)
+                        Text(program.targets.calories.map { $0.formatted() } ?? "—").font(.exStat)
                         Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
                     }
                     let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
@@ -355,7 +355,7 @@ struct ProgramView: View {
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 3) {
-                            Text("\(checkin.calories) kcal")
+                            Text("\(checkin.calories.formatted()) kcal")
                                 .font(.exStatSmall)
                                 .foregroundStyle(.exTextPrimary)
                             if let previous = checkin.previousCalories,

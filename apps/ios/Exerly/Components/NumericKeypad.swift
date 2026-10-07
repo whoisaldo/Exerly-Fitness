@@ -43,7 +43,8 @@ struct ExNumericTextField: UIViewRepresentable {
     func updateUIView(_ field: UITextField, context: Context) {
         context.coordinator.parent = self
         if field.text != text { field.text = text }
-        field.placeholder = placeholder.isEmpty ? title : placeholder
+        field.attributedPlaceholder = NSAttributedString(string: placeholder.isEmpty ? title : placeholder,
+                                                         attributes: [.foregroundColor: UIColor(Color.exTextSecondary)])
         field.accessibilityLabel = title
         field.accessibilityIdentifier = identifier
         field.textAlignment = centered ? .center : .left
@@ -99,7 +100,7 @@ struct ExNumericKeypad: View {
                     .lineLimit(1).accessibilityHidden(true)
                 Spacer()
                 Button("Done", action: done).font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.exPrimaryText).frame(minWidth: 60, minHeight: 44)
+                    .foregroundStyle(Color.exPrimaryText).frame(minWidth: 60, minHeight: 44).contentShape(Rectangle())
                     .accessibilityIdentifier("exerly.keypadDone")
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {

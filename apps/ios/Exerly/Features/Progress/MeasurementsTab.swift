@@ -1,4 +1,5 @@
 import Charts
+import ExerlyCore
 import SwiftData
 import SwiftUI
 
@@ -653,7 +654,7 @@ struct WeightEntrySheet: View {
                         } else {
                             ExEyebrow("Daily weigh-in", color: .exPrimaryText)
                             ExQuantityControl(title: "Weight (\(unit))", text: $value, step: unitSystem == "imperial" ? 0.5 : 0.1, identifier: "weight.value")
-                            TextField("Optional note", text: $note, axis: .vertical)
+                            TextField("Optional note", text: $note, prompt: Text("Optional note").foregroundColor(.exTextSecondary), axis: .vertical)
                                 .focused($focused).accessibilityIdentifier("weight.note")
                             if current.exists {
                                 Text("Saved: \((current.weight_kg ?? 0) * (unitSystem == "imperial" ? poundsPerKilogram : 1), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
@@ -700,18 +701,31 @@ struct WeightEntrySheet: View {
             }
             guard date.rawValue == selectedDay, !Task.isCancelled else { return }
             current = row
-            value = row.weight_kg.map { ($0 * (unitSystem == "imperial" ? poundsPerKilogram : 1)).formatted(.number.grouping(.never).precision(.fractionLength(0...4))) } ?? ""
+            value = WeightFieldText.display(row.weight_kg, unit: unitSystem == "imperial" ? .pounds : .kilograms)
             note = row.note ?? ""
         } catch { self.error = error.localizedDescription }
     }
     private func save() {
         guard let current else { return }
-        guard let number = try? Double(value, format: .number.locale(.current)), number.isFinite else {
+        guard let kilograms = WeightFieldText.kilograms(value, original: current.weight_kg,
+                                                        unit: unitSystem == "imperial" ? .pounds : .kilograms) else {
             error = "Enter a valid weight in \(unit)."; return
         }
         do {
-            try sync.saveWeight(current, kilograms: unitSystem == "imperial" ? number / poundsPerKilogram : number, note: note)
+            try sync.saveWeight(current, kilograms: kilograms, note: note)
             onSaved(); dismiss()
         } catch { self.error = error.localizedDescription }
+    }
+}
+
+enum WeightFieldText {
+    static func display(_ kilograms: Double?, unit: MassUnit) -> String {
+        kilograms.map { Mass.kg($0).value(in: unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2))) } ?? ""
+    }
+
+    static func kilograms(_ text: String, original: Double?, unit: MassUnit) -> Double? {
+        if let original, text == display(original, unit: unit) { return original }
+        guard let number = TrainingInput.number(text) else { return nil }
+        return Mass(number, unit).kilograms
     }
 }

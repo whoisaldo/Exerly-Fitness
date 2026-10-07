@@ -54,7 +54,7 @@ struct TrainingView: View {
                         Button("Start a different workout", systemImage: "plus") { starting = true }
                             .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
                     } else {
-                        ExEmptyState(icon: "dumbbell", title: "Ready when you are",
+                        ExEmptyState(icon: "dumbbell", title: "No workout planned",
                                      message: "Choose your exercises. Your last sets will be ready to log again.", action: "Start workout", actionID: "training.start") {
                             starting = true
                         }
@@ -139,15 +139,11 @@ private struct NewWorkoutView: View {
     var body: some View {
         NavigationStack {
             ExScreen {
-                VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExEyebrow("New session", color: .exPrimaryText)
-                    Text("Make it yours").font(.exH1)
-                    Text("Add exercises after you start. Each set saves as you go.")
-                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                }
-                ExCard {
-                    Text("Session name").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                ExCard(accent: true) {
+                    ExEyebrow("Session name", color: .exPrimaryText)
                     TextField("Workout name", text: $name).font(.exH2).accessibilityIdentifier("training.name")
+                    Text("Add exercises after you start. Each set saves as you go.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
                 ExCard {
                     NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)

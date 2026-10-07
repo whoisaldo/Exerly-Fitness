@@ -21,9 +21,9 @@ struct NutritionFoodEditor: View {
                 ExScreen {
                     ExCard {
                         ExEyebrow("Food label", color: .exPrimaryText)
-                        TextField("Food name", text: $draft.name, axis: .vertical).font(.exH2)
+                        TextField("Food name", text: $draft.name, prompt: Text("Food name").foregroundColor(.exTextSecondary), axis: .vertical).font(.exH2)
                             .accessibilityIdentifier("nutrition.foodName")
-                        TextField("Brand, optional", text: $draft.brand, axis: .vertical)
+                        TextField("Brand, optional", text: $draft.brand, prompt: Text("Brand, optional").foregroundColor(.exTextSecondary), axis: .vertical)
                         Toggle("Favorite", isOn: $draft.favorite)
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -54,7 +54,7 @@ struct NutritionFoodEditor: View {
                         ExSectionHeading("Named servings")
                         ForEach($draft.servings) { $serving in
                             VStack(alignment: .leading, spacing: 12) {
-                                TextField("Serving name", text: $serving.name, axis: .vertical)
+                                TextField("Serving name", text: $serving.name, prompt: Text("Serving name").foregroundColor(.exTextSecondary), axis: .vertical)
                                 NutritionNumberInput(title: "Serving weight (g)", text: $serving.grams.text)
                                 Button("Remove serving", role: .destructive) { draft.servings.removeAll { $0.id == serving.id } }
                             }

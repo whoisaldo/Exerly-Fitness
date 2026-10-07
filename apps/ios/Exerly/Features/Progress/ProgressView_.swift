@@ -17,6 +17,7 @@ enum ProgressTab: String, CaseIterable {
 struct ProgressView_: View {
     let initialDate: CalendarDay
     @State private var selectedTab: ProgressTab = .measurements
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,8 +30,24 @@ struct ProgressView_: View {
     }
 
     private var tabPicker: some View {
-        ExSegmentedControl(values: ProgressTab.allCases, selection: $selectedTab) { $0.title }
-            .padding(.horizontal, ExSpacing.page).padding(.vertical, ExSpacing.small)
+        Group {
+            if typeSize.isAccessibilitySize {
+                Menu {
+                    Picker("Progress view", selection: $selectedTab) {
+                        ForEach(ProgressTab.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                } label: {
+                    HStack {
+                        Text(selectedTab.title).font(.exBodyMedium)
+                        Spacer()
+                        Image(systemName: "chevron.down").font(.exCaption)
+                    }.foregroundStyle(Color.exTextPrimary).padding(ExSpacing.item)
+                        .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+                }.accessibilityLabel("Progress view, \(selectedTab.title)").accessibilityIdentifier("progress.section")
+            } else {
+                ExSegmentedControl(values: ProgressTab.allCases, selection: $selectedTab) { $0.title }
+            }
+        }.padding(.horizontal, ExSpacing.page).padding(.vertical, ExSpacing.small)
     }
 
     @ViewBuilder

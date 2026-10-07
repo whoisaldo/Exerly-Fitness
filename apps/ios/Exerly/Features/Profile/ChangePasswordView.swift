@@ -66,7 +66,7 @@ struct ChangePasswordView: View {
             Text(label)
                 .font(.exLabel)
                 .foregroundStyle(.exTextSecondary)
-            SecureField(label, text: text)
+            SecureField("", text: text).accessibilityLabel(label)
                 .font(.exBody)
                 .foregroundStyle(.exTextPrimary)
                 .padding(12)

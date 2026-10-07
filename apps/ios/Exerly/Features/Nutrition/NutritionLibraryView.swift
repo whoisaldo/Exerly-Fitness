@@ -41,6 +41,8 @@ struct NutritionLibraryView: View {
 
     var body: some View {
         ExScreen {
+            ExSearchField(text: $query, label: "Search saved foods")
+                .accessibilityIdentifier("nutrition.librarySearch")
             ExChoiceChips(values: [false, true], selection: $showArchived) { $0 ? "Archived" : "Saved" }
                 .accessibilityIdentifier("nutrition.libraryFilter")
             if visibleFoods.isEmpty {
@@ -94,7 +96,6 @@ struct NutritionLibraryView: View {
             Label("Available offline", systemImage: "checkmark.icloud").font(.exCaption).foregroundStyle(Color.exTextSecondary)
         }
         .navigationTitle("Food library").navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: "Find a saved food")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Create food", systemImage: "plus") { creating = true }

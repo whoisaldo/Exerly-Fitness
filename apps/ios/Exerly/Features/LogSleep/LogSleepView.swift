@@ -41,12 +41,12 @@ struct LogSleepView: View {
                 ExCard {
                     ExSectionHeading("Sleep times", detail: "Optional")
                     LabeledContent("Bedtime") {
-                        TextField("23:00", text: $bedtime).keyboardType(.numbersAndPunctuation).focused($focused, equals: .bedtime)
+                        TextField("23:00", text: $bedtime, prompt: Text("23:00").foregroundColor(.exTextSecondary)).keyboardType(.numbersAndPunctuation).focused($focused, equals: .bedtime)
                             .frame(minHeight: 44).accessibilityIdentifier("sleep.bedtime")
                     }
                     Divider()
                     LabeledContent("Wake time") {
-                        TextField("07:00", text: $wakeTime).keyboardType(.numbersAndPunctuation).focused($focused, equals: .wakeTime)
+                        TextField("07:00", text: $wakeTime, prompt: Text("07:00").foregroundColor(.exTextSecondary)).keyboardType(.numbersAndPunctuation).focused($focused, equals: .wakeTime)
                             .frame(minHeight: 44).accessibilityIdentifier("sleep.wake-time")
                     }
                     Text("Times describe your sleep. Hours are recorded separately.").font(.exCaption).foregroundStyle(Color.exTextSecondary)

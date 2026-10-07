@@ -28,7 +28,16 @@ struct ExScreen<Content: View>: View {
                 .padding(.top, ExSpacing.content)
                 .padding(.bottom, ExSpacing.major)
         }
+        .exScrollEdges()
         .background(Color.exBackground)
+    }
+}
+
+extension View {
+    @ViewBuilder func exScrollEdges() -> some View {
+        if #available(iOS 26, *) {
+            scrollEdgeEffectStyle(.hard, for: .bottom)
+        } else { self }
     }
 }
 
@@ -37,7 +46,7 @@ struct ExList<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         List { content.listRowBackground(Color.exSurface1).listRowSeparatorTint(Color.exBorder) }
-            .exListStyle()
+            .exListStyle().exScrollEdges()
     }
 }
 
@@ -45,7 +54,7 @@ struct ExForm<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         Form { content.listRowBackground(Color.exSurface1).listRowSeparatorTint(Color.exBorder) }
-            .scrollContentBackground(.hidden).background(Color.exBackground).tint(Color.exPrimaryText)
+            .scrollContentBackground(.hidden).background(Color.exBackground).tint(Color.exPrimaryText).exScrollEdges()
     }
 }
 
@@ -88,8 +97,39 @@ struct ExSectionHeading: View {
         HStack(alignment: .firstTextBaseline) {
             Text(title).font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
             Spacer(minLength: ExSpacing.small)
-            if let detail { Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
+            if let detail { Text(detail).font(.exLabel.weight(.medium)).foregroundStyle(Color.exTextSecondary) }
         }.fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+struct ExSearchField: View {
+    @Binding var text: String
+    let label: String
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: ExSpacing.small) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Color.exTextSecondary)
+                .accessibilityHidden(true)
+            TextField(label, text: $text, prompt: Text("Search").foregroundColor(.exTextSecondary))
+                .font(.exBody).foregroundStyle(Color.exTextPrimary)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .submitLabel(.search).focused($focused).onSubmit { focused = false }
+                .frame(minHeight: 44).accessibilityLabel(label)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.exTextSecondary)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, ExSpacing.item).padding(.vertical, ExSpacing.tight)
+        .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if focused { Spacer(); Button("Done") { focused = false } }
+            }
+        }
     }
 }
 
@@ -280,6 +320,7 @@ struct ExSegmentedControl<Value: Hashable>: View {
                         .foregroundStyle(value == selection ? Color.exTextPrimary : Color.exTextSecondary)
                         .background(value == selection ? Color.exSurface1 : .clear,
                                     in: RoundedRectangle(cornerRadius: ExRadius.control - 3))
+                        .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityAddTraits(value == selection ? .isSelected : [])
             }
         }.padding(4).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))

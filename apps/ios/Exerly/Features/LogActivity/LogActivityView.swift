@@ -28,7 +28,7 @@ struct LogActivityView: View {
             ExScreen {
                 ExCard(accent: true) {
                     ExEyebrow("Movement", color: .exPrimaryText)
-                    TextField("Activity name", text: $name).font(.exH2).accessibilityIdentifier("activity.name")
+                    TextField("Activity name", text: $name, prompt: Text("Activity name").foregroundColor(.exTextSecondary)).font(.exH2).accessibilityIdentifier("activity.name")
                     ExQuantityControl(title: "Minutes", text: $duration, step: 5, presets: [15, 30, 60], unit: "min", identifier: "activity.minutes")
                 }
                 ExCard {

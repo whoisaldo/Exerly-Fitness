@@ -4,6 +4,16 @@ import ExerlyCore
 
 @MainActor
 final class TrainingPresentationTests: XCTestCase {
+    func testRoundedWeightEntryPreservesExactMeasurementUnlessEdited() {
+        let original = 72.25012345
+        let display = WeightFieldText.display(original, unit: .pounds)
+        XCTAssertEqual(display, "159.28")
+        XCTAssertEqual(WeightFieldText.kilograms(display, original: original, unit: .pounds), original)
+        XCTAssertEqual(WeightFieldText.kilograms("160", original: original, unit: .pounds), Mass.lb(160).kilograms)
+        XCTAssertEqual(WeightFieldText.kilograms("72.25", original: original, unit: .kilograms), original)
+        XCTAssertNil(WeightFieldText.kilograms("", original: original, unit: .pounds))
+    }
+
     func testAccountsCannotSeeEachOthersUnfinishedWorkAndRelaunchRestoresIt() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

@@ -50,7 +50,7 @@ struct ActionButton: View {
     private var background: some View {
         switch variant {
         case .primary:
-            Color.exPrimary
+            Color.exActionFill
         case .secondary:
             Color.exSurface2
         case .ghost:
@@ -62,7 +62,7 @@ struct ActionButton: View {
         switch variant {
         case .primary: return .white
         case .secondary: return .exTextPrimary
-        case .ghost: return .exPrimary
+        case .ghost: return .exPrimaryText
         }
     }
 

@@ -191,7 +191,7 @@ struct NutritionDiaryView: View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
             HStack(spacing: ExSpacing.tight) {
                 Button { date = date.adding(days: -1) } label: {
-                    Image(systemName: "chevron.left").frame(width: 44, height: 44)
+                    Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(Rectangle())
                 }.accessibilityLabel("Previous day")
                 Spacer(minLength: 0)
                 Button { destination = .date } label: {
@@ -206,7 +206,7 @@ struct NutritionDiaryView: View {
                     .accessibilityIdentifier("diary.selected-day").accessibilityValue(date.description)
                 Spacer(minLength: 0)
                 Button { date = date.adding(days: 1) } label: {
-                    Image(systemName: "chevron.right").frame(width: 44, height: 44)
+                    Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(Rectangle())
                 }.accessibilityLabel("Next day")
             }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
             if date != LocalDate(Date(), in: timeZone) {
@@ -271,10 +271,14 @@ struct NutritionDiaryView: View {
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityIdentifier("nutrition.entry.\(entry.id.uuidString)")
             }
-            Button("Add food to \(meal)", systemImage: "plus") {
+            Button {
                 actions.clearError()
                 destination = .add(date, meal)
-            }.font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("nutrition.add.\(meal.lowercased())")
+            } label: {
+                Label("Add food to \(meal)", systemImage: "plus")
+                    .font(.exLabel).frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
+                .accessibilityIdentifier("nutrition.add.\(meal.lowercased())")
         }
     }
 

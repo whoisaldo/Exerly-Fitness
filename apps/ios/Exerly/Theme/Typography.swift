@@ -11,7 +11,7 @@ extension Font {
     static let exBodyMedium = Font.system(.body, design: .default, weight: .medium)
     static let exLabel = Font.system(.subheadline, design: .default, weight: .medium)
     static let exCaption = Font.system(.caption, design: .default, weight: .regular)
-    static let exSmall = Font.system(.caption2, design: .default, weight: .regular)
+    static let exSmall = Font.system(.caption, design: .default, weight: .regular)
 
     // Proportional figures for reading; reserve mono for timers and aligned data.
     static let exStat = Font.system(.largeTitle, design: .rounded, weight: .bold)

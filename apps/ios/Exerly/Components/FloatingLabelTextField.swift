@@ -8,6 +8,7 @@ struct FloatingLabelTextField: View {
 
     @FocusState private var isFocused: Bool
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isFloating: Bool {
         isFocused || !text.isEmpty
@@ -24,9 +25,9 @@ struct FloatingLabelTextField: View {
                 ZStack(alignment: .leading) {
                     Text(label)
                         .font(isFloating ? .exCaption : .exBody)
-                        .foregroundStyle(isFocused ? .exPrimary : .exTextMuted)
+                        .foregroundStyle(isFocused ? .exPrimaryText : .exTextMuted)
                         .offset(y: isFloating ? -22 : 0)
-                        .animation(.spring(response: 0.3), value: isFloating)
+                        .animation(reduceMotion ? nil : .spring(response: 0.3), value: isFloating)
                         .accessibilityHidden(true)
                     input.offset(y: 4)
                 }
@@ -43,7 +44,7 @@ struct FloatingLabelTextField: View {
                     lineWidth: isFocused ? 1.5 : 1
                 )
         )
-        .animation(.easeOut(duration: 0.2), value: isFocused)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: isFocused)
     }
 
     private var input: some View {

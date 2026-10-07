@@ -22,16 +22,13 @@ struct PhotosTab: View {
 
     var body: some View {
         ExScreen {
-            VStack(alignment: .leading, spacing: ExSpacing.small) {
-                ExEyebrow("Visual record", color: .exPrimaryText)
-                Text("Progress photos").font(.exH1)
-                Text("Saved on this device. Choose the moments you want to compare.").font(.exBody).foregroundStyle(Color.exTextSecondary)
-            }
             if photos.isEmpty {
-                ExEmptyState(icon: "camera", title: "Start your photo record",
-                             message: "Use a similar pose and lighting when you take the next one.",
+                ExEmptyState(icon: "camera", title: "Progress photos",
+                             message: "Compare changes over time. Photos stay on this device.",
                              action: "Add photo") { choosingPhoto = true }
             } else {
+                ExSectionHeading("Photo record", detail: photos.count.formatted())
+                Text("Saved on this device").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 toolbar
                 if compareMode, let compareA, let compareB {
                     ExCard {
@@ -74,14 +71,17 @@ struct PhotosTab: View {
     }
 
     private var toolbar: some View {
-        HStack {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout())
+        return layout {
             PhotosPicker(selection: $selectedItem, matching: .images) {
                 Label("Add Photo", systemImage: "plus.circle.fill")
                     .font(.exLabel)
                     .foregroundStyle(.exPrimaryText)
             }.accessibilityIdentifier("progress.addPhoto")
 
-            Spacer()
+            if !typeSize.isAccessibilitySize { Spacer() }
 
             Button {
                 compareMode.toggle()
@@ -89,7 +89,7 @@ struct PhotosTab: View {
             } label: {
                 Label(compareMode ? "Done" : "Compare", systemImage: "arrow.left.arrow.right")
                     .font(.exLabel)
-                    .foregroundStyle(compareMode ? .exPrimary : .exTextSecondary)
+                    .foregroundStyle(compareMode ? .exPrimaryText : .exTextSecondary)
             }
         }
         .frame(minHeight: 44)
@@ -108,9 +108,11 @@ struct PhotosTab: View {
                     .overlay {
                         if compareMode && (compareA?.id == photo.id || compareB?.id == photo.id) {
                             Color.exPrimary.opacity(0.3)
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.exPrimaryText)
-                                .font(.system(size: 24))
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.white)
+                                .font(.system(size: 16, weight: .bold))
+                                .padding(8)
+                                .background(Color.exActionFill, in: Circle())
                         }
                     }
                 }.buttonStyle(.plain)

@@ -51,6 +51,67 @@ final class ProductionUITests: XCTestCase {
         capture(app, "design-10-connections")
     }
 
+    func testDesignAccessibilityAudit() async throws {
+        guard ProcessInfo.processInfo.environment["EXERLY_ACCESSIBILITY_AUDIT"] == "1" else {
+            throw XCTSkip("Opt-in native accessibility audit")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "design-audit", units: "imperial")
+        _ = try await seedNutritionEntry(token: person.token, nutrients: ["energy": 57, "protein": 0.4, "carbohydrate": 15.2, "fat": 0.1])
+        _ = try await seedProgram(name: "Strength foundations", activated: "2026-10-01T12:00:00.000Z", token: person.token)
+        let app = launch(resetSession: true)
+        var findings: [String] = []
+        var rechecked: [String] = []
+        func audit(_ screen: String) throws {
+            capture(app, "accessibility-\(screen)")
+            let tabBar = app.tabBars.firstMatch
+            let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
+            var covered: [(XCUIElement, String)] = []
+            try app.performAccessibilityAudit { issue in
+                let detail = "\(screen): \(issue.compactDescription) | \(issue.element?.label ?? "No element") | \(String(describing: issue.element?.frame)) | \(issue.detailedDescription)"
+                // XCTest also audits scroll content beneath the native tab bar
+                // and its edge effect. Move that content into view and retest
+                // it below. No contrast finding is dismissed by label alone.
+                if tabBar.exists, issue.auditType == .contrast, let element = issue.element,
+                   element.frame.minY >= bottom - 64 {
+                    covered.append((element, detail))
+                } else { findings.append(detail) }
+                return true
+            }
+            for (snapshotElement, detail) in covered {
+                let label = snapshotElement.label
+                let element = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+                for _ in 0..<4 where element.exists && element.frame.maxY >= bottom - 72 { app.swipeUp() }
+                let top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : 0
+                guard element.exists, element.frame.minY > top, element.frame.maxY < bottom - 8 else {
+                    findings.append("Could not expose for contrast recheck: \(detail)")
+                    continue
+                }
+                try app.performAccessibilityAudit(for: .contrast) { issue in
+                    if issue.element?.label == label { findings.append("Visible recheck: \(detail)") }
+                    return true
+                }
+                rechecked.append("Scrolled clear of system chrome and re-audited: \(detail)")
+            }
+            if !covered.isEmpty { capture(app, "accessibility-\(screen)-uncovered") }
+        }
+        try audit("welcome")
+        signIn(app, email: person.email)
+        XCTAssertTrue(app.staticTexts["nutrition.targetEnergy"].waitForExistence(timeout: 10))
+        try audit("diary")
+        for tab in ["Train", "Library", "Progress", "Profile"] {
+            tap(app.buttons[tab], in: app)
+            try audit(tab.lowercased())
+        }
+        // Audit every screen before reporting all findings as one failed test.
+        let report = (findings.isEmpty ? "No native accessibility findings." : findings.joined(separator: "\n\n")) + "\n\n" + rechecked.joined(separator: "\n\n")
+        let attachment = XCTAttachment(string: report)
+        attachment.name = "Native accessibility findings"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertTrue(findings.isEmpty, report)
+    }
+
     func testDesignEmptyScreenCapture() async throws {
         guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
             throw XCTSkip("Opt-in visual review of empty screens")
@@ -102,9 +163,9 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Add measurement"], in: app)
         capture(app, "design-16-measurement-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
-        tap(app.buttons["Photos"], in: app)
+        selectProgress("Photos", in: app)
         capture(app, "design-17-photos")
-        tap(app.buttons["Milestones"], in: app)
+        selectProgress("Milestones", in: app)
         capture(app, "design-18-milestones")
         tap(app.buttons["Profile"], in: app)
         tap(app.buttons["Nutrition Program"], in: app)
@@ -145,9 +206,10 @@ final class ProductionUITests: XCTestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Photos"], in: app)
+        selectProgress("Photos", in: app)
         tap(app.buttons["Add photo"], in: app)
         XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 10))
+        dismissPhotoPickerIntroduction(in: app)
         // The opt-in simulator has two freshly imported geometric PNGs first.
         let libraryPhotos = app.images.matching(identifier: "PXGGridLayout-Info")
         XCTAssertTrue(libraryPhotos.element(boundBy: 0).waitForExistence(timeout: 10))
@@ -155,6 +217,7 @@ final class ProductionUITests: XCTestCase {
         let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "progress.photo."))
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         tap(app.buttons["progress.addPhoto"], in: app)
+        dismissPhotoPickerIntroduction(in: app)
         XCTAssertTrue(libraryPhotos.element(boundBy: 1).waitForExistence(timeout: 10))
         libraryPhotos.element(boundBy: 1).tap()
         XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
@@ -176,7 +239,8 @@ final class ProductionUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
         tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Photos"], in: app)
+        selectProgress("Photos", in: app)
+        reveal(photos.element(boundBy: 1), in: app)
         XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
         XCTAssertEqual(photos.count, 2)
         capture(app, "design-photos-relaunched")
@@ -403,6 +467,14 @@ final class ProductionUITests: XCTestCase {
         try await control(["offline": true])
         tap(app.buttons["Library"], in: app)
         let food = app.buttons["nutrition.libraryFood.\(seeded.foodID)"]
+        let search = app.textFields["nutrition.librarySearch"]
+        replace(search, with: "missing label", in: app)
+        XCTAssertFalse(food.exists)
+        tap(app.buttons["Clear search"], in: app)
+        replace(search, with: "pear", in: app)
+        dismissKeyboard(app)
+        XCTAssertTrue(food.exists)
+        tap(app.buttons["Clear search"], in: app)
         tap(food, in: app)
         tap(app.buttons["nutrition.libraryFavorite"], in: app)
         XCTAssertTrue(app.buttons["Remove from favorites"].exists)
@@ -2723,7 +2795,7 @@ final class ProductionUITests: XCTestCase {
         for _ in 0..<24 where !element.exists {
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             let home = app.buttons["Home"]
-            let top = bar.exists ? bar.frame.maxY + 16 : 48
+            let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
             let bottom = home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38
             let height = max(80, bottom - top)
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
@@ -2777,11 +2849,13 @@ final class ProductionUITests: XCTestCase {
             if visibleFrame(element) && element.frame.midY > upperEdge && element.frame.midY < lowerEdge && element.isHittable { return }
             // A full-screen swipe can jump from below the SE's tab bar to
             // above its navigation bar. Short drags avoid that oscillation.
-            let down = element.exists && element.frame.height > 0 && element.frame.midY < upperEdge
             // Keep the gesture inside the scrolling area. A large-type account
-            // notice can occupy the upper third of the screen after relaunch.
-            let top = upperEdge + 8
-            let height = max(80, lowerEdge - 8 - top)
+            // notice or the fixed Progress choices can occupy its upper half.
+            let viewport = scrollViewport(in: app)
+            let top = max(upperEdge, viewport?.minY ?? upperEdge) + 8
+            let bottom = min(lowerEdge, viewport?.maxY ?? lowerEdge) - 8
+            let down = element.exists && element.frame.height > 0 && element.frame.midY < top
+            let height = max(80, bottom - top)
             let distance = element.exists ? 0.16 : 0.34
             let low = top + height * (0.5 - distance)
             let high = top + height * (0.5 + distance)
@@ -2789,6 +2863,13 @@ final class ProductionUITests: XCTestCase {
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
+    }
+    private func scrollViewport(in app: XCUIApplication) -> CGRect? {
+        app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
+            guard scroll.exists, !scroll.frame.isEmpty, !scroll.frame.isNull,
+                  app.frame.intersects(scroll.frame), scroll.isHittable else { return nil }
+            return scroll.frame.intersection(app.frame)
+        }.max { $0.width * $0.height < $1.width * $1.height }
     }
     private func tap(_ element: XCUIElement, in app: XCUIApplication) {
         reveal(element, in: app)
@@ -2848,6 +2929,17 @@ final class ProductionUITests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+    private func selectProgress(_ title: String, in app: XCUIApplication) {
+        if app.buttons["progress.section"].exists { tap(app.buttons["progress.section"], in: app) }
+        tap(app.buttons[title], in: app)
+    }
+    private func dismissPhotoPickerIntroduction(in app: XCUIApplication) {
+        let introduction = app.otherElements["PXGSingleViewContainerView_AX"]
+        if introduction.exists, introduction.label.hasPrefix("Private Access to Photos") {
+            let close = introduction.buttons["Close"]
+            if close.exists { close.tap() }
+        }
     }
     private func control(_ body: [String: Any]) async throws {
         _ = try await request("POST", "/__test/control", body: body)
