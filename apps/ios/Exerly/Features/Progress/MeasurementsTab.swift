@@ -644,7 +644,6 @@ struct WeightEntrySheet: View {
         NavigationStack {
             ExScreen {
                 ExCard {
-                    CalendarDayPicker("Reading date", selection: $date, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                     if let current {
                         if current.deleted_at != nil {
                             Text("This reading was deleted. Restore it to keep the same reading and history.")
@@ -665,6 +664,13 @@ struct WeightEntrySheet: View {
                         if current.sync_state == "pending" { Text("Saved on this device. Waiting to sync.").font(.callout) }
                         if current.sync_state == "attention" { NavigationLink("Review weight changes") { SavedChangesReviewView() } }
                     } else { ProgressView("Loading this day's reading") }
+                }
+                ExCard {
+                    ExSectionHeading("Reading date")
+                    CalendarDayPicker("Reading date", selection: $date, today: sync.today,
+                                      timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
+                        .labelsHidden().datePickerStyle(.compact)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if offline { ExCard { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }
                 if let error { ExCard { Text(error).foregroundStyle(.red) } }

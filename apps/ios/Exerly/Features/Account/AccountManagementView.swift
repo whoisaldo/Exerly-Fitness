@@ -160,6 +160,7 @@ struct AccountManagementView: View {
 private struct AccountExportView: View {
     let actions: AccountManagementActions
     @EnvironmentObject private var sync: SyncEngine
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var exportFile: AccountExportFile?
     @State private var busy = false
     @State private var error: String?
@@ -171,17 +172,19 @@ private struct AccountExportView: View {
     var body: some View {
         ExScreen {
             ExCard(accent: true) {
-                Image(systemName: deviceOnly ? "iphone.and.arrow.forward" : "square.and.arrow.up")
-                    .font(.system(size: 32, weight: .light)).foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
-                Text(deviceOnly ? "Saved on this device" : "Your records, together").font(.exH2)
-                Text(deviceOnly
-                     ? "You're offline. Export the records saved here, including changes waiting to sync."
-                     : "Download your account records and this device's latest changes in one JSON file.")
-                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                if !typeSize.isAccessibilitySize {
+                    Image(systemName: deviceOnly ? "iphone.and.arrow.forward" : "square.and.arrow.up")
+                        .font(.system(size: 32, weight: .light)).foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                }
+                Text(deviceOnly ? "Saved on this device" : "Account export").font(.exH2)
                 Button(deviceOnly ? "Share device export" : "Share account export", systemImage: "square.and.arrow.up") {
                     prepare(deviceOnly: deviceOnly)
                 }
                 .buttonStyle(ExActionStyle()).disabled(busy).accessibilityIdentifier("account.shareExport")
+                Text(deviceOnly
+                     ? "You're offline. Share the records saved here as JSON."
+                     : "A JSON file with account records and this device's latest changes.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 if busy { ProgressView("Preparing export…") }
                 if let error {
                     Text(error).foregroundStyle(Color.exError).accessibilityFocused($errorFocused)

@@ -15,10 +15,10 @@ struct AgentConnectionsView: View {
             Section {
                 ExCard(accent: true) {
                     Text(model.tokens.isEmpty ? "Bring your own agent" : "\(model.tokens.count) connected").font(.exH2)
-                    Text("Give an agent access to read your logs and propose changes. You choose its permissions.")
-                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
                     Button("Connect an agent", systemImage: "plus") { creating = true }
                         .buttonStyle(ExActionStyle()).accessibilityIdentifier("agents.create")
+                    Text("Choose what an agent can read or change.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             }
             Section("Connection details") {
@@ -136,7 +136,8 @@ private struct NewAgentConnectionView: View {
                     Section {
                         ExCard(accent: true) {
                             Text("Agent name").font(.exBodyMedium)
-                            TextField("For example, Training coach", text: $name).font(.exBody).textInputAutocapitalization(.words)
+                            TextField("For example, Training coach", text: $name, axis: .vertical)
+                                .lineLimit(1...3).font(.exBody).textInputAutocapitalization(.words)
                                 .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
                                 .padding(ExSpacing.content)
                                 .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))

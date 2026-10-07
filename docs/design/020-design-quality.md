@@ -155,3 +155,29 @@ The native permission sheet exposes exactly two read types and no writes; its
 relaunch flow passes. Full iOS 26 light accessibility audit passes, 62.570s.
 Largest-type program builder completes offline/relaunch/advance in 596.150s.
 Photo import, comparison, detail and relaunch pass again at largest text.
+
+## Final critique follow-through, 2026-10-07 05:30 EDT
+
+Logic's ten-point critique is addressed in the final design candidate. Set
+previews use a compact table at ordinary sizes and readable stacked rows at
+accessibility sizes. Program choices are inline, validation stays beside the
+days, and the sheet toolbar has an opaque background. Proposal differences
+show grouped old and new values before their source links. Evidence wording
+does not mistake one person's records for exactly one workout. Account exports
+have a dedicated route with an automatic offline choice and explicit omissions.
+The fixture MCP endpoint remains DEBUG-only; the compiled device endpoint is
+http://100.80.149.7:39110, so the release endpoint is its /mcp path.
+
+Reviewed all 37 new small-phone largest-text captures across 13 contact sheets,
+critique-small-dark-ax-01 through -13. Compared with the reference apps' concise
+action hierarchy, the export and agent introductions still displaced their
+buttons. Moved those actions ahead of the explanation and shortened the copy.
+The same problem in shared empty states now uses the action before the smaller
+explanation at accessibility sizes, with the decorative icon omitted there.
+The agent name can wrap instead of truncating.
+
+The weight editor capture showed a large date-control region above the actual
+input. Weight now comes first, and the reading date has its own labeled compact
+card. Capture waits for the loaded weight field. These final layout changes
+require refreshed default and accessibility captures; the current 37-image
+set is retained as evidence of the findings, not as proof of their correction.

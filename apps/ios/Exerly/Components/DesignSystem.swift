@@ -193,19 +193,27 @@ struct ExEmptyState: View {
     let action: String
     var actionID = ""
     let perform: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ExCard {
-            Image(systemName: icon).font(.system(size: 26, weight: .medium))
-                .foregroundStyle(Color.exPrimaryText).frame(width: 56, height: 56)
-                .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: ExSpacing.small) {
-                Text(title).font(.exH2).foregroundStyle(Color.exTextPrimary)
-                Text(message).font(.exBody).foregroundStyle(Color.exTextSecondary)
-            }.fixedSize(horizontal: false, vertical: true)
-            Button(action, action: perform).buttonStyle(ExActionStyle()).accessibilityIdentifier(actionID)
+            if !typeSize.isAccessibilitySize {
+                Image(systemName: icon).font(.system(size: 26, weight: .medium))
+                    .foregroundStyle(Color.exPrimaryText).frame(width: 56, height: 56)
+                    .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
+                    .accessibilityHidden(true)
+            }
+            Text(title).font(.exH2).foregroundStyle(Color.exTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            if typeSize.isAccessibilitySize { primaryAction }
+            Text(message).font(typeSize.isAccessibilitySize ? .exCaption : .exBody).foregroundStyle(Color.exTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !typeSize.isAccessibilitySize { primaryAction }
         }
+    }
+
+    private var primaryAction: some View {
+        Button(action, action: perform).buttonStyle(ExActionStyle()).accessibilityIdentifier(actionID)
     }
 }
 
