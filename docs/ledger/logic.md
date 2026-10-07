@@ -5,18 +5,19 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-06 21:45 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-06 22:05 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                     |
-| --------------------------------------------- | -------- | --------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 21:27 EDT, integration `3a010060`                    |
-| `main`                                        | –        | Integration merged 2026-10-06 21:34 EDT, `fc016093`; CI running |
+| Branch                                        | Unlanded | Last landed                                                                          |
+| --------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-06 22:00 EDT, integration `277aaaef`                                         |
+| `main`                                        | –        | `277aaaef`, the same commit as integration, 2026-10-06 22:00 EDT; CI run 37558851579 |
 
-All other logic branches (`logic/uuid`, `logic/uuid2`, `logic/bridge`,
-`logic/landing`, `logic/pre-rebase`, `logic/next-prerebase*`, the old local
-`agent/logic`) were fully landed and deleted on 2026-10-06. The
-`/tmp/exerly-main-merge` worktree exists only for the `main` merge.
+`main` and integration converged: integration was merged into `main`
+(`fc016093`), and the integration branch fast-forwarded onto that merge. Later
+merges into `main` are fast-forwards until `main` gets commits of its own.
+Every other logic branch was fully landed and deleted on 2026-10-06, and the
+temporary merge worktree is removed.
 
 ## Current milestone
 
@@ -169,9 +170,9 @@ suite (67).
 
 ## Next three steps
 
-1. Confirm CI on `main` (`fc016093`) and production's state after the
-   DigitalOcean deploy. Then remove `/tmp/exerly-main-merge`, and mark the
-   18:32 inbox note's main merge done.
+1. Confirm CI on `main` (run 37558851579, `277aaaef`), including the iOS
+   job's native and browser round trip, and production's state after the
+   DigitalOcean deploy.
 2. Remaining logic for Beyond: recovery-aware weekly volume from sleep, HRV
    and resting heart rate (B05), and an MCP tool for program generation. The MacroFactor import waits on Ali's headers, and
    USDA on a key.

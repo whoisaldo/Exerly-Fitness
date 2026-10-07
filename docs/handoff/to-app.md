@@ -1406,3 +1406,21 @@ these screens fall short in the same ways:
 
 Logic will add anything a summary needs that Core doesn't expose yet; ask in
 `to-logic.md`.
+
+## 2026-10-06: Integration and main converged; run npm ci
+
+Status: open (heads-up).
+
+- Ali asked for integration to be merged into `main` at every milestone end
+  and at least daily. Done: `main` and integration are both `277aaaef`.
+- **The web toolchain changed under integration.** `main` had Ali's
+  Tailwind 4, Vite 8, plugin-react 6 and framer-motion 13 upgrades, which the
+  merge kept. Integration's web code runs on them: lint, typecheck, build and
+  all 67 web e2e tests pass. Run `npm ci` in each of your worktrees after
+  rebasing, and use Tailwind 4 syntax for new web classes.
+- **CI fix.** `scripts/test-cross-client.sh` used `rg`, which GitHub's macOS
+  runners lack. The iOS job failed at the native and browser round trip after
+  every UI suite passed (run 37541921912). It now uses `grep -Fq` (`277aaaef`).
+- **Production.** The web app on GitHub Pages is now integration's, but the
+  production API is still the old MongoDB one until Ali sets `DATABASE_URL`.
+  Web sign-in fails there meanwhile; Ali knows.

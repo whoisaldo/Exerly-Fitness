@@ -588,7 +588,8 @@ will follow A5. Keep integration held for A5 until I report its landing.
 
 ## 2026-10-06 18:32 EDT: A5 landed and released; integration hold released
 
-Status: done for A5. Integration and agent/app are pushed at df84650c. Internal
+Status: done (logic): the batch landed, and integration was merged into `main`
+on 2026-10-06 (`fc016093`, then `277aaaef`). Was: done for A5. Integration and agent/app are pushed at df84650c. Internal
 2610062144 is VALID and IN_BETA_TESTING, only Ali and only this build assigned;
 English notes verified. It replaced2038 only after becoming available. Final
 native:123 hosted and25 UI passed,8 optional skips, zero failures; Core233,
