@@ -19,7 +19,7 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .padding(.bottom, 100)
+            .padding(.bottom, ExSpacing.major)
         }
         .background(Color.exBackground)
         .navigationTitle("Profile")
@@ -33,18 +33,16 @@ struct ProfileView: View {
     }
 
     private var avatarSection: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "person.crop.circle.fill")
-                .font(.system(size: 72))
-                .foregroundStyle(.exTextMuted)
+        HStack(spacing: ExSpacing.content) {
+            Text(String((authVM.currentUser?.name ?? "A").prefix(1)).uppercased())
+                .font(.exStat).foregroundStyle(Color.exPrimary).frame(width: 64, height: 64)
+                .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 22))
                 .accessibilityHidden(true)
-
-            Text(authVM.currentUser?.name ?? "Athlete")
-                .font(.exH2)
-                .foregroundStyle(.exTextPrimary)
-            Text(authVM.currentUser?.email ?? "")
-                .font(.exCaption)
-                .foregroundStyle(.exTextSecondary)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(authVM.currentUser?.name ?? "Your profile").font(.exH2).foregroundStyle(Color.exTextPrimary)
+                Text(authVM.currentUser?.email ?? "").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }.fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
     }
 
@@ -83,15 +81,11 @@ struct ProfileView: View {
                     settingsRowContent(icon: "slider.horizontal.3", title: "Profile and Preferences")
                 }
                 .accessibilityIdentifier("profile.preferences")
-                Picker("Appearance", selection: $appearance) {
-                    Text("Dark").tag("dark")
-                    Text("Light").tag("light")
-                    Text("System").tag("system")
-                }
-                .pickerStyle(.menu)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .accessibilityIdentifier("profile.appearance")
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    Text("Appearance").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    ExSegmentedControl(values: ["dark", "light", "system"], selection: $appearance) { $0.capitalized }
+                        .accessibilityIdentifier("profile.appearance")
+                }.padding(ExSpacing.content)
             }
             settingsGroup("Account") {
                 if let id = authVM.currentUser?.id {
@@ -146,7 +140,7 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .glassCard(cornerRadius: 14)
+            .glassCard()
         }
     }
 
@@ -202,22 +196,22 @@ struct HealthKitSettingsView: View {
     @State private var todayCalories: Int?
 
     var body: some View {
-        VStack(spacing: 20) {
-            GlassCard {
+        ExScreen {
+            ExCard(accent: true) {
                 HStack {
                     Image(systemName: "heart.circle.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.exAccent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apple Health")
                             .font(.exBodyMedium)
                             .foregroundStyle(.exTextPrimary)
-                        Text("Sync steps, calories, and workouts")
+                        Text("Read the health data you choose to share")
                             .font(.exCaption)
                             .foregroundStyle(.exTextSecondary)
                     }
                     Spacer()
-                    Toggle("", isOn: $syncEnabled)
+                    Toggle("Read Apple Health data", isOn: $syncEnabled)
                         .tint(.exPrimary)
                         .labelsHidden()
                 }
@@ -226,7 +220,7 @@ struct HealthKitSettingsView: View {
             if syncEnabled {
                 GlassCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Today's Data")
+                        Text("Available today")
                             .font(.exLabel)
                             .foregroundStyle(.exTextSecondary)
                         syncRow("Steps", icon: "figure.walk", value: todaySteps.map { "\($0)" })
@@ -237,9 +231,7 @@ struct HealthKitSettingsView: View {
                 }
             }
 
-            Spacer()
         }
-        .padding(20)
         .background(Color.exBackground)
         .navigationTitle("Apple Health")
         .navigationBarTitleDisplayMode(.inline)

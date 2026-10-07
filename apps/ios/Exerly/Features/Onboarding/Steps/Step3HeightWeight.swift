@@ -35,7 +35,7 @@ struct MeasurementFields: View {
             Text(label).font(.headline)
             TextField(label, value: value, format: .number.precision(.fractionLength(0...2)))
                 .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                .frame(minHeight: 44).monospacedDigit().accessibilityLabel(label)
+                .frame(minHeight: 44).font(.exStatSmall).accessibilityLabel(label)
         }
     }
 }

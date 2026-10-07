@@ -51,7 +51,7 @@ struct OnboardingWizard: View {
         .sheet(isPresented: Binding(get: { state.cloudConflict != nil }, set: { _ in })) {
             if let remote = state.cloudConflict {
                 NavigationStack {
-                    List {
+                    ExList {
                         Section("On this device") {
                             draftSummary(state.request())
                         }

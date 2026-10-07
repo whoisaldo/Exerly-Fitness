@@ -14,6 +14,11 @@ struct ChangePasswordView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    ExCard(accent: true) {
+                        ExEyebrow("Account security", color: .exPrimary)
+                        Text("Choose a new password").font(.exH2)
+                        Text("Use a password you don't use for other accounts.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }
                     GlassCard {
                         VStack(spacing: 16) {
                             secureField("Current Password", text: $currentPassword)

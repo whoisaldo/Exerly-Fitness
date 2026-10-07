@@ -52,7 +52,15 @@ private struct PreferencesEditor: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            Form {
+            ExForm {
+                Section {
+                    ExCard(accent: true) {
+                        ExEyebrow("Preferences", color: .exPrimary)
+                        Text(fields["name"] ?? "Make Exerly yours").font(.exH2)
+                        Text("Your profile, units and reminders. Edits stay here until you save.")
+                            .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                }
                 statusSection.id("preferences-status")
                 if store.conflict != nil { conflictSection }
                 if store.draft != nil {
@@ -64,8 +72,7 @@ private struct PreferencesEditor: View {
                 }
                 deliverySection
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.exBackground)
+            .exListStyle()
             .onChange(of: store.error) { _, error in
                 if error != nil { focusedField = nil; proxy.scrollTo("preferences-status", anchor: .top) }
             }
@@ -73,7 +80,7 @@ private struct PreferencesEditor: View {
                 if revision != nil { focusedField = nil; proxy.scrollTo("preferences-status", anchor: .top) }
             }
         }
-        .tint(.exTextPrimary)
+        .tint(.exPrimary)
         .navigationTitle("Preferences")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -3,64 +3,41 @@ import SwiftData
 
 struct AchievementsTab: View {
     @Query private var achievements: [Achievement]
-    @State private var newlyUnlocked: Achievement?
+    let onReviewMeasurements: () -> Void
 
     private var sorted: [Achievement] {
         achievements.sorted { ($0.isUnlocked ? 0 : 1) < ($1.isUnlocked ? 0 : 1) }
     }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
-
     var body: some View {
-        ZStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(sorted) { a in
-                        achievementCard(a)
+        ExScreen {
+            if sorted.isEmpty {
+                ExEmptyState(icon: "chart.line.uptrend.xyaxis", title: "Progress takes a little history",
+                             message: "Your recorded milestones will appear here. Start with a measurement you want to follow.",
+                             action: "Review measurements", perform: onReviewMeasurements)
+            } else {
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    ExEyebrow("Your record", color: .exPrimary)
+                    Text("Milestones").font(.exH1)
+                    Text("\(sorted.filter(\.isUnlocked).count) recorded").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                }
+                ForEach(sorted) { achievement in
+                    ExCard {
+                        HStack(alignment: .top, spacing: ExSpacing.content) {
+                            Image(systemName: achievement.icon).font(.title2)
+                                .foregroundStyle(achievement.isUnlocked ? Color.exPrimary : Color.exTextSecondary)
+                                .frame(width: 44, height: 44).accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                                Text(achievement.title).font(.exH3)
+                                Text(achievement.desc).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                            }.fixedSize(horizontal: false, vertical: true)
+                        }
+                        if !achievement.isUnlocked && achievement.progress > 0 {
+                            ExProgressBar(value: achievement.progress, total: 1)
+                        }
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 100)
-            }
-
-            if newlyUnlocked != nil {
-                ConfettiView()
             }
         }
-    }
-
-    private func achievementCard(_ a: Achievement) -> some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(a.isUnlocked ? Color.exPrimary.opacity(0.15) : Color.exSurface2)
-                    .frame(width: 56, height: 56)
-                Image(systemName: a.icon)
-                    .font(.system(size: 24))
-                    .foregroundStyle(a.isUnlocked ? .exPrimary : .exTextMuted)
-            }
-
-            Text(a.title)
-                .font(.exLabel)
-                .foregroundStyle(a.isUnlocked ? .exTextPrimary : .exTextMuted)
-                .multilineTextAlignment(.center)
-
-            Text(a.desc)
-                .font(.exSmall)
-                .foregroundStyle(.exTextMuted)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-
-            if !a.isUnlocked && a.progress > 0 {
-                ProgressView(value: a.progress)
-                    .tint(.exPrimary)
-            }
-        }
-        .padding(14)
-        .glassCard(cornerRadius: 16)
-        .opacity(a.isUnlocked ? 1 : 0.6)
     }
 }

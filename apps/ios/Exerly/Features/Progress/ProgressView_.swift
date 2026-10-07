@@ -4,6 +4,14 @@ enum ProgressTab: String, CaseIterable {
     case measurements = "Measurements"
     case photos = "Photos"
     case achievements = "Achievements"
+
+    var title: String {
+        switch self {
+        case .measurements: "Body"
+        case .photos: "Photos"
+        case .achievements: "Milestones"
+        }
+    }
 }
 
 struct ProgressView_: View {
@@ -21,27 +29,8 @@ struct ProgressView_: View {
     }
 
     private var tabPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(ProgressTab.allCases, id: \.self) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.3)) { selectedTab = tab }
-                } label: {
-                    Text(tab.rawValue)
-                        .font(.exLabel)
-                        .foregroundStyle(selectedTab == tab ? .exPrimary : .exTextMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .overlay(alignment: .bottom) {
-                            if selectedTab == tab {
-                                Capsule()
-                                    .fill(Color.exPrimary)
-                                    .frame(height: 2)
-                            }
-                        }
-                }
-            }
-        }
-        .padding(.horizontal, 20)
+        ExSegmentedControl(values: ProgressTab.allCases, selection: $selectedTab) { $0.title }
+            .padding(.horizontal, ExSpacing.page).padding(.vertical, ExSpacing.small)
     }
 
     @ViewBuilder
@@ -49,7 +38,7 @@ struct ProgressView_: View {
         switch selectedTab {
         case .measurements: MeasurementsTab(initialDate: initialDate)
         case .photos: PhotosTab()
-        case .achievements: AchievementsTab()
+        case .achievements: AchievementsTab { selectedTab = .measurements }
         }
     }
 }

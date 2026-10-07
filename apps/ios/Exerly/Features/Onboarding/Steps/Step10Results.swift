@@ -42,7 +42,7 @@ struct Step10Results: View {
             Text(title)
             Spacer()
             Text("\(value, format: .number.precision(.fractionLength(0))) \(unit)")
-                .monospacedDigit().fontWeight(.semibold)
+                .font(.exStatSmall).fontWeight(.semibold)
         }.accessibilityElement(children: .combine)
     }
 }

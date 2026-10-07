@@ -7,9 +7,11 @@ struct PhotosTab: View {
     @Environment(\.modelContext) private var modelContext
     @State private var photos: [ProgressPhoto] = []
     @State private var selectedItem: PhotosPickerItem?
+    @State private var choosingPhoto = false
     @State private var compareMode = false
     @State private var compareA: ProgressPhoto?
     @State private var compareB: ProgressPhoto?
+    @State private var viewingPhoto: ProgressPhoto?
 
     private let columns = [
         GridItem(.flexible(), spacing: 4),
@@ -18,28 +20,53 @@ struct PhotosTab: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            toolbar
-
+        ExScreen {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                ExEyebrow("Visual record", color: .exPrimary)
+                Text("Progress photos").font(.exH1)
+                Text("Saved on this device. Choose the moments you want to compare.").font(.exBody).foregroundStyle(Color.exTextSecondary)
+            }
             if photos.isEmpty {
-                EmptyStateView(
-                    icon: "camera",
-                    title: "No progress photos",
-                    message: "Take photos to visually track your transformation"
-                )
+                ExEmptyState(icon: "camera", title: "Start your photo record",
+                             message: "Use a similar pose and lighting when you take the next one.",
+                             action: "Add photo") { choosingPhoto = true }
             } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 4) {
-                        ForEach(photos) { photo in
-                            photoCell(photo)
+                toolbar
+                if compareMode, let compareA, let compareB {
+                    ExCard {
+                        ExSectionHeading("Side by side")
+                        HStack(alignment: .top, spacing: ExSpacing.small) {
+                            comparisonPhoto(compareA)
+                            comparisonPhoto(compareB)
                         }
                     }
-                    .padding(4)
-                    .padding(.bottom, 100)
+                } else if compareMode {
+                    Text("Choose two photos below.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(photos) { photo in photoCell(photo) }
+                }.clipShape(RoundedRectangle(cornerRadius: ExRadius.control))
             }
         }
+        .photosPicker(isPresented: $choosingPhoto, selection: $selectedItem, matching: .images)
+        .onChange(of: selectedItem) { _, item in Task { await loadPhoto(item) } }
         .onAppear { fetchPhotos() }
+        .sheet(item: $viewingPhoto) { photo in
+            NavigationStack {
+                ExScreen { comparisonPhoto(photo) }
+                    .navigationTitle("Progress photo").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { viewingPhoto = nil } } }
+            }
+        }
+    }
+
+    private func comparisonPhoto(_ photo: ProgressPhoto) -> some View {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            if let data = photo.imageData, let image = UIImage(data: data) {
+                Image(uiImage: image).resizable().scaledToFit().accessibilityLabel("Progress photo")
+            }
+            Text(photo.date, format: .dateTime.month().day().year()).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+        }.frame(maxWidth: .infinity)
     }
 
     private var toolbar: some View {
@@ -49,28 +76,28 @@ struct PhotosTab: View {
                     .font(.exLabel)
                     .foregroundStyle(.exPrimary)
             }
-            .onChange(of: selectedItem) { _, item in
-                Task { await loadPhoto(item) }
-            }
 
             Spacer()
 
             Button {
-                withAnimation { compareMode.toggle() }
+                compareMode.toggle()
+                if !compareMode { compareA = nil; compareB = nil }
             } label: {
                 Label(compareMode ? "Done" : "Compare", systemImage: "arrow.left.arrow.right")
                     .font(.exLabel)
                     .foregroundStyle(compareMode ? .exPrimary : .exTextSecondary)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
+        .frame(minHeight: 44)
     }
 
     private func photoCell(_ photo: ProgressPhoto) -> some View {
         Group {
             if let data = photo.imageData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
+                Button {
+                    if compareMode { handleCompareSelect(photo) } else { viewingPhoto = photo }
+                } label: {
+                    Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(1, contentMode: .fill)
                     .clipped()
@@ -82,11 +109,9 @@ struct PhotosTab: View {
                                 .font(.system(size: 24))
                         }
                     }
-                    .onTapGesture {
-                        if compareMode {
-                            handleCompareSelect(photo)
-                        }
-                    }
+                }.buttonStyle(.plain)
+                    .accessibilityLabel("Photo from \(photo.date.formatted(date: .abbreviated, time: .omitted))")
+                    .accessibilityAddTraits(compareMode && (compareA?.id == photo.id || compareB?.id == photo.id) ? .isSelected : [])
             } else {
                 Color.exSurface2
                     .aspectRatio(1, contentMode: .fill)
@@ -95,7 +120,12 @@ struct PhotosTab: View {
     }
 
     private func handleCompareSelect(_ photo: ProgressPhoto) {
-        if compareA == nil {
+        if compareA?.id == photo.id {
+            compareA = compareB
+            compareB = nil
+        } else if compareB?.id == photo.id {
+            compareB = nil
+        } else if compareA == nil {
             compareA = photo
         } else if compareB == nil {
             compareB = photo

@@ -85,6 +85,7 @@ struct ProgramView: View {
     @AppStorage("unitSystem") private var unitSystem = "metric"
     @StateObject private var viewModel = ProgramViewModel()
     @State private var rateDraft = 0.25
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private let goals = [
         ProgramChoice(id: "lose", label: "Lose fat"),
@@ -101,7 +102,7 @@ struct ProgramView: View {
     ]
 
     var body: some View {
-        ScrollView {
+        ExScreen {
             Group {
                 if viewModel.isLoading && viewModel.program == nil {
                     LoadingStateView(message: "Loading your program…")
@@ -115,11 +116,9 @@ struct ProgramView: View {
                     .frame(minHeight: 420)
                 }
             }
-            .padding(20)
-            .padding(.bottom, 40)
         }
         .background(Color.exBackground)
-        .navigationTitle("Program")
+        .navigationTitle("Nutrition program")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await viewModel.load() }
         .task { await viewModel.load() }
@@ -129,16 +128,9 @@ struct ProgramView: View {
     }
 
     private func programContent(_ program: ProgramDTO) -> some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your targets follow what you actually eat and how your trend weight moves.")
-                    .font(.exBody)
-                    .foregroundStyle(.exTextSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            expenditureCard(program)
+        VStack(spacing: ExSpacing.section) {
             targetsCard(program)
+            expenditureCard(program)
             planCard(program)
 
             if !viewModel.checkins.isEmpty {
@@ -148,7 +140,7 @@ struct ProgramView: View {
     }
 
     private func expenditureCard(_ program: ProgramDTO) -> some View {
-        GlassCard {
+        ExCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -177,7 +169,7 @@ struct ProgramView: View {
                 if program.expenditure.measured != nil {
                     Divider().overlay(Color.exBorder)
                     LazyVGrid(
-                        columns: [GridItem(.flexible()), GridItem(.flexible())],
+                        columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
                         alignment: .leading,
                         spacing: 14
                     ) {
@@ -215,9 +207,9 @@ struct ProgramView: View {
     }
 
     private func targetsCard(_ program: ProgramDTO) -> some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Current targets")
+        ExCard(accent: true) {
+            VStack(alignment: .leading, spacing: ExSpacing.content) {
+                Text("Daily targets")
                     .font(.exH3)
                     .foregroundStyle(.exTextPrimary)
 
@@ -226,11 +218,16 @@ struct ProgramView: View {
                         .font(.exBody)
                         .foregroundStyle(.exTextMuted)
                 } else {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                        target("Calories", value: program.targets.calories, unit: "kcal", color: .exTextPrimary)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(program.targets.calories.map(String.init) ?? "—").font(.exStat)
+                        Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    }
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
+                        : AnyLayout(HStackLayout(spacing: ExSpacing.content))
+                    layout {
                         target("Protein", value: program.targets.proteinG, unit: "g", color: .exPrimary)
-                        target("Carbs", value: program.targets.carbsG, unit: "g", color: .exSuccess)
-                        target("Fat", value: program.targets.fatG, unit: "g", color: .exWarning)
+                        target("Carbs", value: program.targets.carbsG, unit: "g", color: .exAccent)
+                        target("Fat", value: program.targets.fatG, unit: "g", color: .exSecondary)
                     }
                 }
 
@@ -259,7 +256,7 @@ struct ProgramView: View {
     }
 
     private func planCard(_ program: ProgramDTO) -> some View {
-        GlassCard {
+        ExCard {
             VStack(alignment: .leading, spacing: 18) {
                 HStack {
                     Text("Plan")
@@ -299,30 +296,11 @@ struct ProgramView: View {
         selected: String,
         action: @escaping (String) -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title.uppercased())
-                .font(.exSmall)
-                .fontWeight(.semibold)
-                .foregroundStyle(.exTextMuted)
-            FlowLayout(spacing: 8) {
-                ForEach(choices) { choice in
-                    Button { action(choice.id) } label: {
-                        Text(choice.label)
-                            .font(.exCaption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(selected == choice.id ? .white : .exTextSecondary)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 9)
-                            .background(selected == choice.id ? Color.exPrimary : Color.exSurface2)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 9)
-                                    .stroke(selected == choice.id ? .clear : Color.exBorder, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 9))
-                    }
-                    .disabled(viewModel.isUpdating)
-                }
-            }
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            ExEyebrow(title)
+            ExChoiceChips(values: choices.map(\.id), selection: Binding(get: { selected }, set: action)) { id in
+                choices.first { $0.id == id }?.label ?? id
+            }.disabled(viewModel.isUpdating)
         }
     }
 
@@ -335,7 +313,7 @@ struct ProgramView: View {
                     .foregroundStyle(.exTextMuted)
                 Spacer()
                 Text(rateLabel(rateDraft, goal: program.goalType))
-                    .font(.exMono)
+                    .font(.exStatSmall)
                     .foregroundStyle(.exTextPrimary)
             }
             Slider(
@@ -357,7 +335,7 @@ struct ProgramView: View {
     }
 
     private var historyCard: some View {
-        GlassCard {
+        ExCard {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Check-in history")
                     .font(.exH3)
@@ -378,13 +356,13 @@ struct ProgramView: View {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 3) {
                             Text("\(checkin.calories) kcal")
-                                .font(.exMono)
+                                .font(.exStatSmall)
                                 .foregroundStyle(.exTextPrimary)
                             if let previous = checkin.previousCalories,
                                checkin.calories != previous {
                                 let delta = checkin.calories - previous
                                 Text("\(delta > 0 ? "+" : "")\(delta)")
-                                    .font(.exSmall.monospacedDigit())
+                                    .font(.exSmall)
                                     .foregroundStyle(delta > 0 ? .exSuccess : .exWarning)
                             }
                         }
@@ -416,7 +394,7 @@ struct ProgramView: View {
                 .font(.exSmall)
                 .foregroundStyle(.exTextMuted)
             Text(value)
-                .font(.exMono)
+                .font(.exStatSmall)
                 .foregroundStyle(.exTextPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

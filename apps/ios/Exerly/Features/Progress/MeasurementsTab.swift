@@ -126,7 +126,7 @@ struct MeasurementsTab: View {
                 }
             }
             .padding(20)
-            .padding(.bottom, 100)
+            .padding(.bottom, ExSpacing.major)
         }
         .refreshable { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
         .toolbar {
@@ -162,43 +162,30 @@ struct MeasurementsTab: View {
     @ViewBuilder
     private var summarySection: some View {
         if let summary = viewModel.trend?.summary {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                summaryCard(
-                    label: "Trend now",
-                    value: formatWeight(summary.currentTrendKg, digits: 1)
-                )
-                summaryCard(
-                    label: "Last scale",
-                    value: summary.currentWeightKg.map { formatWeight($0, digits: 1) } ?? "—"
-                )
-                summaryCard(
-                    label: "Change (\(selectedRange.label))",
-                    value: signedWeight(summary.changeKg),
-                    color: .exTextPrimary
-                )
-                summaryCard(
-                    label: "Weekly rate",
-                    value: signedWeight(summary.weeklyRateKg, suffix: "/wk"),
-                    color: .exTextPrimary
-                )
+            ExCard(accent: true) {
+                ExEyebrow("Weight trend", color: .exPrimary)
+                Text(formatWeight(summary.currentTrendKg, digits: 1)).font(.exStat).foregroundStyle(Color.exTextPrimary)
+                if let weight = summary.currentWeightKg {
+                    Text("Last scale \(formatWeight(weight, digits: 1))").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                if summary.weighIns >= 2 {
+                    HStack(alignment: .top, spacing: ExSpacing.page) {
+                        summaryValue("Change · \(selectedRange.label)", value: signedWeight(summary.changeKg))
+                        summaryValue("Weekly rate", value: signedWeight(summary.weeklyRateKg, suffix: "/wk"))
+                    }
+                } else {
+                    Text("A starting point. Add another weigh-in to see the change.").font(.exCaption)
+                        .foregroundStyle(Color.exTextSecondary)
+                }
             }
         }
     }
 
-    private func summaryCard(label: String, value: String, color: Color = .exTextPrimary) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.exCaption)
-                .foregroundStyle(.exTextMuted)
-            Text(value)
-                .font(.exStatSmall)
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .glassCard(cornerRadius: 12)
+    private func summaryValue(_ title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            Text(value).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+        }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
     }
 
     private var chartSection: some View {
@@ -234,37 +221,18 @@ struct MeasurementsTab: View {
                             .foregroundStyle(.exTextMuted)
                     }
                 } else {
-                    EmptyStateView(
-                        icon: "scalemass",
-                        title: "Build your trend",
-                        message: "Log at least two weigh-ins to see your recorded weights and trend."
-                    )
-                    .frame(height: 240)
+                    VStack(alignment: .leading, spacing: ExSpacing.item) {
+                        Text("One reading at a time").font(.exH3)
+                        Text("Your chart will appear after two weigh-ins.").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                        Button("Log a weigh-in") { weightDate = sync.today; addingWeight = true }.buttonStyle(ExActionStyle())
+                    }.padding(.vertical, ExSpacing.item)
                 }
             }
         }
     }
 
     private var rangeSelector: some View {
-        HStack(spacing: 4) {
-            ForEach(WeightRange.allCases) { range in
-                Button {
-                    selectedRange = range
-                } label: {
-                    Text(range.label)
-                        .font(.exCaption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(selectedRange == range ? .exPrimary : .exTextMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
-                        .background(selectedRange == range ? Color.exPrimary.opacity(0.12) : .clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
-        }
-        .padding(3)
-        .background(Color.exSurface2)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        ExSegmentedControl(values: WeightRange.allCases, selection: $selectedRange) { $0.label }
     }
 
     private func trendChart(_ series: [TrendPointDTO]) -> some View {
@@ -473,8 +441,9 @@ struct AddMeasurementSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
+            ExScreen {
+                ExCard(accent: true) {
+                    ExEyebrow("Body measurement", color: .exPrimary)
                     Picker("Type", selection: $type) {
                         ForEach(types, id: \.self) { Text($0.replacingOccurrences(of: "_", with: " ").capitalized).tag($0) }
                     }
@@ -483,13 +452,11 @@ struct AddMeasurementSheet: View {
                     .tint(.exPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    FloatingLabelTextField(
-                        label: "Value (\(displayUnit))",
-                        text: $value,
-                        keyboardType: .decimalPad
-                    )
+                    ExQuantityControl(title: "Value (\(displayUnit))", text: $value,
+                                      step: type == "body_fat" ? 0.5 : 1, unit: displayUnit)
+                }
 
-                    GlassCard {
+                    ExCard {
                         CalendarDayPicker("Measurement date", selection: $selectedDate, today: sync.today,
                                           timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                         .font(.exLabel)
@@ -497,12 +464,8 @@ struct AddMeasurementSheet: View {
                         .tint(.exPrimary)
                     }
 
-                    ActionButton(
-                        title: "Save",
-                        isDisabled: numericValue == nil
-                    ) {
-                        save()
-                    }
+                    Button("Save", action: save).buttonStyle(ExActionStyle())
+                        .disabled(numericValue == nil || (numericValue ?? 0) <= 0)
                     if let editing {
                         Button("Delete measurement", role: .destructive) {
                             do {
@@ -520,8 +483,6 @@ struct AddMeasurementSheet: View {
                             .foregroundStyle(.exError)
                             .multilineTextAlignment(.center)
                     }
-                }
-                .padding(20)
             }
             .background(Color.exBackground)
             .navigationTitle(editing == nil ? "Add Measurement" : "Edit Measurement")
@@ -573,7 +534,7 @@ private struct LegacyMeasurementReview: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            ExList {
                 Section {
                     Text("The older app did not record which account these measurements belong to. Review them only if this device's saved measurements are yours.")
                     Toggle("These saved measurements are mine", isOn: $confirmedOwner)
@@ -678,8 +639,8 @@ struct WeightEntrySheet: View {
     private var unit: String { unitSystem == "imperial" ? "lb" : "kg" }
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            ExScreen {
+                ExCard {
                     CalendarDayPicker("Reading date", selection: $date, today: sync.today, timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
                     if let current {
                         if current.deleted_at != nil {
@@ -689,12 +650,8 @@ struct WeightEntrySheet: View {
                                 catch { self.error = error.localizedDescription }
                             }.frame(minHeight: 44)
                         } else {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Weight (\(unit))")
-                                TextField("Weight (\(unit))", text: $value)
-                                    .keyboardType(.decimalPad).focused($focused)
-                                    .accessibilityIdentifier("weight.value")
-                            }
+                            ExEyebrow("Daily weigh-in", color: .exPrimary)
+                            ExQuantityControl(title: "Weight (\(unit))", text: $value, step: unitSystem == "imperial" ? 0.5 : 0.1, identifier: "weight.value")
                             TextField("Optional note", text: $note, axis: .vertical)
                                 .focused($focused).accessibilityIdentifier("weight.note")
                             if current.exists {
@@ -707,8 +664,8 @@ struct WeightEntrySheet: View {
                         if current.sync_state == "attention" { NavigationLink("Review weight changes") { SyncIssuesView() } }
                     } else { ProgressView("Loading this day's reading") }
                 }
-                if offline { Section { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
+                if offline { ExCard { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }
+                if let error { ExCard { Text(error).foregroundStyle(.red) } }
             }
             .navigationTitle("Log weight")
             .toolbar {
