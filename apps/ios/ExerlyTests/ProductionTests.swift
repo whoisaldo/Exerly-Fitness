@@ -1312,13 +1312,17 @@ final class ProductionTests: XCTestCase {
 
     func testHealthReadPreferenceIsScopedAndDoesNotInferGrantedReadAccess() async {
         defaults.set(true, forKey: "healthKitSync")
+        var sampledSteps: Int?
         let model = HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults,
-                                    available: { true }, request: {}, load: { (0, 210) })
+                                    available: { true }, request: {}, load: { (sampledSteps, 210) })
         XCTAssertFalse(model.isEnabled, "A global preference must not opt another account into Health reads")
         await model.setEnabled(true)
         XCTAssertTrue(model.isEnabled)
         XCTAssertNil(model.steps, "A missing or denied read must not be presented as zero recorded steps")
         XCTAssertEqual(model.calories, 210)
+        sampledSteps = 0
+        await model.refresh()
+        XCTAssertEqual(model.steps, 0, "A measured zero remains distinct from no visible samples")
         XCTAssertTrue(HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults).isEnabled)
         XCTAssertFalse(HealthReadModel(accountID: "b", namespace: "fixture", defaults: defaults).isEnabled)
         XCTAssertFalse(HealthReadModel(accountID: "a", namespace: "another-server", defaults: defaults).isEnabled)

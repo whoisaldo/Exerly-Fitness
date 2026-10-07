@@ -207,7 +207,7 @@ final class HealthReadModel: ObservableObject {
     private let defaults: UserDefaults
     private let available: () -> Bool
     private let request: () async throws -> Void
-    private let load: () async -> (steps: Int, calories: Int)
+    private let load: () async -> (steps: Int?, calories: Int?)
     private var generation = UUID()
 
     init(accountID: String, namespace: String = APIClient.shared.storageNamespace, defaults: UserDefaults = .standard,
@@ -216,9 +216,9 @@ final class HealthReadModel: ObservableObject {
              let types: Set<HKObjectType> = [HKQuantityType(.stepCount), HKQuantityType(.activeEnergyBurned)]
              try await HKHealthStore().requestAuthorization(toShare: [], read: types)
          },
-         load: @escaping () async -> (steps: Int, calories: Int) = {
-             let steps = await HealthKitService.shared.fetchStepsToday()
-             let calories = await HealthKitService.shared.fetchActiveCaloriesToday()
+         load: @escaping () async -> (steps: Int?, calories: Int?) = {
+             let steps = await HealthKitService.shared.stepsToday()
+             let calories = await HealthKitService.shared.activeCaloriesToday()
              return (steps, calories)
          }) {
         preferenceKey = "healthRead.\(namespace).\(accountID)"
@@ -268,10 +268,9 @@ final class HealthReadModel: ObservableObject {
         let operation = generation
         let values = await load()
         guard generation == operation, isEnabled, !Task.isCancelled else { return }
-        // The legacy reader returns zero for both no samples and denied
-        // access. Keep that uncertainty visible instead of claiming a zero.
-        steps = values.steps > 0 ? values.steps : nil
-        calories = values.calories > 0 ? values.calories : nil
+        // Nil means no samples are visible. Health does not reveal denied reads.
+        steps = values.steps
+        calories = values.calories
     }
 
     func close() { generation = UUID(); isRequesting = false }

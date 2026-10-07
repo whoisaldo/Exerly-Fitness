@@ -90,8 +90,13 @@ struct ProgramTargetFields {
             throw InputError.invalid
         }
         let seconds: Double?
-        if rest == initialRest { seconds = original.rest } else if rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { seconds = nil } else if let parsed = TrainingInput.number(rest, locale: locale) { seconds = parsed }
-        else { throw InputError.invalid }
+        if rest == initialRest {
+            seconds = original.rest
+        } else if rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            seconds = nil
+        } else if let parsed = TrainingInput.number(rest, locale: locale) {
+            seconds = parsed
+        } else { throw InputError.invalid }
         return SlotTarget(sets: sets, minReps: minimum, maxReps: maximum, rir: reserve, rest: seconds, kind: kind)
     }
 }
