@@ -2,23 +2,78 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 07:51 EDT.
+milestone. Current date 2026-10-07, updated 08:53 EDT.
 
 ## Merge status
 
-Integration and primary are `883f2348`, pushed at07:05 EDT. git cherry is empty
-for both primary and the fixed5e351cc8 release branch. Build2610071054 is VALID
-and IN_BETA_TESTING, verified07:03EDT. Only Ali, only this build, exact English
-notes. The design gate is complete. Resume nutrition now.
+Integration is `c393124c`, pushed at 08:27. A9 build 2610071223 is live in
+internal TestFlight with only Ali, only this build and verified English notes.
+Its fixed source 61cbcbdb is tagged ios/internal-2610071223. The entire iOS tree
+matches landed c393124c. git cherry reports a different patch ID after the
+rebase, but the tree diff contains only newer Logic/API changes; no app work
+is missing. A10 U.S. portions is fixed at 66575ac6 for its full 53-method gate.
+N15 implementation continues separately in the primary tree. No integration hold.
 
-| App branch                         | Unlanded work                                            | Last landed / cleanup                                              |
-| ---------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                                   | Deleted locally/remotely; primary now uses nutrition               |
-| `agent/app-next`                   | None, git cherry empty                                   | Deleted locally/remotely; worktree removed; captures preserved     |
-| `agent/app-programs`               | None, git cherry empty                                   | A6 landed19925b28; branch deleted locally/remotely                 |
-| `release/app-nutrition-foundation` | None                                                     | Foundation landed60e83cf9; branch deleted                          |
-| `agent/app-nutrition`              | N08 corrections pass focused UI; full regression pending | Release status883f2348 landed and pushed07:05; hooks pass          |
-| `release/app-design`               | None, fixed5e351cc8, git cherry empty                    | Signed1054 shipped internally07:03; keep this one release worktree |
+| App branch                         | Unlanded work                                               | Last landed / cleanup                                  |
+| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                      | Deleted locally/remotely                               |
+| `agent/app-next`                   | None, git cherry empty                                      | Deleted locally/remotely; worktree removed             |
+| `agent/app-programs`               | None, git cherry empty                                      | A6 landed 19925b28; branch deleted                     |
+| `release/app-nutrition-foundation` | None                                                        | Foundation landed 60e83cf9; branch deleted             |
+| `agent/app-nutrition`              | 66575ac6 U.S. portions awaits full UI gate; N15 in progress | A9 c393124c landed/pushed 08:27                        |
+| `release/app-design`               | Fixed 66575ac6 for A10 gate                                 | A9 archived, tagged and shipped; only release worktree |
+
+## A9 shipped, A10 full gate, 2026-10-07 08:53 EDT
+
+A9 upload succeeded at 08:44:29. Apple build and delivery ID
+7cd73165-a84a-4ce1-bab7-bea743058e94. Internal availability, exact English notes,
+Ali-only membership and the single assigned build are verified in release
+artifacts/nutrition/a9-internal-2610071223.json. Previous1054 detached only after
+1223 was IN_BETA_TESTING. Release notes state the entry correction and scrolling
+changes, and do not claim food units or OCR are included.
+
+Fresh primary light/dark journeys pass and every exported primary capture was
+inspected. New correction default light/dark and largest-type captures were
+compared with the public MacroFactor logger. The correction screen gives more
+space to the whole-portion scope than that logger, which is necessary to prevent
+a library-wide interpretation. Common fields lead; less-used nutrients collapse.
+Large text keeps complete field labels and moves them onto separate rows. The
+reference has greater food-entry density; multi-add remains a feature backlog
+item, not a claim in this release. Original PNGs and comparisons remain on disk.
+
+N03 default-light and both largest-type journeys pass, as do 175 active hosted
+tests, Core301, API260 and device build. The draft itself now also defaults to
+pounds if no preference is supplied; existing explicit portions stay unchanged.
+All53 UI methods are assigned exactly once across three fixed66575ac6 groups.
+Group1 reruns the hosted suite after that default change. Full gate is pending.
+N15 uses the already published Core label parser with native image capture and
+Vision; no Core/API changes. Keep completing milestones after this one.
+
+## N03 units implemented, testing, 2026-10-07 08:37 EDT
+
+New controls cover ounces, grams, U.S. fluid ounces, milliliters and named
+servings. Every entry route receives the account preference. Existing explicit
+measures persist. An exact portion anchor prevents display rounding from changing
+stored weight, and invalid input blocks switching without clearing the draft.
+Volumes use only the recorded density; assumed weight is labeled beside the input.
+Shared presets now mark their current value, addressing Logic's program critique.
+
+All 23 nutrition presentation tests pass. Both new default-light journeys pass,
+including offline save, relaunch, reconnection and exported exact weights. The
+ounce flow also passes at largest type on the SE in 188.223 seconds. Fresh fluid
+AX verification runs on 39B20FBF/39224 after restarting that simulator.
+
+The original combined AX run is not a pass. It first expected eight displayed
+decimal places where NutritionNumberField intentionally shows three. The test
+now expects the display value while independently asserting exact exported
+weight. Its second test stalled in XCTest animation-idle waits during sign-in;
+it was interrupted, fully torn down, and rerun separately. No app animation was
+changed to hide that harness failure. Preserve those original logs.
+
+A9's full passing results are in the release worktree's
+artifacts/nutrition/a9-verified-manifest.json. The signed archive and IPA are in
+apps/ios/build/release/2610071223. Finish A9 upload before cutting the N03 release.
+N15 label capture is planned, not implemented. Continue without ending here.
 
 ## A9 entry correction source ready, 2026-10-07 07:51 EDT
 

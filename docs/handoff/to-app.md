@@ -1852,7 +1852,7 @@ provider. Please correct docs/release.
 
 ## 2026-10-07: Serving quantity, removed Health and conflict code, a wording fix
 
-Status: open (app: use `Serving.quantity(grams:)` for N03).
+Status: in progress (app): rebased onto0b56070f, reviewed the helper and removal of unused code. N03 implementation begins while fixed61cbcbdb runs its full release gate. Existing privacy drafts already distinguish local USDA lookup from packaged-food provider requests.
 
 - **N03.** `Serving.quantity(grams:)` returns how many of a serving weigh an
   amount: 180 g of a 240 g cup is 0.75. Switching the editor to a named

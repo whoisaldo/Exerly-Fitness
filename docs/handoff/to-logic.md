@@ -1137,3 +1137,17 @@ largest size; fluid AX is running. No Core or API edits. New account defaults
 are U.S.; explicit metric and historical portions retain their measures.
 Shared presets now show the current choice with a check and selected trait.
 The prior Saved account wrapping was already fixed and recaptured in A8.
+
+## 2026-10-07 08:53 EDT: A9 live in internal TestFlight
+
+Status: done (A9). Build2610071223 is VALID and IN_BETA_TESTING. Only Ali, only
+this build, exact English notes verified; previous1054 detached after availability.
+Source61cbcbdb has the same complete iOS tree as landedc393124c. Fresh light/dark
+primary captures reviewed; gallery http://100.80.149.7:39215 now has188 named views.
+
+Status: in progress (A10/N15). Portion-unit source66575ac6 runs all53 UI methods
+once across three fixed release groups. Core301/API260/175 active hosted and
+device build pass; both new U.S. flows pass default light and largest type.
+N15 is being implemented in primary using your NutritionLabel contract, with
+Vision and an explicit photo/value review. Images remain in memory and are not
+uploaded or exported. Please review N03 after its gate; integration remains free.

@@ -5,61 +5,59 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Design milestone A8, version1.0 build2610071054, is available in internal
-TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only group contains
-exactly this build, with the English design-change notes verified. Uploaded at
-06:59:22EDT and internal availability verified07:03EDT on2026-10-07. The phone
-needs Tailscale for devbox1 staging. The private internal account signs in
-successfully. Original purple/pink, dark default and E/pulse mark remain.
+Nutrition correction milestone A9, version 1.0 build 2610071223, is available
+in internal TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only
+group contains exactly this build, with the English notes verified. Uploaded
+08:44 EDT and availability verified before 08:53 EDT on 2026-10-07. The phone
+needs Tailscale for devbox1 staging and the existing internal account.
 
-A8 gives existing screens one design system, summary-first diary and training,
-clear next actions and empty states, shared numeric controls, target progress,
-compact program previews and prominent suggestion changes. Account export has
-one route with an offline choice. Sync reflects both stores and clears stale
-status. Health requests only the two displayed read types and keeps its reading
-preference separate by account. The final accessibility review fixed wrapping
-fields, program menus, keyboard dismissal and oversized decorative icons.
+A9 adds whole-portion nutrient corrections that preserve the original source,
+food library and other entries. Blank remains unknown, and zero remains zero.
+Apply stages the change until the entry is saved; Cancel discards it. Scrolling
+no longer activates a portion preset or meal choice. Date labels have more room
+at accessibility sizes. A8's purple/pink identity, dark default, pulse logo and
+summary-first design remain.
 
-New accounts default to U.S. units: nutritional Calories, pounds, feet/inches,
-and fluid ounces for water. Explicit metric choices stay metric. Macro amounts
-remain grams. Food ounce/volume entry, entry nutrient corrections, plates and
-recipes are the next nutrition work; they are not claimed in this release.
+New accounts default to U.S. units for body measurements and water, with Calories
+in kcal and macros in grams. Explicit metric choices stay metric. Food ounces
+and fluid ounces are tested separately in the next milestone and are not in A9.
 
-The fixed5b2c9f92 baseline passed167 active hosted tests and40 active UI journeys,
-with one private-credential skip and nine opt-in/cross-client UI skips. Core300,
-API260, device build and repository hooks pass. The final5e351cc8 source adds
-verified program choices and AX wrapping corrections. Affected checks passed:
-program builder/lifecycle at default size, full program builder at largest type,
-agent creation/revocation/direct-write consent at largest type, offline export
-and reconnection, empty/secondary screens, and fresh default light/dark/AX primary
-captures. The real native reminder banner was also captured. Detailed counts,
-source boundaries and earlier failed runs remain in docs/ledger/app.md.
+A9's complete gate passed Core 301, API 260, 171 active hosted tests and 42 UI
+journeys, with one private-credential skip and nine documented opt-in/cross-client
+UI skips. Device build and hooks pass. The fixed source 61cbcbdb and landed
+c393124c have identical iOS trees; the landed commit also includes the latest
+API token-management security fix. All 51 UI methods ran exactly once in three
+groups. Detailed evidence is artifacts/nutrition/a9-verified-manifest.json in
+the release worktree. Correction checks also pass at default light, dark and
+largest type, including offline relaunch, scaling and exact export checks.
 
-The final comparisons against public MacroFactor, Workouts, Things and Fitness
-screenshots are in artifacts/design/contact-review/final-*.png. Original native
-images and169 named view variants are browsable at http://100.80.149.7:39215.
-Physical installation, Apple sign-in, Health authorization, VoiceOver and measured
-phone performance remain unverified. Feature parity is not complete.
+Fresh primary light/dark captures and the correction review are in
+artifacts/design/a9-primary-* and nutrition-correction-* in the primary worktree.
+The public MacroFactor comparison is contact-review/nutrition-corrections-reference.png.
+The gallery has 188 named views at http://100.80.149.7:39215. Physical installation,
+Apple sign-in, Health authorization, VoiceOver and measured phone performance
+remain unverified. Full feature parity is open.
 
-Signed archive/IPA checks pass for identity, HealthKit and Apple sign-in
-entitlements, profile, privacy manifest, icon, version, staging endpoint and
-absence of debug hooks. Source is fixed5e351cc8 in the single release worktree.
+Signed archive and IPA checks passed identity, entitlements, profile, privacy
+manifest, icon, version, staging endpoint and absence of debug hooks.
 
 - Release worktree: `/Users/aldo/Desktop/Exerly-Fitness-app-programs`.
-- Archive: `apps/ios/build/release/2610071054/Exerly.xcarchive`.
-- IPA: `apps/ios/build/release/2610071054/export/Exerly.ipa`.
-- Logs: `apps/ios/build/release/2610071054/{archive,export,upload}.log`.
-- Build UUID: `2369b3ca-bb37-40f7-b0c0-b83831fa2d40`.
+- Archive: `apps/ios/build/release/2610071223/Exerly.xcarchive`.
+- IPA: `apps/ios/build/release/2610071223/export/Exerly.ipa`.
+- Logs: `apps/ios/build/release/2610071223/{archive,export,upload}.log`.
+- Build and delivery UUID: `7cd73165-a84a-4ce1-bab7-bea743058e94`.
+- Fixed source tag: `ios/internal-2610071223`, commit 61cbcbdb.
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
-- Team: `9X79V37Q89`. Distribution certificate expires2027-09-25.
-- Exerly profile: `J5J395Y9AF`, expires2027-09-25, HealthKit and Apple sign-in.
+- Team: `9X79V37Q89`. Distribution certificate expires 2027-09-25.
+- Exerly profile: `J5J395Y9AF`, HealthKit and Apple sign-in, same expiry.
 - App Store Connect: Exerly, app ID `6819776832`.
 - Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`.
   Only Ali, no public link or automatic future builds.
+- Availability evidence: `artifacts/nutrition/a9-internal-2610071223.json`.
+- Exact test notes: `docs/release/a9-internal-notes.txt`.
 
-A6 build2610070024 was detached only after1054 became available. Obsolete signed
-candidates0818/0937/1041/1049 were never uploaded. Credentials and signing material
-stay outside the repository. No other app's identifiers or profiles changed.
+A8 build 2610071054 was detached only after 1223 became available. No other app's
+identifiers or profiles changed. Credentials stay outside the repository.
 
 ## Repeatable commands
 
@@ -104,10 +102,10 @@ bundles are not given an unsupported provisioning profile.
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610071054), valid and in beta testing; only Ali and only this build.                                                                             |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610071223), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | A8: API260, Core300,167 hosted and40 active UI pass, plus focused final deltas. Device build passes.                                                   |
+| Native test suite                 | In progress           | A9: API260, Core301,171 hosted and42 active UI pass, plus focused light/dark/AX checks. Device build passes.                                           |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |

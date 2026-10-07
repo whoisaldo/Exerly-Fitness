@@ -1,0 +1,9 @@
+Exerly 1.0 (2610071223)
+
+Correct the Calories and nutrients for a single logged portion. The food library, original source and other entries stay intact. Blank values remain unknown; zero stays zero. Changes are staged until you save the food entry, and Cancel discards them.
+
+Fixed a scrolling issue that could activate a portion preset or meal button during a drag. Large-text date controls now have more room. The purple and pink identity and dark default remain. New accounts continue to use U.S. defaults for body measurements and water.
+
+Try editing one entry, canceling, saving offline, reopening and reconnecting. Check that the original library food is unchanged. This build uses devbox1 staging, so enable Tailscale and use the existing internal account.
+
+Food ounce/volume controls and nutrition label capture are still in development and are not in this build. Physical-device permission and performance checks and full feature parity remain open.
