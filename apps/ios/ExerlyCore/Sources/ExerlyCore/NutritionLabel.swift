@@ -119,15 +119,18 @@ public enum NutritionLabel {
     /// comes first of an amount per serving and one per 100 g or ml, since on
     /// a two-column label that is the first column (per 100 g first in the EU,
     /// per serving first in Australia). Declarations are read only from lines
-    /// that name no nutrient. Without one, a serving size means per serving,
-    /// and only then do kilojoules or salt suggest a European label per 100 g.
+    /// that name no nutrient. Without one, a "Nutrition Facts" title or a
+    /// serving size means per serving, and only then do kilojoules or salt
+    /// suggest a European label per 100 g.
     static func basis(of text: [String], hasServing: Bool) -> LabelReading.Basis {
         let headers = text.filter { line in
             !line.hasPrefix("serving") && !names.contains { entry in entry.words.contains { line.contains($0) } }
                 && !line.hasPrefix("salt")
         }.joined(separator: "\n")
         let per100 = headers.firstMatch(of: /(^|[^\d])100\s?(g|ml)\b/)
-        let perServing = headers.firstMatch(of: /per serving|per portion|amount per|amount\/serving|nutrition facts|valeur nutritive|per \d+(\.\d+)?\s?(g|ml) serving|(^|\n)(per|pour) [^\n]*\(\s*\d/)
+        let perServing = headers.firstMatch(of: /per serving|per portion|amount per|amount\/serving|per \d+(\.\d+)?\s?(g|ml) serving|(^|\n)(per|pour) [^\n]*\(\s*\d/)
+        // The panel's title says per serving only when nothing more explicit does.
+        let title = headers.contains("nutrition facts") || headers.contains("valeur nutritive")
         switch (per100, perServing) {
         case let (hundred?, serving?):
             if serving.range.lowerBound < hundred.range.lowerBound { return .serving }
@@ -137,7 +140,7 @@ public enum NutritionLabel {
         case (nil, _?):
             return .serving
         case (nil, nil):
-            if hasServing { return .serving }
+            if title || hasServing { return .serving }
             let joined = text.joined(separator: "\n")
             return joined.contains("kj") || joined.contains("salt") ? .per100g : .serving
         }

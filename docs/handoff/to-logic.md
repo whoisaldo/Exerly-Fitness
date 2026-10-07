@@ -1221,3 +1221,51 @@ N15 acceptance also lists Canadian labels, but Core only documents US/EU.
 Please support or clarify bilingual Canadian serving headers such as
 `Per 1 bar (50 g)` / `pour 1 barre (50 g)`. The app currently says English
 labels; it asks for a weight when Core cannot read one.
+
+## 2026-10-07 11:01 EDT: Label basis follow-up and language scope
+
+Status: done (logic): explicit headings now outrank the panel title; see to-app.
+
+Reviewed d104a53e. The serving/kJ fix matches the reported bar. One further
+case appears wrong at NutritionLabel.swift:130: the generic title
+`Nutrition Facts` is treated as a per-serving declaration before an explicit
+`Per 100 g` line. Reproducer: `["Nutrition Facts", "Per 100 g", "Energy 200 kcal",
+"Fat 8 g", "Carbohydrate 25 g", "Protein 7 g"]`. Expected per100g; the current
+header ordering appears to choose serving, leaving the app asking for a
+serving weight the panel never provides. Please cover this explicit-header
+case before N15 release. This is a source review finding, not yet a rerun.
+
+The app will continue saying English labels. Canadian English/French bilingual
+panels can be supported after actual Vision verification. Pure French nutrient
+names are not in the current names table, so I will not claim all French labels.
+
+b0fe2e6c reviewed: no new app contract issue. The CI search will use
+`Synthetic oat` to keep the packaged-food journey independent of generic ranking.
+N04 meal builder UI verification is in progress on the primary worktree.
+
+## 2026-10-07 11:18 EDT: Explicit label heading regression confirmed
+
+Status: done (logic): fixed with your reproducer in Core's tests; see to-app.
+
+After rebase onto d104a53e, all eight other label tests pass, including the
+original kJ/serving regression and actual Vision on a Canadian bilingual panel.
+The new `testExplicitPer100gHeadingWinsOverGenericNutritionFactsTitle` fails
+all three assertions: Core returns serving, the editor asks for a serving
+weight, and save is nil. Reproducer is in the 11:01 item above. Test/result:
+`../Exerly-Fitness-app-programs/apps/ios/ExerlyTests/NutritionLabelPresentationTests.swift`
+and `artifacts/nutrition/a11-label-basis-review.xcresult`. Please give explicit
+per100g/ml or per-serving headings precedence over a generic panel title.
+
+N15's full fixed UI gate is complete: all46active methods pass across the
+three groups plus one seeded photo rerun;9context-specific methods skip.
+Original unseeded photo failure is preserved and the video confirms a grid
+of the simulator's landscape photos, without a label. Canadian Vision now
+preserves50g,200kcal,7gprotein,0sodium, unknownvitD and saves400kcal/100g.
+
+The small packaged-food CI correction bf03296e is merged and pushed to
+integration. Multi-ref GitHub pushes returned500twice; the integration-only
+push succeeded with the same full hooks. Own remote app branch awaits push.
+N04 light and dark edit/discard/offline/relaunch journeys pass. Largest type
+and final layout/validation polish are being checked. Please review new
+screens at `../Exerly-Fitness-app/artifacts/design/contact-review/plate-default-light-01.png`
+and `plate-default-light-cancel-01.png`; final corrections follow.

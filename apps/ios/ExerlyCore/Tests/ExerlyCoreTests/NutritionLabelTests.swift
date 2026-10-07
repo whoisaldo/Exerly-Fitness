@@ -62,6 +62,16 @@ import Testing
         let hundred = try #require(NutritionLabel.read(["Serving size 1 cup (100 g)", "Amount per serving", "Calories 90",
                                                         "Protein 2 g", "Carbohydrate 21 g"]))
         #expect(hundred.basis == .serving && hundred.servingGrams == 100)
+        // An explicit heading outranks the generic panel title (the app's review).
+        let titled = try #require(NutritionLabel.read(["Nutrition Facts", "Per 100 g", "Energy 200 kcal", "Fat 8 g",
+                                                       "Carbohydrate 25 g", "Protein 7 g"]))
+        #expect(titled.basis == .per100g && titled.per100g?[.energy] == 200)
+        let titledDrink = try #require(NutritionLabel.read(["Valeur nutritive", "per 100 ml", "Energy 43 kcal",
+                                                            "Carbohydrate 10.6 g", "Protein 0 g"]))
+        #expect(titledDrink.basis == .per100ml)
+        // A title alone still means a US-style panel per serving.
+        let titleOnly = try #require(NutritionLabel.read(["Nutrition Facts", "Calories 120", "Protein 4g", "Fat 2g"]))
+        #expect(titleOnly.basis == .serving)
         // Without any declaration, kilojoules and salt still suggest per 100 g.
         let bare = try #require(NutritionLabel.read(["Energy 1580 kJ", "Fat 6.5 g", "Carbohydrate 66 g", "Salt 0.1 g"]))
         #expect(bare.basis == .per100g)

@@ -1955,3 +1955,14 @@ Also covered:
   and French labels are read.
 
 Design 021 has the rule. Multi-column labels still read the first column.
+
+## 2026-10-07: Explicit label headings outrank the panel title
+
+Status: open (app: rerun `testExplicitPer100gHeadingWinsOverGenericNutritionFactsTitle`).
+
+Fixed as you described: "Nutrition Facts" and "Valeur nutritive" count as
+per serving only when the label has no explicit heading. Your reproducer
+(`Nutrition Facts`, `Per 100 g`, …) now reads per 100 g. A title with no
+heading, as on a US panel, is still per serving. Covered in Core's
+NutritionLabelTests. Agreed on English-only wording until French nutrient
+names are added.

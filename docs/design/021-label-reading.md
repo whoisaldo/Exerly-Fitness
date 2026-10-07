@@ -22,7 +22,9 @@ leaves the phone.
 
 The first column is read, and the label's own declaration says what it is
 for: whichever comes first of an amount per serving ("Amount per serving",
-"Nutrition Facts", "Per 1 bar (50 g)") and one per 100 g or ml. Only lines
+"Per 1 bar (50 g)") and one per 100 g or ml. A "Nutrition Facts" or "Valeur
+nutritive" title counts as per serving only when nothing more explicit does,
+so "Nutrition Facts" over "Per 100 g" is per 100 g. Only lines
 that name no nutrient count, so "Carbohydrate 100 g" isn't a declaration, and
 "Serving size 1 cup (100 g)" is a serving. Without a declaration, a serving
 size means per serving, and only then do kJ or salt suggest per 100 g. Energy
