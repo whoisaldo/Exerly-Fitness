@@ -10,7 +10,7 @@ struct HomeView: View {
     let refreshToken: Int
     let healthOnly: Bool
 
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @StateObject private var viewModel = DiaryViewModel()
     @State private var selectedDate: CalendarDay
     @State private var mealToLog: MealLogDestination?

@@ -168,7 +168,7 @@ private struct PreferencesEditor: View {
             field("name")
             field("age", keyboard: .numberPad)
             field("gender")
-            picker("unitSystem", choices: [("metric", "Metric, kg and cm"), ("imperial", "Imperial, lb and inches")])
+            picker("unitSystem", choices: [("metric", "Metric, kg and cm"), ("imperial", "U.S., lb and inches")])
             field("height", label: "Height (\(fields["unitSystem"] == "imperial" ? "in" : "cm"))", keyboard: .decimalPad)
             picker("activityLevel", choices: [
                 ("sedentary", "Mostly seated"), ("light", "Lightly active"),

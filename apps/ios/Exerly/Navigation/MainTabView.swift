@@ -35,7 +35,7 @@ struct MainTabView: View {
             NavigationStack {
                 if let account = auth.currentUser?.id {
                     NutritionHostView(accountID: account,
-                                      unit: auth.currentUser?.unitSystem == "imperial" ? .pounds : .kilograms,
+                                      unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
                                       timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
                 }
             }
@@ -43,7 +43,7 @@ struct MainTabView: View {
             NavigationStack {
                 if let account = auth.currentUser?.id {
                     TrainingHostView(accountID: account,
-                                     unit: auth.currentUser?.unitSystem == "imperial" ? .pounds : .kilograms,
+                                     unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
                                      timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
                 }
             }

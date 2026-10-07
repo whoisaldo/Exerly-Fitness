@@ -1,4 +1,5 @@
 import Foundation
+import ExerlyCore
 import SwiftUI
 
 struct OnboardingDraft: Codable {
@@ -61,7 +62,7 @@ final class OnboardingState: ObservableObject {
     @Published var physiologicalSex = "" { didSet { saveCheckpoint() } }
     @Published var manualTargetMode = false { didSet { saveCheckpoint() } }
     @Published var manualTargets = SetupTargets(calories: 2200, protein_g: 140, carbs_g: 250, fat_g: 70) { didSet { saveCheckpoint() } }
-    @Published var useMetric = Locale.current.measurementSystem == .metric { didSet { saveCheckpoint() } }
+    @Published var useMetric = false { didSet { saveCheckpoint() } }
     @Published var heightCm: Double = 170 { didSet { saveCheckpoint() } }
     @Published var weightKg: Double = 70 { didSet { saveCheckpoint() } }
     @Published var goal: FitnessGoal = .maintain { didSet { answered("goal"); saveCheckpoint() } }
@@ -139,8 +140,8 @@ final class OnboardingState: ObservableObject {
     var heightDisplay: Double { heightCm }
     var weightDisplay: Double { weightKg }
     var weightLbs: Double {
-        get { weightKg / 0.45359237 }
-        set { weightKg = newValue * 0.45359237 }
+        get { Mass.kg(weightKg).value(in: .pounds) }
+        set { weightKg = Mass.lb(newValue).kilograms }
     }
     var heightFeet: Int {
         get { Int((heightCm / 2.54).rounded()) / 12 }
@@ -279,8 +280,7 @@ final class OnboardingState: ObservableObject {
             let preview: SetupPreview = try await api.request("POST", path: "/api/onboarding/preview", body: request(), expectedAccountID: accountID)
             guard identity == previewIdentity else { return }
             serverPreview = preview
-        } catch is CancellationError { return }
-        catch { if identity == previewIdentity { previewError = error.localizedDescription } }
+        } catch is CancellationError { return } catch { if identity == previewIdentity { previewError = error.localizedDescription } }
     }
 
     func saveCheckpoint(invalidatePreview: Bool = true) {
@@ -526,8 +526,7 @@ final class OnboardingState: ObservableObject {
                 saveCheckpoint(invalidatePreview: false)
             }
             cloudMessage = "Your answers are saved on this device. Tap Retry to finish syncing."
-        } catch is CancellationError { return false }
-        catch { cloudMessage = error.localizedDescription }
+        } catch is CancellationError { return false } catch { cloudMessage = error.localizedDescription }
         return false
     }
 

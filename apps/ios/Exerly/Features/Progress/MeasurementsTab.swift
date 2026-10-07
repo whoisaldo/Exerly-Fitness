@@ -66,7 +66,7 @@ final class MeasurementsViewModel: ObservableObject {
 struct MeasurementsTab: View {
     @Query private var legacyMeasurements: [Measurement]
     @EnvironmentObject private var sync: SyncEngine
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @StateObject private var viewModel = MeasurementsViewModel()
     @State private var selectedRange: WeightRange = .quarter
     @State private var showAddSheet = false
@@ -418,7 +418,7 @@ struct AddMeasurementSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var sync: SyncEngine
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @State private var type = "waist"
     @State private var value = ""
     @State private var selectedDate: CalendarDay
@@ -623,7 +623,7 @@ struct WeightEntrySheet: View {
     let onSaved: () -> Void
     @EnvironmentObject private var sync: SyncEngine
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @State private var date: CalendarDay
     @State private var current: WeightDayDTO?
     @State private var value = ""

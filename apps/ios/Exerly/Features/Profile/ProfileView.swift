@@ -4,7 +4,7 @@ struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var account: AppAccountWorkspace
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @AppStorage("exerlyAppearance") private var appearance = "dark"
     @State private var showEditProfile = false
     @State private var showChangePassword = false

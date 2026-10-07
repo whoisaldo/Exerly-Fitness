@@ -20,7 +20,7 @@ final class ProductionUITests: XCTestCase {
             throw XCTSkip("Opt-in visual review of primary screens")
         }
         try await control([:])
-        let person = try await createAccount(prefix: "design-primary")
+        let person = try await createAccount(prefix: "design-primary", units: "imperial")
         _ = try await seedNutritionEntry(token: person.token, nutrients: ["energy": 57, "protein": 0.4, "carbohydrate": 15.2, "fat": 0.1, "sodium": 0])
         _ = try await seedProgram(name: "Strength foundations", activated: "2026-10-01T12:00:00.000Z", token: person.token)
         _ = try await seedTrainingWorkout(name: "Full body", loads: [60, 65, 65], daysAgo: 2,
@@ -56,7 +56,7 @@ final class ProductionUITests: XCTestCase {
             throw XCTSkip("Opt-in visual review of empty screens")
         }
         try await control([:])
-        let person = try await createAccount(prefix: "design-empty")
+        let person = try await createAccount(prefix: "design-empty", units: "imperial")
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         capture(app, "design-empty-diary")
@@ -80,7 +80,7 @@ final class ProductionUITests: XCTestCase {
             throw XCTSkip("Opt-in visual review of secondary screens")
         }
         try await control([:])
-        let person = try await createAccount(prefix: "design-secondary")
+        let person = try await createAccount(prefix: "design-secondary", units: "imperial")
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.dailyHealth"], in: app)
@@ -1301,7 +1301,7 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(load, expected)
     }
 
-    private func createAccount(prefix: String) async throws -> (email: String, token: String) {
+    private func createAccount(prefix: String, units: String = "metric") async throws -> (email: String, token: String) {
         let email = "\(prefix)-\(UUID().uuidString.prefix(8).lowercased())@exerly.test"
         let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
         let token = try XCTUnwrap(signup["token"] as? String)
@@ -1329,7 +1329,7 @@ final class ProductionUITests: XCTestCase {
         let token = try XCTUnwrap(signup["token"] as? String)
         _ = try await request("POST", "/api/onboarding/complete", body: [
             "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
-            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
+            "goal": "maintain", "activityLevel": "light", "unitSystem": units, "timezone": "America/New_York"
         ], token: token)
         let app = launch(resetSession: true)
         tap(app.buttons["I already have an account"], in: app)
@@ -2322,6 +2322,8 @@ final class ProductionUITests: XCTestCase {
         let calendar = Calendar.current
         let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
         let formatter = DateFormatter()
+        XCTAssertTrue(app.buttons["U.S."].isSelected)
+        capture(app, "design-setup-us-default")
         formatter.calendar = calendar
         formatter.dateFormat = "yyyy-MM-dd"
         let day = formatter.string(from: yesterday)
@@ -2456,7 +2458,7 @@ final class ProductionUITests: XCTestCase {
         dismissKeyboard(app)
         for _ in 0..<2 {
             tap(app.buttons["preferences.unitSystem"], in: app)
-            tap(app.buttons["Imperial, lb and inches"], in: app)
+            tap(app.buttons["U.S., lb and inches"], in: app)
             tap(app.buttons["preferences.unitSystem"], in: app)
             tap(app.buttons["Metric, kg and cm"], in: app)
         }

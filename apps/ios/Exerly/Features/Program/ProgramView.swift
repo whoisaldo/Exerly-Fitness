@@ -82,7 +82,7 @@ final class ProgramViewModel: ObservableObject {
 }
 
 struct ProgramView: View {
-    @AppStorage("unitSystem") private var unitSystem = "metric"
+    @AppStorage("unitSystem") private var unitSystem = "imperial"
     @StateObject private var viewModel = ProgramViewModel()
     @State private var rateDraft = 0.25
     @Environment(\.dynamicTypeSize) private var typeSize

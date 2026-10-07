@@ -285,6 +285,21 @@ final class ProductionTests: XCTestCase {
         XCTAssertEqual(state.weightLbs, 200, accuracy: 0.000001)
     }
 
+    func testFreshSetupDefaultsToUSUnitsAndPreservesMeasurementsWhenChoosingMetric() throws {
+        let state = OnboardingState(defaults: defaults)
+        XCTAssertFalse(state.useMetric)
+        XCTAssertEqual(state.request().unitSystem, "imperial")
+        state.weightLbs = 200
+        state.heightFeet = 6
+        state.heightInches = 2
+        XCTAssertEqual(state.request().weight, 90.718474, accuracy: 0.000001)
+        XCTAssertEqual(state.request().height, 187.96, accuracy: 0.000001)
+        state.useMetric = true
+        XCTAssertEqual(state.request().unitSystem, "metric")
+        XCTAssertEqual(state.request().weight, 90.718474, accuracy: 0.000001)
+        XCTAssertEqual(state.request().height, 187.96, accuracy: 0.000001)
+    }
+
     func testLegacySetupDraftMigratesWithoutLosingPersonalization() throws {
         let productionAPI = APIClient(baseURL: "https://exerly-fitness-93dyl.ondigitalocean.app", keychain: keychain, defaults: defaults)
         let state = OnboardingState(defaults: defaults, api: productionAPI)

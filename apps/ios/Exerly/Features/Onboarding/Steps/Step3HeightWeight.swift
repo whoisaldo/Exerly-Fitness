@@ -22,11 +22,25 @@ struct MeasurementFields: View {
                     numberField("Height, cm", value: $state.heightCm)
                     numberField("Weight, kg", value: $state.weightKg)
                 } else {
-                    numberField("Height, inches", value: Binding(
-                        get: { state.heightCm / 2.54 }, set: { state.heightCm = $0 * 2.54 }))
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        Text("Height").font(.exBodyMedium)
+                        HStack(spacing: ExSpacing.item) {
+                            heightField("Feet", value: $state.heightFeet)
+                            heightField("Inches", value: $state.heightInches)
+                        }
+                    }
                     numberField("Weight, lb", value: $state.weightLbs)
                 }
             }
+        }
+    }
+
+    private func heightField(_ label: String, value: Binding<Int>) -> some View {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            TextField(label, value: value, format: .number)
+                .keyboardType(.numberPad).textFieldStyle(.roundedBorder)
+                .frame(minHeight: 44).font(.exStatSmall).accessibilityLabel("Height, \(label.lowercased())")
         }
     }
 
