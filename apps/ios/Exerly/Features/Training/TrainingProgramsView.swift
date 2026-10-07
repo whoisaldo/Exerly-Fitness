@@ -195,7 +195,11 @@ private struct ProgramLifecycleAction: Identifiable {
     var id: UUID { program.id }
 
     var button: String {
-        switch kind { case .activate: "Follow program"; case .archive: "Archive program"; case .restore: "Restore program" }
+        switch kind {
+        case .activate: "Follow program"
+        case .archive: "Archive program"
+        case .restore: "Restore program"
+        }
     }
     var title: String { "\(button)?" }
     var message: String {

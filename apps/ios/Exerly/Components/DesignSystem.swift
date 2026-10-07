@@ -152,7 +152,7 @@ struct ExNavigationLabel: View {
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.caption.weight(.semibold))
                 .foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
-        }.frame(minHeight: 48).contentShape(Rectangle())
+        }.frame(minHeight: 48).contentShape(Rectangle()).multilineTextAlignment(.leading)
     }
 }
 

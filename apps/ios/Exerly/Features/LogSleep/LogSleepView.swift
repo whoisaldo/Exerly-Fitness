@@ -69,8 +69,7 @@ struct LogSleepView: View {
             .alert("Delete this sleep entry?", isPresented: $confirmingDelete) {
                 Button("Delete sleep entry", role: .destructive) {
                     guard let editing else { return }
-                    do { onDeleted(try sync.deleteSleep(editing)); onSaved(); dismiss() }
-                    catch { self.error = error.localizedDescription }
+                    do { onDeleted(try sync.deleteSleep(editing)); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: { Text("You can undo this after closing the form.") }
@@ -90,7 +89,6 @@ struct LogSleepView: View {
         let request = SleepRequest(hours: duration, quality: quality.isEmpty ? nil : quality,
             bedtime: bedtime.isEmpty ? nil : bedtime, wakeTime: wakeTime.isEmpty ? nil : wakeTime,
             entryDate: selectedDate.rawValue)
-        do { try sync.saveSleep(request, editing: editing); onSaved(); dismiss() }
-        catch { self.error = error.localizedDescription; isSaving = false }
+        do { try sync.saveSleep(request, editing: editing); onSaved(); dismiss() } catch { self.error = error.localizedDescription; isSaving = false }
     }
 }

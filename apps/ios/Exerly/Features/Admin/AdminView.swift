@@ -27,6 +27,7 @@ struct AdminStats: Decodable {
         let activities: Int
         let food: Int
         let sleep: Int
+        let weights: Int
     }
 }
 
@@ -39,6 +40,7 @@ struct ToggleAdminRequest: Encodable {
 
 struct AdminView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var users: [AdminUserItem] = []
     @State private var stats: AdminStats?
     @State private var isLoading = true
@@ -87,7 +89,8 @@ struct AdminView: View {
                 ExCard(accent: true) {
                     ExEyebrow("Active today", color: .exPrimaryText)
                     Text(stats.activeToday.formatted()).font(.exStat)
-                    Text("of \(stats.totalUsers.formatted()) accounts").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    Text("of \(stats.totalUsers.formatted()) \(stats.totalUsers == 1 ? "account" : "accounts")")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }
                 ExCard {
                     ExSectionHeading("Recorded entries", detail: stats.totalEntries.formatted())
@@ -96,6 +99,8 @@ struct AdminView: View {
                     LabeledContent("Food logs", value: (stats.breakdown?.food ?? 0).formatted())
                     Divider()
                     LabeledContent("Sleep logs", value: (stats.breakdown?.sleep ?? 0).formatted())
+                    Divider()
+                    LabeledContent("Weigh-ins", value: (stats.breakdown?.weights ?? 0).formatted())
                 }
             } else {
                 ExEmptyState(icon: "chart.bar", title: "Statistics unavailable",
@@ -123,34 +128,22 @@ struct AdminView: View {
     }
 
     private func userRow(_ user: AdminUserItem) -> some View {
-        GlassCard {
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(user.isAdmin == true ? Color.exPrimary : Color.exSurface2)
-                    .frame(width: 36, height: 36)
-                    .overlay {
-                        Image(systemName: user.isAdmin == true ? "shield.checkered" : "person.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(user.isAdmin == true ? .white : .exTextMuted)
-                    }
-
-                VStack(alignment: .leading, spacing: 2) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
+        return ExCard {
+                layout {
                     Text(user.name ?? "No Name")
                         .font(.exBodyMedium)
                         .foregroundStyle(.exTextPrimary)
-                    Text(user.email)
-                        .font(.exCaption)
-                        .foregroundStyle(.exTextSecondary)
-                }
-
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
 
                 Button {
                     Task { await toggleAdmin(user) }
                 } label: {
                     Text(user.isAdmin == true ? "Admin" : "User")
                         .font(.exSmall)
-                        .foregroundStyle(user.isAdmin == true ? .exPrimary : .exTextMuted)
+                        .foregroundStyle(user.isAdmin == true ? .exPrimaryText : .exTextMuted)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background((user.isAdmin == true ? Color.exPrimary : Color.exSurface2).opacity(0.2))
@@ -158,7 +151,9 @@ struct AdminView: View {
                 }
                 .frame(minWidth: 44, minHeight: 44)
                 .accessibilityLabel("\(user.email), \(user.isAdmin == true ? "Admin" : "User")")
-            }
+                }
+                Text(user.email).font(.exCaption).foregroundStyle(.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
         }
     }
 

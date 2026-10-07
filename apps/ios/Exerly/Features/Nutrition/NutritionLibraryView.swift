@@ -140,24 +140,38 @@ struct NutritionLibraryView: View {
 
 struct NutritionFoodRow: View {
     let food: ExerlyCore.Food
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: ExSpacing.item) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
+        layout {
+            if !typeSize.isAccessibilitySize {
             Image(systemName: food.favorite ? "star.fill" : "fork.knife")
                 .foregroundStyle(food.favorite ? Color.exAccent : Color.exPrimary)
                 .frame(width: 42, height: 48).background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: 5) {
                 Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                 Text(food.brand ?? NutritionFormat.source(food.source)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }.fixedSize(horizontal: false, vertical: true)
+            if typeSize.isAccessibilitySize {
+                Text("\(energy) kcal / 100 g").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 2) {
-                Text(food.per100g[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
-                    .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+                Text(energy).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
                 Text("kcal / 100 g").font(.exSmall).foregroundStyle(Color.exTextSecondary)
             }
-        }.frame(minHeight: 52).contentShape(Rectangle())
+            }
+        }.frame(minHeight: 52).contentShape(Rectangle()).multilineTextAlignment(.leading)
+    }
+
+    private var energy: String {
+        food.per100g[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—"
     }
 }
 

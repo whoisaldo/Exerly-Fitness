@@ -36,6 +36,7 @@ struct NutritionDiaryView: View {
     @StateObject private var actions: NutritionDiaryActions
     @StateObject private var savedDay = DiaryViewModel()
     @EnvironmentObject private var dailySync: SyncEngine
+    @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var errorFocused: Bool
 
     private struct StatusReview {
@@ -197,7 +198,7 @@ struct NutritionDiaryView: View {
                     VStack(spacing: 2) {
                         Text(date == LocalDate(Date(), in: timeZone) ? "Today" : NutritionFormat.day(date, timeZone: timeZone))
                             .font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                        if date == LocalDate(Date(), in: timeZone) {
+                        if date == LocalDate(Date(), in: timeZone), !typeSize.isAccessibilitySize {
                             Text(NutritionFormat.day(date, timeZone: timeZone)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }
                     }.fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.center)
@@ -252,12 +253,15 @@ struct NutritionDiaryView: View {
             }
             ForEach(entries) { entry in
                 Button { actions.clearError(); destination = .edit(entry) } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: ExSpacing.item) {
+                    let layout = typeSize.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                        : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
+                    layout {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(entry.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                             Text(NutritionFormat.portion(entry)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }
-                        Spacer(minLength: 0)
+                        if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                         VStack(alignment: .trailing, spacing: 2) {
                             Text(entry.nutrients[.energy].map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
                                 .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)

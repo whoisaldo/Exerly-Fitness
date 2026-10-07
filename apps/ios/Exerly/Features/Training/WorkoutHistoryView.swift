@@ -100,8 +100,7 @@ struct WorkoutDetailView: View {
         }
         .confirmationDialog("Delete this workout?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete workout", role: .destructive) {
-                do { try store.deleteSession(sessionID); dismiss() }
-                catch { self.error = TrainingFormat.error(error) }
+                do { try store.deleteSession(sessionID); dismiss() } catch { self.error = TrainingFormat.error(error) }
             }
         } message: { Text("This removes the workout and its sets from your training history.") }
     }

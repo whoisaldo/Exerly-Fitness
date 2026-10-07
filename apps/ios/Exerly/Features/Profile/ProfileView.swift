@@ -34,10 +34,12 @@ struct ProfileView: View {
 
     private var avatarSection: some View {
         HStack(spacing: ExSpacing.content) {
+            if !dynamicTypeSize.isAccessibilitySize {
             Text(String((authVM.currentUser?.name ?? "A").prefix(1)).uppercased())
                 .font(.exStat).foregroundStyle(Color.exPrimaryText).frame(width: 64, height: 64)
                 .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 22))
                 .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: 5) {
                 Text(authVM.currentUser?.name ?? "Your profile").font(.exH2).foregroundStyle(Color.exTextPrimary)
                 Text(authVM.currentUser?.email ?? "").font(.exCaption).foregroundStyle(Color.exTextSecondary)
@@ -202,18 +204,15 @@ struct HealthKitSettingsView: View {
                     Image(systemName: "heart.circle.fill")
                         .font(.system(size: 28))
                         .foregroundStyle(Color.exAccent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Apple Health")
-                            .font(.exBodyMedium)
-                            .foregroundStyle(.exTextPrimary)
-                        Text("Read the health data you choose to share")
-                            .font(.exCaption)
-                            .foregroundStyle(.exTextSecondary)
-                    }
                     Spacer()
                     Toggle("Read Apple Health data", isOn: $syncEnabled)
                         .tint(.exPrimaryText)
                         .labelsHidden()
+                }
+                Text("Apple Health").font(.exH2).foregroundStyle(Color.exTextPrimary)
+                Text("Choose which health data to share.").font(.exBody).foregroundStyle(Color.exTextSecondary)
+                if !syncEnabled {
+                    Text("Connect to see steps and active Calories for today.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
             }
 

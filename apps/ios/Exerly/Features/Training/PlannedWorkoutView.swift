@@ -18,7 +18,7 @@ struct NextTrainingWorkoutSection: View {
                         Label("Cycle \(next.cycle + 1) of \(program.cycles)", systemImage: "circle.lefthalf.filled")
                         if next.isDeload { Label("Deload", systemImage: "arrow.down.right") }
                     }.font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    Button("Review next workout", action: review).buttonStyle(ExActionStyle())
+                    Button("Review workout", action: review).buttonStyle(ExActionStyle())
                         .accessibilityIdentifier("program.nextWorkout")
                 } else {
                     Text(program.name).font(.exH2)

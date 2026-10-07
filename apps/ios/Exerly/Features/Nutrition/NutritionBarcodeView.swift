@@ -76,8 +76,7 @@ struct NutritionBarcodeView: View {
                     .accessibilityIdentifier("nutrition.lookupBarcode")
                 if let message = cameraMessage ?? camera.error { Text(message).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
             }
-            if search.isLoading { ProgressView("Looking up barcode…") }
-            else if let error = search.error {
+            if search.isLoading { ProgressView("Looking up barcode…") } else if let error = search.error {
                 ExCard { Text("Lookup unavailable").font(.exH3); Text(error).foregroundStyle(Color.exError) }
             } else if search.request != nil {
                 ExCard {

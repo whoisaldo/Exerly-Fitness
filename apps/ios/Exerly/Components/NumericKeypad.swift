@@ -104,8 +104,7 @@ struct ExNumericKeypad: View {
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                 ForEach(1...9, id: \.self) { value in key(String(value)) { insert(String(value)) } }
-                if integer { Color.clear.frame(height: 48).accessibilityHidden(true) }
-                else { key(decimal) { insert(decimal) }.accessibilityLabel("Decimal separator") }
+                if integer { Color.clear.frame(height: 48).accessibilityHidden(true) } else { key(decimal) { insert(decimal) }.accessibilityLabel("Decimal separator") }
                 key("0") { insert("0") }
                 Button(action: delete) {
                     Image(systemName: "delete.left").font(.system(size: 22))

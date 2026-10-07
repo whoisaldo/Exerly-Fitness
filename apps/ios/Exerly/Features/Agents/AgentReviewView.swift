@@ -12,6 +12,7 @@ struct AgentReviewView: View {
                     ExEyebrow("Your review", color: .exPrimaryText)
                     let count = workspace.agent.proposals.filter { $0.status == .pending }.count
                     Text(count == 0 ? "You're up to date" : "\(count) to review").font(.exH1)
+                        .accessibilityIdentifier("suggestions.pendingSummary")
                     Text(count == 0 ? "New suggestions will appear here. Your training and food log work with or without an agent." :
                          "See the changes and evidence. You decide what gets applied.")
                         .font(.exBody).foregroundStyle(Color.exTextSecondary)
@@ -267,7 +268,7 @@ struct ProposalEvidenceView: View {
     let evidence: Evidence
     let store: TrainingStore
     let unit: MassUnit
-    var programs: ProgramStore? = nil
+    var programs: ProgramStore?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -311,7 +312,7 @@ private struct AgentDataLink: View {
     let reference: DataRef
     let store: TrainingStore
     let unit: MassUnit
-    var programs: ProgramStore? = nil
+    var programs: ProgramStore?
 
     var body: some View {
         if reference.kind == "workout_session", let id = UUID(uuidString: reference.id),

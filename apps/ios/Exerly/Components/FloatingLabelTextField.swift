@@ -48,8 +48,7 @@ struct FloatingLabelTextField: View {
 
     private var input: some View {
         Group {
-            if isSecure { SecureField("", text: $text) }
-            else { TextField("", text: $text).keyboardType(keyboardType) }
+            if isSecure { SecureField("", text: $text) } else { TextField("", text: $text).keyboardType(keyboardType) }
         }
         .font(.exBody)
         .accessibilityLabel(label)

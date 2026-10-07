@@ -370,8 +370,7 @@ private struct ProgramTargetEditor: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Apply") {
-                    do { apply(try fields.value()); dismiss() }
-                    catch { self.error = error.localizedDescription }
+                    do { apply(try fields.value()); dismiss() } catch { self.error = error.localizedDescription }
                 }.accessibilityIdentifier("program.applyTargets")
             }
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }

@@ -168,8 +168,7 @@ struct TrainingSetEditor: View {
             }
             try onSave(set, propagate)
             dismiss()
-        } catch let TrainingSetInputError.invalid(message) { error = message }
-        catch { self.error = TrainingFormat.error(error) }
+        } catch let TrainingSetInputError.invalid(message) { error = message } catch { self.error = TrainingFormat.error(error) }
     }
 
 }

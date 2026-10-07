@@ -56,12 +56,10 @@ struct ActiveWorkoutView: View {
                                            previous: previous.indices.contains(index) ? previous[index] : nil,
                                            edit: { editing = SetEditorTarget(performedID: performed.id, exercise: exercise, set: set, number: index + 1) },
                                            complete: {
-                                if set.isCompleted { save { try store.reopenSet(set.id) } }
-                                else if set.isLoggable(for: exercise) {
+                                if set.isCompleted { save { try store.reopenSet(set.id) } } else if set.isLoggable(for: exercise) {
                                     save { try store.completeSet(set.id) }
                                     if error == nil { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-                                }
-                                else { editing = SetEditorTarget(performedID: performed.id, exercise: exercise, set: set, number: index + 1) }
+                                } else { editing = SetEditorTarget(performedID: performed.id, exercise: exercise, set: set, number: index + 1) }
                             })
                             .swipeActions { Button("Delete set", role: .destructive) { save { try store.removeSet(set.id) } } }
                         }
@@ -119,8 +117,7 @@ struct ActiveWorkoutView: View {
     }
 
     private func save<T>(_ action: () throws -> T) {
-        do { _ = try action(); error = nil }
-        catch { self.error = TrainingFormat.error(error) }
+        do { _ = try action(); error = nil } catch { self.error = TrainingFormat.error(error) }
     }
 
     private func restControls(_ timer: RestTimer) -> some View {
@@ -191,8 +188,7 @@ private struct RestTimerView: View {
             layout {
                 HStack {
                     Image(systemName: "timer").accessibilityHidden(true)
-                    if timer.isFinished(at: context.date) { Text("Rest complete").fontWeight(.semibold) }
-                    else {
+                    if timer.isFinished(at: context.date) { Text("Rest complete").fontWeight(.semibold) } else {
                         Text("Rest")
                         Text(timer.endsAt, style: .timer).monospacedDigit().fontWeight(.semibold)
                     }
@@ -245,9 +241,7 @@ private struct WorkoutNotesView: View {
 
     private func save() {
         let mass: Mass?
-        if weight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { mass = nil }
-        else if let value = TrainingInput.number(weight), value > 0 { mass = Mass(value, unit) }
-        else { error = "Enter a bodyweight greater than zero, or leave it empty."; return }
+        if weight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { mass = nil } else if let value = TrainingInput.number(weight), value > 0 { mass = Mass(value, unit) } else { error = "Enter a bodyweight greater than zero, or leave it empty."; return }
         do {
             try store.updateActiveSession {
                 $0.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Workout" : name

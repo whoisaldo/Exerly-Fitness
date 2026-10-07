@@ -57,8 +57,7 @@ struct LogActivityView: View {
             .alert("Delete this activity?", isPresented: $confirmingDelete) {
                 Button("Delete activity", role: .destructive) {
                     guard let editing else { return }
-                    do { onDeleted(try sync.deleteActivity(editing)); onSaved(); dismiss() }
-                    catch { self.error = error.localizedDescription }
+                    do { onDeleted(try sync.deleteActivity(editing)); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: { Text("You can undo this after closing the form.") }
@@ -80,7 +79,6 @@ struct LogActivityView: View {
         isSaving = true; error = nil
         let request = ActivityRequest(type: name, duration: minutes, calories: number, intensity: intensity.isEmpty ? nil : intensity,
             entryDate: selectedDate.rawValue, category: editing?.category)
-        do { try sync.saveActivity(request, editing: editing); onSaved(); dismiss() }
-        catch { self.error = error.localizedDescription; isSaving = false }
+        do { try sync.saveActivity(request, editing: editing); onSaved(); dismiss() } catch { self.error = error.localizedDescription; isSaving = false }
     }
 }

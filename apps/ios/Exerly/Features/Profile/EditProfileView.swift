@@ -55,13 +55,10 @@ private struct PreferencesEditor: View {
             ExForm {
                 Section {
                     ExCard(accent: true) {
-                        ExEyebrow("Preferences", color: .exPrimaryText)
-                        Text(fields["name"] ?? "Make Exerly yours").font(.exH2)
-                        Text("Your profile, units and reminders. Edits stay here until you save.")
-                            .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                        Text(fields["name"] ?? "Your profile").font(.exBodyMedium)
+                        statusSection.id("preferences-status")
                     }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
-                statusSection.id("preferences-status")
                 if store.conflict != nil { conflictSection }
                 if store.draft != nil {
                     basicSection.disabled(store.isLocked)
@@ -114,14 +111,21 @@ private struct PreferencesEditor: View {
     }
 
     private var statusSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            HStack(spacing: ExSpacing.small) {
             if store.isLoading || store.isSaving {
                 HStack {
                     ProgressView()
                     Text(store.isSaving ? "Saving preferences…" : "Refreshing preferences…")
                 }
             } else if let message = store.message {
-                Text(message).font(.subheadline).accessibilityIdentifier("preferences.status")
+                Text(message == "Preferences are up to date." ? "Up to date." : message)
+                    .font(.exCaption).accessibilityIdentifier("preferences.status")
+            }
+            Spacer(minLength: 0)
+            Button("Refresh preferences", systemImage: "arrow.clockwise") { focusedField = nil; perform { await store.load() } }
+                .labelStyle(.iconOnly).frame(width: 44, height: 44)
+                .disabled(store.isLoading || store.isSaving || !store.isReadable)
             }
             if let error = store.error {
                 Text(error).foregroundStyle(Color.exError).accessibilityIdentifier("preferences.error")
@@ -130,10 +134,6 @@ private struct PreferencesEditor: View {
                 Text("Your last save has not been confirmed. Retry it before editing these preferences.")
                     .font(.subheadline)
             }
-            Button("Refresh preferences") { focusedField = nil; perform { await store.load() } }
-                .disabled(store.isLoading || store.isSaving || !store.isReadable)
-        } footer: {
-            Text("Edits stay on this iPhone until you save. You can close this screen and finish later.")
         }
     }
 

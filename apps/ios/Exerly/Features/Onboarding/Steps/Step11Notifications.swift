@@ -4,7 +4,6 @@ struct Step11Notifications: View {
     @ObservedObject var state: OnboardingState
     let onComplete: () -> Void
 
-
     var body: some View {
         ZStack {
             ScrollView {

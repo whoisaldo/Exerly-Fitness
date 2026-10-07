@@ -3,19 +3,27 @@ import SwiftUI
 
 struct AccountSyncView: View {
     @ObservedObject var workspace: TrainingWorkspace
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ExScreen {
             ExCard(accent: true) {
                 Image(systemName: statusSymbol).font(.system(size: 36, weight: .light)).foregroundStyle(Color.exPrimaryText)
                     .accessibilityHidden(true)
-                ExEyebrow("Account backup", color: .exPrimaryText)
+                ExEyebrow("Backup", color: .exPrimaryText)
                 if let engine = workspace.sync {
-                    status(engine).font(.exH2)
+                    status(engine).font(.exH2).labelStyle(.titleOnly)
                     if let date = engine.lastSyncedAt {
+                        if typeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                                Text("Last synced").foregroundStyle(Color.exTextSecondary)
+                                Text(date, format: .dateTime.month().day().hour().minute())
+                            }.font(.exCaption)
+                        } else {
                         LabeledContent("Last synced") {
                             Text(date, format: .dateTime.month().day().hour().minute())
                                 .multilineTextAlignment(.trailing)
+                        }.font(.exCaption)
                         }
                     }
                     Button("Sync now", systemImage: "arrow.triangle.2.circlepath") {

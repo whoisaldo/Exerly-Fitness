@@ -34,7 +34,7 @@ struct NutritionFoodPicker: View {
             ExScreen {
                 ExCard {
                     ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
-                    Button { creating = true } label: { ExNavigationLabel(title: "Enter a food label", icon: "square.and.pencil") }
+                    Button { creating = true } label: { ExNavigationLabel(title: "Create food", icon: "square.and.pencil") }
                         .accessibilityIdentifier("nutrition.createFood")
                     NavigationLink {
                         NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
@@ -42,7 +42,7 @@ struct NutritionFoodPicker: View {
                             onLogged()
                             dismiss()
                         }
-                    } label: { ExNavigationLabel(title: "Scan or enter a barcode", icon: "barcode.viewfinder") }
+                    } label: { ExNavigationLabel(title: "Barcode", icon: "barcode.viewfinder") }
                     .accessibilityIdentifier("nutrition.barcode")
                 }
                 if !favorites.isEmpty {

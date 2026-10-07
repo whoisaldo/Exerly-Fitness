@@ -5,6 +5,7 @@ import SwiftData
 struct PhotosTab: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var photos: [ProgressPhoto] = []
     @State private var selectedItem: PhotosPickerItem?
     @State private var choosingPhoto = false
@@ -35,15 +36,18 @@ struct PhotosTab: View {
                 if compareMode, let compareA, let compareB {
                     ExCard {
                         ExSectionHeading("Side by side")
-                        HStack(alignment: .top, spacing: ExSpacing.small) {
+                        let layout = typeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(spacing: ExSpacing.item))
+                            : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.small))
+                        layout {
                             comparisonPhoto(compareA)
                             comparisonPhoto(compareB)
                         }
-                    }
+                    }.accessibilityIdentifier("progress.photoComparison")
                 } else if compareMode {
                     Text("Choose two photos below.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
-                LazyVGrid(columns: columns, spacing: 4) {
+                LazyVGrid(columns: typeSize.isAccessibilitySize ? Array(columns.prefix(2)) : columns, spacing: 4) {
                     ForEach(photos) { photo in photoCell(photo) }
                 }.clipShape(RoundedRectangle(cornerRadius: ExRadius.control))
             }
@@ -75,7 +79,7 @@ struct PhotosTab: View {
                 Label("Add Photo", systemImage: "plus.circle.fill")
                     .font(.exLabel)
                     .foregroundStyle(.exPrimaryText)
-            }
+            }.accessibilityIdentifier("progress.addPhoto")
 
             Spacer()
 
@@ -110,6 +114,7 @@ struct PhotosTab: View {
                         }
                     }
                 }.buttonStyle(.plain)
+                    .accessibilityIdentifier("progress.photo.\(photo.id)")
                     .accessibilityLabel("Photo from \(photo.date.formatted(date: .abbreviated, time: .omitted))")
                     .accessibilityAddTraits(compareMode && (compareA?.id == photo.id || compareB?.id == photo.id) ? .isSelected : [])
             } else {

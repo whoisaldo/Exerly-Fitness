@@ -22,6 +22,7 @@ struct HomeView: View {
     @State private var weightError: String?
     @State private var waterError: String?
     @EnvironmentObject private var sync: SyncEngine
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private let mealTypes = ["breakfast", "lunch", "dinner", "snack"]
 
@@ -72,9 +73,9 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $addingWeight) {
-            WeightEntrySheet(date: selectedDate, onDeleted: { lastDeletedWeight = $0 }) {
+            WeightEntrySheet(date: selectedDate, onDeleted: { lastDeletedWeight = $0 }, onSaved: {
                 Task { await viewModel.load(for: selectedDate) }
-            }
+            })
         }
         .sheet(isPresented: $addingWater) {
             if let summary = viewModel.summary {
@@ -223,6 +224,7 @@ struct HomeView: View {
     }
 
     private var dateNavigation: some View {
+        VStack(spacing: ExSpacing.small) {
         HStack(spacing: 12) {
             Button { moveDate(by: -1) } label: {
                 Image(systemName: "chevron.left")
@@ -241,12 +243,7 @@ struct HomeView: View {
                     .foregroundStyle(.exTextPrimary)
                     .accessibilityIdentifier("diary.selected-day")
                     .accessibilityValue(selectedDate.rawValue)
-                CalendarDayPicker("Date", selection: $selectedDate, today: sync.today,
-                                  timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
-                .labelsHidden()
-                .datePickerStyle(.compact)
-                .tint(.exPrimaryText)
-                .font(.exCaption)
+                if !typeSize.isAccessibilitySize { datePicker }
                 if !isToday {
                     Button("Today") { selectedDate = sync.today }.frame(minHeight: 44)
                 }
@@ -264,8 +261,16 @@ struct HomeView: View {
             .disabled(selectedDate >= sync.today)
             .accessibilityLabel("Next day")
         }
+        if typeSize.isAccessibilitySize { datePicker }
+        }
         .buttonStyle(.borderless)
         .padding(.vertical, 4)
+    }
+
+    private var datePicker: some View {
+        CalendarDayPicker("Date", selection: $selectedDate, today: sync.today,
+                          timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
+            .labelsHidden().datePickerStyle(.compact).tint(.exPrimaryText).font(.exCaption)
     }
 
     private func calorieCard(_ summary: DaySummaryDTO) -> some View {
@@ -346,33 +351,35 @@ struct HomeView: View {
     }
 
     private func waterCard(_ water: WaterDayDTO) -> some View {
-        GlassCard {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
+        return ExCard {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
+                layout {
                     Label("Water", systemImage: "drop")
-                        .font(.headline)
-                    Spacer()
+                        .font(.exBodyMedium)
+                    if !typeSize.isAccessibilitySize { Spacer() }
                     Text("\(water.ml.formatted()) ml")
-                        
+                        .font(.exStatSmall)
                         .accessibilityIdentifier("water.total")
                 }
                 if water.sync_state == "pending" { Text("Saved on this device. Waiting to sync.").font(.callout) }
                 if water.sync_state == "attention" { Text("Review your pending water additions before retrying.").font(.callout) }
                 VStack(spacing: 8) {
-                    HStack(spacing: 12) {
+                    layout {
                         Button { addWater(water, ml: 250) } label: {
-                            Text("+250 ml").frame(maxWidth: .infinity, minHeight: 28)
+                            Text("+250 ml")
                         }.accessibilityLabel("Add 250 ml of water")
                         Button { addWater(water, ml: 500) } label: {
-                            Text("+500 ml").frame(maxWidth: .infinity, minHeight: 28)
+                            Text("+500 ml")
                         }.accessibilityLabel("Add 500 ml of water")
                     }
                     Button { addingWater = true } label: {
-                        Text("Custom amount").frame(maxWidth: .infinity, minHeight: 28)
+                        Text("Custom amount")
                     }.accessibilityLabel("Add a custom water amount")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(ExActionStyle(secondary: true))
                 .disabled(water.entry_date > sync.today.rawValue)
                 if let waterError { Text(waterError).foregroundStyle(.red).font(.callout) }
             }
@@ -740,8 +747,7 @@ private struct WaterEntryView: View {
                             error = "Enter a whole number from 1 to 5,000 ml."
                             return
                         }
-                        do { try sync.addWater(current, milliliters: ml); onSave(); dismiss() }
-                        catch { self.error = error.localizedDescription }
+                        do { try sync.addWater(current, milliliters: ml); onSave(); dismiss() } catch { self.error = error.localizedDescription }
                     }
                 }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
@@ -776,16 +782,14 @@ private struct ActivitySleepRows: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(row.type).font(.headline)
                         Text("\(row.duration, format: .number) minutes")
-                        if let calories = row.calories { Text("\(calories, format: .number) kcal") }
-                        else { Text("Energy not recorded") }
+                        if let calories = row.calories { Text("\(calories, format: .number) kcal") } else { Text("Energy not recorded") }
                         syncLabel(row.syncState)
                     }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.vertical, 8)
                 }.buttonStyle(.plain).accessibilityLabel("Edit activity \(row.type)")
             }
             if let deletedActivity {
                 Button {
-                    do { try sync.undoActivityDeletion(entityID: deletedActivity); self.deletedActivity = nil; error = nil; onSaved() }
-                    catch { self.error = error.localizedDescription }
+                    do { try sync.undoActivityDeletion(entityID: deletedActivity); self.deletedActivity = nil; error = nil; onSaved() } catch { self.error = error.localizedDescription }
                 } label: { Text("Undo activity deletion").frame(minHeight: 44) }
             }
             Divider()
@@ -808,8 +812,7 @@ private struct ActivitySleepRows: View {
             }
             if let deletedSleep {
                 Button {
-                    do { try sync.undoSleepDeletion(entityID: deletedSleep); self.deletedSleep = nil; error = nil; onSaved() }
-                    catch { self.error = error.localizedDescription }
+                    do { try sync.undoSleepDeletion(entityID: deletedSleep); self.deletedSleep = nil; error = nil; onSaved() } catch { self.error = error.localizedDescription }
                 } label: { Text("Undo sleep deletion").frame(minHeight: 44) }
             }
             if let error { Text(error).foregroundStyle(.red) }

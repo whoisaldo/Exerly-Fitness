@@ -29,17 +29,20 @@ struct AccountManagementView: View {
     @State private var exportFile: AccountExportFile?
     @State private var task: Task<Void, Never>?
     @AccessibilityFocusState private var errorFocused: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ExList {
             Section {
                 ExCard(accent: true) {
                     HStack(alignment: .top, spacing: ExSpacing.item) {
+                        if !typeSize.isAccessibilitySize {
                         Image(systemName: "person.crop.circle.badge.checkmark").font(.system(size: 28, weight: .light))
                             .foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                        }
                         VStack(alignment: .leading, spacing: ExSpacing.small) {
-                            ExEyebrow("Your account", color: .exPrimaryText)
-                            Text(email).font(.exBodyMedium).textSelection(.enabled)
+                            ExEyebrow("Signed in", color: .exPrimaryText)
+                            Text(email).font(typeSize.isAccessibilitySize ? .exCaption : .exBodyMedium).textSelection(.enabled)
                                 .accessibilityIdentifier("account.email").fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -132,9 +135,7 @@ struct AccountManagementView: View {
         .navigationBarTitleDisplayMode(.inline)
         .exListStyle()
         .task(id: accountID) {
-            do { try await loadMethods() }
-            catch is CancellationError { }
-            catch { showError(error) }
+            do { try await loadMethods() } catch is CancellationError { } catch { showError(error) }
         }
         .alert("Disconnect Apple?", isPresented: $disconnecting) {
             Button("Cancel", role: .cancel) { }
@@ -170,9 +171,7 @@ struct AccountManagementView: View {
         busy = "Working…"
         task = Task { @MainActor in
             defer { busy = nil }
-            do { try await operation() }
-            catch is CancellationError { }
-            catch {
+            do { try await operation() } catch is CancellationError { } catch {
                 guard !Task.isCancelled else { return }
                 showError(error)
             }
@@ -238,12 +237,9 @@ private struct DeleteAccountView: View {
         .alert("Delete this account?", isPresented: $confirm) {
             Button("Cancel", role: .cancel) { }
             Button("Delete account", role: .destructive) {
-                if appleConnected { needsApple = true }
-                else {
+                if appleConnected { needsApple = true } else {
                     task = Task { @MainActor in
-                        do { try await performDelete(nil) }
-                        catch is CancellationError { }
-                        catch {
+                        do { try await performDelete(nil) } catch is CancellationError { } catch {
                             guard !Task.isCancelled else { return }
                             self.error = AccountScreenError.message(error)
                             errorFocused = true
@@ -262,8 +258,7 @@ private struct DeleteAccountView: View {
         error = nil
         deleting = true
         defer { deleting = false }
-        do { try await delete(code) }
-        catch ExerlyCore.APIError.appleReauthorizationRequired { needsApple = true }
+        do { try await delete(code) } catch ExerlyCore.APIError.appleReauthorizationRequired { needsApple = true }
     }
 
     private enum DeleteError: LocalizedError {
@@ -281,8 +276,7 @@ struct AccountExportFile: Identifiable {
         let folder = directory.appendingPathComponent("ExerlyExport-\(id.uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         url = folder.appendingPathComponent(deviceOnly ? "exerly-device.json" : "exerly-account.json")
-        do { try data.write(to: url, options: [.atomic, .completeFileProtection]) }
-        catch {
+        do { try data.write(to: url, options: [.atomic, .completeFileProtection]) } catch {
             try? FileManager.default.removeItem(at: folder)
             throw error
         }

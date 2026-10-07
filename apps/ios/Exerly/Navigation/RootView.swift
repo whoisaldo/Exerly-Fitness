@@ -75,8 +75,7 @@ struct RootView: View {
             guard scenePhase == .active, let workspace = account.training else { return }
             while !Task.isCancelled {
                 await workspace.synchronize()
-                do { try await Task.sleep(for: .seconds(120)) }
-                catch { return }
+                do { try await Task.sleep(for: .seconds(120)) } catch { return }
             }
         }
         .task(id: "\(authVM.authState)-\(authVM.currentUser?.id ?? "")-\(authVM.currentUser?.preferencesRevision ?? 0)") {

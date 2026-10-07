@@ -173,9 +173,7 @@ private struct NewWorkoutView: View {
 
     private func start() {
         let weight: Mass?
-        if bodyweight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { weight = nil }
-        else if let value = TrainingInput.number(bodyweight), value > 0 { weight = Mass(value, unit) }
-        else { error = "Enter a bodyweight greater than zero, or leave it empty."; return }
+        if bodyweight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { weight = nil } else if let value = TrainingInput.number(bodyweight), value > 0 { weight = Mass(value, unit) } else { error = "Enter a bodyweight greater than zero, or leave it empty."; return }
         do {
             let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
             try store.startSession(name: title.isEmpty ? "Workout" : title, bodyweight: weight, timeZone: timeZone)
@@ -214,8 +212,7 @@ struct ExercisePickerView: View {
                     ForEach(matches) { exercise in
                         if onSelect != nil {
                             Button {
-                                do { try onSelect?(exercise); dismiss() }
-                                catch { self.error = TrainingFormat.error(error) }
+                                do { try onSelect?(exercise); dismiss() } catch { self.error = TrainingFormat.error(error) }
                             } label: { ExerciseLibraryRow(exercise: exercise) }
                             .foregroundStyle(.primary)
                             .accessibilityLabel("Add \(exercise.name)")

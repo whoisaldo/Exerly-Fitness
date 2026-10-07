@@ -106,8 +106,7 @@ struct MeasurementsTab: View {
                         Text("Weight reading removed.")
                         Spacer()
                         Button("Undo weight deletion") {
-                            do { try sync.undoWeightDeletion(entityID: lastDeletedWeight!); lastDeletedWeight = nil }
-                            catch { actionError = error.localizedDescription }
+                            do { try sync.undoWeightDeletion(entityID: lastDeletedWeight!); lastDeletedWeight = nil } catch { actionError = error.localizedDescription }
                         }.frame(minHeight: 44)
                     }
                 }
@@ -150,7 +149,8 @@ struct MeasurementsTab: View {
             })
         }
         .sheet(item: $editing) { measurement in
-            AddMeasurementSheet(initialDate: sync.today, editing: measurement, onDeleted: { lastDeletedID = $0 }) { Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } }
+            AddMeasurementSheet(initialDate: sync.today, editing: measurement, onDeleted: { lastDeletedID = $0 },
+                                onSaved: { Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } })
         }
         .sheet(isPresented: $showLegacyReview) { LegacyMeasurementReview() }
         .onChange(of: sync.changeToken) { _, _ in Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } }
@@ -445,7 +445,7 @@ struct AddMeasurementSheet: View {
         NavigationStack {
             ExScreen {
                 ExCard(accent: true) {
-                    ExEyebrow("Body measurement", color: .exPrimaryText)
+                    ExEyebrow("Area", color: .exPrimaryText)
                     Picker("Type", selection: $type) {
                         ForEach(types, id: \.self) { Text($0.replacingOccurrences(of: "_", with: " ").capitalized).tag($0) }
                     }
@@ -648,8 +648,7 @@ struct WeightEntrySheet: View {
                         if current.deleted_at != nil {
                             Text("This reading was deleted. Restore it to keep the same reading and history.")
                             Button("Restore weight reading") {
-                                do { try sync.undoWeightDeletion(entityID: current.entry_date); onSaved(); dismiss() }
-                                catch { self.error = error.localizedDescription }
+                                do { try sync.undoWeightDeletion(entityID: current.entry_date); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
                             }.frame(minHeight: 44)
                         } else {
                             ExEyebrow("Daily weigh-in", color: .exPrimaryText)
@@ -681,8 +680,7 @@ struct WeightEntrySheet: View {
             .alert("Delete this weight reading?", isPresented: $confirmingDelete) {
                 Button("Delete reading", role: .destructive) {
                     guard let current else { return }
-                    do { onDeleted(try sync.deleteWeight(current)); onSaved(); dismiss() }
-                    catch { self.error = error.localizedDescription }
+                    do { onDeleted(try sync.deleteWeight(current)); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: { Text("You can undo the deletion after closing this form.") }
@@ -694,8 +692,7 @@ struct WeightEntrySheet: View {
         current = nil; error = nil; offline = false
         do {
             let row: WeightDayDTO
-            do { row = try await sync.weightDay(for: date) }
-            catch {
+            do { row = try await sync.weightDay(for: date) } catch {
                 if error is CancellationError { throw error }
                 if let apiError = error as? APIError, !apiError.permitsReadRetry { throw error }
                 row = try await sync.weightDay(for: date, cachedOnly: true)

@@ -72,9 +72,9 @@ struct AgentConnectionsView: View {
         .task { await model.refresh() }
         .refreshable { await model.refresh() }
         .onChange(of: model.error) { _, value in errorFocused = value != nil }
-        .sheet(isPresented: $creating, onDismiss: { model.clearSecret() }) {
+        .sheet(isPresented: $creating, onDismiss: { model.clearSecret() }, content: {
             NewAgentConnectionView(model: model)
-        }
+        })
         .alert("Revoke \(revoking?.name ?? "agent") access?", isPresented: Binding(
             get: { revoking != nil }, set: { if !$0 { revoking = nil } })) {
             Button("Cancel", role: .cancel) { revoking = nil }
@@ -171,8 +171,7 @@ private struct NewAgentConnectionView: View {
                     Section {
                         if model.isBusy { ProgressView("Creating access…") }
                         Button("Create access token") {
-                            if permission == .write { confirmingWrite = true }
-                            else { create() }
+                            if permission == .write { confirmingWrite = true } else { create() }
                         }
                         .disabled(model.isBusy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("agents.confirmCreate")
