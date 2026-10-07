@@ -139,6 +139,15 @@ private struct NewAgentConnectionView: View {
                             TextField("For example, Training coach", text: $name, axis: .vertical)
                                 .lineLimit(1...3).font(.exBody).textInputAutocapitalization(.words)
                                 .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
+                                .onChange(of: name) { _, value in
+                                    // Let a long name wrap, but treat Return as Done.
+                                    // Multiline fields can insert it instead of submitting.
+                                    if value.rangeOfCharacter(from: .newlines) != nil {
+                                        name = value.components(separatedBy: .newlines).joined(separator: " ")
+                                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                                        nameFocused = false
+                                    }
+                                }
                                 .padding(ExSpacing.content)
                                 .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                                 .accessibilityLabel("Agent name").accessibilityIdentifier("agents.name")

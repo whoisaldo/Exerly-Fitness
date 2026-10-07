@@ -802,6 +802,7 @@ final class ProductionUITests: XCTestCase {
         try configureProgramDay(app, name: "Push", exercise: "Barbell Bench Press", override: false)
         tap(app.navigationBars.buttons.firstMatch, in: app)
         revealAbove(app.staticTexts["Pull"], in: app)
+        XCTAssertFalse(app.staticTexts["A program needs a training day"].exists)
         capture(app, "program-builder-days")
         try await control(["offline": true, "disconnect": true])
         tap(app.buttons["program.save"], in: app)

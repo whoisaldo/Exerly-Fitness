@@ -117,6 +117,7 @@ final class ProgramPresentationTests: XCTestCase {
         XCTAssertTrue(draft.errors.contains { $0.contains("training day") })
         XCTAssertTrue(programs.programs.isEmpty)
         draft.program.days = sampleProgram().days
+        XCTAssertTrue(draft.errors.isEmpty, "An error from the previous draft must not describe the corrected draft.")
         XCTAssertTrue(draft.save())
         XCTAssertFalse(draft.hasChanges)
         XCTAssertEqual(programs.programs.first?.cycles, 2)

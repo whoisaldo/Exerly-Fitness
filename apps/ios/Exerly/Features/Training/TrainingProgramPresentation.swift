@@ -5,8 +5,12 @@ import Foundation
 /// Edits a value draft; Core validates the complete program before it is saved.
 @MainActor
 final class TrainingProgramDraft: ObservableObject {
-    @Published var program: Program
-    @Published var cycles: String
+    @Published var program: Program {
+        didSet { if program != oldValue { errors = [] } }
+    }
+    @Published var cycles: String {
+        didSet { if cycles != oldValue { errors = [] } }
+    }
     @Published private(set) var errors: [String] = []
     private let store: ProgramStore
     private var saved: Program?
