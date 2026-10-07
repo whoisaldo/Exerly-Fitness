@@ -1938,7 +1938,7 @@ native and browser round trip didn't run, because this step failed first.
 
 ## 2026-10-07: Label basis fixed (P1); Canadian panels
 
-Status: open (app: rerun your N15 regression).
+Status: done (app): original serving/kJ regression passes after rebase; all nine label presentation tests pass with the explicit-header correction.
 
 Your P1 is fixed. `NutritionLabel.read` takes the basis from the label's own
 declaration: whichever comes first of an amount per serving ("Amount per
@@ -1958,7 +1958,7 @@ Design 021 has the rule. Multi-column labels still read the first column.
 
 ## 2026-10-07: Explicit label headings outrank the panel title
 
-Status: open (app: rerun `testExplicitPer100gHeadingWinsOverGenericNutritionFactsTitle`).
+Status: done (app): explicit-heading regression and complete184active hosted tests pass on the rebased scanner branch.
 
 Fixed as you described: "Nutrition Facts" and "Valeur nutritive" count as
 per serving only when the label has no explicit heading. Your reproducer

@@ -110,6 +110,50 @@ final class NutritionLabelPresentationTests: XCTestCase {
         XCTAssertEqual(saved.per100g[.energy], 400, "200 kcal per 50 g is 400 kcal per 100 g")
     }
 
+    func testExplicitPer100gHeadingWinsOverGenericNutritionFactsTitle() throws {
+        let reading = try XCTUnwrap(NutritionLabel.read([
+            "Nutrition Facts", "Per 100 g", "Energy 200 kcal", "Fat 8 g", "Carbohydrate 25 g", "Protein 7 g"
+        ]))
+        XCTAssertEqual(reading.basis, .per100g)
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let draft = NutritionFoodDraft(store: store, label: reading)
+        draft.name = "Reviewed metric label"
+        XCTAssertEqual(draft.basis, .per100g)
+        let food = try XCTUnwrap(draft.save(), "A declared per100g label needs no invented serving weight")
+        XCTAssertEqual(food.per100g[.energy], 200)
+        XCTAssertTrue(food.servings.isEmpty)
+    }
+
+    func testVisionReadsCanadianBilingualServingWithoutUsingDailyPercentages() async throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let data = UIGraphicsImageRenderer(size: CGSize(width: 1600, height: 1100), format: format).pngData { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1600, height: 1100))
+            let rows = ["Nutrition Facts / Valeur nutritive", "Per 1 bar (50 g) / pour 1 barre (50 g)",
+                        "Calories 200", "Fat / Lipides 8 g 11%", "Carbohydrate / Glucides 25 g",
+                        "Protein / Protéines 7 g", "Sodium 0 mg 0%"]
+            for (index, row) in rows.enumerated() {
+                (row as NSString).draw(at: CGPoint(x: 50, y: 50 + index * 140),
+                    withAttributes: [.font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black])
+            }
+        }
+        let scan = try await NutritionLabelRecognition.recognize(data)
+        let explanation = scan.lines.joined(separator: "\n")
+        XCTAssertEqual(scan.reading.basis, .serving, explanation)
+        XCTAssertEqual(scan.reading.servingGrams, 50, explanation)
+        XCTAssertEqual(scan.reading.amounts[.fat], 8, explanation)
+        XCTAssertEqual(scan.reading.amounts[.protein], 7, explanation)
+        XCTAssertEqual(scan.reading.amounts[.sodium], 0, explanation)
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let draft = NutritionFoodDraft(store: store, label: scan.reading)
+        draft.name = "Reviewed bilingual bar"
+        let food = try XCTUnwrap(draft.save())
+        XCTAssertEqual(food.per100g[.energy], 400)
+        XCTAssertEqual(food.per100g[.protein], 14)
+        XCTAssertNil(food.per100g[.vitaminD])
+    }
+
     func testUnreadableAndOversizedImagesHaveManualRecoveryErrors() async throws {
         for data in [Data(), Data("not an image".utf8), Data(repeating: 0, count: NutritionLabelRecognition.maximumBytes + 1)] {
             do {

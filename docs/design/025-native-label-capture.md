@@ -65,3 +65,21 @@ The largest-type review initially split Calories across two columns. The
 editor now uses one column, with complete headings. The original photo has a
 visible View photo action. Choosing another photo cancels the pending read
 before the system picker appears.
+
+## Final verification
+
+After adopting Core's explicit-heading and serving/kJ corrections, all nine
+label presentation tests pass. This includes actual Vision on US and Canadian
+English/French bilingual synthetic panels. The app continues describing
+English labels, because French-only nutrient names are not supported.
+Full hosted tests pass184active plus1credential skip, Core307, API260 and the
+iOS device build. The fixed UI gate covers46active methods and9context-specific
+skips. One photo journey initially ran without its label fixture; after seeding
+the image on that simulator, it passed. The original failed result is retained.
+
+Fresh primary light/dark and scanner light/dark/largest-type captures were
+reviewed. The original photo is an explicit action in review; uncertain amounts
+stay above the editable fields. MacroFactor's public food-picker reference is
+more compact for selecting several foods. The independent N04 meal builder
+addresses that flow. A scanner review keeps more context to prevent saving an
+unread or misread value. Physical camera-quality verification remains pending.

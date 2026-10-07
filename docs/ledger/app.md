@@ -2,24 +2,124 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 10:17 EDT.
+milestone. Current date 2026-10-07, updated 11:35 EDT.
 
 ## Merge status
 
-Integration is `45417cd4`, pushed after the complete A10 gate. A10 build
-2610071410 is live in Ali-only internal TestFlight, fixed/tagged79d4c213. Release
-status documentation is landed and pushed. N15 label capture remains in
-progress in the primary worktree, with no Core/API edits or integration hold.
+Integration is d0b8a602. The search correction bf03296e is pushed on both
+integration and app-nutrition. Logic's two label basis corrections are adopted
+in both app worktrees. A10 build2610071410 remains live in Ali-only TestFlight.
+N04 is uncommitted while its last design corrections are checked. N15 is at
+17f31458 in the release tree, with two new hosted regressions not yet committed.
 
-| App branch                         | Unlanded work                                   | Last landed / cleanup                                   |
-| ---------------------------------- | ----------------------------------------------- | ------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                          | Deleted locally/remotely                                |
-| `agent/app-next`                   | None, git cherry empty                          | Deleted locally/remotely; worktree removed              |
-| `agent/app-programs`               | None, git cherry empty                          | A6 landed 19925b28; branch deleted                      |
-| `release/app-nutrition-foundation` | None                                            | Foundation landed 60e83cf9; branch deleted              |
-| `agent/app-nutrition`              | N04 plates next; N15 moved to agent/app-label   | A10 0b5e74e9 and A9 release docs 79d4c213 landed/pushed |
-| `agent/app-label`                  | N15 implementation; Core basis regression fails | Not landed; awaiting Logic correction                   |
-| `release/app-design`               | None, fixed79d4c213 for A10 archive             | Only release worktree; A9 shipped                       |
+| App branch                         | Unlanded work                               | Last landed / cleanup                              |
+| ---------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                      | Deleted locally/remotely                           |
+| `agent/app-next`                   | None, git cherry empty                      | Deleted locally/remotely; worktree removed         |
+| `agent/app-programs`               | None, git cherry empty                      | A6 landed 19925b28; branch deleted                 |
+| `release/app-nutrition-foundation` | None                                        | Foundation landed 60e83cf9; branch deleted         |
+| `agent/app-nutrition`              | N04 meal builder; full181active hosted pass | Search correction bf03296e landed/pushed           |
+| `agent/app-label`                  | 17f31458 + bilingual and basis regressions  | Final Core/API/hosted/device + affected UI running |
+| `release/app-design`               | 17f31458 with adopted Core fixes            | Only release worktree; A10 shipped                 |
+
+## N15 ready to land, 2026-10-07 11:35 EDT
+
+Final source includes a982be2d. Both reported basis regressions pass. All nine
+label tests pass, including actual Vision on US and bilingual Canadian images.
+Full184active hosted plus1credential skip, Core307, API260 and device build pass.
+Affected UI reruns pass: camera/manual80.355s, photo225.890s, search135.676s.
+The fixed full UI gate already covered all46active methods plus9context skips,
+with the missing-fixture photo rerun recorded separately. No known test failure
+remains in the scanner candidate. Original failing results are retained.
+
+Default light/dark primary screens and scanner light/dark/largest-type review
+were compared with public references and reviewed. A11 internal notes are ready
+in docs/release/a11-internal-notes.txt. Land the scanner, cut its fixed source,
+archive and upload, verify Ali-only delivery, then continue N04. Do not publish
+privacy drafts or submit to App Review. N04 is still only in the primary tree.
+
+## Final meal polish and label correction, 2026-10-07 11:28 EDT
+
+N04 both journeys pass default light, default dark and largest dark. Exact
+weights and unknowns pass export. The final invalid-portion check originally
+looked for an Other accessibility element; the actual combined error is a
+StaticText. Generic identifier lookup passes, and the capture confirms the
+visible message. Full181active hosted and device build pass after the error
+focus/selection/meal-row changes. UI reruns of that polish continue.
+
+Logic's four screen-review points are applied: whole grams only in the meal
+review, full-width meal chips, no second Search toolbar action when selecting
+foods, and muted short unknown-value marks. Exact stored weights are unchanged.
+Selection now shows Added with a check and keeps that state when reopened.
+The decorative plus is hidden at largest type to give the food name more room.
+These last visual adjustments still need fresh captures and verification.
+
+N15 all46active UI methods passed on fixed4d3ad510 across the three groups plus
+one seeded photo rerun;9context-specific methods skipped. Extracted failure
+video confirms the original Photos grid had only simulator landscape pictures.
+The original result remains red. N15 is rebased to17f31458 over d0b8a602;
+Core307/API260/device/full184active hosted and the three affected UI journeys
+are running in the release worktree. The title/per100g regression failed on
+d104a53e; a982be2d corrects it. Canadian bilingual actual-Vision test passes.
+Keep the app's English-label wording; no pure-French claim.
+
+## Integration and design review, 2026-10-07 11:10 EDT
+
+Rebased primary onto d104a53e. Reviewed both new Logic commits. Core307,
+API260, full181active hosted plus1credential skip, and device build pass.
+The search test now uses Synthetic oat, passed99.142s on the small phone.
+That one-line CI correction is landed as a small separate piece.
+
+N04 cancel/edit journey passes128.680s. The first failure was duplicate food
+identifiers across sheets, fixed with distinct selection-mode IDs. The second
+failure was a summary identifier propagating to three nutrient accessibility
+nodes; it now belongs to the visible heading. The offline test reruns on39.
+Both journeys also run in default dark on02 and largest dark on7D.
+Original failing results are retained. No data assertion has failed so far.
+
+N15 fixed4d3ad510 full gate groups1and2 pass. Group3 has one label-photo
+failure because718 selected a preexisting non-label image, with no label seed.
+All its other tests pass. A seeded rerun now runs on718; keep the original red.
+The failure exporter contained no failure screenshot, so do not claim visual
+inspection of that failure. The existing default/light/dark/AX scanner journeys
+already pass on the other simulators.
+
+All20 fresh N15 primary light/dark captures reviewed, plus scanner default
+dark sheets1-3 and latest AX sheets1-2. Review and fallback copy are readable;
+AX macros use one column. The side-by-side a11-label-reference.png compares
+light/dark review with MacroFactor's public App Store food picker. Exerly gives
+OCR uncertainty and the original photo more space, needed before saving. Its
+plain food picker still requires more steps than MacroFactor for multiple
+foods; N04 is addressing that gap. Core title-vs-explicit-basis review is
+requested in both Logic inboxes before scanner release. English-only wording
+stays until bilingual Vision checks pass; no claim of pure French support.
+
+## N04 meal builder and N15 gate, 2026-10-07 10:53 EDT
+
+N04 implementation is in the primary app-nutrition tree from45417cd4, separate
+from the held label feature. Design026 records the flow. Six hosted model tests
+pass, including storage failure, repeated confirmation, exact named portions,
+metric volume, stale row edits and unknown values. A disposable in-memory Core
+NutritionStore computes and validates the preview; only final Log meal writes
+through the account store's atomic plate API. The initial compile failed for a
+missing loggedAt argument in the new test, fixed before any simulator test ran.
+
+The two new UI journeys run on39B20FBF with fixture39224. Other simulators are
+reserved for N15: group1 is7D2096B8/39225; group2 is02A671D3/39222; group3 is
+7189880A/39226. Do not assume group numbering maps to a different simulator.
+The first plate compile targeted718 but never installed or ran because of that
+compile error. The corrected run uses39 only.
+
+N15 group3's label test failed because718 did not have the synthetic label photo
+seeded. Its other tests continue. Keep the original red result, inspect its
+failure capture, seed the known label after the group finishes, then rerun only
+that journey from fixed4d3ad510. Other groups continue independently. The real
+Core basis failure still blocks release, regardless of these UI results.
+
+Logic has b0fe2e6c limiting generic matches to a quarter of search results and
+requests a deterministic packaged-food search in our CI test. Read that inbox
+item from Logic's current worktree, since the primary to-app copy is older.
+Apply the small test fix separately, then review/rebase after it lands.
 
 ## N15 release held for Core basis correction, 2026-10-07 10:29 EDT
 
