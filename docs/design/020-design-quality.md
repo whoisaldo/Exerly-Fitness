@@ -109,3 +109,23 @@ Capture review sheets are in `artifacts/design/contact-review`. They reference
 the unchanged original captures rather than editing them. The gallery records
 the source run for each image. Passing tests, visual review, Logic critique,
 and internal TestFlight remain separate evidence.
+
+## Review of detailed routes
+
+The first full design batch is merged at b7b082b7. Its 160 active hosted tests
+and 38 active native journeys pass. The refined candidate 87abfb67 adds U.S.
+water, target progress, readable keypad fields and confirmations. It is in a
+fixed full run while integration remains open.
+
+Ten additional contact sheets cover 30 program, training and agent screens.
+The review caught truncated program introductions, duplicated navigation
+chevrons and stock confirmation buttons. Those are corrected. Default small
+light/dark native audits pass. iOS 26's selected Body segment failed contrast;
+purple selection with white text passes the isolated audit.
+
+Health review found success marks for unsupported sleep/workout data and a
+write-permission request under a read toggle. The app-owned permission layer
+now requests only the two displayed read types, scopes its preference by
+account/environment, and leaves denied or missing reads unavailable. It never
+infers read authorization from completion of Apple's permission sheet. Native
+physical Health authorization remains a separate verification requirement.

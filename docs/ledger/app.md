@@ -2,21 +2,116 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 03:08 EDT.
+milestone. Current date 2026-10-07, updated 04:14 EDT.
 
 ## Merge status
 
-Integration is `e0bce0e7`, app foundation landed at `60e83cf9`, including Ali's brief `6b908a24` and Logic's
-M13 contracts. No integration hold. Primary plus one release worktree.
+Integration is `87abfb67`, merged and pushed at 04:11 EDT after the complete
+native suite, Core 295, API 250 and device build passed. Primary plus one release
+worktree. No integration hold.
 
-| App branch                         | Unlanded work                                                                      | Last landed / cleanup                                                                                           |
-| ---------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped           | Deleted locally and remotely; primary worktree now uses nutrition                                               |
-| `agent/app-next`                   | None, `git cherry` empty                                                           | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
-| `agent/app-programs`               | None, `git cherry` empty                                                           | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
-| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                      | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
-| `agent/app-nutrition`              | 21 implementation commits through 5dc7ae91, plus ledger; U.S./sync working changes | Foundation landed 01:00; Core 295/API 250/device pass after M14 rebase                                          |
-| `release/app-design`               | Fixed candidate b7b082b7, 20 commits beyond integration                            | Full hosted plus all 46 UI methods split into three isolated fixture/simulator runs; no failures so far         |
+| App branch                         | Unlanded work                                                                                                       | Last landed / cleanup                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `agent/app`                        | None, `git cherry` empty after the duplicate historical note was skipped                                            | Deleted locally and remotely; primary worktree now uses nutrition                                               |
+| `agent/app-next`                   | None, `git cherry` empty                                                                                            | Deleted locally/remotely and worktree removed; A4 captures/releases preserved in primary `artifacts/retired-a4` |
+| `agent/app-programs`               | None, `git cherry` empty                                                                                            | A6 landed `19925b28` at 21:13; local branch deleted, remote deleted at 21:38                                    |
+| `release/app-nutrition-foundation` | None; branch deleted after foundation landing                                                                       | Landed/pushed 60e83cf9 at 01:00; native 143 hosted/30 UI, Core 290/API 246/device pass                          |
+| `agent/app-nutrition`              | One Health commit cb6c9c92 plus final permission/capture checks; combined sync regressions preserved in named stash | U.S./accessibility batch 87abfb67 landed and pushed 04:11                                                       |
+| `release/app-design`               | None, fixed 87abfb67 has landed                                                                                     | 47 UI methods accounted for, 38 active passes and nine opt-in skips; 162 active hosted pass                     |
+
+## U.S. and accessibility batch landed, 2026-10-07 04:14 EDT
+
+87abfb67 is merged and pushed. All 47 UI methods ran exactly once across three
+isolated groups, 38 active passes and nine opt-in/cross-client skips. All 162
+active hosted tests pass, one credential smoke skip. Device build and push
+hooks pass. Evidence is release artifacts/design/refined-complete-{1,2,3} and
+the manifest. Core/API are unchanged from their 295/250 passing runs.
+
+Health permission changes are committed cb6c9c92. The complete hosted suite now
+passes 165 active tests, including three Health permission/account-isolation
+regressions. Device and scoped lint pass. Small dark largest-type capture found
+the repeated Apple Health title and long introduction displaced the switch.
+Removed that repetition, shortened the copy and moved the switch above it.
+Default/AX captures and the real native permission flow are being checked.
+Photo comparison is labeled Compare photos because AX stacks the images.
+
+The outstanding combined-sync change and its two regressions are preserved in
+stash `Pending Logic fix: combined sync status and failing reconnect regressions`.
+They are not in integration or the release candidate. The P1 remains in Logic's
+inbox. The known Core bug must be fixed before that change lands, but it need
+not prevent shipping the independently passing design work. Logic already
+supplied a design critique; its six findings have been addressed. A further
+review of final captures remains requested, not a new approval requirement.
+
+A read-only comparison confirms staging's deployed API JS/SQL/package files
+match the current checkout exactly, with a healthy database. No restart needed.
+Gallery has 164 named views, original references, before captures and refreshed
+AX sources. N08 is Partial: quantity/time/meal edits and undo work, but per-entry
+nutrition override is not yet built. Resume nutrition after the design upload.
+
+## Refined candidate and remaining findings, 2026-10-07 03:55 EDT
+
+87abfb67 commits U.S. water, exact Core conversions, adopted target plans,
+Calories left, empty-day zero logged versus unknown nutrients, shared keypad,
+cycle presets and consistent confirmation sheets. The fixed release worktree
+runs all 47 UI methods once in three groups, plus all hosted tests and device
+build. Integration stays open. Original b7 batch remains landed and pushed.
+
+Small-phone final default light/dark captures and full native accessibility
+checks pass. There are 162 active hosted passes plus one skip before the new
+Core regression. A native iOS 26 contrast failure with no returned element
+was isolated using an unhandled diagnostic audit. Apple's element screenshot
+identified the selected Body segment. Purple fill/white text now passes the
+exact contrast audit in 17.280s. The general diagnostic switch remains opt-in.
+No audit element or failure is ignored. Largest-type final captures continue.
+
+Ten deep contact sheets, 30 captures, reviewed program editing/targets/overrides,
+planned sessions, lifecycle confirmations, source estimates, agent diffs/evidence/
+audit and tokens. Compared with Workouts and Things, a truncated program intro,
+duplicate activity-history chevron, and small stock confirmation buttons still
+looked unfinished. Fixed all three. Refreshed sheets use landed sources and
+retain original images. Earlier A6/A4 deep captures are copied as before evidence.
+
+Primary's combined Account Sync UI exposes a real old Core defect: successful
+pulls retain the preceding error/offline flags. Water/manual food/program/agent
+uploads and edits succeed, but final Account synced assertions fail. A hosted
+regression reproduces both stale flags in 1.938s. Logic has the exact test and
+request at 03:40. This sync change and regression remain outside the fixed
+candidate. Do not claim the combined screen is ready.
+
+The first new smallest-phone AX program run hit an ambiguous Target 3 RIR label
+in virtualized rows, then cascaded. Interrupted that obsolete run after retaining
+evidence. The test now selects the first matching target and explicitly returns
+to Start planned workout. It must be rerun before claiming that AX journey green.
+Current source captures and real photo import are running on SE light at largest
+type. No new nutrition features until the design TestFlight release.
+
+Health settings review found unsupported sleep/workout success marks and an
+unneeded workout write-permission request. The app-owned permission layer now
+requests only steps/active energy, scopes opt-in by account and environment,
+keeps missing/denied reads as unavailable, and rejects late permission results
+after dismissal. Three hosted regressions and the device build are pending.
+No Core source edited. Final Logic critique and its sync fix remain release gates.
+
+## Design batch landed, 2026-10-07 03:22 EDT
+
+The fixed b7b082b7 candidate passed every active test: 160 hosted, 38 UI,
+with one hosted and eight opt-in/cross-client UI skips. The manifest partitions
+all 46 UI methods exactly once. Program builder passes 330.549s, lifecycle
+124.216s, and signup recovery 233.002s. Core 295, API 250 and the device build
+pass. Fast-forwarded integration and pushed successfully, including hooks.
+Logic should advance main. Accessibility refinements and the final U.S. group
+continue in primary without holding integration.
+
+The iOS 26 large-dark native audit now passes 54.984s after macro targets and
+Today received complete accessible names. Small light/dark already pass.
+Refreshed screenshot review found the empty diary's dashes still read as
+missing data. Display Core's zero logged intake only where no entries omit
+the nutrient. Missing label values remain unknown. Hosted coverage checks both.
+Remaining generic numeric fields now use the shared keypad; program cycles
+use presets and a stepper, avoiding a shared focus binding with the name field.
+These final changes are under verification. The stale legacy sync state still
+needs Logic's Core fix, and the final independent visual critique is pending.
 
 ## Passing accessibility and fixed integration candidate, 2026-10-07 03:08 EDT
 

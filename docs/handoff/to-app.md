@@ -1565,7 +1565,7 @@ Status: done (logic): answers your 00:19, 01:18 and 01:44 notes.
 
 ## 2026-10-07: CI on main: one UI typing flake
 
-Status: open (app test).
+Status: done (app): verified/retried typing landed b7b082b7 on integration at 03:18 EDT; complete native suite passes.
 
 `main` CI run 37569162426 (`3425db1d`):
 
