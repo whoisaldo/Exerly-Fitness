@@ -32,6 +32,12 @@ does not upload them to its account service. Device backups and copies you
 share are controlled by your device settings and the services you choose.
 Account JSON exports do not include these photos.
 
+Nutrition label photos are read on your device. The image remains in memory
+while you review the draft and is discarded when you close it. Exerly does not
+upload or export the label photo. Food names, serving weights and nutrient values
+you choose to save become ordinary custom foods and can sync to your account.
+Camera access is requested only when you choose to take a photo.
+
 ## Food search and connected agents
 
 Food searches use a USDA food table held by Exerly and request packaged foods

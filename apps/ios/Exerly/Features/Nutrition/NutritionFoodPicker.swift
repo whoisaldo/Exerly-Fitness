@@ -15,6 +15,7 @@ struct NutritionFoodPicker: View {
     @State private var selectedFood: ExerlyCore.Food?
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
+    @State private var scanningLabel = false
     @State private var didLog = false
     @Environment(\.dismiss) private var dismiss
 
@@ -38,6 +39,8 @@ struct NutritionFoodPicker: View {
                     ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
                     Button { creating = true } label: { ExNavigationLabel(title: "Create food", icon: "square.and.pencil") }
                         .accessibilityIdentifier("nutrition.createFood")
+                    Button { scanningLabel = true } label: { ExNavigationLabel(title: "Scan label", icon: "text.viewfinder") }
+                        .accessibilityIdentifier("nutrition.scanLabel")
                     NavigationLink {
                         NutritionBarcodeView(workspace: workspace, api: api, date: date, meal: meal,
                                              timeZone: timeZone, unit: unit, actions: actions) {
@@ -79,6 +82,11 @@ struct NutritionFoodPicker: View {
                 if let createdFood { selectedFood = createdFood; self.createdFood = nil }
             }, content: {
                 NutritionFoodEditor(workspace: workspace) { createdFood = $0 }
+            })
+            .sheet(isPresented: $scanningLabel, onDismiss: {
+                if let createdFood { selectedFood = createdFood; self.createdFood = nil }
+            }, content: {
+                NutritionLabelCaptureView(workspace: workspace) { createdFood = $0 }
             })
             .sheet(item: $selectedFood, onDismiss: {
                 if didLog { didLog = false; onLogged(); dismiss() }

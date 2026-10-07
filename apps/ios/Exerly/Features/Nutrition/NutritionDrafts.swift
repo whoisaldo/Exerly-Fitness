@@ -91,6 +91,16 @@ final class NutritionFoodDraft: ObservableObject {
         initialServings = portions
     }
 
+    convenience init(store: NutritionStore, label: LabelReading) {
+        self.init(store: store)
+        nutrients = Dictionary(uniqueKeysWithValues: Nutrient.allCases.map { ($0, NutritionNumberField(label.amounts[$0])) })
+        basis = label.basis == .per100g ? .per100g : .perServing
+        if label.basis == .serving { labelGrams = NutritionNumberField(label.servingGrams) }
+        if let grams = label.servingGrams, label.basis != .per100ml {
+            servings = [NutritionServingFields(Serving(label.servingText ?? "Label serving", grams: grams))]
+        }
+    }
+
     var hasChanges: Bool {
         name != template.name || brand != (template.brand ?? "") || favorite != template.favorite ||
             nutrients != initialNutrients || servings != initialServings || basis != .per100g || !labelGrams.text.isEmpty

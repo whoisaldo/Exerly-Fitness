@@ -19,6 +19,7 @@ struct NutritionBarcodeView: View {
     @State private var selectedFood: ExerlyCore.Food?
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
+    @State private var scanningLabel = false
     @State private var didLog = false
     @State private var lookupTask: Task<Void, Never>?
     @FocusState private var typing: Bool
@@ -96,6 +97,8 @@ struct NutritionBarcodeView: View {
                     }
                 }
             }
+            Button("Scan a nutrition label") { camera.stop(); scanningLabel = true }.buttonStyle(ExActionStyle())
+                .accessibilityIdentifier("nutrition.scanLabel")
             Button("Enter a food label") { camera.stop(); creating = true }.buttonStyle(ExActionStyle(secondary: true))
             HStack {
                 Button("Scan again") {
@@ -124,6 +127,11 @@ struct NutritionBarcodeView: View {
         }, content: {
             NutritionFoodEditor(workspace: workspace) { createdFood = $0 }
         })
+        .sheet(isPresented: $scanningLabel, onDismiss: {
+            if let createdFood { selectedFood = createdFood; self.createdFood = nil }
+        }, content: {
+            NutritionLabelCaptureView(workspace: workspace) { createdFood = $0 }
+        })
         .sheet(item: $selectedFood, onDismiss: {
             if didLog { didLog = false; onLogged() }
         }, content: { food in
@@ -148,6 +156,6 @@ struct NutritionBarcodeView: View {
         let allowed = status == .authorized ? true : status == .notDetermined ? await AVCaptureDevice.requestAccess(for: .video) : false
         guard !Task.isCancelled else { return }
         cameraAllowed = allowed
-        if allowed && scenePhase == .active && search.request == nil && selectedFood == nil && !creating { camera.start() }
+        if allowed && scenePhase == .active && search.request == nil && selectedFood == nil && !creating && !scanningLabel { camera.start() }
     }
 }

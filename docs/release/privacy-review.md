@@ -9,7 +9,7 @@ The declaration must cover the app and its service providers. The account
 deletion flow must remain available in the app, as described in Apple's
 [account deletion guidance](https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion).
 
-## Data map for the current native build
+## Data map for the native app and pending label release
 
 | Data                                            | Current path                                                                                   | Candidate declaration                                                                           |
 | ----------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -22,6 +22,7 @@ deletion flow must remain available in the app, as described in Apple's
 | Search terms and barcodes                       | USDA lookup on the server plus Open Food Facts requests; bounded search cache in server memory | Review provider retention and search-data declaration; cache is not linked to an account        |
 | Steps and active energy read in Health settings | HealthKit to local presentation only                                                           | This screen does not transmit these readings; manually logged health records above are separate |
 | Progress photos                                 | System photo picker to local SwiftData records                                                 | No Exerly account upload; device backup settings may apply                                      |
+| Nutrition label photos                          | System picker or camera to bounded local Vision processing; image only in draft memory         | No photo upload or persistence; saved food nutrients follow account sync                        |
 | IP addresses and request diagnostics            | Network hosts and rate limiting                                                                | Hosting/log retention must be reviewed before choosing the final diagnostic categories          |
 | TestFlight feedback and crash reports           | Apple beta service                                                                             | Confirm what Sideband accesses and retains; no additional crash SDK is present                  |
 | Agent-selected data                             | Scoped token/API, to the chosen agent                                                          | User-directed sharing; document scopes and revocation, plus provider responsibilities           |
@@ -36,6 +37,10 @@ do not assume that the manifest alone completes the App Store questionnaire.
 - HealthReadModel requests steps and active energy, with an empty write set.
   Its Core readers return values to this screen, with no account mutation.
 - PhotosTab uses the system photo picker and local ProgressPhoto storage.
+- NutritionLabelCaptureView uses native photo selection and on-device Vision.
+  NutritionLabelScanner discards cancelled and replaced results. Image bytes stay
+  in memory and never enter Food, sync payloads or account exports. Saved reviewed
+  nutrients become ordinary custom foods. A10 does not yet include this flow.
 - Native searches look up generic foods in the server's bundled USDA table and
   call Open Food Facts for packaged products. Attribution remains visible. The
   USDA lookup itself makes no provider request, but the search endpoint still

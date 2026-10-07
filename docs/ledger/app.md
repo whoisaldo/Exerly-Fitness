@@ -6,19 +6,39 @@ milestone. Current date 2026-10-07, updated 10:17 EDT.
 
 ## Merge status
 
-Integration is `79d4c213`, pushed after the complete A10 gate. A10 build
+Integration is `45417cd4`, pushed after the complete A10 gate. A10 build
 2610071410 is live in Ali-only internal TestFlight, fixed/tagged79d4c213. Release
-status documentation is the next small landing. N15 label capture remains in
+status documentation is landed and pushed. N15 label capture remains in
 progress in the primary worktree, with no Core/API edits or integration hold.
 
-| App branch                         | Unlanded work                                      | Last landed / cleanup                                   |
-| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                             | Deleted locally/remotely                                |
-| `agent/app-next`                   | None, git cherry empty                             | Deleted locally/remotely; worktree removed              |
-| `agent/app-programs`               | None, git cherry empty                             | A6 landed 19925b28; branch deleted                      |
-| `release/app-nutrition-foundation` | None                                               | Foundation landed 60e83cf9; branch deleted              |
-| `agent/app-nutrition`              | N15 label capture in progress; no unlanded commits | A10 0b5e74e9 and A9 release docs 79d4c213 landed/pushed |
-| `release/app-design`               | None, fixed79d4c213 for A10 archive                | Only release worktree; A9 shipped                       |
+| App branch                         | Unlanded work                                   | Last landed / cleanup                                   |
+| ---------------------------------- | ----------------------------------------------- | ------------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                          | Deleted locally/remotely                                |
+| `agent/app-next`                   | None, git cherry empty                          | Deleted locally/remotely; worktree removed              |
+| `agent/app-programs`               | None, git cherry empty                          | A6 landed 19925b28; branch deleted                      |
+| `release/app-nutrition-foundation` | None                                            | Foundation landed 60e83cf9; branch deleted              |
+| `agent/app-nutrition`              | N04 plates next; N15 moved to agent/app-label   | A10 0b5e74e9 and A9 release docs 79d4c213 landed/pushed |
+| `agent/app-label`                  | N15 implementation; Core basis regression fails | Not landed; awaiting Logic correction                   |
+| `release/app-design`               | None, fixed79d4c213 for A10 archive             | Only release worktree; A9 shipped                       |
+
+## N15 release held for Core basis correction, 2026-10-07 10:29 EDT
+
+A10 remains live. N15's default iOS26 photo journey passes222.380s, camera
+fallback81.865s. Small default light passes153.467s/60.511s and latest AX
+passes349.766s/129.861s. The native Photos center tap fixes the iOS26 remote
+accessibility hit-point issue. Original red runs are preserved. Latest AX
+captures confirm complete Calories and carbohydrate headings in one column.
+
+Final contract review found a real P1: NutritionLabel.read treats any kJ as
+per100g even when the label explicitly says per serving. A50g/200kcal bar is
+saved as200kcal/100g instead of400. The new hosted regression proves both
+failures in label-kilojoule-basis.xcresult. Core correction is requested in
+both Logic inboxes, with the exact reproducer. N15 must not ship or land while
+this fails. No app-side arithmetic workaround.
+
+Keep N15 source in agent/app-label and its UI validation in the existing release
+worktree. Continue independent N04 plates from landed45417cd4 on
+agent/app-nutrition. Rejoin the label feature after Logic corrects the contract.
 
 ## A10 shipped; N15 full checks, 2026-10-07 10:22 EDT
 

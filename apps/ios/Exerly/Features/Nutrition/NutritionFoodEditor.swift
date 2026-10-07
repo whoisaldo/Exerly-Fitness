@@ -4,21 +4,26 @@ import SwiftUI
 struct NutritionFoodEditor: View {
     let workspace: TrainingWorkspace
     let onSaved: (ExerlyCore.Food) -> Void
+    let scan: NutritionLabelScan?
     @StateObject private var draft: NutritionFoodDraft
     @State private var discarding = false
     @AccessibilityFocusState private var errorsFocused: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.dismiss) private var dismiss
 
-    init(workspace: TrainingWorkspace, editing: ExerlyCore.Food? = nil, onSaved: @escaping (ExerlyCore.Food) -> Void) {
+    init(workspace: TrainingWorkspace, editing: ExerlyCore.Food? = nil, scan: NutritionLabelScan? = nil, onSaved: @escaping (ExerlyCore.Food) -> Void) {
         self.workspace = workspace
         self.onSaved = onSaved
-        _draft = StateObject(wrappedValue: NutritionFoodDraft(store: workspace.nutrition, editing: editing))
+        self.scan = scan
+        _draft = StateObject(wrappedValue: scan.map { NutritionFoodDraft(store: workspace.nutrition, label: $0.reading) }
+            ?? NutritionFoodDraft(store: workspace.nutrition, editing: editing))
     }
 
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
                 ExScreen {
+                    if let scan { NutritionLabelReviewHeader(scan: scan) }
                     ExCard {
                         ExEyebrow("Food label", color: .exPrimaryText)
                         TextField("Food name", text: $draft.name, prompt: Text("Food name").foregroundColor(.exTextSecondary), axis: .vertical).font(.exH2)
@@ -31,15 +36,15 @@ struct NutritionFoodEditor: View {
                         ExChoiceChips(values: NutritionFoodDraft.Basis.allCases, selection: $draft.basis) { $0.rawValue }
                             .accessibilityIdentifier("nutrition.labelBasis")
                         if draft.basis == .perServing {
-                            NutritionNumberInput(title: "Label serving weight (g)", text: $draft.labelGrams.text)
+                            NutritionNumberInput(title: scan?.reading.basis == .per100ml ? "Weight of 100 ml (g)" : "Label serving weight (g)", text: $draft.labelGrams.text)
                                 .accessibilityIdentifier("nutrition.labelGrams")
                         }
                         Text("Blank means unknown. Use 0 only when the label says zero.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        ExSectionHeading("Energy & macros")
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), alignment: .top)], alignment: .leading, spacing: ExSpacing.content) {
+                        ExSectionHeading("Calories & macros")
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 320 : 145), alignment: .top)], alignment: .leading, spacing: ExSpacing.content) {
                             ForEach([Nutrient.energy, .protein, .carbohydrate, .fat], id: \.self) { nutrientField($0) }
                         }
                     }
@@ -84,6 +89,7 @@ struct NutritionFoodEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { hideKeyboard(); if draft.hasChanges { discarding = true } else { dismiss() } }
+                        .accessibilityIdentifier("nutrition.cancelFood")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -110,7 +116,7 @@ struct NutritionFoodEditor: View {
     }
 
     private func nutrientField(_ nutrient: Nutrient) -> some View {
-        NutritionNumberInput(title: "\(nutrient.name) (\(nutrient.unit.rawValue))", text: Binding(
+        NutritionNumberInput(title: "\(nutrient == .energy ? "Calories" : nutrient.name) (\(nutrient.unit.rawValue))", text: Binding(
             get: { draft.nutrients[nutrient]?.text ?? "" },
             set: { draft.nutrients[nutrient]?.text = $0 }
         ))

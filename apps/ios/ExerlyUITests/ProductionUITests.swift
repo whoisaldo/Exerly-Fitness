@@ -307,7 +307,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.addFood"], in: app)
         tap(app.buttons["nutrition.createFood"], in: app)
         replace(app.textFields["nutrition.foodName"], with: "Synthetic oats", in: app)
-        replace(app.textFields["Energy (kcal)"], with: "380", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "380", in: app)
         replace(app.textFields["Protein (g)"], with: "13.2", in: app)
         replace(app.textFields["Carbohydrate (g)"], with: "62.5", in: app)
         replace(app.textFields["Fat (g)"], with: "0", in: app)
@@ -533,7 +533,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.libraryActions"], in: app)
         tap(app.buttons["nutrition.libraryEdit"], in: app)
         replace(app.textFields["nutrition.foodName"], with: "Synthetic ripe pear", in: app)
-        replace(app.textFields["Energy (kcal)"], with: "60", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "60", in: app)
         dismissKeyboard(app)
         capture(app, "nutrition-library-label-edit")
         tap(app.buttons["nutrition.saveFood"], in: app)
@@ -1577,6 +1577,130 @@ final class ProductionUITests: XCTestCase {
         capture(app, "training-prefilled-one-tap")
     }
 
+    func testNutritionLabelPhotoReviewCancellationAndOfflineSaveUseRealRecognition() async throws {
+        continueAfterFailure = false
+        guard ProcessInfo.processInfo.environment["EXERLY_TEST_LABEL_PHOTO"] == "1" else {
+            throw XCTSkip("Requires the synthetic Nutrition Facts image in this simulator's photo library")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-label-photo", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.scanLabel"], in: app)
+        capture(app, "nutrition-label-start")
+        try chooseSyntheticLabelPhoto(in: app)
+        capture(app, "nutrition-label-review")
+        tap(app.buttons["View original nutrition label"], in: app)
+        XCTAssertTrue(app.navigationBars["Label photo"].waitForExistence(timeout: 5))
+        capture(app, "nutrition-label-original-photo")
+        tap(app.buttons["Close"], in: app)
+        tap(app.buttons["nutrition.cancelFood"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        XCTAssertTrue(app.navigationBars["Scan label"].waitForExistence(timeout: 10))
+        let cancelledExport = try await request("GET", "/api/export", token: person.token)
+        let cancelledDocuments = try XCTUnwrap(cancelledExport["documents"] as? [[String: Any]])
+        XCTAssertFalse(cancelledDocuments.contains { ["saved_food", "food_entry"].contains($0["kind"] as? String ?? "") })
+        try chooseSyntheticLabelPhoto(in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Scanned synthetic cereal", in: app)
+        reveal(app.textFields["Label serving weight (g)"], in: app)
+        XCTAssertEqual(app.textFields["Label serving weight (g)"].value as? String, "55")
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "230")
+        replace(app.textFields["Calories (kcal)"], with: "231.5", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-label-corrected-values")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.saveFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Log food"].waitForExistence(timeout: 15))
+        chooseFoodMeasure("grams", in: app)
+        replace(app.textFields["Amount (g)"], with: "55", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Scanned synthetic cereal")).firstMatch, in: app)
+        reveal(app.textFields["Amount (g)"], in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "55")
+        capture(app, "nutrition-label-offline-relaunched")
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let foods = documents.filter { $0["kind"] as? String == "saved_food" }
+        XCTAssertEqual(foods.count, 1)
+        XCTAssertEqual(documents.filter { $0["kind"] as? String == "food_entry" }.count, 1)
+        let food = try XCTUnwrap(foods.first?["payload"] as? [String: Any])
+        XCTAssertEqual(food["name"] as? String, "Scanned synthetic cereal")
+        XCTAssertEqual(food["source"] as? String, "custom")
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(try XCTUnwrap(nutrients["energy"] as? Double), 420.90909090909, accuracy: 0.000_000_001)
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        XCTAssertNil(nutrients["vitaminD"])
+        XCTAssertNil(food["imageData"])
+        XCTAssertNil(food["image"])
+    }
+
+    func testNutritionLabelCameraFallbackAndManualCancellationSaveNothing() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-label-manual", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.scanLabel"], in: app)
+        tap(app.buttons["nutrition.labelTakePhoto"], in: app)
+        let fallback = app.staticTexts["This device has no available camera. Choose a label photo or enter it manually."]
+        reveal(fallback, in: app)
+        XCTAssertTrue(fallback.exists)
+        capture(app, "nutrition-label-camera-fallback")
+        tap(app.buttons["nutrition.labelManual"], in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Unsaved label", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.cancelFood"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        tap(app.buttons["nutrition.cancelScanLabel"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 10))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { ["saved_food", "food_entry"].contains($0["kind"] as? String ?? "") })
+    }
+
+    private func chooseSyntheticLabelPhoto(in app: XCUIApplication) throws {
+        tap(app.buttons["nutrition.labelChoosePhoto"], in: app)
+        dismissPhotoPickerIntroduction(in: app)
+        let photo = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
+        guard photo.waitForExistence(timeout: 10) else {
+            XCTFail("The seeded label photo did not appear in the photo picker")
+            throw NSError(domain: "NutritionLabelPhotoJourney", code: 1)
+        }
+        // iOS 26 inserts its privacy introduction after presenting the picker.
+        // Wait for the photo grid before dismissing that late-arriving overlay.
+        dismissPhotoPickerIntroduction(in: app)
+        // iOS 26's remote Photos grid can report an on-screen thumbnail as not
+        // hittable. Tap its verified visible center through the real picker.
+        if photo.isHittable { photo.tap() }
+        else {
+            let frame = photo.frame
+            guard !frame.isEmpty, app.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) else {
+                XCTFail("The seeded photo is outside the visible picker")
+                throw NSError(domain: "NutritionLabelPhotoJourney", code: 2)
+            }
+            photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        guard app.navigationBars["Food label"].waitForExistence(timeout: 30) else {
+            XCTFail("The selected photo did not reach label review")
+            throw NSError(domain: "NutritionLabelPhotoJourney", code: 3)
+        }
+    }
+
     func testUSFoodOuncesAndNamedServingsKeepExactWeightAcrossOfflineRelaunch() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "food-ounces", units: "imperial")
@@ -1842,7 +1966,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.libraryFood.\(seeded.foodID)"], in: app)
         tap(app.buttons["nutrition.libraryActions"], in: app)
         tap(app.buttons["nutrition.libraryEdit"], in: app)
-        replace(app.textFields["Energy (kcal)"], with: "200.5", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "200.5", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveFood"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
