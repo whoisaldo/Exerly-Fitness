@@ -27,7 +27,11 @@ struct NutritionNumberField: Equatable {
 
 enum NutritionDraftError: LocalizedError {
     case input(String)
-    var errorDescription: String? { switch self { case .input(let message): message } }
+    var errorDescription: String? {
+        switch self {
+        case .input(let message): message
+        }
+    }
 
     static func messages(_ error: Error) -> [String] {
         if case NutritionStore.StoreError.invalid(let messages) = error { return messages }
@@ -209,5 +213,49 @@ final class NutritionEntryDraft: ObservableObject {
             return entry
         } catch { errors = NutritionDraftError.messages(error) }
         return nil
+    }
+}
+
+@MainActor
+final class NutritionDiaryActions: ObservableObject {
+    @Published private(set) var deleted: FoodEntry?
+    @Published private(set) var error: String?
+    private let store: NutritionStore
+
+    init(store: NutritionStore) { self.store = store }
+
+    @discardableResult
+    func delete(_ reviewed: FoodEntry) -> Bool {
+        error = nil
+        guard store.entries.first(where: { $0.id == reviewed.id }) == reviewed else {
+            error = "This entry changed after you opened it. Reopen it to review the latest version before deleting."
+            return false
+        }
+        do {
+            try store.deleteEntry(reviewed.id)
+            deleted = reviewed
+            return true
+        } catch {
+            self.error = "Could not delete this entry. It is still saved. Try again."
+            return false
+        }
+    }
+
+    @discardableResult
+    func undoDeletion() -> Bool {
+        error = nil
+        guard let deleted else { return false }
+        guard !store.entries.contains(where: { $0.id == deleted.id }) else {
+            error = "This entry was restored or changed elsewhere. Undo would overwrite it. Review the saved entry instead."
+            return false
+        }
+        do {
+            try store.saveEntry(deleted)
+            self.deleted = nil
+            return true
+        } catch {
+            self.error = "Could not undo the deletion. Try again."
+            return false
+        }
     }
 }

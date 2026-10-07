@@ -204,4 +204,44 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertTrue(store.entries.isEmpty)
     }
 
+    func testEntryDeletionAndUndoRefuseToOverwriteChangesAfterReview() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic pear", per100g: NutrientAmounts([.energy: 57, .sodium: 0]))
+        var entry = try store.log(food, grams: 125.123456789, on: date, meal: "Snacks")
+        let actions = NutritionDiaryActions(store: store)
+        let reviewed = entry
+        entry.meal = "Lunch"
+        try store.saveEntry(entry)
+        XCTAssertFalse(actions.delete(reviewed))
+        XCTAssertEqual(store.entries.first, entry)
+        XCTAssertNil(actions.deleted)
+        XCTAssertTrue(actions.delete(entry))
+        XCTAssertTrue(store.entries.isEmpty)
+        XCTAssertEqual(actions.deleted, entry)
+        XCTAssertTrue(actions.undoDeletion())
+        XCTAssertEqual(store.entries.first, entry)
+        XCTAssertNil(actions.deleted)
+        XCTAssertTrue(actions.delete(entry))
+        entry.grams = 40
+        try store.saveEntry(entry)
+        XCTAssertFalse(actions.undoDeletion())
+        XCTAssertEqual(store.entries.first, entry)
+        XCTAssertNotNil(actions.error)
+    }
+
+    func testFailedDeletionKeepsTheEntryAndDoesNotOfferUndo() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let workspace = try TrainingWorkspace(accountID: UUID().uuidString, root: root)
+        let date = try XCTUnwrap(LocalDate("2026-10-06"))
+        let food = ExerlyCore.Food(name: "Synthetic pear", per100g: NutrientAmounts([.energy: 57]))
+        let entry = try workspace.nutrition.log(food, grams: 125, on: date, meal: "Snacks")
+        let actions = NutritionDiaryActions(store: workspace.nutrition)
+        await workspace.close()
+        XCTAssertFalse(actions.delete(entry))
+        XCTAssertEqual(workspace.nutrition.entries.first, entry)
+        XCTAssertNil(actions.deleted)
+        XCTAssertNotNil(actions.error)
+    }
 }

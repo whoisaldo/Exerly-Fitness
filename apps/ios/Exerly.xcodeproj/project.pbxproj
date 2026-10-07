@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        0FEC17CB82D14EF29F455A23 /* NutritionFoodEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCBE4BB9D2DA439BB10E047E; };
+        6A0912B0C6B2470CA5333FE9 /* NutritionComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9466ADD66997466E960DF138; };
         65319BE475B64C4E83B11FEA /* NutritionDrafts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8020E7EEC6A948FC866775E6; };
         A650352E2DC24A6EB71D1008 /* NutritionPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FE851555CB44219DE581E3; };
         6751206B7FEC405595E09014 /* PlannedWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742DC8EEBEA54BF2A4C74E1A; };
@@ -120,9 +122,12 @@
 		CD508C36C38556FABF336EB9 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 207C8C31715A2D872CAD9F4C; };
 		589D3F4B987F48311100E8A2 /* Features/Profile/PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */; };
 		33B72BCF9D859C0CE883A989 /* AccountCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAACDF4879A569D2277D0FB; };
+        9570FCD95FEA47E3A1535337 /* NutritionEntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD78D7DC40B04CEAB225542D; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        DCBE4BB9D2DA439BB10E047E /* NutritionFoodEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionFoodEditor.swift; sourceTree = SOURCE_ROOT; };
+        9466ADD66997466E960DF138 /* NutritionComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionComponents.swift; sourceTree = SOURCE_ROOT; };
         8020E7EEC6A948FC866775E6 /* NutritionDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionDrafts.swift; sourceTree = SOURCE_ROOT; };
         E9FE851555CB44219DE581E3 /* NutritionPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/NutritionPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         742DC8EEBEA54BF2A4C74E1A /* PlannedWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/PlannedWorkoutView.swift; sourceTree = SOURCE_ROOT; };
@@ -239,6 +244,7 @@
 		207C8C31715A2D872CAD9F4C /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/SyncEngine.swift; sourceTree = SOURCE_ROOT; };
 		E01303FED14820B6487FB0CB /* Features/Profile/PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
 		3FAACDF4879A569D2277D0FB /* AccountCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Core/Services/AccountCalendar.swift; sourceTree = SOURCE_ROOT; };
+        DD78D7DC40B04CEAB225542D /* NutritionEntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionEntryEditor.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -519,6 +525,9 @@
                 8DABCD4CC3DD4382BCDBE410 /* TrainingProgramsView.swift */,
                 742DC8EEBEA54BF2A4C74E1A /* PlannedWorkoutView.swift */,
                 8020E7EEC6A948FC866775E6 /* NutritionDrafts.swift */,
+                9466ADD66997466E960DF138 /* NutritionComponents.swift */,
+                DCBE4BB9D2DA439BB10E047E /* NutritionFoodEditor.swift */,
+                DD78D7DC40B04CEAB225542D /* NutritionEntryEditor.swift */,
                 2074878F71D31A245ACA8736 /* TrainingProgramPresentation.swift */,
                 011E7B46AA3A63658E338D7A /* ProgramPresentationTests.swift */,
                 E9FE851555CB44219DE581E3 /* NutritionPresentationTests.swift */,
@@ -698,6 +707,9 @@
                 526F2C1D49254927A2B1E1E7 /* TrainingProgramsView.swift in Sources */,
                 6751206B7FEC405595E09014 /* PlannedWorkoutView.swift in Sources */,
                 65319BE475B64C4E83B11FEA /* NutritionDrafts.swift in Sources */,
+                6A0912B0C6B2470CA5333FE9 /* NutritionComponents.swift in Sources */,
+                0FEC17CB82D14EF29F455A23 /* NutritionFoodEditor.swift in Sources */,
+                9570FCD95FEA47E3A1535337 /* NutritionEntryEditor.swift in Sources */,
                 486FCF0D4F60CBE1CC60056E /* TrainingProgramPresentation.swift in Sources */,
                 00B1F383D5DB3694CEB3CE2D /* ExerciseLogView.swift in Sources */,
                 E22188448C5EFC5FEA741FF6 /* TrainingObservationsView.swift in Sources */,
