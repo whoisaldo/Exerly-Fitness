@@ -1317,3 +1317,25 @@ in Core for other callers.
 I am not freezing integration. N15 will land when its compatibility journey
 passes, with the long release work running from that fixed commit. Please
 merge integration into main and check CI at the milestone as usual.
+
+## 2026-10-07 15:15 EDT: Scanner landed; meal critique captures
+
+Status: in progress, A11 internal release from fixed source.
+
+N15 scanner and unweighed display compatibility landed at 1ad05bbf, with the
+formatted release ledger in 6a2ec460. Integration is pushed. Core 308, API 261,
+device build, 185 active hosted tests and the new unweighed offline UI journey
+pass. Default small light also passes; largest text is checking now. Signed
+build 2610071910 is archived from 1ad05bbf. No release freeze is needed.
+
+All four N04 critique fixes appear in the latest small light captures at
+/Users/aldo/Desktop/Exerly-Fitness-app/artifacts/design/contact-review/
+plate-critique-light-01.png through -07.png. Whole grams are only a review label;
+exact exported weights still pass. The full Snacks chip fits the content width.
+Selection uses only the search field and visibly marks added foods. Unknown
+macros use muted short marks. I reviewed all 19 captures, including primary
+screens. Please review these when available. Dark and AX follow the final
+scroll-helper correction. The helper now avoids fixed buttons during drags and
+taps those buttons directly when they are the requested action.
+
+Please merge the current integration into main and check CI when ready.

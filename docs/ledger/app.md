@@ -2,25 +2,49 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 15:12 EDT.
+Current date 2026-10-07, updated 15:30 EDT.
 
 ## Merge status
 
-Integration now contains scanner source 1ad05bbf. The initial push was stopped
-by Markdown formatting checks; the documentation formatting is being corrected.
-A10 build 2610071410 remains live. A11 archive 2610071910 is being built from
-fixed 1ad05bbf while final compatibility captures run. N04 stays in the primary
-worktree and does not hold integration.
+Integration is pushed at 6a2ec460. A11 scanner build 2610071910 is live in
+Ali-only TestFlight from fixed 1ad05bbf. Scanner branch cleanup is complete.
+N04 is rebased onto the scanner and its final compact header is being checked.
 
-| App branch                         | Unlanded work                                 | Last landed / cleanup                                          |
-| ---------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                        | Deleted locally/remotely                                       |
-| `agent/app-next`                   | None, git cherry empty                        | Deleted locally/remotely; worktree removed                     |
-| `agent/app-programs`               | None                                          | A6 landed 19925b28; branch deleted                             |
-| `release/app-nutrition-foundation` | None                                          | Foundation landed 60e83cf9; branch deleted                     |
-| `agent/app-nutrition`              | N04 meal builder and final visual corrections | Search correction bf03296e landed and pushed                   |
-| `agent/app-label`                  | None, git cherry marks both commits applied   | Cleanup after push                                             |
-| `release/app-design`               | Release documentation only                    | N15 and unweighed display landed 1ad05bbf; A11 archive running |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                                         |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed                       |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted                               |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted                       |
+| `agent/app-nutrition`              | N04 meal builder and final visual corrections                                                      | Search correction bf03296e landed and pushed                     |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                                     |
+| `release/app-design`               | Release documentation only                                                                         | N15 landed 1ad05bbf; A11 shipped; fixed source remains available |
+
+## A11 shipped; N04 combined gate, 2026-10-07 15:30 EDT
+
+A11 build 2610071910 is VALID and IN_BETA_TESTING. One Ali tester, one assigned
+build and exact English notes are verified in the release evidence. A10 was
+detached only after A11 became available. Signed archive and exported IPA pass
+all release checks. No physical-camera or pure-French-label claim is made.
+
+Unweighed-entry journeys passed default dark 111.455s, small light 98.630s and
+largest dark 268.723s. Captures were inspected. They keep the entry scope and
+whole portion explicit; largest type uses one nutrient column. A11's full gate
+retains the original missing-label-fixture failure and its passing seeded
+rerun. Final test evidence records the original and follow-up results.
+
+N04 is rebased onto 6a2ec460. Combined Core 308, API 261, 191 active hosted tests
+plus one credential skip and device build pass. Light/dark primary and both
+meal journeys are running. Largest cancellation passed 267.882s. The earlier
+footer fix passed the entire offline journey in 403.557s. No app data error was
+found. The compact selection header now leaves more room for foods, following
+the public MacroFactor comparison in contact-review/a12-meal-reference.png.
+Invalid zero portions now give one instruction instead of two equivalent Core
+messages. All stored precision remains unchanged.
+
+Main's CI run 37643561510 at a982be2d failed Health permission, leaving the app
+waiting for Apple's authorization sheet. The artifact is being downloaded for
+inspection; this is not called a passing CI run. Search ranking now passes.
 
 ## Unweighed entries and final meal verification, 2026-10-07 15:07 EDT
 
