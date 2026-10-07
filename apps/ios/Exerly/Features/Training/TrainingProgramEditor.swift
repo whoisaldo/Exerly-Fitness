@@ -27,6 +27,24 @@ struct TrainingProgramEditor: View {
         return ProgramAppearance.colors.first { $0.hex == color }?.name ?? "Saved color \(color)"
     }
 
+    private var iconChoices: [(String, String?)] {
+        var choices: [(String, String?)] = [("Default", nil)]
+        choices += ProgramAppearance.icons.map { ($0.name, Optional($0.symbol)) }
+        if let icon = draft.program.icon, !choices.contains(where: { $0.1 == icon }) {
+            choices.append(("Saved icon", icon))
+        }
+        return choices
+    }
+
+    private var colorChoices: [(String, String?)] {
+        var choices: [(String, String?)] = [("Default", nil)]
+        choices += ProgramAppearance.colors.map { ($0.name, Optional($0.hex)) }
+        if let color = draft.program.color, !choices.contains(where: { $0.1 == color }) {
+            choices.append(("Saved color \(color)", color))
+        }
+        return choices
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { scroll in
@@ -43,13 +61,10 @@ struct TrainingProgramEditor: View {
                     Section("Schedule") {
                         ExQuantityControl(title: "Cycles", text: $draft.cycles, step: 1, presets: [1, 2, 4, 6],
                                           identifier: "program.cycles", integer: true)
-                        ProgramChoiceField("Deload", value: TrainingProgramFormat.deload(draft.program.deload)) {
-                            Picker("Deload", selection: $draft.program.deload) {
-                                ForEach(DeloadPlacement.allCases, id: \.self) {
-                                    Text(TrainingProgramFormat.deload($0)).tag($0)
-                                }
-                            }
-                        }.accessibilityIdentifier("program.deload")
+                        ProgramChoiceField("Deload", value: TrainingProgramFormat.deload(draft.program.deload),
+                                           selection: $draft.program.deload,
+                                           choices: DeloadPlacement.allCases.map { (TrainingProgramFormat.deload($0), $0) })
+                            .accessibilityIdentifier("program.deload")
                     }
                     Section {
                         if !draft.errors.isEmpty {
@@ -90,28 +105,8 @@ struct TrainingProgramEditor: View {
                         Text("Days without exercises are rest days. Finished workouts advance the plan.")
                     }
                     Section("Appearance") {
-                        ProgramChoiceField("Icon", value: iconName) {
-                            Picker("Icon", selection: $draft.program.icon) {
-                                Text("Default").tag(String?.none)
-                                ForEach(ProgramAppearance.icons, id: \.symbol) { choice in
-                                    Label(choice.name, systemImage: choice.symbol).tag(Optional(choice.symbol))
-                                }
-                                if let icon = draft.program.icon, !ProgramAppearance.icons.contains(where: { $0.symbol == icon }) {
-                                    Text("Saved icon").tag(Optional(icon))
-                                }
-                            }
-                        }
-                        ProgramChoiceField("Color", value: colorName) {
-                            Picker("Color", selection: $draft.program.color) {
-                                Text("Default").tag(String?.none)
-                                ForEach(ProgramAppearance.colors, id: \.hex) { choice in
-                                    Text(choice.name).tag(Optional(choice.hex))
-                                }
-                                if let color = draft.program.color, !ProgramAppearance.colors.contains(where: { $0.hex == color }) {
-                                    Text("Saved color \(color)").tag(Optional(color))
-                                }
-                            }
-                        }
+                        ProgramChoiceField("Icon", value: iconName, selection: $draft.program.icon, choices: iconChoices)
+                        ProgramChoiceField("Color", value: colorName, selection: $draft.program.color, choices: colorChoices)
                     }
                     Section {
                         Text("Saving changes future workouts. Completed workouts and any workout in progress keep their logged values.")
@@ -159,32 +154,83 @@ struct TrainingProgramEditor: View {
     }
 }
 
-private struct ProgramChoiceField<Content: View>: View {
+private struct ProgramChoiceField<Value: Hashable>: View {
     let title: String
     let value: String
-    let content: () -> Content
+    @Binding var selection: Value
+    let choices: [(String, Value)]
     @Environment(\.dynamicTypeSize) private var typeSize
+    @State private var showingChoices = false
 
-    init(_ title: String, value: String, @ViewBuilder content: @escaping () -> Content) {
+    init(_ title: String, value: String, selection: Binding<Value>, choices: [(String, Value)]) {
         self.title = title
         self.value = value
-        self.content = content
+        _selection = selection
+        self.choices = choices
     }
 
     var body: some View {
-        Menu(content: content) {
-            let layout = typeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
-                : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
-            layout {
-                Text(title).foregroundStyle(Color.exTextPrimary)
-                if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
-                HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
-                    Text(value).fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
-                    Image(systemName: "chevron.up.chevron.down").font(.caption)
+        Group {
+            if typeSize.isAccessibilitySize {
+                Button { showingChoices = true } label: { fieldLabel }
+                    .buttonStyle(.plain)
+            } else {
+                Menu {
+                    ForEach(choices.indices, id: \.self) { index in
+                        Button { choose(index) } label: {
+                            if choices[index].1 == selection {
+                                Label(choices[index].0, systemImage: "checkmark")
+                            } else { Text(choices[index].0) }
+                        }
+                    }
+                } label: { fieldLabel }
+            }
+        }
+        .accessibilityLabel("\(title), \(value)")
+        .sheet(isPresented: $showingChoices) {
+            NavigationStack {
+                ExScreen {
+                    ForEach(choices.indices, id: \.self) { index in
+                        Button { choose(index) } label: {
+                            ExCard(accent: choices[index].1 == selection) {
+                                HStack(alignment: .firstTextBaseline, spacing: ExSpacing.content) {
+                                    Text(choices[index].0).font(.exBodyMedium)
+                                        .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                                    Spacer(minLength: ExSpacing.small)
+                                    if choices[index].1 == selection {
+                                        Image(systemName: "checkmark").accessibilityHidden(true)
+                                    }
+                                }.foregroundStyle(choices[index].1 == selection ? Color.exPrimaryText : Color.exTextPrimary)
+                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            }.contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityLabel(choices[index].0)
+                            .accessibilityAddTraits(choices[index].1 == selection ? .isSelected : [])
+                    }
                 }
-            }.frame(minHeight: 44).padding(.vertical, 4).contentShape(Rectangle())
-        }.accessibilityLabel("\(title), \(value)")
+                .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showingChoices = false } } }
+            }
+        }
+    }
+
+    private var fieldLabel: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.item))
+        return layout {
+            Text(title).foregroundStyle(Color.exTextPrimary)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+                Text(value).fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                Image(systemName: "chevron.up.chevron.down").font(.caption)
+            }.foregroundStyle(Color.exPrimaryText)
+        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.vertical, 4).contentShape(Rectangle())
+    }
+
+    private func choose(_ index: Int) {
+        selection = choices[index].1
+        showingChoices = false
     }
 }
 
@@ -305,11 +351,8 @@ private struct TrainingProgramSlotEditor: View {
                     }
                 }
                 if !availableCycles.isEmpty {
-                    ProgramChoiceField("Cycle to customize", value: "Cycle \(selectedCycle + 1)") {
-                        Picker("Cycle to customize", selection: $selectedCycle) {
-                            ForEach(availableCycles, id: \.self) { Text("Cycle \($0 + 1)").tag($0) }
-                        }
-                    }
+                    ProgramChoiceField("Cycle to customize", value: "Cycle \(selectedCycle + 1)",
+                                       selection: $selectedCycle, choices: availableCycles.map { ("Cycle \($0 + 1)", $0) })
                     Button("Add cycle targets") {
                         guard let cycle = availableCycles.contains(selectedCycle) ? selectedCycle : availableCycles.first else { return }
                         slot.cycleTargets[cycle] = slot.target
@@ -374,13 +417,8 @@ private struct ProgramTargetEditor: View {
             ExCard {
                 ExQuantityControl(title: "Rest in seconds, optional", text: $fields.rest, step: 15, presets: [60, 90, 120], unit: "s")
                 Button("Use my usual timer") { fields.rest = "" }.font(.exLabel).frame(minHeight: 44)
-                ProgramChoiceField("Set type", value: TrainingFormat.kind(fields.kind)) {
-                    Picker("Set type", selection: $fields.kind) {
-                        ForEach(SetKind.allCases.filter { $0 != .warmUp }, id: \.self) {
-                            Text(TrainingFormat.kind($0)).tag($0)
-                        }
-                    }
-                }
+                ProgramChoiceField("Set type", value: TrainingFormat.kind(fields.kind), selection: $fields.kind,
+                                   choices: SetKind.allCases.filter { $0 != .warmUp }.map { (TrainingFormat.kind($0), $0) })
             }
             if let error { Text(error).foregroundStyle(Color.exError) }
         }

@@ -23,7 +23,8 @@ struct NutritionFoodEditor: View {
                         ExEyebrow("Food label", color: .exPrimaryText)
                         TextField("Food name", text: $draft.name, prompt: Text("Food name").foregroundColor(.exTextSecondary), axis: .vertical).font(.exH2)
                             .accessibilityIdentifier("nutrition.foodName")
-                        TextField("Brand, optional", text: $draft.brand, prompt: Text("Brand, optional").foregroundColor(.exTextSecondary), axis: .vertical)
+                        TextField("Brand", text: $draft.brand, prompt: Text("Brand").foregroundColor(.exTextSecondary), axis: .vertical)
+                            .accessibilityLabel("Brand, optional")
                         Toggle("Favorite", isOn: $draft.favorite)
                     }
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
