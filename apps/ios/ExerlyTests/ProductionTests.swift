@@ -1364,6 +1364,37 @@ final class ProductionTests: XCTestCase {
         XCTAssertFalse(HealthReadModel(accountID: "a", namespace: "fixture", defaults: defaults).isEnabled)
     }
 
+    func testLegacySyncStatusIsNotInheritedByAnotherAccountOrKeptAfterPurge() async throws {
+        keychain.saveSession(token: "e30.eyJzdWIiOiJhIn0.fixture", refreshToken: "fixture-refresh")
+        let container = try ModelContainer(for: Schema(versionedSchema: ExerlySchemaV3.self),
+                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let engine = SyncEngine(api: api, monitorNetwork: false, automaticallySync: false, observeClock: false)
+        let synced = { (_: URLRequest) in (200, Data(#"{"changes":[],"cursor":0,"has_more":false}"#.utf8)) }
+        engine.configure(container: container, accountID: "a")
+        StubURLProtocol.handler = synced
+        await engine.synchronize(force: true)
+        XCTAssertNotNil(engine.lastSyncedAt)
+        StubURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+        await engine.synchronize(force: true)
+        XCTAssertTrue(engine.isOffline)
+        XCTAssertNotNil(engine.error)
+        XCTAssertNotNil(engine.lastSyncedAt, "the last success is still the last success")
+
+        engine.configure(container: container, accountID: "b")
+        XCTAssertNil(engine.lastSyncedAt)
+        XCTAssertFalse(engine.isOffline)
+        XCTAssertNil(engine.error)
+
+        engine.configure(container: container, accountID: "a")
+        StubURLProtocol.handler = synced
+        await engine.synchronize(force: true)
+        XCTAssertNotNil(engine.lastSyncedAt)
+        try engine.purge(accountID: "a")
+        XCTAssertNil(engine.lastSyncedAt)
+        XCTAssertFalse(engine.isOffline)
+        XCTAssertNil(engine.error)
+    }
+
     func testLegacySyncClearsOfflineFailureAfterSuccessfulPullWithNoPendingWrites() async throws {
         keychain.saveSession(token: "e30.eyJzdWIiOiJhIn0.fixture", refreshToken: "fixture-refresh")
         let container = try ModelContainer(for: Schema(versionedSchema: ExerlySchemaV3.self),
