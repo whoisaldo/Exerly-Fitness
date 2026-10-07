@@ -4,6 +4,107 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testEntryCorrectionStaysInTheDraftAndPreservesTheLibrarySourceAndOtherEntries() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let food = ExerlyCore.Food(id: "usda:2709224", name: "Measured banana", source: .usda,
+                                   per100g: NutrientAmounts([.energy: 89.123456789, .protein: 1.23456789, .sodium: 0]))
+        try store.saveFood(food)
+        let original = try store.log(food, grams: 45.123456789, on: date, meal: "Breakfast")
+        let other = try store.log(food, grams: 90, on: date, meal: "Lunch")
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: original.meal, editing: original)
+        let reviewed = try XCTUnwrap(draft.reviewNutrition())
+        let correction = NutritionEntryNutrientsDraft(entry: reviewed)
+        correction.fields[.energy]?.text = "100,25"
+        correction.fields[.protein]?.text = ""
+        let corrected = try correction.correctedEntry(locale: Locale(identifier: "de_DE"))
+        try draft.applyNutrition(corrected, reviewed: reviewed)
+        XCTAssertTrue(draft.hasChanges)
+        XCTAssertEqual(store.entries.first(where: { $0.id == original.id }), original, "Apply must not write before the entry's Save")
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.id, original.id)
+        XCTAssertEqual(saved.food.source, .usda)
+        XCTAssertEqual(saved.food.foodID, food.id)
+        XCTAssertEqual(saved.food.edited, true)
+        XCTAssertEqual(saved.grams, original.grams)
+        XCTAssertEqual(saved.loggedAt, original.loggedAt)
+        XCTAssertEqual(try XCTUnwrap(saved.nutrients[.energy]), 100.25, accuracy: 0.000_000_001)
+        XCTAssertNil(saved.nutrients[.protein])
+        XCTAssertEqual(saved.nutrients[.sodium], 0)
+        XCTAssertEqual(store.food(food.id), food)
+        XCTAssertEqual(store.entries.first(where: { $0.id == other.id }), other)
+
+        let reopened = NutritionEntryDraft(store: store, food: food, date: date, meal: saved.meal, editing: saved)
+        reopened.amount.text = "90.246913578"
+        let doubled = try XCTUnwrap(reopened.save())
+        XCTAssertEqual(try XCTUnwrap(doubled.nutrients[.energy]), 200.5, accuracy: 0.000_000_001)
+        XCTAssertTrue(doubled.food.edited == true)
+        XCTAssertNil(doubled.nutrients[.protein])
+    }
+
+    func testOpeningEntryNutritionWithoutChangesPreservesExactValuesAndOptionalQuantity() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let food = ExerlyCore.Food(name: "Precise label", per100g: NutrientAmounts([.energy: 380.123456789, .protein: 3.333333333]))
+        let original = FoodEntry(date: date, meal: "Lunch", loggedAt: Date().roundedToMilliseconds,
+                                 food: food.snapshot, grams: 37.123456789, serving: Serving("Scoop", grams: 37), quantity: nil)
+        try store.saveEntry(original)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: original.meal, editing: original)
+        let reviewed = try XCTUnwrap(draft.reviewNutrition())
+        let correction = NutritionEntryNutrientsDraft(entry: reviewed)
+        XCTAssertFalse(correction.hasChanges)
+        try draft.applyNutrition(correction.correctedEntry(), reviewed: reviewed)
+        XCTAssertFalse(draft.hasChanges)
+        XCTAssertEqual(draft.save(), original)
+        XCTAssertNil(draft.snapshot.edited)
+    }
+
+    func testEntryCorrectionRejectsBadNumbersAndChangedPortionsWithoutLosingInput() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let food = ExerlyCore.Food(name: "Test food", per100g: NutrientAmounts([.energy: 200]))
+        let original = try store.log(food, grams: 75, on: date, meal: "Lunch")
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: original.meal, editing: original)
+        let reviewed = try XCTUnwrap(draft.reviewNutrition())
+        let correction = NutritionEntryNutrientsDraft(entry: reviewed)
+        for input in ["-1", "not a number", "1e999"] {
+            correction.fields[.energy]?.text = input
+            XCTAssertThrowsError(try correction.correctedEntry())
+            XCTAssertEqual(correction.fields[.energy]?.text, input)
+            XCTAssertEqual(store.entries.first, original)
+        }
+        correction.fields[.energy]?.text = "125"
+        let corrected = try correction.correctedEntry()
+        draft.amount.text = "100"
+        XCTAssertThrowsError(try draft.applyNutrition(corrected, reviewed: reviewed))
+        XCTAssertEqual(draft.snapshot, original.food)
+        draft.amount.text = "75"
+        let freshReview = try XCTUnwrap(draft.reviewNutrition())
+        try draft.applyNutrition(corrected, reviewed: freshReview)
+        var newer = original
+        newer.meal = "Dinner"
+        try store.saveEntry(newer)
+        XCTAssertNil(draft.save(), "An entry changed by another writer still needs review")
+        XCTAssertEqual(store.entries.first, newer)
+        XCTAssertEqual(draft.snapshot.edited, true)
+    }
+
+    func testRepeatingACorrectedSnapshotKeepsItsMarkButALibraryLabelUsesItsOwnNutrients() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let food = ExerlyCore.Food(name: "Saved label", per100g: NutrientAmounts([.energy: 200]))
+        let original = try store.log(food, grams: 50, on: date, meal: "Lunch")
+        let corrected = original.editingNutrients(NutrientAmounts([.energy: 70]))
+        try store.saveEntry(corrected)
+        let recent = NutritionEntryDraft(store: store, food: corrected.food.foodForLogging(), date: date, meal: "Dinner", repeating: corrected)
+        XCTAssertEqual(recent.save()?.food.edited, true)
+        let library = NutritionEntryDraft(store: store, food: food, date: date, meal: "Dinner", repeating: corrected)
+        let repeated = try XCTUnwrap(library.save())
+        XCTAssertNil(repeated.food.edited)
+        XCTAssertEqual(repeated.food.per100g, food.per100g)
+        XCTAssertEqual(repeated.nutrients[.energy], 100)
+    }
+
     func testEmptyDiaryShowsZeroLoggedButMissingLabelValuesStayUnknown() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))

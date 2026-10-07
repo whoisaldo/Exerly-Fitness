@@ -28,6 +28,11 @@ struct ExScreen<Content: View>: View {
                 .padding(.top, ExSpacing.content)
                 .padding(.bottom, ExSpacing.major)
         }
+        // A SwiftUI sheet can deliver a button tap after a scroll starts on
+        // that button. A simultaneous tap recognizer restores cancellation
+        // without replacing button actions or changing their accessibility.
+        // Regression: testScrollingFoodControlsPreservesThePortion, iOS 18/26.
+        .simultaneousGesture(TapGesture())
         .exScrollEdges()
         .background(Color.exBackground)
     }

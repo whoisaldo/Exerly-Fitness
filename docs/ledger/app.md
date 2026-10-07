@@ -2,23 +2,81 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 07:04 EDT.
+milestone. Current date 2026-10-07, updated 07:51 EDT.
 
 ## Merge status
 
-Integration and primary are `7570a98b`, pushed at06:56 EDT. git cherry is empty
+Integration and primary are `883f2348`, pushed at07:05 EDT. git cherry is empty
 for both primary and the fixed5e351cc8 release branch. Build2610071054 is VALID
 and IN_BETA_TESTING, verified07:03EDT. Only Ali, only this build, exact English
 notes. The design gate is complete. Resume nutrition now.
 
-| App branch                         | Unlanded work                             | Last landed / cleanup                                              |
-| ---------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
-| `agent/app`                        | None, git cherry empty                    | Deleted locally/remotely; primary now uses nutrition               |
-| `agent/app-next`                   | None, git cherry empty                    | Deleted locally/remotely; worktree removed; captures preserved     |
-| `agent/app-programs`               | None, git cherry empty                    | A6 landed19925b28; branch deleted locally/remotely                 |
-| `release/app-nutrition-foundation` | None                                      | Foundation landed60e83cf9; branch deleted                          |
-| `agent/app-nutrition`              | Only current release-status documentation | All code7570a98b landed and pushed06:56; hooks pass                |
-| `release/app-design`               | None, fixed5e351cc8, git cherry empty     | Signed1054 shipped internally07:03; keep this one release worktree |
+| App branch                         | Unlanded work                                            | Last landed / cleanup                                              |
+| ---------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                   | Deleted locally/remotely; primary now uses nutrition               |
+| `agent/app-next`                   | None, git cherry empty                                   | Deleted locally/remotely; worktree removed; captures preserved     |
+| `agent/app-programs`               | None, git cherry empty                                   | A6 landed19925b28; branch deleted locally/remotely                 |
+| `release/app-nutrition-foundation` | None                                                     | Foundation landed60e83cf9; branch deleted                          |
+| `agent/app-nutrition`              | N08 corrections pass focused UI; full regression pending | Release status883f2348 landed and pushed07:05; hooks pass          |
+| `release/app-design`               | None, fixed5e351cc8, git cherry empty                    | Signed1054 shipped internally07:03; keep this one release worktree |
+
+## A9 entry correction source ready, 2026-10-07 07:51 EDT
+
+The complete correction journey passes at default light238.174s, default dark
+235.517s and largest text on the SE444.388s. The focused scrolling regression
+passes55.915s on the SE and also passes on iOS26, including cancellation without
+any changed meal or portion. The fix is a simultaneous tap recognizer on ExScreen;
+borderless buttons alone did not fix it. The original failing center drags stay
+in the regression. No test gesture was diverted around the controls.
+
+Core300, API260,171 active hosted tests and the current device build pass. The
+first two suites were rerun after the new models; subsequent changes are the
+shared scroll gesture, stacked date labels and test selectors. All51 UI methods
+are prepared exactly once across three fixed-release groups, with the complete
+hosted suite in group1. Run that gate before landing and uploading A9. Current
+TestFlight remains1.0(2610071054), not this new feature.
+
+Default light review: clear whole-portion summary, Calories and macros above the
+collapsed nutrient groups, unknown values visibly separate from zero. The public
+MacroFactor logger reference is denser, but this correction screen needs the
+scope explanation so a label edit cannot be mistaken for a library-wide change.
+Largest type revealed squeezed date labels, now stacked above their pickers.
+Capture exports remain in artifacts/design/nutrition-correction-*.
+
+Next independent work is N15 native label capture, planned in design025 using
+Logic's existing NutritionLabel contract. N03 inverse serving conversion is
+still pending in both Logic inboxes. Continue without ending at the release.
+
+## Entry corrections in progress, 2026-10-07 07:26 EDT
+
+Update07:39: default-light correction journey passes238.174s after fixing empty
+placeholder matching and distinct Cancel selectors. Core300/API260 pass again.
+The AX issue is a real interaction bug, not nutrient arithmetic: a focused test
+starts at150g and two center drags select50g. Before/after captures are exported
+to artifacts/design/nutrition-scroll-diagnostic. A borderless button style still
+fails. The shared ExScreen is now testing an empty simultaneous TapGesture to
+restore touch cancellation. This matches reports at
+https://developer.apple.com/forums/thread/763436. Do not bypass the regression
+by dragging around controls. v3 AX has the original bug and is red; v2 AX was
+interrupted by the prior runner's teardown and has no valid test result. The
+current gesture experiment runs on7D2096B8 with fixture39225. Dark default runs
+on7189880A with fixture39226. New large-text date labels stack above their pickers.
+
+N08 uses FoodEntry.editingNutrients through a staged editor. Whole-portion
+Calories and nutrients can be corrected without changing the library or source.
+Blank remains unknown, zero remains measured zero. Parent cancellation discards
+corrections. Four hosted tests cover precision, stale drafts and snapshots.
+The complete hosted suite passes171 active tests with one credential skip;
+device build and scoped lint pass. No Core/API edits.
+
+UI runs entry-correction-light and entry-correction-ax are red and unfinished.
+One harness error treated the empty-field placeholder as entered text; its fix
+is in the working tree. Both runs select a hidden Cancel in stacked sheets.
+The AX run also shows99.5 Calories for a seeded150g portion that should show
+149.25. Investigate whether scrolling changes the portion before changing any
+expected value. Do not claim this feature verified, merged or shipped yet.
+Logs and screenshots are in artifacts/nutrition. Continue debugging and land
+the passing piece promptly, then resume food units and multi-food logging.
 
 ## Design release shipped, 2026-10-07 07:04 EDT
 
