@@ -2,23 +2,39 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 06:54 EDT.
+milestone. Current date 2026-10-07, updated 07:04 EDT.
 
 ## Merge status
 
-Integration is `8e1488c2`, landed and pushed at06:47 EDT. Primary is5e351cc8.
-The two remaining app changes only hide decorative icons at AX sizes. Both pass
-device build/lint and fresh primary AX capture. Archive1049 is superseded;
-archive1054 will use fixed5e351cc8 after the last image export is inspected.
+Integration and primary are `7570a98b`, pushed at06:56 EDT. git cherry is empty
+for both primary and the fixed5e351cc8 release branch. Build2610071054 is VALID
+and IN_BETA_TESTING, verified07:03EDT. Only Ali, only this build, exact English
+notes. The design gate is complete. Resume nutrition now.
 
-| App branch                         | Unlanded work                                                        | Last landed / cleanup                                                           |
-| ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                               | Deleted locally/remotely; primary now uses nutrition                            |
-| `agent/app-next`                   | None, git cherry empty                                               | Deleted locally/remotely; worktree removed; captures preserved                  |
-| `agent/app-programs`               | None, git cherry empty                                               | A6 landed19925b28; branch deleted locally/remotely                              |
-| `release/app-nutrition-foundation` | None                                                                 | Foundation landed60e83cf9; branch deleted                                       |
-| `agent/app-nutrition`              | Two code commits through5e351cc8 plus current verification docs      | Design batch5b2c9f92 at06:40; program/notice fixes8e1488c2 at06:47, both pushed |
-| `release/app-design`               | Fixedfbc2d769 archive1049 is superseded by5e351cc8 navigation labels | Will FF to1054 source after final AX image review; no integration hold          |
+| App branch                         | Unlanded work                             | Last landed / cleanup                                              |
+| ---------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                    | Deleted locally/remotely; primary now uses nutrition               |
+| `agent/app-next`                   | None, git cherry empty                    | Deleted locally/remotely; worktree removed; captures preserved     |
+| `agent/app-programs`               | None, git cherry empty                    | A6 landed19925b28; branch deleted locally/remotely                 |
+| `release/app-nutrition-foundation` | None                                      | Foundation landed60e83cf9; branch deleted                          |
+| `agent/app-nutrition`              | Only current release-status documentation | All code7570a98b landed and pushed06:56; hooks pass                |
+| `release/app-design`               | None, fixed5e351cc8, git cherry empty     | Signed1054 shipped internally07:03; keep this one release worktree |
+
+## Design release shipped, 2026-10-07 07:04 EDT
+
+Version1.0 build2610071054 is live in internal TestFlight. Apple build and delivery
+ID2369b3ca-bb37-40f7-b0c0-b83831fa2d40. Exact English notes verified, only Ali and
+only the new build assigned, IN_BETA_TESTING.0024 was detached after1054 became
+available. Release evidence: release worktree artifacts/design/design-internal-
+2610071054.json and apps/ios/build/release/2610071054. Source5e351cc8. Obsolete
+0818/0937/1041/1049 were never uploaded. Do not restart design validation or
+archive1054 again. All finished code is landed. Continue new nutrition work.
+
+Next: N08 entry nutrient corrections using FoodEntry.editingNutrients, with
+snapshot/source/library preservation, unknown values and stale-draft guards.
+N03 food units needs Serving.quantity(grams:) or equivalent, requested from Logic
+in both inbox copies. Implement independent published contracts while awaiting
+it. Then multi-food plates, quick entries, recipes and account CSV/import.
 
 ## Final release source, 2026-10-07 06:54 EDT
 

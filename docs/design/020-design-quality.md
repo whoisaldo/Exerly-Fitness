@@ -46,18 +46,18 @@ these without weakening stale-edit guards, historical snapshots or recovery.
 
 ## Screen audit checklist
 
-| Area                 | Existing routes                                                                      | State                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Diary                | Daily summary, populated/empty meals, date, status, notes, copy, undo                | Summary, compact status/actions and guarded editors implemented; captures under review      |
-| Food                 | Picker, search, barcode, label editor, amount editor, saved library/detail           | Shared label/portion/keypad and library/repeat hierarchy implemented; full journeys running |
-| Training             | Home, active workout, set editor, notes, rest timer, exercise picker/detail          | Session summary, prior/RIR rows and keypad implemented; final visual review pending         |
-| Programs             | List/detail, builder/day/slot targets, overrides, planned workout, lifecycle reviews | Implemented; final light/dark and accessibility review pending                              |
-| History and insights | History/detail, exercise logs, observations, source-set links                        | Implemented; final light/dark and accessibility review pending                              |
-| Agents               | Inbox, proposal review/diffs/evidence/audit, tokens/create/revoke                    | Implemented; final light/dark and accessibility review pending                              |
-| Progress             | Measurements, weight/chart/history/edit/conflicts, photos, achievements              | Implemented; final light/dark and accessibility review pending                              |
-| Account              | Profile, preferences, appearance, password, account export/delete, sync, Health      | Implemented; final light/dark and accessibility review pending                              |
-| Daily health         | Activity/sleep/water summaries and editors, conflict/undo                            | Implemented; final light/dark and accessibility review pending                              |
-| First run            | Welcome, email/Apple login, signup, setup/repair/results                             | Pending visual review                                                                       |
+| Area                 | Existing routes                                                                      | State                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Diary                | Daily summary, populated/empty meals, date, status, notes, copy, undo                | Reviewed in default themes and AX; full native journeys pass                   |
+| Food                 | Picker, search, barcode, label editor, amount editor, saved library/detail           | Reviewed shared label, portion, keypad, library and repeat; full journeys pass |
+| Training             | Home, active workout, set editor, notes, rest timer, exercise picker/detail          | Reviewed summary, prior/RIR rows and keypad; full journeys pass                |
+| Programs             | List/detail, builder/day/slot targets, overrides, planned workout, lifecycle reviews | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| History and insights | History/detail, exercise logs, observations, source-set links                        | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| Agents               | Inbox, proposal review/diffs/evidence/audit, tokens/create/revoke                    | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| Progress             | Measurements, weight/chart/history/edit/conflicts, photos, achievements              | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| Account              | Profile, preferences, appearance, password, account export/delete, sync, Health      | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| Daily health         | Activity/sleep/water summaries and editors, conflict/undo                            | Reviewed in light/dark and AX; relevant native journeys pass                   |
+| First run            | Welcome, email/Apple login, signup, setup/repair/results                             | Welcome/sign-in/setup reviewed; automated signup/recovery pass                 |
 
 Unreachable legacy food/dashboard/social/coach screens are not product routes.
 Confirm the call sites before removing anything. Admin is only visible to an
@@ -197,3 +197,13 @@ its decorative icon at AX gives the wording room without changing its meaning or
 Retry action. Final default-theme captures and this narrow AX check are separate
 from the already-passing full baseline. The final candidate is8e1488c2; the source
 for signed build2610071041 is fixed in the one release worktree.
+
+## Final upload, 2026-10-07 06:59 EDT
+
+All eight default-size comparisons now use the final primary captures. The
+small-phone AX primary and offline/account captures also pass. Reviewed the final
+navigation rows: Barcode is a whole word, Connect an agent wraps at word boundaries,
+and Saved account no longer hyphenates. Decorative symbols stay at default sizes.
+Those fixes are5e351cc8, the source of signed1.0(2610071054). Apple accepted the
+upload at06:59:22EDT. Internal processing and group assignment remain separate.
+No physical-device or complete-parity claim follows from the visual review.

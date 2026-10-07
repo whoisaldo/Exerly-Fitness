@@ -5,47 +5,61 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-Programs milestone A6, version1.0 build2610070024, is available in internal
+Design milestone A8, version1.0 build2610071054, is available in internal
 TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only group contains
-exactly this build; English test notes are verified. The phone needs Tailscale
-for devbox1 staging. Original purple/pink, dark default and E/pulse mark remain.
+exactly this build, with the English design-change notes verified. Uploaded at
+06:59:22EDT and internal availability verified07:03EDT on2026-10-07. The phone
+needs Tailscale for devbox1 staging. The private internal account signs in
+successfully. Original purple/pink, dark default and E/pulse mark remain.
 
-A6 adds manual programs with training/rest days, cycles, deloads and per-cycle
-targets. Program lifecycle changes have a review. Next-workout estimates explain
-their source and any missing-RIR assumption, and link to the original set.
-Finished workouts advance the schedule. Program proposals show readable changes
-before accept or undo. Meal selection now stays unchanged while scrolling food
-details; changing it requires opening its menu.
+A8 gives existing screens one design system, summary-first diary and training,
+clear next actions and empty states, shared numeric controls, target progress,
+compact program previews and prominent suggestion changes. Account export has
+one route with an offline choice. Sync reflects both stores and clears stale
+status. Health requests only the two displayed read types and keeps its reading
+preference separate by account. The final accessibility review fixed wrapping
+fields, program menus, keyboard dismissal and oversized decorative icons.
 
-The final full suite passed132 hosted tests and30 UI journeys, with eight opt-in
-skips and zero failures. Core259 tests in52 suites, API238, device build, lint,
-format and typecheck pass; existing warnings remain. All four largest-text
-program variants and four meal-menu variants pass. All66 program,12 meal-menu
-variant and10 normal meal captures were inspected, alongside earlier program
-source/proposal/lifecycle captures. Legacy diary rows still truncate at largest
-text and are being replaced in A7. Physical Apple sign-in, installation and
-VoiceOver remain unverified.
+New accounts default to U.S. units: nutritional Calories, pounds, feet/inches,
+and fluid ounces for water. Explicit metric choices stay metric. Macro amounts
+remain grams. Food ounce/volume entry, entry nutrient corrections, plates and
+recipes are the next nutrition work; they are not claimed in this release.
 
-The signed archive/IPA passed identity, HealthKit and Apple sign-in entitlements,
-profile, privacy manifest, icon, version, staging endpoint and debug-hook checks.
-Existing distribution certificate reused. Upload succeeded2026-10-06 21:08 EDT;
-internal availability and only-Ali/only-build membership verified21:12 EDT.
+The fixed5b2c9f92 baseline passed167 active hosted tests and40 active UI journeys,
+with one private-credential skip and nine opt-in/cross-client UI skips. Core300,
+API260, device build and repository hooks pass. The final5e351cc8 source adds
+verified program choices and AX wrapping corrections. Affected checks passed:
+program builder/lifecycle at default size, full program builder at largest type,
+agent creation/revocation/direct-write consent at largest type, offline export
+and reconnection, empty/secondary screens, and fresh default light/dark/AX primary
+captures. The real native reminder banner was also captured. Detailed counts,
+source boundaries and earlier failed runs remain in docs/ledger/app.md.
 
-- Archive: `apps/ios/build/release/2610070024/Exerly.xcarchive`
-- IPA: `apps/ios/build/release/2610070024/export/Exerly.ipa`
-- Logs: `apps/ios/build/release/2610070024/{archive,export,upload}.log`
-- Build UUID: `dae77dd7-57c6-4922-9a34-c9ee016cf201`
+The final comparisons against public MacroFactor, Workouts, Things and Fitness
+screenshots are in artifacts/design/contact-review/final-*.png. Original native
+images and169 named view variants are browsable at http://100.80.149.7:39215.
+Physical installation, Apple sign-in, Health authorization, VoiceOver and measured
+phone performance remain unverified. Feature parity is not complete.
+
+Signed archive/IPA checks pass for identity, HealthKit and Apple sign-in
+entitlements, profile, privacy manifest, icon, version, staging endpoint and
+absence of debug hooks. Source is fixed5e351cc8 in the single release worktree.
+
+- Release worktree: `/Users/aldo/Desktop/Exerly-Fitness-app-programs`.
+- Archive: `apps/ios/build/release/2610071054/Exerly.xcarchive`.
+- IPA: `apps/ios/build/release/2610071054/export/Exerly.ipa`.
+- Logs: `apps/ios/build/release/2610071054/{archive,export,upload}.log`.
+- Build UUID: `2369b3ca-bb37-40f7-b0c0-b83831fa2d40`.
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
 - Team: `9X79V37Q89`. Distribution certificate expires2027-09-25.
 - Exerly profile: `J5J395Y9AF`, expires2027-09-25, HealthKit and Apple sign-in.
-- App Store Connect: Exerly, app ID `6819776832`, created through the website.
-- Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`; only Ali, no public link or automatic future builds.
+- App Store Connect: Exerly, app ID `6819776832`.
+- Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`.
+  Only Ali, no public link or automatic future builds.
 
-A5 build2610062144 was detached only after0024 became available. Obsolete signed
-candidate2610062322 was never uploaded. Bad1633 used an incompatible production
-API and was detached earlier. Credentials/signing material stay outside the
-repository. Build outputs are ignored. No other app's identifiers or profiles
-changed.
+A6 build2610070024 was detached only after1054 became available. Obsolete signed
+candidates0818/0937/1041/1049 were never uploaded. Credentials and signing material
+stay outside the repository. No other app's identifiers or profiles changed.
 
 ## Repeatable commands
 
@@ -90,10 +104,10 @@ bundles are not given an unsupported provisioning profile.
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610070024), valid and in beta testing; only Ali and only this build.                                                                             |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610071054), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | Final A6: API238, Core259,132 hosted tests and30 UI journeys pass; eight opt-in skips. Device build passes.                                            |
+| Native test suite                 | In progress           | A8: API260, Core300,167 hosted and40 active UI pass, plus focused final deltas. Device build passes.                                                   |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |
@@ -171,7 +185,5 @@ Ali and Logic to review. They describe the current native routes, separate
 local Health/photo use from account sync, and identify the production retention
 and provider decisions still needed. Nothing has been published or submitted.
 
-The final design release is being validated from a fixed commit. Signed
-candidate2610070818 is not uploaded; a later display correction must be included
-in the release. Keep the current-build section above on A6 until Apple confirms
-a new build is available to the Ali-only internal group.
+The full design pass is shipped internally as2610071054. Keep physical-device
+checks and the broader parity backlog open. Resume nutrition from the ledger.

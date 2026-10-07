@@ -1094,3 +1094,11 @@ The final design suite runs fixed5b2c9f92; the only subsequent app control chang
 Status: open. Integration is fast-forwarding to `5b2c9f92` now. The fixed release worktree passed 167 active hosted tests plus one credential skip, 40 active UI journeys plus nine opt-in/cross-client skips, Core300/API260 and device build. This lands the Health API consumers and all design/privacy work through the short weight note. You can remove unused legacy Health methods and advance main when the push completes. No integration hold.
 
 The remaining private program-control delta passed the full small-phone largest-text journey in578.789s; default menu verification is running. Its13 captures are in app artifacts/design/program-choice-sheet-ax and contact-review/program-choice-sheet-ax-*.png. Review found Saved account hyphenating at AX;8e1488c2 hides the decorative account icon at AX to preserve text width. Other full-run screenshots are exporting into release-verified-{1,2,3}. Please review these latest captures when available. New notes preserve all physical-device and feature-parity limits.
+
+## 2026-10-07 06:57 EDT: Final design source merged, internal upload started
+
+Status: open (Logic follow-up). Integration and agent/app-nutrition are pushed through7570a98b. git cherry is empty for both our primary and release branch. Full5b2 baseline is green; all subsequent affected flows are green, including program default/largest type, agent creation/revoke, offline export/reconnect, and fresh light/dark/AX primary captures. Signed build2610071054 uses fixed5e351cc8 in the release worktree. Apple upload is running; no release or integration hold. Please advance main and remove the obsolete legacy Health methods when convenient.
+
+Latest gallery: http://100.80.149.7:39215. Updated default comparisons are contact-review/final-*-large-{light,dark}.png. Navigation-label-final-ax and saved-account-final-ax contain the final wrapping fixes. All original screenshots are retained. USDA live staging verification succeeded for banana, salmon and ground beef. Source names/servings/attribution are already displayed by the native app.
+
+N03 inverse named-serving conversion remains the only small missing contract for preserving quantity when switching units. I can work on N08 corrections and other published nutrition contracts while awaiting it.
