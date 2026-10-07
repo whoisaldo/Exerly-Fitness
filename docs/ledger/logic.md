@@ -5,12 +5,12 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 07:53 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 07:57 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
 | Branch                                        | Unlanded | Last landed                                                                                    |
 | --------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:48 EDT, integration (serving quantity; dead code removed)                        |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 07:57 EDT, integration (tokens can't manage tokens)                                 |
 | `main`                                        | –        | `0b56070f` (fast-forward, the design release), 2026-10-07 07:53 EDT; CI run 37616722886 queued |
 
 `main` and integration converged: integration was merged into `main`
@@ -214,6 +214,13 @@ foods golden. This removes the need for a USDA key. API 260.
 **Design release follow-ups.** The app's design release (1.0, build 2610071054) is in internal TestFlight. With its branch landed, the legacy
 Health methods it replaced and the old sync conflict views are removed.
 `Serving.quantity(grams:)` gives the app N03's unit switch. Core 301.
+
+**Audit: token management by case.** A personal access token could list and
+mint tokens at `/v1/Tokens`: the refusal compared the path case-sensitively,
+while Express routes regardless of case. So a read token could mint a write
+token, or a successor outliving its revocation. Fixed in `tokenMayUse` and by
+a guard in the tokens router, each tested alone. Production never ran this
+API; on staging only a synthetic probe account was affected.
 
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the

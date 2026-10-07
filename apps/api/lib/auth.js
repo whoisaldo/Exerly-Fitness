@@ -66,7 +66,9 @@ function readBearer(req) {
 }
 
 // Personal access tokens reach only these paths, and never token management.
-function tokenMayUse(path) {
+function tokenMayUse(url) {
+  // Express routes paths regardless of case, so compare them that way.
+  const path = url.toLowerCase();
   if (path.startsWith('/v1/tokens')) return false;
   return (
     path.startsWith('/v1/') ||

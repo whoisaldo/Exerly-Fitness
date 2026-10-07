@@ -81,19 +81,25 @@ test('tokens reach only /v1 and /mcp, never token management or the account', as
   const user = await signUp(api);
   const { token: pat } = await token(user, ['read', 'write']);
   assert.equal((await api.get('/v1/changes?after=0', { token: pat })).status, 200);
+  // Express matches paths regardless of case, so the refusal must too.
   for (const [method, path] of [
     ['get', '/api/export'],
     ['get', '/api/me'],
+    ['get', '/API/me'],
     ['get', '/v1/tokens'],
+    ['get', '/v1/Tokens'],
+    ['get', '/V1/TOKENS/'],
     ['del', '/api/account'],
   ]) {
     const res = await api[method](path, { token: pat });
     assert.equal(res.status, 403, `${method} ${path} -> ${res.status}`);
   }
-  assert.equal(
-    (await api.post('/v1/tokens', { name: 'x', scopes: ['read'] }, { token: pat })).status,
-    403
-  );
+  for (const path of ['/v1/tokens', '/v1/Tokens', '/v1/TOKENS']) {
+    const minted = await api.post(path, { name: 'x', scopes: ['read', 'write'] }, { token: pat });
+    assert.equal(minted.status, 403, `post ${path} -> ${minted.status}`);
+  }
+  const listed = await api.get('/v1/tokens', { token: user.token });
+  assert.equal(listed.body.length, 1, 'a token minted nothing');
 });
 
 test('a propose-only token files pending proposals under its own name and nothing else', async () => {

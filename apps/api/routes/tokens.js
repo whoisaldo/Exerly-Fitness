@@ -5,13 +5,18 @@ const express = require('express');
 const { createHash, randomBytes } = require('node:crypto');
 
 const store = require('../data');
-const { asyncHandler, badRequest, conflict, notFound } = require('../lib/errors');
+const { asyncHandler, badRequest, conflict, forbidden, notFound } = require('../lib/errors');
 const { authenticate } = require('../lib/auth');
 const v = require('../lib/validate');
 const { appendAudit } = require('../lib/documents');
 
 const router = express.Router();
 router.use(authenticate);
+// A token never manages tokens: it could mint itself more scope, or a
+// successor that outlives its own revocation.
+router.use((req, _res, next) =>
+  next(req.pat ? forbidden('Personal access tokens can use /v1 and /mcp only.') : undefined)
+);
 
 const SCOPES = ['read', 'propose', 'write'];
 const MAX_ACTIVE = 20;
