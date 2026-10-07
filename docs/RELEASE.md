@@ -1,6 +1,6 @@
 # Exerly release readiness
 
-Updated 2026-10-06. Internal TestFlight is authorized. External TestFlight and App
+Updated 2026-10-07. Internal TestFlight is authorized. External TestFlight and App
 Review require Ali's decision after the build and review material are ready.
 
 ## Current build
@@ -104,15 +104,15 @@ bundles are not given an unsupported provisioning profile.
 | Production database               | Blocked on deployment | Ali supplies Neon/DO secrets; logic owns migration and backups.                                                                                        |
 | Privacy manifest                  | Built                 | UserDefaults reason CA92.1; account, health, fitness and user content for functionality; no tracking. Audit before submission.                         |
 | Privacy labels                    | Draft                 | Match actual server/cloud handling. Do not publish until the final data-flow audit.                                                                    |
-| Privacy policy                    | Open, Ali review      | Plain-language retention/deletion, HealthKit, provider disclosures and cloud opt-in; needs hosted URL.                                                 |
-| HealthKit purpose strings         | Partial               | Capability/signing fixed; final type-by-type permission/consent audit remains.                                                                         |
+| Privacy policy                    | Open, Ali review      | Draft notice and data-flow review in docs/release; retention, production providers, legal review and hosted URL remain.                                |
+| HealthKit purpose strings         | Partial               | Current Health screen requests two read types and no writes; native permission/relaunch passes. Physical authorization remains.                        |
 | Cloud inference consent           | Open                  | Existing Gemini feature requires disclosure/opt-in redesign before public release.                                                                     |
 | Encryption/export compliance      | Draft                 | App uses platform TLS/Keychain, no custom encryption; Info declares no non-exempt encryption. Ali reviews legal declarations before public submission. |
 | Age rating                        | Open, Ali review      | Complete current questionnaire based on shipped features; no medications or medical claims.                                                            |
 | Name/subtitle/description         | Draft below           | Verify lengths, actual functionality and name availability in ASC.                                                                                     |
 | Keywords/category/copyright       | Draft below           | Fitness category, Sideband copyright and accurate search terms.                                                                                        |
 | Screenshots                       | Open                  | Synthetic data only, final UI, all required device sizes and localizations.                                                                            |
-| Support URL                       | Partial               | https://sideband.studio resolves and lists hello@sideband.studio; prepare Exerly-specific help/deletion guidance.                                      |
+| Support URL                       | Partial               | Exerly-specific help and deletion guidance drafted in docs/release/support-draft.md; public Sideband page remains to publish.                          |
 | Review notes/test account         | Open                  | Synthetic account; explain HealthKit, permissions, offline use and account deletion. No credentials committed.                                         |
 | Crash diagnostics                 | Open                  | MetricKit/TestFlight only, no third-party SDK. Document collection accurately.                                                                         |
 | Two consecutive full audits       | Open                  | Zero completed clean audits.                                                                                                                           |
@@ -162,3 +162,16 @@ to that file for AccountInfrastructureTests/testInternalTestAccountCompletesNati
 This tests the app target’s compiled endpoint, Keychain session persistence, login and
 bootstrap; it caught the difference from the stale production API. Hosted Core Keychain
 replacement/isolation/accessibility/removal also passes. Neither test prints credentials.
+
+## Prepared support and privacy material
+
+[Support instructions](release/support-draft.md), [privacy notice](release/privacy-policy-draft.md)
+and the [data-flow/publication review](release/privacy-review.md) are drafted for
+Ali and Logic to review. They describe the current native routes, separate
+local Health/photo use from account sync, and identify the production retention
+and provider decisions still needed. Nothing has been published or submitted.
+
+The final design release is being validated from a fixed commit. Signed
+candidate2610070818 is not uploaded; a later display correction must be included
+in the release. Keep the current-build section above on A6 until Apple confirms
+a new build is available to the Ali-only internal group.
