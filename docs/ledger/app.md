@@ -2,26 +2,89 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 19:33 EDT.
+Current date 2026-10-07, updated 20:02 EDT.
 
 ## Merge status
 
-Quick add is merged and pushed at ce9c7b21. The exercise-search toolbar fix
-passes default light/dark and largest-text gym journeys and is landing next.
-A14 candidate 2610072240 remains withheld after its fixed UI failure. Its
-other two groups finished successfully, but the candidate is not a release.
-A13 build 2610072129 remains live. A15 will combine gyms, Quick add and the
-search fix at a new fixed commit. Explicit label portions are in progress.
+Integration and agent/app-nutrition are pushed at cb39dddd, including Quick
+add and the exercise-search fix. A15 build 2610072338 is fixed there in the
+release worktree. Signed archive and exported IPA pass. Its fresh 61-method
+full UI gate is running across three independent fixtures. A14 2610072240 is
+withheld; A13 2610072129 remains live until A15 is actually available.
+Explicit label portions and summary-first food entry pass final checks and
+are landing next. Exercise guidance is the next slice.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                       |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                    |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed  |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted          |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted  |
-| `agent/app-nutrition`              | Exercise-search fix passed; label portions in progress                                             | Quick add landed/pushed ce9c7b21, 19:20 EDT |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                |
-| `release/app-design`               | None; fixed A14 candidate failed its UI gate                                                       | Fixed 181eac03; candidate 2610072240        |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                     |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed   |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted           |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted   |
+| `agent/app-nutrition`              | Explicit label portions and entry hierarchy in progress                                            | Search fix landed/pushed cb39dddd, 19:35 EDT |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                 |
+| `release/app-design`               | None; A15 full gate running at a fixed source                                                      | Fixed cb39dddd; candidate 2610072338         |
+
+## Final portion checks pass, 2026-10-07 20:02 EDT
+
+The filtered-portion final run passes all 209 active hosted tests, with one
+credential skip. The direct-choice journey passes in 103.460 seconds and the
+fluid-ounce relaunch regression in 125.222 seconds. The latest device build
+and changed-file SwiftLint pass. All 11 final liquid/portion attachments were inspected. The earlier 25
+light, three dark and four AX captures and the
+public comparison were inspected. No physical-device claim. Four presentation
+tests now cover label/recipe choices, invalid input, exact offline persistence,
+edited nutrition, unknown/zero and exclusion of synthetic measurement units.
+
+The comparison is contact-review/a16-portion-reference.png. N03 remains Built.
+A16 notes are drafted. Land this passing slice independently of A15. The new
+ExerciseGuideView.swift and design 032 are unregistered drafts for the next
+milestone and must not be included in the portion commit.
+
+## Portion capture review correction, 2026-10-07 19:57 EDT
+
+All 25 final light regression captures, three default dark and four largest
+text captures were inspected. The summary-first food entry and ounce display
+are clearer than the first iteration. Comparison a16-portion-reference.png
+includes the public MacroFactor logging guide and App Store screenshot. Its
+compact keypad and target-impact display remain follow-ups. The entry now
+shows nutrition before inputs and keeps the meal/date in its header.
+
+The liquid relaunch capture exposed a synthetic fl oz measure in Label
+portions. Published choices now exclude Core-recognized measuring units.
+An added hosted regression passes and verifies the exact saved weight is
+unchanged. The full hosted suite and native portion/fluid-ounce regressions
+are rerunning on this final correction. Do not land until those finish.
+The prior complete light group passed correction 286.701 s, explicit portion
+108.356 s, scrolling 44.267 s, unweighed 120.460 s and fluid ounces 116.905 s.
+Largest-text explicit portion passed 248.502 s; default dark also passed.
+
+A15 remains fixed at cb39dddd while these later changes continue. It is signed
+and validated, with its full UI gate still running. No A15 upload yet. The next
+app slice designs offline exercise technique guidance from public primary
+references. Design 032 is a draft, with no implementation or release claim.
+
+## A15 fixed; portion review continues, 2026-10-07 19:44 EDT
+
+All A14 jobs exited before advancing the release checkout. A15 is tracked
+clean at cb39ddddcc1ea2af3f3045d1c5aae4ee13ec255c. Build 2610072338 passes
+both signed-archive and exported-IPA validation. The full gate includes all
+61 declared UI methods exactly once, with all 205 active hosted tests in
+group 2. The three groups use 7D/39225, 02/39222 and 718/39226. Do not touch
+those simulators or advance the release tree until all groups finish.
+
+The primary's explicit-portion draft uses only published servings and Core
+preview. A tap changes the draft to one of that serving; its name is never
+parsed. Three new presentation tests pass with all 208 active hosted tests.
+Initial light/dark/AX journeys pass. The revised summary-first layout also
+passes light/dark/AX journeys; inspect its final AX and initial-screen light
+captures after export. Changed-file SwiftLint and the device build pass.
+Entry correction, unweighed totals, fluid ounces and scrolling regressions
+are running after the hierarchy change. These are separate from A15.
+
+P08 review found that the current session drops its original recommendation,
+slot target and gym increments. The Logic inbox requests a persisted Core
+contract before applying adjustments that must survive offline relaunch.
+Do not recreate that domain snapshot or progression math in app preferences.
 
 ## Search toolbar corrected, 2026-10-07 19:33 EDT
 

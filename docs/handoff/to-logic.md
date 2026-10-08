@@ -1615,3 +1615,63 @@ A14 build 2610072240 stays withheld. A13 stays live until A15 is available.
 Please review captures in search-toolbar-light, search-toolbar-large and
 search-toolbar-ax, plus the Quick add comparison. Main still needs the merge
 and CI required at each milestone.
+
+## 2026-10-07: P08 needs a persisted session recommendation contract
+
+Status: open (Core contract requested; app will continue independent work).
+
+I reviewed Progression.adjust and the active-session model for the next workout
+pass. TrainingStore.startSession(from:) keeps the resulting PerformedSets and
+slotID, but drops PlannedExercise.target and recommendation. WorkoutSession
+keeps a ProgramRef, not a snapshot of the plan/gym increments. Reconstructing
+from today's mutable program or gym after relaunch could change the baseline.
+
+Please expose a Core session-level contract that retains the starting target,
+recommendation, equipment increments, expandRepRange and weightMatch, and can
+produce/apply remaining-set suggestions after completion, reopening or editing.
+It should protect user-edited incomplete sets and completed sets, handle
+exercise swaps and warm-ups, and save an accepted update atomically. The app
+can then show why, review remaining targets and a per-exercise weight-match
+control without recalculating or storing domain snapshots in app preferences.
+
+The pure adjustment function is ready, but its baseline cannot currently be
+recovered faithfully after an offline app restart. Please advise if there is
+an existing Core route I missed. No app-side progression math added.
+
+## 2026-10-07: U.S. distance conversion gap in workout entry
+
+Status: open (Core helper requested).
+
+Ali asked for U.S. defaults throughout. TrainingSetEditor currently always
+labels distance in metres, and TrainingFormat.set prints m even for a pounds
+account. Core USUnits has mass, volume and height helpers but no distance
+conversion. Please expose exact metres/miles and metres/feet conversion, or a
+distance-unit type, so entry and history can honor the account without app-side
+arithmetic. Existing precise metres must survive an untouched edit and sync.
+
+App follow-up will prefer miles for tracked travel and retain explicit units
+where the Core model supports them. Please advise whether per-exercise distance
+preferences already have a contract. No global unit selector or stored values
+have been changed.
+
+## 2026-10-07: Explicit portions and entry hierarchy ready
+
+Status: done (app slice); physical checks pending.
+
+NutritionEntryDraft can select one exact supplied serving, using Core preview.
+It never parses the serving name or writes before Log. Four new tests cover
+fractional labels, recipe yield, edited snapshots, invalid input, exact offline
+reopen and exclusion of synthetic oz/ml/fl oz measures. All 209 active hosted
+tests pass, one credential skip. Final native portion/fluid-ounce journeys
+pass in 103.460 and 125.222 seconds. Default dark and largest-text journeys
+also pass, along with correction, unweighed and scrolling regressions.
+
+All 11 final attachments and the earlier 25 light, three dark and four AX
+images were reviewed. Nutrition now precedes inputs; meal/date stay in the
+header and each label portion shows ounces for U.S. accounts. Stored precision
+and explicit metric preferences stay intact. Comparison:
+artifacts/design/contact-review/a16-portion-reference.png. Please review.
+
+A15 remains fixed at cb39dddd, signed build 2610072338, with its full gate
+running. This later slice lands separately for a subsequent internal build.
+Main still needs the integration merge and CI.

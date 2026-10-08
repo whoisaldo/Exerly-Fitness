@@ -4,6 +4,96 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testReopeningAVolumeEntryDoesNotOfferItsSyntheticUnitAsALabelPortion() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let scoop = Serving("Scoop", grams: 42.123456789)
+        var food = ExerlyCore.Food(name: "Liquid", per100g: NutrientAmounts([.energy: 120]), servings: [scoop])
+        food.volume = VolumeBasis(density: 0.92, assumed: true)
+        try store.saveFood(food)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
+        draft.amount.text = "2.5"
+        let entry = try XCTUnwrap(draft.save())
+        let reopened = NutritionEntryDraft(store: store, food: entry.food.foodForLogging(serving: entry.serving),
+                                          date: date, meal: "Lunch", editing: entry)
+        XCTAssertEqual(reopened.publishedServings, [scoop])
+        XCTAssertEqual(reopened.measure, .fluidOunces)
+        XCTAssertEqual(try reopened.preview().grams, entry.grams)
+        XCTAssertFalse(reopened.selectPortion(try XCTUnwrap(entry.serving)))
+        XCTAssertEqual(reopened.save(), entry)
+    }
+
+    func testExplicitLabelPortionReplacesInvalidInputAndPersistsWithoutChangingTheDefault() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let account = UUID().uuidString
+        let workspace = try TrainingWorkspace(accountID: account, root: root)
+        let serving = Serving("1/2 cup", grams: 37.123456789)
+        let food = ExerlyCore.Food(name: "Label cereal", per100g: NutrientAmounts([.energy: 380, .fat: 0]), servings: [serving])
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let draft = NutritionEntryDraft(store: workspace.nutrition, food: food, date: date, meal: "Breakfast")
+        XCTAssertEqual(draft.measure, .ounces)
+        draft.amount.text = "not a number"
+        XCTAssertTrue(draft.selectPortion(serving))
+        XCTAssertEqual(draft.amount.text, "1", "One published half-cup serving is not half of that serving")
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        XCTAssertTrue(workspace.nutrition.entries.isEmpty, "Choosing a portion never writes to the diary")
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.serving, serving)
+        XCTAssertEqual(saved.quantity, 1)
+        XCTAssertNil(saved.nutrients[.protein])
+        XCTAssertEqual(saved.nutrients[.fat], 0)
+        await workspace.close()
+        let reopened = try TrainingWorkspace(accountID: account, root: root)
+        XCTAssertEqual(reopened.nutrition.entries.first, saved)
+        let repeated = NutritionEntryDraft(store: reopened.nutrition, food: food, date: date, meal: "Breakfast", repeating: saved)
+        XCTAssertEqual(repeated.measure, .serving(serving))
+        XCTAssertEqual(try repeated.preview().grams, saved.grams)
+        await reopened.close()
+    }
+
+    func testExplicitPortionKeepsEditedEntryNutritionAndRejectsAnUnpublishedChoice() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let serving = Serving("1 bar", grams: 45.123456789)
+        var food = ExerlyCore.Food(name: "Original bar", per100g: NutrientAmounts([.energy: 300, .sodium: 0]), servings: [serving])
+        try store.saveFood(food)
+        let original = try store.log(food, grams: 20, on: date, meal: "Snacks")
+        let corrected = original.editingNutrients(NutrientAmounts([.energy: 80, .sodium: 0]))
+        try store.saveEntry(corrected)
+        food.per100g = NutrientAmounts([.energy: 900, .protein: 70])
+        try store.saveFood(food)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Snacks", editing: corrected)
+        XCTAssertTrue(draft.selectPortion(serving))
+        let expected = try NutritionStore.preview(corrected.food.foodForLogging(serving: serving), serving: serving, quantity: 1)
+        XCTAssertEqual(try draft.preview().nutrients, expected.nutrients)
+        XCTAssertFalse(draft.selectPortion(Serving("Unpublished", grams: 200)))
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        XCTAssertEqual(store.entries.first, corrected, "A draft must not rewrite an existing entry")
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.food, corrected.food)
+        XCTAssertEqual(saved.nutrients, expected.nutrients)
+        XCTAssertEqual(store.entries.count, 1)
+    }
+
+    func testRecipePortionUsesThePublishedYieldAndWholePortionEntriesHaveNoChoices() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let ingredient = ExerlyCore.Food(name: "Ingredient", per100g: NutrientAmounts([.energy: 120]))
+        let recipe = ExerlyCore.Food.recipe(name: "Recipe", ingredients: [RecipeIngredient(food: ingredient.snapshot, grams: 800)],
+                                           yieldGrams: 713.123456789, servingCount: 3)
+        let draft = NutritionEntryDraft(store: store, food: recipe, date: date, meal: "Dinner")
+        let serving = try XCTUnwrap(recipe.recipeServing)
+        XCTAssertEqual(draft.publishedServings, [serving])
+        XCTAssertTrue(draft.selectPortion(serving))
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        let quick = try store.quickAdd(NutrientAmounts([.energy: 500]), on: date, meal: "Dinner")
+        let whole = NutritionEntryDraft(store: store, food: quick.food.foodForLogging(), date: date, meal: "Dinner", editing: quick)
+        XCTAssertTrue(whole.publishedServings.isEmpty)
+        XCTAssertFalse(whole.selectPortion(serving))
+        XCTAssertEqual(store.entries, [quick])
+    }
+
     func testUnweighedEntryCorrectionKeepsWholePortionAndNeverCreatesALibraryFood() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))

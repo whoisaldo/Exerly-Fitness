@@ -1,0 +1,7 @@
+Faster portion choices and clearer food entry
+
+Food entry now opens with Calories and macros above the amount controls. The header shows the selected meal and day. More detailed nutrition and corrections remain below the meal choices.
+
+When a food provides a label serving, choose it directly with a button such as Use 1 bar or Use 1/2 cup. Each button selects one of that exact supplied portion. You can still adjust the quantity before logging. Ounces and U.S. fluid ounces remain the defaults; explicit metric preferences and previously saved portions stay as entered. Serving weights display in ounces for U.S. accounts, without rounding stored data.
+
+Please try choosing a label portion, cancelling it, then logging offline and reopening the entry. Known zero and missing nutrients stay distinct. Quick Calories and macros, saved gyms, guided setup, barcode-first logging and the workout builder are included. Physical camera, VoiceOver and Watch checks remain pending.
