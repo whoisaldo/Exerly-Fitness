@@ -4,6 +4,226 @@ import XCTest
 
 @MainActor
 final class NutritionPresentationTests: XCTestCase {
+    func testRecipeDraftStagesIngredientsWithoutWritingAndSavesExactYieldAndServings() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let first = ExerlyCore.Food(name: "Oats", per100g: NutrientAmounts([.energy: 400, .fat: 0]))
+        let second = ExerlyCore.Food(name: "Milk", per100g: NutrientAmounts([.energy: 50, .fat: 0]))
+        let draft = NutritionRecipeDraft(store: store)
+        draft.name = "Breakfast jars"
+        XCTAssertTrue(draft.add(first))
+        XCTAssertTrue(draft.stage(second, amount: try NutritionStore.preview(second, grams: 200)))
+        XCTAssertTrue(store.foods.isEmpty)
+        XCTAssertTrue(store.entries.isEmpty)
+        XCTAssertTrue(draft.hasChanges)
+        draft.cookedWeight.text = "12.5"
+        draft.servingCount.text = "4"
+        draft.preparation = "Chill overnight."
+        let saved = try XCTUnwrap(draft.save(ownerIsActive: true))
+        XCTAssertEqual(saved.yieldGrams, USUnits.grams(ounces: 12.5))
+        XCTAssertEqual(saved.ingredients?.first?.grams, USUnits.grams(ounces: 1))
+        XCTAssertEqual(saved.ingredients?.last?.grams, 200)
+        XCTAssertEqual(saved.preparation, "Chill overnight.")
+        let summary = try XCTUnwrap(draft.summary)
+        let expected = try NutritionStore.preview(saved, serving: XCTUnwrap(saved.recipeServing), quantity: 1)
+        XCTAssertEqual(summary, expected)
+        XCTAssertNil(summary.nutrients[.protein])
+        XCTAssertEqual(summary.nutrients[.fat], 0)
+        XCTAssertEqual(store.foods.count, 1)
+        XCTAssertTrue(store.entries.isEmpty)
+        XCTAssertEqual(draft.save(ownerIsActive: true), saved)
+    }
+
+    func testRecipeReorderRemoveAndMetadataEditsPreserveExactSnapshotsAndHistory() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let first = ExerlyCore.Food(name: "Original", per100g: NutrientAmounts([.energy: 123.456789, .sodium: 0]))
+        let second = ExerlyCore.Food(name: "Second", per100g: NutrientAmounts([.energy: 88.7654321]))
+        var recipe = ExerlyCore.Food.recipe(name: "Old recipe", ingredients: [
+            RecipeIngredient(food: first.snapshot, grams: 77.123456789),
+            RecipeIngredient(food: second.snapshot, grams: 123.987654321)
+        ], yieldGrams: 183.123456789, servingCount: 2, preparation: "Old notes")
+        recipe.favorite = true
+        try store.saveFood(recipe)
+        let date = try XCTUnwrap(LocalDate("2026-10-08"))
+        let historical = try store.log(recipe, serving: XCTUnwrap(recipe.recipeServing), quantity: 1, on: date, meal: "Breakfast")
+        let draft = NutritionRecipeDraft(store: store, editing: recipe)
+        draft.name = "Renamed"
+        draft.preparation = "New notes"
+        let row = try XCTUnwrap(draft.rows.last)
+        XCTAssertTrue(draft.move(row, by: -1))
+        let changed = try XCTUnwrap(draft.save(ownerIsActive: true))
+        XCTAssertEqual(changed.id, recipe.id)
+        XCTAssertEqual(changed.createdAt, recipe.createdAt)
+        XCTAssertTrue(changed.favorite)
+        XCTAssertEqual(changed.yieldGrams, recipe.yieldGrams, "Rounded ounce display must never change an untouched weight")
+        XCTAssertEqual(changed.ingredients, recipe.ingredients?.reversed().map { $0 })
+        XCTAssertEqual(store.entries, [historical])
+        let removeDraft = NutritionRecipeDraft(store: store, editing: changed)
+        XCTAssertTrue(removeDraft.remove(try XCTUnwrap(removeDraft.rows.first)))
+        let reduced = try XCTUnwrap(removeDraft.save(ownerIsActive: true))
+        XCTAssertEqual(reduced.ingredients, [try XCTUnwrap(recipe.ingredients?.first)])
+        XCTAssertEqual(store.entries, [historical])
+    }
+
+    func testRecipeDraftRejectsInvalidAmountsStaleEditsAndInactiveAccounts() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let food = ExerlyCore.Food(name: "Ingredient", per100g: NutrientAmounts([.energy: 200]))
+        let draft = NutritionRecipeDraft(store: store)
+        draft.name = "Dinner"
+        XCTAssertNil(draft.save(ownerIsActive: true))
+        XCTAssertTrue(draft.add(food))
+        draft.servingCount.text = "zero"
+        XCTAssertNil(draft.save(ownerIsActive: true))
+        draft.servingCount.text = "0"
+        XCTAssertNil(draft.save(ownerIsActive: true))
+        draft.servingCount.text = "2"
+        draft.cookedWeight.text = "-1"
+        XCTAssertNil(draft.save(ownerIsActive: true))
+        draft.cookedWeight.text = ""
+        XCTAssertNil(draft.save(ownerIsActive: false))
+        XCTAssertTrue(store.foods.isEmpty)
+        let original = try XCTUnwrap(draft.save(ownerIsActive: true))
+        let stale = NutritionRecipeDraft(store: store, editing: original)
+        var remote = original
+        remote.preparation = "Updated elsewhere"
+        try store.saveFood(remote)
+        stale.name = "Stale name"
+        XCTAssertNil(stale.save(ownerIsActive: true))
+        XCTAssertEqual(store.food(original.id), remote)
+        XCTAssertFalse(stale.errors.isEmpty)
+    }
+
+    func testRecipeDraftOfflineRelaunchKeepsTheCookedWeightAndIngredients() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let account = UUID().uuidString
+        let workspace = try TrainingWorkspace(accountID: account, root: root)
+        let food = ExerlyCore.Food(name: "Ingredient", per100g: NutrientAmounts([.energy: 175.123456, .protein: 8.456789]))
+        let draft = NutritionRecipeDraft(store: workspace.nutrition)
+        draft.name = "Batch"
+        XCTAssertTrue(draft.stage(food, amount: try NutritionStore.preview(food, grams: 342.123456789)))
+        draft.cookedWeight.text = "9.75"
+        draft.servingCount.text = "3"
+        let saved = try XCTUnwrap(draft.save(ownerIsActive: true))
+        await workspace.close()
+        let reopened = try TrainingWorkspace(accountID: account, root: root)
+        XCTAssertEqual(reopened.nutrition.food(saved.id), saved)
+        XCTAssertTrue(reopened.nutrition.entries.isEmpty)
+        let recipeDraft = NutritionRecipeDraft(store: reopened.nutrition, editing: saved)
+        XCTAssertFalse(recipeDraft.hasChanges)
+        XCTAssertEqual(try recipeDraft.recipe(), saved)
+        await reopened.close()
+    }
+
+    func testReopeningAVolumeEntryDoesNotOfferItsSyntheticUnitAsALabelPortion() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let scoop = Serving("Scoop", grams: 42.123456789)
+        var food = ExerlyCore.Food(name: "Liquid", per100g: NutrientAmounts([.energy: 120]), servings: [scoop])
+        food.volume = VolumeBasis(density: 0.92, assumed: true)
+        try store.saveFood(food)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
+        draft.amount.text = "2.5"
+        let entry = try XCTUnwrap(draft.save())
+        let reopened = NutritionEntryDraft(store: store, food: entry.food.foodForLogging(serving: entry.serving),
+                                          date: date, meal: "Lunch", editing: entry)
+        XCTAssertEqual(reopened.publishedServings, [scoop])
+        XCTAssertEqual(reopened.measure, .fluidOunces)
+        XCTAssertEqual(try reopened.preview().grams, entry.grams)
+        XCTAssertFalse(reopened.selectPortion(try XCTUnwrap(entry.serving)))
+        XCTAssertEqual(reopened.save(), entry)
+    }
+
+    func testExplicitLabelPortionReplacesInvalidInputAndPersistsWithoutChangingTheDefault() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let account = UUID().uuidString
+        let workspace = try TrainingWorkspace(accountID: account, root: root)
+        let serving = Serving("1/2 cup", grams: 37.123456789)
+        let food = ExerlyCore.Food(name: "Label cereal", per100g: NutrientAmounts([.energy: 380, .fat: 0]), servings: [serving])
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let draft = NutritionEntryDraft(store: workspace.nutrition, food: food, date: date, meal: "Breakfast")
+        XCTAssertEqual(draft.measure, .ounces)
+        draft.amount.text = "not a number"
+        XCTAssertTrue(draft.selectPortion(serving))
+        XCTAssertEqual(draft.amount.text, "1", "One published half-cup serving is not half of that serving")
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        XCTAssertTrue(workspace.nutrition.entries.isEmpty, "Choosing a portion never writes to the diary")
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.serving, serving)
+        XCTAssertEqual(saved.quantity, 1)
+        XCTAssertNil(saved.nutrients[.protein])
+        XCTAssertEqual(saved.nutrients[.fat], 0)
+        await workspace.close()
+        let reopened = try TrainingWorkspace(accountID: account, root: root)
+        XCTAssertEqual(reopened.nutrition.entries.first, saved)
+        let repeated = NutritionEntryDraft(store: reopened.nutrition, food: food, date: date, meal: "Breakfast", repeating: saved)
+        XCTAssertEqual(repeated.measure, .serving(serving))
+        XCTAssertEqual(try repeated.preview().grams, saved.grams)
+        await reopened.close()
+    }
+
+    func testExplicitPortionKeepsEditedEntryNutritionAndRejectsAnUnpublishedChoice() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let serving = Serving("1 bar", grams: 45.123456789)
+        var food = ExerlyCore.Food(name: "Original bar", per100g: NutrientAmounts([.energy: 300, .sodium: 0]), servings: [serving])
+        try store.saveFood(food)
+        let original = try store.log(food, grams: 20, on: date, meal: "Snacks")
+        let corrected = original.editingNutrients(NutrientAmounts([.energy: 80, .sodium: 0]))
+        try store.saveEntry(corrected)
+        food.per100g = NutrientAmounts([.energy: 900, .protein: 70])
+        try store.saveFood(food)
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Snacks", editing: corrected)
+        XCTAssertTrue(draft.selectPortion(serving))
+        let expected = try NutritionStore.preview(corrected.food.foodForLogging(serving: serving), serving: serving, quantity: 1)
+        XCTAssertEqual(try draft.preview().nutrients, expected.nutrients)
+        XCTAssertFalse(draft.selectPortion(Serving("Unpublished", grams: 200)))
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        XCTAssertEqual(store.entries.first, corrected, "A draft must not rewrite an existing entry")
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.food, corrected.food)
+        XCTAssertEqual(saved.nutrients, expected.nutrients)
+        XCTAssertEqual(store.entries.count, 1)
+    }
+
+    func testRecipePortionUsesThePublishedYieldAndWholePortionEntriesHaveNoChoices() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let ingredient = ExerlyCore.Food(name: "Ingredient", per100g: NutrientAmounts([.energy: 120]))
+        let recipe = ExerlyCore.Food.recipe(name: "Recipe", ingredients: [RecipeIngredient(food: ingredient.snapshot, grams: 800)],
+                                           yieldGrams: 713.123456789, servingCount: 3)
+        let draft = NutritionEntryDraft(store: store, food: recipe, date: date, meal: "Dinner")
+        let serving = try XCTUnwrap(recipe.recipeServing)
+        XCTAssertEqual(draft.publishedServings, [serving])
+        XCTAssertTrue(draft.selectPortion(serving))
+        XCTAssertEqual(try draft.preview().grams, serving.grams)
+        let quick = try store.quickAdd(NutrientAmounts([.energy: 500]), on: date, meal: "Dinner")
+        let whole = NutritionEntryDraft(store: store, food: quick.food.foodForLogging(), date: date, meal: "Dinner", editing: quick)
+        XCTAssertTrue(whole.publishedServings.isEmpty)
+        XCTAssertFalse(whole.selectPortion(serving))
+        XCTAssertEqual(store.entries, [quick])
+    }
+
+    func testUnweighedEntryCorrectionKeepsWholePortionAndNeverCreatesALibraryFood() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let original = try store.quickAdd(NutrientAmounts([.energy: 351.25, .protein: 12.3456789, .sodium: 0]),
+                                          name: "Unweighed meal", on: date, meal: "Lunch")
+        XCTAssertEqual(NutritionFormat.portion(original), "Whole portion")
+        let draft = NutritionEntryDraft(store: store, food: original.food.foodForLogging(), date: date, meal: "Lunch", editing: original)
+        let reviewed = try XCTUnwrap(draft.reviewNutrition())
+        let correction = reviewed.editingNutrients(NutrientAmounts([.energy: 352.5, .fat: 0, .sodium: 0]))
+        try draft.applyNutrition(correction, reviewed: reviewed)
+        let saved = try XCTUnwrap(draft.save())
+        XCTAssertEqual(saved.food.unweighed, true)
+        XCTAssertEqual(saved.grams, original.grams)
+        XCTAssertEqual(saved.nutrients[.energy], 352.5)
+        XCTAssertEqual(saved.nutrients[.fat], 0)
+        XCTAssertNil(saved.nutrients[.protein])
+        XCTAssertEqual(NutritionFormat.portion(saved), "Whole portion")
+        XCTAssertTrue(store.foods.isEmpty)
+    }
+
     func testNewFoodPortionsUseUSUnitsUnlessTheAccountExplicitlyUsesMetric() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))

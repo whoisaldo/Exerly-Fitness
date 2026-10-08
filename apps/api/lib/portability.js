@@ -62,7 +62,8 @@ const FILES = {
         p.food?.name,
         p.food?.brand,
         p.food?.source,
-        p.grams,
+        // An unweighed portion's 100 g is nominal: its weight is unknown.
+        p.food?.unweighed ? null : p.grams,
         p.serving?.name,
         p.serving?.grams,
         p.quantity,

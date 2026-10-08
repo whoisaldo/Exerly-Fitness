@@ -1921,7 +1921,7 @@ MCP server's recommendations follow the same rule.
 
 ## 2026-10-07: `main` CI: the search test and generic foods
 
-Status: open (app test).
+Status: done (app test): the search uses Synthetic oat; the fixed A15 full gate passes this journey. A15 is withheld for a separate rest-layout visual finding.
 
 `main` CI run 37616722886 (`0b56070f`, the design release) passed the unit
 tests, but `testNutritionSubmittedSearchBarcodeAndThreeTapRepeat` failed. It
@@ -1938,7 +1938,7 @@ native and browser round trip didn't run, because this step failed first.
 
 ## 2026-10-07: Label basis fixed (P1); Canadian panels
 
-Status: open (app: rerun your N15 regression).
+Status: done (app): original serving/kJ regression passes after rebase; all nine label presentation tests pass with the explicit-header correction.
 
 Your P1 is fixed. `NutritionLabel.read` takes the basis from the label's own
 declaration: whichever comes first of an amount per serving ("Amount per
@@ -1958,7 +1958,7 @@ Design 021 has the rule. Multi-column labels still read the first column.
 
 ## 2026-10-07: Explicit label headings outrank the panel title
 
-Status: open (app: rerun `testExplicitPer100gHeadingWinsOverGenericNutritionFactsTitle`).
+Status: done (app): explicit-heading regression and complete184active hosted tests pass on the rebased scanner branch.
 
 Fixed as you described: "Nutrition Facts" and "Valeur nutritive" count as
 per serving only when the label has no explicit heading. Your reproducer
@@ -1966,3 +1966,41 @@ per serving only when the label has no explicit heading. Your reproducer
 heading, as on a US panel, is still per serving. Covered in Core's
 NutritionLabelTests. Agreed on English-only wording until French nutrient
 names are added.
+
+## 2026-10-07: Meal builder (N04) review
+
+Status: done (app): all four corrections pass in final light, dark and largest-type journeys. Exact weights remain unchanged. Updated captures are in plate-integrated-light, -dark and -ax.
+
+I reviewed plate-default-light-01 and plate-default-light-cancel-01. The
+summary-first review, honest unknown macros with their caption, and the empty
+state work. The conversions are right (2.5 oz = 70.874 g; 2.5 fl oz at the
+liquid's density = 68.019 g). Four things:
+
+1. **Grams to three decimals.** "2.5 oz · 70.874 g" and "68.019 g" in the
+   review: show whole grams ("71 g"), and keep the exact value in the entry.
+2. **The selected meal is off-screen.** In "Log to" the chips row is cut at
+   the right edge, and the selected Snacks chip shows only "Sn". Scroll the
+   selected chip into view, or wrap the chips.
+3. **Two search controls.** "Choose foods" has a search field and a greyed
+   "Search" button in the toolbar. Keep the field.
+4. **Long dashes** for unknown macros: as before, a muted "–" or "Not on
+   label" reads better than a bar-like em dash.
+
+## 2026-10-07: Quick add (N05)
+
+Status: done (app): Quick add landed ce9c7b21, with offline correction and exact export coverage. A15 fixed release gate passes; upload pending final visual review.
+
+`NutritionStore.quickAdd(_ nutrients:, name: "Quick add", on:, meal:, at:)`
+logs calories and macros for a whole portion, with no reusable food and no
+weight. It needs energy or at least one macro; unknowns stay unknown.
+
+- The entry's snapshot has `unweighed == true`: its `per100g` holds the
+  whole portion and its 100 g is nominal. Show no weight and offer no amount
+  or serving controls for unweighed entries. To change it, use
+  `editingNutrients`, as for N08.
+- The food ID is `quick:<entry UUID>` and no saved food is created. Quick
+  adds stay out of `recentFoods` and `suggestions`. Copy and move keep them.
+- Shortcuts "one" items of unknown weight are now `unweighed` too, so the
+  same display rule covers them.
+- The CSV export leaves an unweighed entry's grams empty. Agents may log a
+  described meal the same way (docs/api/mcp.md).

@@ -69,7 +69,9 @@ To log a meal the person described or photographed, propose a new `food_entry`
 for each food, with a new UUID, the local `date`, a `meal` name, `loggedAt`,
 `grams`, and a `food` with its name, `source` (usually `custom`) and nutrients
 per 100 g in Exerly's names and units (energy in kcal; `get_nutrition_day`
-shows them). Label the estimate honestly, as `anecdote`.
+shows them). If you don't know the weight, set `food.unweighed` to `true`,
+`grams` to 100 and `per100g` to the whole portion's nutrients, as the app's
+quick add does. Label the estimate honestly, as `anecdote`.
 
 The proposal appears in Exerly with its diff and evidence. Nothing changes until
 you accept it. Accepting applies every change at once, and only if the data is

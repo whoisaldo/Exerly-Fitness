@@ -1,0 +1,9 @@
+Scan a Nutrition Facts label from a photo, then review its serving size, Calories and nutrients before saving. Exerly reads the image on your iPhone and does not upload it.
+
+The review keeps the original photo one tap away and calls out unread amounts and values printed as "less than." You can correct every value or enter the label manually. Missing nutrients stay unknown.
+
+The new screens follow Exerly's purple and pink theme in light and dark, with full-width inputs at larger text sizes. U.S. Calories and portion defaults stay in place.
+
+Try Add food > Scan label. Choose a photo, review the result, save the food and log a portion. Offline changes remain on the phone and sync when connected.
+
+Entries logged without a weight show a whole portion, with no invented grams. Their Calories and nutrients remain editable offline.

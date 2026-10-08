@@ -5,13 +5,13 @@ results, not planned completion. Astra's pre-split M1 notes are kept at the end.
 
 ## Merge status
 
-Updated 2026-10-07 11:21 EDT. Unlanded commits are counted with `git cherry`
+Updated 2026-10-07 13:30 EDT. Unlanded commits are counted with `git cherry`
 against the integration branch.
 
-| Branch                                        | Unlanded | Last landed                                                                                                               |
-| --------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 11:21 EDT, integration (label headings outrank its title)                                                      |
-| `main`                                        | –        | `0b56070f` (the design release), 2026-10-07 07:53 EDT; CI 37616722886 failed one UI test (generic foods; fix in progress) |
+| Branch                                        | Unlanded | Last landed                                                                |
+| --------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `logic/next` (local, pushed as `agent/logic`) | 0        | 2026-10-07 13:30 EDT, integration (quick add, N05)                         |
+| `main`                                        | –        | `a982be2d` (fast-forward), 2026-10-07 11:24 EDT; CI run 37643561510 queued |
 
 `main` and integration converged: integration was merged into `main`
 (`fc016093`), and the integration branch fast-forwarded onto that merge. Later
@@ -235,6 +235,11 @@ first declaration now decides (per serving or per 100 g/ml), with a
 "Nutrition Facts" title counting only when nothing explicit does, and
 Australian and bilingual Canadian panels are read. Core 307.
 
+**Quick add (N05).** `NutritionStore.quickAdd` logs calories and macros for a
+whole portion with no food or weight; `FoodSnapshot.unweighed` marks such
+entries (and Shortcuts items of unknown weight) so screens and the CSV show
+no weight. Core 308, API 261.
+
 **CI on `main`.** The first run after the merge (37558851579) passed every
 unit and UI test. The native and browser round trip then failed, because the
 merged lockfile installs Vite under `apps/web` and the script expected the
@@ -256,13 +261,10 @@ suite (67).
 
 ## Next three steps
 
-1. `main`'s CI run 37616722886 (`0b56070f`) passed unit tests and failed
-   `testNutritionSubmittedSearchBarcodeAndThreeTapRepeat`: generic foods
-   (`71604c45`) filled the first ten results for "oat" and pushed the
-   fixture's packaged product off CI's screen. Generic results are now a
-   quarter of the list; the app is making the test independent of position.
-   When that lands, advance `main` and confirm CI. Production is still the old
-   API until Ali sets `DATABASE_URL`.
+1. Confirm `main`'s CI run 37643561510 (`a982be2d`). It has the app's
+   position-independent search test (`bf03296e`); the run before
+   (`0b56070f`) failed only that test. Production is still the old API until
+   Ali sets `DATABASE_URL`.
 2. Remaining logic for Beyond: Core support the app's design work asks
    for. The MacroFactor import waits on Ali's headers.
 3. Keep reviewing app commits and answering `to-logic.md`.

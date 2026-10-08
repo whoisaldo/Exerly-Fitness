@@ -33,7 +33,9 @@ final class TrainingEntryChecks: ObservableObject {
     private var stopped = false
 
     init(training: TrainingStore, agent: AgentStore, accountID: String,
-         defaults: UserDefaults = .standard, evaluate: @escaping Evaluator = TrainingEntryChecks.detect) {
+         defaults: UserDefaults = .standard, evaluate: @escaping Evaluator = { history, existing, now in
+             try await TrainingEntryChecks.detect(history: history, existing: existing, now: now)
+         }) {
         self.training = training
         self.agent = agent
         self.defaults = defaults

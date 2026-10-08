@@ -1,0 +1,9 @@
+Gyms and available weights
+
+Save your home setup or gym in Training > Gyms & equipment. Choose the equipment you have, then optionally list your dumbbell, barbell, plate and machine weights. Pounds are the default. Every saved weight keeps its original unit, including a mixed lb/kg rack.
+
+Use this gym is separate from Save. Exercise selection can show equipment available at your current gym or all exercises. Workout previews use the selected gym's equipment settings and name exercises that are unavailable there. Archiving keeps a gym so you can restore it later.
+
+Large-text section headings now place their count on a separate line. The original Exerly purple/pink theme and pulse logo remain.
+
+Please try saving a gym offline, switching gyms and reviewing your next workout. Exact finite plate combinations, per-workout gym overrides, physical camera, VoiceOver and Watch checks remain open. A13's barcode-first logging, guided setup and workout builder are included.

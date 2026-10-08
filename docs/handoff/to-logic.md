@@ -1269,3 +1269,435 @@ N04 light and dark edit/discard/offline/relaunch journeys pass. Largest type
 and final layout/validation polish are being checked. Please review new
 screens at `../Exerly-Fitness-app/artifacts/design/contact-review/plate-default-light-01.png`
 and `plate-default-light-cancel-01.png`; final corrections follow.
+
+## 2026-10-07 11:33 EDT: Label fixes verified; meal critique applied
+
+Status: done (logic): N05 quick add published (`NutritionStore.quickAdd`, `FoodSnapshot.unweighed`); see to-app. Original: in progress, final scanner release checks.
+
+Both basis regressions now pass with a982be2d. Final scanner source is rebased
+over d0b8a602. Core307, API260, full184active hosted plus1credential skip and
+device build pass. Rebased photo journey225.890s and manual fallback80.355s
+pass; the deterministic packaged-food search is finishing. N15 will land
+separately and ship internally while N04 finishes its release gate.
+
+Your four meal critique points are applied. Whole grams are presentation only;
+export still checks the exact stored values. Chips sit at full screen-content
+width, with slightly smaller horizontal padding and at least44pt touch targets.
+The meal picker has no second toolbar Search. Unknown summary amounts use
+muted short marks, still Not reported to VoiceOver. Added foods now have a
+visible check and Added message. Fresh captures follow final checks.
+
+N05 contract request, not blocking N04/N15: quick Calories/macros should log
+whole-portion nutrients without a reusable food or an invented100g food weight.
+Is there a Core/API representation planned for this? Please publish it before
+the UI. I will next work from the existing native recipe contract in N11/N12.
+
+## 2026-10-07 15:07 EDT: Unweighed display adoption and contract review
+
+Status: open (logic review); app compatibility tests are running.
+
+Scanner source now includes 236fc88c. The app hides weight/amount controls for
+unweighed entries, edits their whole-portion nutrients, and excludes every
+unweighed snapshot from recents/suggestions in the picker and library. Core
+308, API 261, device build and 185 active hosted tests pass. The offline UI
+journey is in progress. N05 creation UI follows N04.
+
+P2, Nutrition.swift:234 and apps/api/lib/nutrition/validate.js:134. An entry
+with food.unweighed=true and grams=50 currently passes both validators, while
+FoodEntry.nutrients halves per100g. The published contract says per100g holds
+the whole portion and grams=100 is nominal. Please enforce that representation
+or explicitly document a different invariant. App quickAdd uses 100 correctly.
+
+P2, NutritionStore.swift:167 and :269. Core recentFoods/suggestions exclude
+quick: IDs, but Shortcuts unweighed entries use shortcut: IDs and remain in
+these lists. The app filters by the flag before reconstructing a reusable
+food, so it will not invent a measured portion. Please also filter the flag
+in Core for other callers.
+
+I am not freezing integration. N15 will land when its compatibility journey
+passes, with the long release work running from that fixed commit. Please
+merge integration into main and check CI at the milestone as usual.
+
+## 2026-10-07 15:15 EDT: Scanner landed; meal critique captures
+
+Status: in progress, A11 internal release from fixed source.
+
+N15 scanner and unweighed display compatibility landed at 1ad05bbf, with the
+formatted release ledger in 6a2ec460. Integration is pushed. Core 308, API 261,
+device build, 185 active hosted tests and the new unweighed offline UI journey
+pass. Default small light also passes; largest text is checking now. Signed
+build 2610071910 is archived from 1ad05bbf. No release freeze is needed.
+
+All four N04 critique fixes appear in the latest small light captures at
+/Users/aldo/Desktop/Exerly-Fitness-app/artifacts/design/contact-review/
+plate-critique-light-01.png through -07.png. Whole grams are only a review label;
+exact exported weights still pass. The full Snacks chip fits the content width.
+Selection uses only the search field and visibly marks added foods. Unknown
+macros use muted short marks. I reviewed all 19 captures, including primary
+screens. Please review these when available. Dark and AX follow the final
+scroll-helper correction. The helper now avoids fixed buttons during drags and
+taps those buttons directly when they are the requested action.
+
+Please merge the current integration into main and check CI when ready.
+
+## 2026-10-07 15:46 EDT: Meal landing and Ali's usability priorities
+
+Status: open, review and setup contracts requested.
+
+A11 build 2610071910 is live for Ali alone. N04 now passes Core 308, API 261,
+device build, 191 active hosted tests and both native meal journeys in default
+light, default dark and largest dark. All four critique points are fixed. The
+compact picker header now gives foods more room. Please review final captures
+at /Users/aldo/Desktop/Exerly-Fitness-app/artifacts/design/contact-review/
+plate-integrated-light-01.png through -07.png, dark-01 through -07, and ax-01
+through -03. Public reference comparison: a12-meal-reference.png.
+
+Main CI 37643561510 at a982be2d failed only the Health permission journey.
+The failure video shows Opening Health access, with no native sheet. A fresh
+app-only iPhone 16 Pro iOS 18.6 passes the same journey in 45.276 seconds.
+CI used 18.5. Search passed. I am investigating without weakening assertions.
+Please merge the latest integration into main and check CI at the milestone.
+
+Ali now prioritizes beginner-friendly logging and a much better first-time
+setup. Barcode first, search second, manual last. I will simplify those app
+flows immediately after landing N04. Setup should explain the product, then
+use goals, training experience, available days/time/equipment and nutrition
+preferences to produce a reviewable starting plan. Please review the existing
+setup preview/commit contract and publish any missing Core/API interfaces for
+training program creation and nutrition targets. The app must not calculate
+plans or targets. Watch/heart-rate access is a secondary experimental option,
+with appropriate permissions; please propose the minimum read interface when
+nutrition and training setup contracts are covered. Do not add recovery claims
+without supporting data.
+
+## 2026-10-07 15:55 EDT: Setup contract details for beginner guidance
+
+Status: open, contract request; app barcode work continues independently.
+
+I found the published ProgramGeneration interface and will use it for a
+reviewable training plan. Current setup has five cloud stages, and schema 2
+last_valid_step must be 0...4. OnboardingRequest already carries experience,
+weekly days, weekday names and equipment, but lacks session length and an
+independent training goal. Please publish a versioned setup contract covering
+those inputs, preserving unknown preferences and interrupted setup, plus a
+Core/API-safe way to carry the reviewed generated program into the account.
+An existing prepared Proposal may be sufficient after account setup, with
+accept/follow through ProgramStore, but please confirm the intended boundary.
+
+I can improve the current five-stage UI and ask the already-supported questions
+without waiting. Nutrition dietType supports the strategy choice; dietaryStyle
+and allergies are saved preferences, not evidence of a generated meal plan.
+The UI will say what actually changes. No fabricated recovery score or food
+plan will be shown. Please also expose the API models through the current
+account client as convenient so new screens do not add raw network calls.
+
+## 2026-10-07 16:22 EDT: Barcode-first and guided setup implementation
+
+Status: open, final capture review requested.
+
+N04 is landed and pushed at 7f6ccf9e. A12 fixed gate group 1 passes, including
+Health permission. Groups 2/3 continue. Signed internal build 2610072011 is
+ready for upload after the gate. A11 remains live until A12 is verified.
+
+Primary usability work now makes scanning one tap from the diary and supports
+barcode additions inside an unsaved meal. Manual creation is a last option.
+The setup now asks training experience, weekly days, equipment and macro style.
+Eight visual questions use the existing five cloud stages; a local optional
+planningPage preserves the exact interrupted question. I use the already
+published fields and API target preview, without adding domain calculations.
+193 active hosted tests, Core 308, API 261 and device build pass. The final
+light/dark/largest-text journeys are running.
+
+Early reviewed captures are in ../Exerly-Fitness-app/artifacts/design/contact-review/
+barcode-first-light-01/02.png and beginner-setup-first-dark-01 through -04.png.
+The final review explicitly says training preferences are saved and does not
+claim a generated program exists yet. The next app piece is the published
+ProgramGeneration preview/proposal flow. Please review the setup contract
+request above when available.
+
+Additional usability request: publish a practical default-portion helper for
+barcode foods with a clear named serving, such as one bar or one banana. We
+currently default a new U.S. entry to one ounce, preserving prior portions.
+The app must not parse serving text or calculate nutrients itself. A named
+food unit could remove an avoidable measure change while keeping metric
+preferences and exact prior quantities intact.
+
+## 2026-10-07 16:37 EDT: A12 live; beginner review and training generation next
+
+Status: open (Logic review and main merge).
+
+N04 build 2610072011 from 7f6ccf9e is VALID/IN_BETA_TESTING, one Ali tester and
+one assigned build, exact en-US notes verified. All 49 active full UI methods
+pass with 9 context skips; Health passes 52.514s. The tag is pushed. Please bring
+main current from integration once CI is green.
+
+All 97 first beginner UI captures were inspected. The light/AX signup test
+cleared appearance and type arguments after relaunch; this is corrected and
+fresh runs are underway. The scan button now stacks when full labels don't
+fit. A barcode match has a clear Review portion/Add to meal action, with
+Search secondary. Final screenshots will follow.
+
+Next app milestone uses the existing ProgramGeneration proposal contract and
+adds GymStore to app composition/sync. Saved preferences will seed experience,
+weekly days and equipment through the existing PreferencesStore boundary.
+Please prioritize the requested versioned setup contract for independent
+training goal/session length and a typed read-only AccountAPI preferences
+snapshot; current OnboardingRequest has no training session length.
+
+## 2026-10-07: Beginner setup and guided plan review
+
+Status: open (app review requested).
+
+Barcode-first logging is landed and pushed at 30bc0aed. The final default
+light and dark captures are beginner-review-light/dark under the app tree's
+artifacts/design. All 58 were inspected. The public App Store comparison is
+contact-review/a13-barcode-reference.png. The gallery remains available at
+http://100.80.149.7:39215; it will receive the new capture sets after their
+final runs finish.
+
+The native guided plan flow passes in light and dark. Captures are
+artifacts/design/plan-setup-light and contact-review/plan-setup-light-01.png
+through -03.png. Please critique the summary, equipment choices and preview.
+It decodes the exact program inside ProgramGeneration.proposal, files only
+on Save, accepts through AgentStore, and does not activate the program.
+Cancel creates no program or proposal. Offline save, relaunch, undo and
+export pass. Four hosted tests verify exact program identity, supported
+movements, preserved active program, account change and storage failures.
+GymStore is now included in the app sync, agent hosts and export. The UI
+uses a read-only PreferencesStore.savedSnapshot wrapper while awaiting the
+typed AccountAPI preferences contract requested earlier. No Core/API edits.
+
+Setup now asks eight questions over the existing five cloud stages. The
+native checkpoint restores the exact subquestion; another device restores
+the stage and retained answers. Largest-type review exposed excessive
+scrolling, so Finish setup stays visible and target explanations expand.
+The final setup and plan AX runs are still in progress. A12 remains live;
+the next fixed internal release will include passing beginner changes.
+
+The brief still requires your review and the integration-to-main merge.
+The new primary pieces will land as soon as each is green. Please check the
+current main CI Health sheet failure separately from the passing local
+native Health permission journey recorded in the previous inbox item.
+
+## 2026-10-07: Guided workout plan passes and is landing
+
+Status: open (Logic review and main merge requested).
+
+Setup is pushed at 584fefc0. The guided plan's final default light, dark and
+largest-type journeys pass. Captures are plan-setup-final-light/dark/ax;
+contact-review/a13-workout-reference.png compares the review with the public
+MacroFactor Workouts screenshot. The plan suite has 197 active hosted tests
+plus one credential skip, Core 308 and API 261. The device build passes.
+Please review the captures and implementation after landing.
+
+Local gym equipment now seeds the builder even before a preferences request
+can connect. A saved gym retains its weights and exclusions. The profile
+request fills experience and frequency without overwriting that gym, or
+answers already edited by the person. Four hosted plan tests pass, including
+this GET-only preference merge. The exact reviewed proposal is accepted once,
+works offline and remains undoable; it never activates itself.
+
+A13 is being cut from a fixed commit with barcode-first logging, guided setup
+and this builder. Its 59-method full UI gate will not hold integration. P02
+remains Partial for advanced options and physical checks. Please keep main
+current once the suite/build and deployment conditions permit it.
+
+## 2026-10-07 17:49 EDT: Gyms and available weights app slice
+
+Status: in progress (app); Core follow-up requested.
+
+GymStore is now wired to sync/export/proposals on integration 208ed075. The
+primary app work adds named gyms, explicit Use, archive/restore, unchanged
+mixed-unit inventories and gym-filtered exercise selection. Both workout
+preview and final start use the active gym increments. Three presentation
+tests pass; native checks are in progress. A fourth integration test checks
+32 kg standard versus the actual 32.5 kg dumbbell rack.
+
+T06 limitation for follow-up: GymProfile.increments(for:) uses twice the
+smallest plate but not finite combinations or available pair counts beyond
+zero. App copy therefore describes plate increments, not guaranteed loadable
+barbell totals. Please provide a Core recommendation contract for feasible
+barbell loads if that is needed before marking T06 Built. No app maths added.
+
+A13 remains fixed at 208ed075 while integration stays open. Signed/exported
+2610072129 passes identity/privacy/internal-only checks. Full 59-method UI
+gate is still running, including all hosted tests. Main still needs the
+landed beginner improvements; please merge after your review and CI checks.
+
+## 2026-10-07 18:28 EDT: A13 live, gym review requested
+
+Status: open (review and main merge requested).
+
+A13 build 2610072129 is VALID and IN_BETA_TESTING, one Ali tester and exactly
+one assigned build, with verified en-US notes. Source tag ios/internal-2610072129
+is pushed at 208ed075. Fixed full UI gate: all 59 methods accounted for,
+50 pass and nine context skips; 197 active hosted pass. Core 308/API 261 and
+device/archive checks pass. Setup and plan also pass light/dark/largest text.
+
+The upcoming gym slice passes light/dark native journeys and 201 active
+hosted tests; largest text is finishing. Please review the app code and
+artifacts/design/contact-review/gym-chips-light-01...05.png and
+gym-chips-dark-01...05.png in the primary app tree. All 30 captures inspected.
+The current gym is shown once, inventory is compact, explicit Use is separate
+from Save, and workout preview/final start both use Core gym increments.
+T05/T06 remain Partial for icons, per-workout overrides and exact plate
+combinations. Integration remains open. Please merge the passed integration
+into main and inspect CI, as required by the brief.
+
+## 2026-10-07 18:39 EDT: Gym slice passes; A14 next
+
+Status: open (Logic review and main merge).
+
+Final gym light and largest-text journeys pass, with unchanged mixed-unit
+inventory, archive/restore and synchronized export. 201 active hosted tests,
+Core 308, API 261 and device build pass. Dark gym and both program regressions
+pass. Review gym-final-headings-light, gym-final-ax-headings and
+gym-final-headings-primary-ax-capture in the app artifacts/design folder.
+All final captures inspected. Section headings now stack their detail at
+accessibility sizes, fixing the cramped inventory title. T05/T06 are Partial.
+
+The slice is landing now, followed by a fixed A14 full gate of 60 UI methods.
+No integration freeze. The next app slice uses your published quickAdd API.
+Please review and keep main current when the suite/build pass.
+
+## 2026-10-07: Quick add app verification and optional macro estimate
+
+Status: in progress (app); Core follow-up requested.
+
+The app now exposes your quickAdd contract in More food options and Diary
+actions. Four presentation tests pass; native light/dark cancellation, offline
+logging, relaunch, nutrient editing and export pass. No saved_food document is
+created. Missing macros stay nil; a known zero stays zero. Largest text and
+final destination-label captures are being checked before landing.
+
+The public MacroFactor Quick Add guide calculates Calories from macros.
+Please consider a Core estimate contract that requires enough known inputs,
+labels the estimate and never overwrites explicit Calories. No app-side
+calculation added. Link: https://help.macrofactorapp.com/en/articles/41-quick-add-calories-and-macros-to-your-food-log.
+Optional multiple quick items in a plate and conversion to a reusable food
+also remain follow-up work. Current N05 criteria are simple whole-portion
+logging with later editing/deletion, not a claim of superiority.
+
+A14 is fixed at 181eac03; build 2610072240 passes signed archive/IPA checks.
+The fixed 60-method UI gate continues with no failures observed. A13 stays
+live until A14 is actually available. Main still needs the merged work.
+
+## 2026-10-07: Quick add passes; A14 withheld for search dismissal
+
+Status: done (Quick add app slice); in progress (search navigation).
+
+All 205 active hosted tests and final Quick add light/dark/AX journeys pass.
+All 12 final captures reviewed. Device build and changed-file SwiftLint pass.
+N05 is Built, with physical checks pending. Comparison:
+artifacts/design/contact-review/a15-quick-reference.png. Please review the
+meal header/action, unknown-versus-zero copy and optional name.
+
+A14 build 2610072240 will not upload. The fixed group-3 gym journey failed
+because exercise search hides the sheet toolbar on the largest phone. Its
+screenshot confirms the missing Close action. Group 3 was interrupted and
+exited; other fixed groups may finish for diagnostic evidence. Fixing in
+primary and cutting a new fixed candidate, with no integration freeze.
+Quick add is landing separately now. Main still needs integration and CI.
+
+## 2026-10-07: Search toolbar fixed; next internal release
+
+Status: done (app fix); A15 release pending.
+
+ExercisePickerView preserves search toolbar content on iOS 17.1+. The failed
+A14 path now passes on the same largest phone in 269.850 seconds. SE light
+passes in 198.751 seconds with all 205 active hosted tests; largest text passes
+in 519.243 seconds. All 22 final attachments inspected. Device build and
+changed-file SwiftLint pass. No physical-device claim.
+
+Quick add is landed/pushed ce9c7b21. Search navigation lands separately, then
+A15 runs a fresh fixed 61-method gate, with both features and gyms included.
+A14 build 2610072240 stays withheld. A13 stays live until A15 is available.
+Please review captures in search-toolbar-light, search-toolbar-large and
+search-toolbar-ax, plus the Quick add comparison. Main still needs the merge
+and CI required at each milestone.
+
+## 2026-10-07: P08 needs a persisted session recommendation contract
+
+Status: open (Core contract requested; app will continue independent work).
+
+I reviewed Progression.adjust and the active-session model for the next workout
+pass. TrainingStore.startSession(from:) keeps the resulting PerformedSets and
+slotID, but drops PlannedExercise.target and recommendation. WorkoutSession
+keeps a ProgramRef, not a snapshot of the plan/gym increments. Reconstructing
+from today's mutable program or gym after relaunch could change the baseline.
+
+Please expose a Core session-level contract that retains the starting target,
+recommendation, equipment increments, expandRepRange and weightMatch, and can
+produce/apply remaining-set suggestions after completion, reopening or editing.
+It should protect user-edited incomplete sets and completed sets, handle
+exercise swaps and warm-ups, and save an accepted update atomically. The app
+can then show why, review remaining targets and a per-exercise weight-match
+control without recalculating or storing domain snapshots in app preferences.
+
+The pure adjustment function is ready, but its baseline cannot currently be
+recovered faithfully after an offline app restart. Please advise if there is
+an existing Core route I missed. No app-side progression math added.
+
+## 2026-10-07: U.S. distance conversion gap in workout entry
+
+Status: open (Core helper requested).
+
+Ali asked for U.S. defaults throughout. TrainingSetEditor currently always
+labels distance in metres, and TrainingFormat.set prints m even for a pounds
+account. Core USUnits has mass, volume and height helpers but no distance
+conversion. Please expose exact metres/miles and metres/feet conversion, or a
+distance-unit type, so entry and history can honor the account without app-side
+arithmetic. Existing precise metres must survive an untouched edit and sync.
+
+App follow-up will prefer miles for tracked travel and retain explicit units
+where the Core model supports them. Please advise whether per-exercise distance
+preferences already have a contract. No global unit selector or stored values
+have been changed.
+
+## 2026-10-07: Explicit portions and entry hierarchy ready
+
+Status: done (app slice); physical checks pending.
+
+NutritionEntryDraft can select one exact supplied serving, using Core preview.
+It never parses the serving name or writes before Log. Four new tests cover
+fractional labels, recipe yield, edited snapshots, invalid input, exact offline
+reopen and exclusion of synthetic oz/ml/fl oz measures. All 209 active hosted
+tests pass, one credential skip. Final native portion/fluid-ounce journeys
+pass in 103.460 and 125.222 seconds. Default dark and largest-text journeys
+also pass, along with correction, unweighed and scrolling regressions.
+
+All 11 final attachments and the earlier 25 light, three dark and four AX
+images were reviewed. Nutrition now precedes inputs; meal/date stay in the
+header and each label portion shows ounces for U.S. accounts. Stored precision
+and explicit metric preferences stay intact. Comparison:
+artifacts/design/contact-review/a16-portion-reference.png. Please review.
+
+A15 remains fixed at cb39dddd, signed build 2610072338, with its full gate
+running. This later slice lands separately for a subsequent internal build.
+Main still needs the integration merge and CI.
+
+## 2026-10-08: Exercise guide review and recipe completeness
+
+Status: open.
+
+The guide/rest slice has final default light/dark and largest-text captures
+in the app checkout under artifacts/design/exercise-guide-final-light,
+exercise-guide-final-dark and exercise-guide-final-ax. Public comparison:
+artifacts/design/contact-review/a16-exercise-guide-reference.png. Please
+review the hierarchy and control labels. AX now stacks the rest controls;
+an earlier capture broke words, so A15 is uploaded but withheld. A13 remains
+live until A16 passes its fixed release gate. Seven written guides are
+Partial T02 coverage; no demo/device claim. Main is still a982be2d; please
+merge passing integration and check CI as required by the brief.
+
+P1, recipe completeness: Nutrition.swift:164-167 sums every reported value
+into Food.per100g, while Food.snapshot:193 and progress(on:):411-412 retain
+no ingredient-level missing coverage. A recipe of one 100 g ingredient with
+10 g protein and another 100 g ingredient with unknown protein records 5 g
+protein per 100 g. Logging the whole recipe reports 10 g with unreported=0.
+This hides incomplete data and inflates the insight completeness score.
+Please preserve/report incomplete nutrients through recipe snapshots,
+entries, day progress and insights, including nested recipes. Publish the
+UI contract and cover exact zero versus unknown, editing recipe history,
+sync/export and nested recipes. The app will build the recipe draft against
+Food.recipe/withIngredients and will not implement domain totals itself.

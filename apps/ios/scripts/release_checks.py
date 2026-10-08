@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 import ipaddress
 from pathlib import Path
 import plistlib
+import secrets
 import subprocess
+import tempfile
 from urllib.parse import urlparse
 
 BUNDLE = "com.exerly.fitness"
@@ -66,8 +68,20 @@ def validate_profile(profile):
 
 
 def read_profile(path):
-    return plistlib.loads(subprocess.run(["security", "cms", "-D", "-i", str(path)],
-                                        capture_output=True, check=True).stdout)
+    # CMS decoding imports the embedded public signer certificates. A locked
+    # login keychain cannot accept those imports, even though no private key is
+    # needed. Keep that work in a disposable keychain and never unlock or change
+    # the user's default keychain or search list.
+    with tempfile.TemporaryDirectory(prefix="exerly-profile-check-") as folder:
+        keychain = str(Path(folder) / "verification.keychain-db")
+        subprocess.run(["security", "create-keychain", "-p", secrets.token_urlsafe(32), keychain],
+                       capture_output=True, check=True)
+        try:
+            decoded = subprocess.run(["security", "cms", "-D", "-k", keychain, "-i", str(path)],
+                                     capture_output=True, check=True)
+            return plistlib.loads(decoded.stdout)
+        finally:
+            subprocess.run(["security", "delete-keychain", keychain], capture_output=True, check=True)
 
 
 def main():

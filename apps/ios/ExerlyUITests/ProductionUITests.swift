@@ -140,6 +140,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Library"], in: app)
         capture(app, "design-empty-library")
         tap(app.buttons["nutrition.libraryCreate"], in: app)
+        tap(app.buttons["nutrition.libraryCreateFood"], in: app)
         capture(app, "design-food-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
         tap(app.buttons["Profile"], in: app)
@@ -305,9 +306,9 @@ final class ProductionUITests: XCTestCase {
         signIn(app, email: person.email)
         tap(app.buttons["Previous day"], in: app)
         tap(app.buttons["nutrition.addFood"], in: app)
-        tap(app.buttons["nutrition.createFood"], in: app)
+        openFoodOption("nutrition.createFood", in: app)
         replace(app.textFields["nutrition.foodName"], with: "Synthetic oats", in: app)
-        replace(app.textFields["Energy (kcal)"], with: "380", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "380", in: app)
         replace(app.textFields["Protein (g)"], with: "13.2", in: app)
         replace(app.textFields["Carbohydrate (g)"], with: "62.5", in: app)
         replace(app.textFields["Fat (g)"], with: "0", in: app)
@@ -374,6 +375,69 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(saved["date"] as? String, formatter.string(from: yesterday))
     }
 
+    func testPublishedFoodPortionCanBeChosenDirectlyCancelledAndLoggedOffline() async throws {
+        let person = try await createAccount(prefix: "label-portion", units: "imperial")
+        let foodID = UUID().uuidString
+        let food: [String: Any] = [
+            "id": foodID, "name": "Label cereal", "source": "custom", "per100g": ["energy": 380, "fat": 0],
+            "servings": [["name": "1/2 cup", "grams": 37.123456789]], "favorite": false,
+            "createdAt": "2026-10-07T12:00:00.000Z"
+        ]
+        _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Library"], in: app)
+        tap(app.buttons["nutrition.libraryFood.\(foodID)"], in: app)
+        tap(app.buttons["nutrition.libraryLog"], in: app)
+        capture(app, "nutrition-label-portion-summary")
+        reveal(app.textFields["Amount (oz)"], in: app)
+        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
+        capture(app, "nutrition-label-portion-choices")
+        let portion = app.buttons["nutrition.usePortion.1/2 cup.37.123456789"]
+        tap(portion, in: app)
+        reveal(app.textFields["Number of servings"], in: app)
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1")
+        capture(app, "nutrition-label-portion-selected")
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        let cancelled = try await request("GET", "/api/export", token: person.token)
+        let before = try XCTUnwrap(cancelled["documents"] as? [[String: Any]])
+        XCTAssertFalse(before.contains { $0["kind"] as? String == "food_entry" })
+        tap(app.buttons["nutrition.libraryLog"], in: app)
+        tap(portion, in: app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        tap(app.buttons["Home"], in: app)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Label cereal")).firstMatch
+        tap(entry, in: app)
+        reveal(app.textFields["Number of servings"], in: app)
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1")
+        capture(app, "nutrition-label-portion-relaunched")
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }
+        XCTAssertEqual(entries.count, 1)
+        let saved = try XCTUnwrap(entries.first?["payload"] as? [String: Any])
+        XCTAssertEqual(saved["grams"] as? Double, 37.123456789)
+        XCTAssertEqual(saved["quantity"] as? Double, 1)
+        XCTAssertEqual((saved["serving"] as? [String: Any])?["name"] as? String, "1/2 cup")
+        let snapshot = try XCTUnwrap(saved["food"] as? [String: Any])
+        let nutrients = try XCTUnwrap(snapshot["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 380)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
+    }
+
     func testNutritionSubmittedSearchBarcodeAndThreeTapRepeat() async throws {
         try await control(["resetFoodDatabaseRequests": true])
         let person = try await createAccount(prefix: "nutrition-search")
@@ -401,8 +465,15 @@ final class ProductionUITests: XCTestCase {
         capture(app, "nutrition-repeat-previous-portion")
         tap(app.buttons["nutrition.saveEntry"], in: app)
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
-        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.scanBarcodeDirect"], in: app)
+        XCTAssertTrue(app.navigationBars["Scan barcode"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.textFields["nutrition.barcodeDigits"].exists, "Scanning must open before manual digits")
+        capture(app, "nutrition-barcode-first")
+        tap(app.buttons["nutrition.barcodeSearch"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 5))
+        capture(app, "nutrition-search-after-scan")
         tap(app.buttons["nutrition.barcode"], in: app)
+        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0000000000000", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
@@ -533,7 +604,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.libraryActions"], in: app)
         tap(app.buttons["nutrition.libraryEdit"], in: app)
         replace(app.textFields["nutrition.foodName"], with: "Synthetic ripe pear", in: app)
-        replace(app.textFields["Energy (kcal)"], with: "60", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "60", in: app)
         dismissKeyboard(app)
         capture(app, "nutrition-library-label-edit")
         tap(app.buttons["nutrition.saveFood"], in: app)
@@ -593,20 +664,23 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(((new["food"] as? [String: Any])?["per100g"] as? [String: Any])?["energy"] as? Double, 60)
     }
 
-    private func seedNutritionEntry(token: String, name: String = "Synthetic pear", nutrients: [String: Double] = ["energy": 57, "sodium": 0], grams: Double = 123.25) async throws -> (id: String, date: String, foodID: String) {
-        let foodID = UUID().uuidString
+    private func seedNutritionEntry(token: String, name: String = "Synthetic pear", nutrients: [String: Double] = ["energy": 57, "sodium": 0], grams: Double = 123.25, unweighed: Bool = false) async throws -> (id: String, date: String, foodID: String) {
         let entryID = UUID().uuidString
+        let foodID = unweighed ? "quick:\(entryID)" : UUID().uuidString
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "America/New_York")
         formatter.dateFormat = "yyyy-MM-dd"
         let date = formatter.string(from: Date())
         let food: [String: Any] = ["id": foodID, "name": name, "source": "custom", "per100g": nutrients,
-                                    "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
-        _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
-        let snapshot: [String: Any] = ["foodID": foodID, "name": name, "source": "custom", "per100g": nutrients]
+                                 "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
+        if !unweighed {
+            _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
+        }
+        var snapshot: [String: Any] = ["foodID": foodID, "name": name, "source": "custom", "per100g": nutrients]
+        if unweighed { snapshot["unweighed"] = true }
         let entry: [String: Any] = ["id": entryID, "date": date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
-                                     "food": snapshot, "grams": grams]
+                                  "food": snapshot, "grams": grams]
         _ = try await request("PUT", "/v1/documents/food_entry/\(entryID)", body: ["base_revision": 0, "payload": entry], token: token)
         return (entryID, date, foodID)
     }
@@ -770,6 +844,183 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["profile.account"], in: app)
         XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 5))
         capture(app, "account-reconnected-navigation")
+    }
+
+    func testGymInventorySavesMixedUnitsOfflineFiltersExercisesAndRestoresArchivedPlaces() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "gym-inventory", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["gyms.open"], in: app)
+        capture(app, "gym-empty")
+        tap(app.buttons["gyms.addFirst"], in: app)
+        replace(app.textFields["gym.name"], with: "Synthetic home", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.equipment.dumbbell"], in: app)
+        tap(app.buttons["gym.equipment.flatBench"], in: app)
+        capture(app, "gym-equipment")
+        tap(app.buttons["gym.weights.dumbbell"], in: app)
+        replace(app.textFields["gym.weightValue"], with: "22.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.addWeight"], in: app)
+        reveal(app.staticTexts["gym.inventory.0"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.0"].label, "22.5 lb")
+        revealAbove(app.buttons["kg"], in: app)
+        tap(app.buttons["kg"], in: app)
+        replace(app.textFields["gym.weightValue"], with: "12", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["gym.addWeight"], in: app)
+        reveal(app.staticTexts["gym.inventory.1"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.1"].label, "12 kg")
+        capture(app, "gym-mixed-weight-inventory")
+        tap(app.buttons["gym.weightsDone"], in: app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["gym.save"], in: app)
+        XCTAssertFalse(app.staticTexts["gyms.currentName"].exists, "Save must not choose a gym")
+        let use = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "gyms.use.")).firstMatch
+        tap(use, in: app)
+        revealAbove(app.staticTexts["gyms.currentName"], in: app)
+        XCTAssertEqual(app.staticTexts["gyms.currentName"].label, "Synthetic home")
+        capture(app, "gym-current-offline")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["Exercise library"], in: app)
+        tap(app.searchFields.firstMatch, in: app)
+        app.searchFields.firstMatch.typeText("barbell bench press\n")
+        XCTAssertTrue(app.buttons["At this gym"].isSelected)
+        XCTAssertFalse(app.staticTexts["Barbell Bench Press"].exists)
+        tap(app.buttons["All exercises"], in: app)
+        XCTAssertTrue(app.buttons["All exercises"].isSelected)
+        reveal(app.staticTexts["Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.staticTexts["Barbell Bench Press"].waitForExistence(timeout: 5))
+        capture(app, "gym-library-all-exercises")
+        let closeSearch = app.buttons["training.exerciseClose"]
+        guard closeSearch.waitForExistence(timeout: 5), closeSearch.isHittable else {
+            XCTFail("Exercise search must keep its Close action visible")
+            return
+        }
+        closeSearch.tap()
+        tap(app.buttons["gyms.open"], in: app)
+        tap(app.buttons["gyms.editCurrent"], in: app)
+        tap(app.buttons["gym.weights.dumbbell"], in: app)
+        reveal(app.staticTexts["gym.inventory.1"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.1"].label, "12 kg")
+        revealAbove(app.staticTexts["gym.inventory.0"], in: app)
+        XCTAssertEqual(app.staticTexts["gym.inventory.0"].label, "22.5 lb")
+        capture(app, "gym-inventory-after-relaunch")
+        tap(app.buttons["gym.weightsDone"], in: app)
+        tap(app.buttons["gym.cancel"], in: app)
+        let archive = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "gyms.archive.")).firstMatch
+        tap(archive, in: app)
+        XCTAssertFalse(app.staticTexts["gyms.currentName"].exists)
+        tap(app.switches["gyms.showArchived"], in: app)
+        capture(app, "gym-archived")
+        tap(use, in: app)
+        tap(app.switches["gyms.showArchived"], in: app)
+        revealAbove(app.staticTexts["gyms.currentName"], in: app)
+        XCTAssertEqual(app.staticTexts["gyms.currentName"].label, "Synthetic home")
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let export = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(export["documents"] as? [[String: Any]])
+        let gyms = documents.filter { $0["kind"] as? String == "gym_profile" }
+        XCTAssertEqual(gyms.count, 1)
+        let payload = try XCTUnwrap(gyms.first?["payload"] as? [String: Any])
+        XCTAssertEqual(payload["name"] as? String, "Synthetic home")
+        let loads = try XCTUnwrap(payload["loads"] as? [String: [[String: Any]]])
+        XCTAssertEqual(loads["dumbbell"]?.compactMap { $0["value"] as? Double }, [22.5, 12])
+        XCTAssertEqual(loads["dumbbell"]?.compactMap { $0["unit"] as? String }, ["lb", "kg"])
+        XCTAssertNotNil(payload["activatedAt"])
+        XCTAssertNil(payload["archivedAt"])
+    }
+
+    func testGuidedTrainingPlanUsesSetupAndCanBeReviewedSavedOfflineAndUndone() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "guided-plan", units: "imperial")
+        let preferences = try await request("GET", "/api/preferences", token: person.token)
+        _ = try await request("PATCH", "/api/preferences", body: [
+            "base_revision": try XCTUnwrap(preferences["revision"] as? Int),
+            "changes": ["workoutDaysPerWeek": 4, "experienceLevel": "intermediate", "equipmentAccess": "home",
+                        "equipment": ["dumbbells", "bench"]]
+        ], token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        capture(app, "guided-plan-start")
+        tap(app.buttons["planSetup.open"], in: app)
+        let loaded = app.staticTexts["Your saved setup is filled in. Adjust anything for this plan."]
+        reveal(loaded, in: app)
+        XCTAssertTrue(loaded.waitForExistence(timeout: 10))
+        tap(app.buttons["planSetup.goal.strength"], in: app)
+        capture(app, "guided-plan-goal")
+        tap(app.buttons["planSetup.continue"], in: app)
+        reveal(app.buttons["planSetup.experience.intermediate"], in: app)
+        XCTAssertTrue(app.buttons["planSetup.experience.intermediate"].isSelected)
+        tap(app.buttons["planSetup.minutes.45"], in: app)
+        capture(app, "guided-plan-time")
+        tap(app.buttons["planSetup.continue"], in: app)
+        reveal(app.buttons["planSetup.equipment.dumbbell"], in: app)
+        XCTAssertTrue(app.buttons["planSetup.equipment.dumbbell"].isSelected)
+        XCTAssertTrue(app.buttons["planSetup.equipment.flatBench"].isSelected)
+        capture(app, "guided-plan-equipment")
+        tap(app.buttons["planSetup.continue"], in: app)
+        XCTAssertTrue(app.navigationBars["Review your plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["4 workouts per cycle · 45 min budget"].exists)
+        capture(app, "guided-plan-preview")
+        tap(app.buttons["planSetup.day.0"], in: app)
+        capture(app, "guided-plan-first-day")
+        tap(app.navigationBars.buttons.firstMatch, in: app)
+        tap(app.buttons["planSetup.close"], in: app)
+        let before = try await request("GET", "/api/export", token: person.token)
+        let beforeDocuments = try XCTUnwrap(before["documents"] as? [[String: Any]])
+        XCTAssertFalse(beforeDocuments.contains { ["program", "proposal"].contains($0["kind"] as? String ?? "") })
+        tap(app.buttons["planSetup.open"], in: app)
+        reveal(loaded, in: app)
+        XCTAssertTrue(loaded.waitForExistence(timeout: 10))
+        tap(app.buttons["planSetup.continue"], in: app)
+        tap(app.buttons["planSetup.continue"], in: app)
+        tap(app.buttons["planSetup.continue"], in: app)
+        XCTAssertTrue(app.navigationBars["Review your plan"].waitForExistence(timeout: 10))
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["planSetup.accept"], in: app)
+        revealAbove(app.staticTexts["planSetup.saved"], in: app)
+        XCTAssertTrue(app.staticTexts["planSetup.saved"].exists)
+        capture(app, "guided-plan-saved-offline")
+        tap(app.buttons["planSetup.openProgram"], in: app)
+        XCTAssertTrue(app.navigationBars["Program"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Following this program"].exists)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["suggestions.open"], in: app)
+        let suggestion = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "suggestions.proposal.")).firstMatch
+        tap(suggestion, in: app)
+        XCTAssertTrue(app.staticTexts["Accepted"].exists)
+        tap(app.buttons["suggestions.undo"], in: app)
+        revealAbove(app.staticTexts["suggestions.status"], in: app)
+        XCTAssertTrue(app.staticTexts["Undone"].exists)
+        capture(app, "guided-plan-undone-after-relaunch")
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let after = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(after["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "program" })
+        let proposals = documents.filter { $0["kind"] as? String == "proposal" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(proposals.count, 1)
+        XCTAssertEqual(proposals.first?["status"] as? String, "undone")
     }
 
     func testProgramBuilderPersistsOfflineAndFinishedWorkoutsAdvanceThePlan() async throws {
@@ -1519,6 +1770,90 @@ final class ProductionUITests: XCTestCase {
         dismissPasswordPrompt(in: app)
     }
 
+    func testExerciseGuideOpensFromLibraryAndKeepsOfflineWorkoutSetsAndRest() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "exercise-guide", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["Exercise library"], in: app)
+        tap(app.searchFields.firstMatch, in: app)
+        app.searchFields.firstMatch.typeText("barbell bench press\n")
+        tap(app.staticTexts["Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.navigationBars["Exercise guide"].waitForExistence(timeout: 5))
+        capture(app, "guide-library-setup")
+        reveal(app.staticTexts["training.guide.step.2"], in: app)
+        capture(app, "guide-library-movement")
+        tap(app.navigationBars.buttons["Exercises"], in: app)
+        tap(app.buttons["training.exerciseClose"], in: app)
+        tap(app.buttons["training.start"], in: app)
+        tap(app.buttons["training.confirmStart"], in: app)
+        tap(app.buttons["training.addExercise"], in: app)
+        tap(app.searchFields.firstMatch, in: app)
+        app.searchFields.firstMatch.typeText("barbell bench press\n")
+        tap(app.buttons["Add Barbell Bench Press"], in: app)
+        tap(app.buttons["Edit set 1, Barbell Bench Press"], in: app)
+        replace(app.textFields["training.load.0"], with: "75.5", in: app)
+        tap(app.buttons["exerly.keypadDone"], in: app)
+        replace(app.textFields["training.reps.0"], with: "8", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["training.saveSet"], in: app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
+        reveal(app.buttons["Skip rest"], in: app)
+        XCTAssertTrue(app.buttons["Skip rest"].exists)
+        revealAbove(app.buttons["training.guide.barbell-bench-press"], in: app)
+        tap(app.buttons["training.guide.barbell-bench-press"], in: app)
+        XCTAssertTrue(app.navigationBars["Exercise guide"].waitForExistence(timeout: 5))
+        capture(app, "guide-workout-offline")
+        reveal(app.descendants(matching: .any).matching(identifier: "training.guide.reference").firstMatch, in: app)
+        capture(app, "guide-workout-cue")
+        tap(app.buttons["training.guide.close"], in: app)
+        reveal(app.buttons["Reopen set 1, Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.staticTexts["75.5 lb × 8 reps"].exists)
+        reveal(app.buttons["Skip rest"], in: app)
+        XCTAssertTrue(app.buttons["Skip rest"].exists)
+        capture(app, "guide-returned-to-workout")
+        tap(app.buttons["Add 30 seconds of rest"], in: app)
+        capture(app, "guide-rest-extended")
+        tap(app.buttons["Skip rest"], in: app)
+        XCTAssertFalse(app.buttons["Skip rest"].exists)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.guide.barbell-bench-press"], in: app)
+        XCTAssertTrue(app.navigationBars["Exercise guide"].waitForExistence(timeout: 5))
+        tap(app.buttons["training.guide.close"], in: app)
+        reveal(app.buttons["Reopen set 1, Barbell Bench Press"], in: app)
+        XCTAssertTrue(app.staticTexts["75.5 lb × 8 reps"].exists)
+        XCTAssertFalse(app.buttons["Skip rest"].exists, "Opening guidance must not recreate a skipped rest")
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let export = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(export["documents"] as? [[String: Any]])
+        let workouts = documents.filter { $0["kind"] as? String == "workout_session" }
+        XCTAssertEqual(workouts.count, 1)
+        let payload = try XCTUnwrap(workouts.first?["payload"] as? [String: Any])
+        let exercises = try XCTUnwrap(payload["exercises"] as? [[String: Any]])
+        XCTAssertEqual(exercises.count, 1)
+        XCTAssertEqual(exercises.first?["exerciseID"] as? String, "barbell-bench-press")
+        let sets = try XCTUnwrap(exercises.first?["sets"] as? [[String: Any]])
+        let completed = sets.filter { $0["completedAt"] != nil }
+        XCTAssertEqual(completed.count, 1)
+        let efforts = try XCTUnwrap(completed.first?["efforts"] as? [[String: Any]])
+        XCTAssertEqual(efforts.count, 1)
+        XCTAssertEqual(efforts.first?["reps"] as? Int, 8)
+        let load = try XCTUnwrap(efforts.first?["load"] as? [String: Any])
+        XCTAssertEqual(load["unit"] as? String, "lb")
+        XCTAssertEqual(load["value"] as? Double, 75.5)
+    }
+
     func testTrainingSessionSurvivesRelaunchAndPrefillsTheNextWorkout() async throws {
         try await control([:])
         let email = "training-\(UUID().uuidString.lowercased())@exerly.test"
@@ -1575,6 +1910,140 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
         XCTAssertTrue(app.buttons["Reopen set 1, Barbell Bench Press"].exists)
         capture(app, "training-prefilled-one-tap")
+    }
+
+    func testNutritionLabelPhotoReviewCancellationAndOfflineSaveUseRealRecognition() async throws {
+        continueAfterFailure = false
+        guard ProcessInfo.processInfo.environment["EXERLY_TEST_LABEL_PHOTO"] == "1" else {
+            throw XCTSkip("Requires the synthetic Nutrition Facts image in this simulator's photo library")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-label-photo", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        openFoodOption("nutrition.scanLabel", in: app)
+        capture(app, "nutrition-label-start")
+        try chooseSyntheticLabelPhoto(in: app)
+        capture(app, "nutrition-label-review")
+        tap(app.buttons["View original nutrition label"], in: app)
+        XCTAssertTrue(app.navigationBars["Label photo"].waitForExistence(timeout: 5))
+        capture(app, "nutrition-label-original-photo")
+        tap(app.buttons["Close"], in: app)
+        tap(app.buttons["nutrition.cancelFood"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        XCTAssertTrue(app.navigationBars["Scan label"].waitForExistence(timeout: 10))
+        let cancelledExport = try await request("GET", "/api/export", token: person.token)
+        let cancelledDocuments = try XCTUnwrap(cancelledExport["documents"] as? [[String: Any]])
+        XCTAssertFalse(cancelledDocuments.contains { ["saved_food", "food_entry"].contains($0["kind"] as? String ?? "") })
+        try chooseSyntheticLabelPhoto(in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Scanned synthetic cereal", in: app)
+        reveal(app.textFields["Label serving weight (g)"], in: app)
+        XCTAssertEqual(app.textFields["Label serving weight (g)"].value as? String, "55")
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "230")
+        replace(app.textFields["Calories (kcal)"], with: "231.5", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-label-corrected-values")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.saveFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Log food"].waitForExistence(timeout: 15))
+        chooseFoodMeasure("grams", in: app)
+        replace(app.textFields["Amount (g)"], with: "55", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Scanned synthetic cereal")).firstMatch, in: app)
+        reveal(app.textFields["Amount (g)"], in: app)
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "55")
+        capture(app, "nutrition-label-offline-relaunched")
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let foods = documents.filter { $0["kind"] as? String == "saved_food" }
+        XCTAssertEqual(foods.count, 1)
+        XCTAssertEqual(documents.filter { $0["kind"] as? String == "food_entry" }.count, 1)
+        let food = try XCTUnwrap(foods.first?["payload"] as? [String: Any])
+        XCTAssertEqual(food["name"] as? String, "Scanned synthetic cereal")
+        XCTAssertEqual(food["source"] as? String, "custom")
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(try XCTUnwrap(nutrients["energy"] as? Double), 420.90909090909, accuracy: 0.000_000_001)
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        XCTAssertNil(nutrients["vitaminD"])
+        XCTAssertNil(food["imageData"])
+        XCTAssertNil(food["image"])
+    }
+
+    func testNutritionLabelCameraFallbackAndManualCancellationSaveNothing() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "nutrition-label-manual", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        openFoodOption("nutrition.scanLabel", in: app)
+        tap(app.buttons["nutrition.labelTakePhoto"], in: app)
+        let fallback = app.staticTexts["This device has no available camera. Choose a label photo or enter it manually."]
+        reveal(fallback, in: app)
+        XCTAssertTrue(fallback.exists)
+        capture(app, "nutrition-label-camera-fallback")
+        tap(app.buttons["nutrition.labelManual"], in: app)
+        replace(app.textFields["nutrition.foodName"], with: "Unsaved label", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.cancelFood"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        tap(app.buttons["nutrition.cancelScanLabel"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 10))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { ["saved_food", "food_entry"].contains($0["kind"] as? String ?? "") })
+    }
+
+    private func openFoodOption(_ identifier: String, in app: XCUIApplication) {
+        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
+        let option = app.buttons[identifier]
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
+        // A native menu overlays the navigation bar. Scrolling the content to
+        // reveal its already-visible row would dismiss the menu.
+        XCTAssertTrue(option.isHittable)
+        option.tap()
+    }
+
+    private func chooseSyntheticLabelPhoto(in app: XCUIApplication) throws {
+        tap(app.buttons["nutrition.labelChoosePhoto"], in: app)
+        dismissPhotoPickerIntroduction(in: app)
+        let photo = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
+        guard photo.waitForExistence(timeout: 10) else {
+            XCTFail("The seeded label photo did not appear in the photo picker")
+            throw NSError(domain: "NutritionLabelPhotoJourney", code: 1)
+        }
+        // iOS 26 inserts its privacy introduction after presenting the picker.
+        // Wait for the photo grid before dismissing that late-arriving overlay.
+        dismissPhotoPickerIntroduction(in: app)
+        // iOS 26's remote Photos grid can report an on-screen thumbnail as not
+        // hittable. Tap its verified visible center through the real picker.
+        if photo.isHittable { photo.tap() }
+        else {
+            let frame = photo.frame
+            guard !frame.isEmpty, app.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) else {
+                XCTFail("The seeded photo is outside the visible picker")
+                throw NSError(domain: "NutritionLabelPhotoJourney", code: 2)
+            }
+            photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        guard app.navigationBars["Food label"].waitForExistence(timeout: 30) else {
+            XCTFail("The selected photo did not reach label review")
+            throw NSError(domain: "NutritionLabelPhotoJourney", code: 3)
+        }
     }
 
     func testUSFoodOuncesAndNamedServingsKeepExactWeightAcrossOfflineRelaunch() async throws {
@@ -1669,6 +2138,7 @@ final class ProductionUITests: XCTestCase {
         reveal(app.textFields["Amount (fl oz)"], in: app)
         XCTAssertEqual(app.textFields["Amount (fl oz)"].value as? String, "2.5")
         capture(app, "nutrition-unit-fluid-ounces-relaunched")
+        XCTAssertFalse(app.buttons["Use fl oz"].exists, "Saved measuring units are not label portions")
         tap(app.buttons["nutrition.cancelEntry"], in: app)
         XCTAssertTrue(app.navigationBars["Food entry"].waitForNonExistence(timeout: 10))
         try await control([:])
@@ -1696,6 +2166,230 @@ final class ProductionUITests: XCTestCase {
         capture(app, "nutrition-unit-measure-choices")
         tap(app.buttons["nutrition.measure.\(identifier)"], in: app)
         XCTAssertTrue(app.navigationBars["Portion measure"].waitForNonExistence(timeout: 10))
+    }
+
+    func testMealDraftSelectionPortionsAndCancellationDoNotWriteDiaryEntries() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "meal-draft-cancel", units: "imperial")
+        let powder = try await seedPortionFood(token: person.token, volume: false)
+        let liquid = try await seedPortionFood(token: person.token, volume: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.buildMeal"], in: app)
+        capture(app, "nutrition-plate-empty")
+        tap(app.buttons["Choose foods"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        capture(app, "nutrition-plate-selection")
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
+        replace(app.textFields["Amount (oz)"], with: "0", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        let validation = app.descendants(matching: .any).matching(identifier: "nutrition.platePortionError").firstMatch
+        XCTAssertTrue(validation.waitForExistence(timeout: 5))
+        XCTAssertTrue(validation.isHittable, "An invalid portion must explain what to fix without searching below the fold")
+        capture(app, "nutrition-plate-invalid-portion")
+        revealAbove(app.textFields["Amount (oz)"], in: app)
+        replace(app.textFields["Amount (oz)"], with: "2.5", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        replace(app.textFields["Amount (oz)"], with: "4", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.cancelPlatePortion"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        tap(plateRow(powder, in: app), in: app)
+        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "2.5")
+        tap(app.buttons["nutrition.cancelPlatePortion"], in: app)
+        tap(app.buttons["Remove Synthetic liquid"], in: app)
+        XCTAssertFalse(plateRow(liquid, in: app).exists)
+        capture(app, "nutrition-plate-after-removal")
+        tap(app.buttons["nutrition.plateAddFoods"], in: app)
+        tap(app.buttons["nutrition.plateBarcode"], in: app)
+        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
+        replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.lookupBarcode"], in: app)
+        tap(app.buttons["nutrition.barcodeFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Choose foods"].waitForExistence(timeout: 5))
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        XCTAssertTrue(plateRow("off:0012345678905", in: app).exists)
+        capture(app, "nutrition-plate-barcode-added")
+        tap(app.buttons["nutrition.cancelPlate"], in: app)
+        tap(app.buttons["Discard meal"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 10))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "food_entry" })
+    }
+
+    func testMultiFoodMealLogsOnceOfflineAndPreservesExactPortionsAfterRelaunch() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "meal-draft-offline", units: "imperial")
+        let powder = try await seedPortionFood(token: person.token, volume: false)
+        let liquid = try await seedPortionFood(token: person.token, volume: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.buildMeal"], in: app)
+        tap(app.buttons["Choose foods"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        for (id, title) in [(powder, "Amount (oz)"), (liquid, "Amount (fl oz)")] {
+            tap(plateRow(id, in: app), in: app)
+            replace(app.textFields[title], with: "2.5", in: app)
+            dismissKeyboard(app)
+            capture(app, id == powder ? "nutrition-plate-ounces" : "nutrition-plate-fluid-ounces")
+            tap(app.buttons["nutrition.applyPlatePortion"], in: app)
+        }
+        tap(app.buttons["Lunch"], in: app)
+        revealAbove(app.staticTexts["nutrition.plateSummary"], in: app)
+        capture(app, "nutrition-plate-review")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.savePlate"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        for (name, title) in [("Synthetic powder", "Amount (oz)"), ("Synthetic liquid", "Amount (fl oz)")] {
+            let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", name)).firstMatch
+            tap(entry, in: app)
+            reveal(app.textFields[title], in: app)
+            XCTAssertEqual(app.textFields[title].value as? String, "2.5")
+            capture(app, name == "Synthetic powder" ? "nutrition-plate-powder-relaunched" : "nutrition-plate-liquid-relaunched")
+            tap(app.buttons["nutrition.cancelEntry"], in: app)
+        }
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 2, "One save must log exactly one copy of each portion")
+        for (id, grams, measure) in [(powder, 70.8738078125, "oz"), (liquid, 68.01911799375, "fl oz")] {
+            let entry = try XCTUnwrap(entries.first { ($0["food"] as? [String: Any])?["foodID"] as? String == id })
+            XCTAssertEqual(entry["meal"] as? String, "Lunch")
+            XCTAssertEqual(try XCTUnwrap(entry["grams"] as? Double), grams, accuracy: 0.000_000_001)
+            XCTAssertEqual(entry["quantity"] as? Double, 2.5)
+            XCTAssertEqual((entry["serving"] as? [String: Any])?["name"] as? String, measure)
+            let food = try XCTUnwrap(entry["food"] as? [String: Any])
+            let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+            XCTAssertEqual(nutrients["energy"] as? Double, 123.456789)
+            XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+            XCTAssertNil(nutrients["protein"])
+            if id == liquid { XCTAssertEqual((food["volume"] as? [String: Any])?["density"] as? Double, 0.92) }
+        }
+    }
+
+    func testRecipeCreationCancellationOfflineLoggingAndEditingPreserveHistoricalPortions() async throws {
+        continueAfterFailure = false
+        try await control([:])
+        let person = try await createAccount(prefix: "recipe", units: "imperial")
+        let powder = try await seedPortionFood(token: person.token, volume: false)
+        let liquid = try await seedPortionFood(token: person.token, volume: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["Library"], in: app)
+        tap(app.buttons["nutrition.libraryCreate"], in: app)
+        tap(app.buttons["nutrition.libraryCreateRecipe"], in: app)
+        capture(app, "recipe-empty-builder")
+        replace(app.textFields["nutrition.recipe.name"], with: "Cancelled recipe", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.recipe.search"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        tap(app.buttons["nutrition.recipe.cancel"], in: app)
+        tap(app.buttons["Discard changes"], in: app)
+        XCTAssertTrue(app.navigationBars["Food library"].waitForExistence(timeout: 10))
+        let cancelled = try await request("GET", "/api/export", token: person.token)
+        let cancelledDocs = try XCTUnwrap(cancelled["documents"] as? [[String: Any]])
+        XCTAssertFalse(cancelledDocs.contains { ($0["payload"] as? [String: Any])?["source"] as? String == "recipe" })
+        XCTAssertFalse(cancelledDocs.contains { $0["kind"] as? String == "food_entry" })
+        tap(app.buttons["nutrition.libraryCreate"], in: app)
+        tap(app.buttons["nutrition.libraryCreateRecipe"], in: app)
+        replace(app.textFields["nutrition.recipe.name"], with: "Breakfast jars", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.recipe.search"], in: app)
+        tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        for (id, title) in [(powder, "Amount (oz)"), (liquid, "Amount (fl oz)")] {
+            tap(app.buttons["nutrition.recipe.ingredient.\(id)"], in: app)
+            replace(app.textFields[title], with: "2.5", in: app)
+            dismissKeyboard(app)
+            capture(app, id == powder ? "recipe-ingredient-ounces" : "recipe-ingredient-fluid-ounces")
+            tap(app.buttons["nutrition.recipe.applyAmount"], in: app)
+        }
+        replace(app.textFields["Equal servings"], with: "4", in: app)
+        dismissKeyboard(app)
+        replace(app.textFields["nutrition.recipe.weight"], with: "12.5", in: app)
+        dismissKeyboard(app)
+        capture(app, "recipe-finished-weight-and-servings")
+        revealAbove(app.textFields["nutrition.recipe.name"], in: app)
+        capture(app, "recipe-summary-review")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.recipe.save"], in: app)
+        XCTAssertTrue(app.navigationBars["Food library"].waitForExistence(timeout: 10))
+        tap(app.staticTexts["Breakfast jars"], in: app)
+        capture(app, "recipe-saved-detail")
+        tap(app.buttons["nutrition.libraryLog"], in: app)
+        let servingButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.usePortion.1 serving.")).firstMatch
+        XCTAssertTrue(servingButton.waitForExistence(timeout: 5))
+        tap(servingButton, in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["Library"], in: app)
+        tap(app.staticTexts["Breakfast jars"], in: app)
+        tap(app.buttons["nutrition.libraryActions"], in: app)
+        tap(app.buttons["nutrition.libraryEditRecipe"], in: app)
+        replace(app.textFields["nutrition.recipe.name"], with: "Renamed breakfast", in: app)
+        dismissKeyboard(app)
+        reveal(app.textFields["nutrition.recipe.weight"], in: app)
+        XCTAssertEqual(app.textFields["nutrition.recipe.weight"].value as? String, "12.5")
+        capture(app, "recipe-reopened-edit")
+        tap(app.buttons["nutrition.recipe.save"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        let recipes = documents.filter { $0["kind"] as? String == "saved_food" }.compactMap { $0["payload"] as? [String: Any] }
+            .filter { $0["source"] as? String == "recipe" }
+        XCTAssertEqual(recipes.count, 1)
+        let recipe = try XCTUnwrap(recipes.first)
+        XCTAssertEqual(recipe["name"] as? String, "Renamed breakfast")
+        XCTAssertEqual(recipe["yieldGrams"] as? Double, 354.3690390625)
+        XCTAssertEqual(recipe["servingCount"] as? Double, 4)
+        let ingredients = try XCTUnwrap(recipe["ingredients"] as? [[String: Any]])
+        XCTAssertEqual(ingredients.count, 2)
+        XCTAssertEqual(ingredients[0]["grams"] as? Double, 70.8738078125)
+        XCTAssertEqual(ingredients[1]["grams"] as? Double, 68.01911799375)
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }.compactMap { $0["payload"] as? [String: Any] }
+        XCTAssertEqual(entries.count, 1)
+        let entry = try XCTUnwrap(entries.first)
+        XCTAssertEqual(entry["grams"] as? Double, 88.592259765625)
+        XCTAssertEqual(entry["quantity"] as? Double, 1)
+        let snapshot = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(snapshot["name"] as? String, "Breakfast jars")
+        let nutrients = try XCTUnwrap(snapshot["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
+    }
+
+    private func plateRow(_ foodID: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.plateRow.\(foodID).")).firstMatch
     }
 
     private func seedPortionFood(token: String, volume: Bool) async throws -> String {
@@ -1735,6 +2429,131 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.cancelEntry"], in: app)
         XCTAssertTrue(app.navigationBars["Food entry"].waitForNonExistence(timeout: 10),
                       "Scrolling must not leave a changed meal or portion that requires discard confirmation")
+    }
+
+    func testQuickCaloriesAndMacrosCancelLogOfflineAndRemainEditableWithoutAFoodWeight() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "quick-nutrition", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        XCTAssertTrue(app.navigationBars["Quick add"].waitForExistence(timeout: 5))
+        capture(app, "nutrition-quick-empty")
+        tap(app.buttons["nutrition.quick.save"], in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.quick.error"].waitForExistence(timeout: 5))
+        replace(app.textFields["nutrition.quick.energy"], with: "300", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.quick.cancel"], in: app)
+        capture(app, "nutrition-quick-discard")
+        tap(app.buttons["Discard entry"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 5))
+        tap(app.buttons["Cancel"].firstMatch, in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch.exists)
+
+        tap(app.buttons["nutrition.dayActions"], in: app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        replace(app.textFields["nutrition.quick.energy"], with: "525", in: app)
+        replace(app.textFields["nutrition.quick.fat"], with: "0", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["Lunch"], in: app)
+        XCTAssertTrue(app.buttons["Lunch"].isSelected)
+        XCTAssertEqual(app.buttons["nutrition.quick.save"].label, "Log to Lunch")
+        replace(app.textFields["nutrition.quick.name"], with: "Restaurant lunch", in: app)
+        dismissKeyboard(app)
+        capture(app, "nutrition-quick-ready")
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.quick.save"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        let entryButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch
+        tap(entryButton, in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        XCTAssertFalse(app.textFields["nutrition.amount"].exists)
+        capture(app, "nutrition-quick-relaunched")
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        replace(app.textFields["Calories (kcal)"], with: "550", in: app)
+        dismissKeyboard(app)
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "saved_food" })
+        let entries = documents.filter { $0["kind"] as? String == "food_entry" }
+        XCTAssertEqual(entries.count, 1, "Cancelling must not add an entry")
+        let entry = try XCTUnwrap(entries.first?["payload"] as? [String: Any])
+        XCTAssertEqual(entry["meal"] as? String, "Lunch")
+        let food = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(food["unweighed"] as? Bool, true)
+        XCTAssertEqual(food["name"] as? String, "Restaurant lunch")
+        XCTAssertTrue((food["foodID"] as? String)?.hasPrefix("quick:") == true)
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 550)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
+        XCTAssertNil(nutrients["carbohydrate"])
+    }
+
+    func testUnweighedEntryHidesInventedWeightAndKeepsNutrientEditsOffline() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "unweighed-entry", units: "imperial")
+        let seeded = try await seedNutritionEntry(token: person.token, name: "Unweighed meal",
+            nutrients: ["energy": 351.25, "protein": 12.3456789, "sodium": 0], grams: 100, unweighed: true)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        XCTAssertFalse(app.textFields["nutrition.amount"].exists)
+        capture(app, "nutrition-unweighed-entry")
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        XCTAssertTrue(app.staticTexts["Whole portion"].exists)
+        replace(app.textFields["Calories (kcal)"], with: "352.5", in: app)
+        replace(app.textFields["Protein (g)"], with: "", in: app)
+        replace(app.textFields["Fat (g)"], with: "0", in: app)
+        dismissKeyboard(app)
+        try await control(["offline": true, "disconnect": true])
+        tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        tap(app.buttons["nutrition.entry.\(seeded.id)"], in: app)
+        XCTAssertFalse(app.buttons["nutrition.measure"].exists)
+        tap(app.buttons["nutrition.editEntryNutrients"], in: app)
+        reveal(app.textFields["Calories (kcal)"], in: app)
+        XCTAssertEqual(app.textFields["Calories (kcal)"].value as? String, "352.5")
+        capture(app, "nutrition-unweighed-relaunched")
+        tap(app.buttons["nutrition.cancelEntryNutrients"], in: app)
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        try await control([:])
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.sync"], in: app)
+        tap(app.buttons["account.syncNow"], in: app)
+        XCTAssertTrue(app.staticTexts["Account synced"].waitForExistence(timeout: 20))
+        let exported = try await request("GET", "/api/export", token: person.token)
+        let documents = try XCTUnwrap(exported["documents"] as? [[String: Any]])
+        XCTAssertFalse(documents.contains { $0["kind"] as? String == "saved_food" })
+        let entry = try XCTUnwrap(documents.first { $0["kind"] as? String == "food_entry" }?["payload"] as? [String: Any])
+        XCTAssertEqual(entry["grams"] as? Double, 100, "The storage representation must not change")
+        let food = try XCTUnwrap(entry["food"] as? [String: Any])
+        XCTAssertEqual(food["unweighed"] as? Bool, true)
+        let nutrients = try XCTUnwrap(food["per100g"] as? [String: Any])
+        XCTAssertEqual(nutrients["energy"] as? Double, 352.5)
+        XCTAssertEqual(nutrients["fat"] as? Double, 0)
+        XCTAssertEqual(nutrients["sodium"] as? Double, 0)
+        XCTAssertNil(nutrients["protein"])
     }
 
     func testEntryNutrientCorrectionCanBeCancelledAndKeepsItsSourceAcrossOfflineRelaunch() async throws {
@@ -1842,7 +2661,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["nutrition.libraryFood.\(seeded.foodID)"], in: app)
         tap(app.buttons["nutrition.libraryActions"], in: app)
         tap(app.buttons["nutrition.libraryEdit"], in: app)
-        replace(app.textFields["Energy (kcal)"], with: "200.5", in: app)
+        replace(app.textFields["Calories (kcal)"], with: "200.5", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveFood"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
@@ -2684,11 +3503,11 @@ final class ProductionUITests: XCTestCase {
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
         XCTAssertTrue(app.staticTexts["Repair 1 of 2"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["Activity Level"].exists)
+        XCTAssertTrue(app.staticTexts["Your everyday activity"].exists)
         XCTAssertFalse(app.textFields["Your name"].exists)
         tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Lightly Active")).firstMatch, in: app)
         capture(app, "legacy-repair-missing-activity")
-        tap(app.buttons["Continue"], in: app)
+        tap(app.buttons["setup.continueWeek"], in: app)
         XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 10))
         capture(app, "legacy-repair-target-review")
         tap(app.buttons["Finish setup"], in: app)
@@ -2710,6 +3529,7 @@ final class ProductionUITests: XCTestCase {
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
         tap(app.buttons["nutrition.barcode"], in: app)
+        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
@@ -2759,12 +3579,10 @@ final class ProductionUITests: XCTestCase {
         replace(app.textFields["Height, cm"], with: "178.5", in: app)
         replace(app.textFields["Weight, kg"], with: "82.5", in: app)
         dismissKeyboard(app)
-        let formula = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Formula parameter")).firstMatch
-        tap(formula, in: app)
         tap(app.buttons["Male parameter"], in: app)
         capture(app, "setup-answers-before-relaunch")
         app.terminate()
-        app.launchArguments = []
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
         app.launch()
         XCTAssertTrue(app.textFields["Height, cm"].waitForExistence(timeout: 15))
         XCTAssertEqual(app.textFields["Height, cm"].value as? String, "178.5")
@@ -2773,8 +3591,26 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Lose Weight")).firstMatch, in: app)
         replace(app.textFields["Target weight"], with: "78", in: app)
         dismissKeyboard(app)
+        capture(app, "setup-independent-goals")
         tap(app.buttons["Continue"], in: app)
-        tap(app.buttons["Continue"], in: app)
+        capture(app, "setup-everyday-activity")
+        tap(app.buttons["setup.continueWeek"], in: app)
+        tap(app.buttons["setup.workouts.4"], in: app)
+        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "I train regularly")).firstMatch, in: app)
+        capture(app, "setup-training-week")
+        app.terminate(); app.launch()
+        reveal(app.buttons["setup.workouts.4"], in: app)
+        XCTAssertTrue(app.buttons["setup.workouts.4"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["setup.workouts.4"].isSelected)
+        tap(app.buttons["setup.continueWeek"], in: app)
+        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "A full gym")).firstMatch, in: app)
+        capture(app, "setup-equipment")
+        tap(app.buttons["setup.continueWeek"], in: app)
+        let moreCarbs = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "More carbs")).firstMatch
+        tap(moreCarbs, in: app)
+        XCTAssertTrue(moreCarbs.isSelected, "The macro style choice must be selected before continuing")
+        capture(app, "setup-nutrition-style")
+        tap(app.buttons["setup.continueWeek"], in: app)
         XCTAssertTrue(app.staticTexts["Review your targets"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 10))
         capture(app, "setup-target-review")
@@ -2784,6 +3620,7 @@ final class ProductionUITests: XCTestCase {
         tap(app.buttons["Previous day"], in: app)
         tap(app.buttons["nutrition.addFood"], in: app)
         tap(app.buttons["nutrition.barcode"], in: app)
+        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["Look up barcode"], in: app)
@@ -2807,8 +3644,13 @@ final class ProductionUITests: XCTestCase {
         let bootstrap = try await request("GET", "/api/bootstrap", token: token)
         let status = try XCTUnwrap(bootstrap["onboarding"] as? [String: Any])
         XCTAssertEqual(status["complete"] as? Bool, true)
+        let configured = try XCTUnwrap(bootstrap["account"] as? [String: Any])
+        XCTAssertEqual(configured["experienceLevel"] as? String, "intermediate")
+        XCTAssertEqual(configured["workoutDaysPerWeek"] as? Int, 4)
+        XCTAssertEqual(configured["equipmentAccess"] as? String, "full_gym")
         let program = try await request("GET", "/api/program", token: token)
         XCTAssertEqual(program["goal_type"] as? String, "lose")
+        XCTAssertEqual(program["diet_type"] as? String, "low_fat")
         let targetSummary = try await request("GET", "/api/summary", token: token)
         let targets = try XCTUnwrap(targetSummary["targets"] as? [String: Any])
         let expectedEnergy = try XCTUnwrap(targets["calories"] as? Double)
@@ -3159,7 +4001,7 @@ final class ProductionUITests: XCTestCase {
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             let home = app.buttons["Home"]
             let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
-            let bottom = home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38
+            let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
             let height = max(80, bottom - top)
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.84) / app.frame.height))
@@ -3179,8 +4021,9 @@ final class ProductionUITests: XCTestCase {
         // element before it has a usable frame. Asking isHittable then causes
         // XCTest to abort all subsequent event delivery for this test.
         if (app.keyboards.firstMatch.exists || app.buttons["exerly.keypadDone"].exists) &&
-            (!visibleFrame(element) || !element.isHittable) && app.buttons["Done"].firstMatch.exists {
-            app.buttons["Done"].firstMatch.tap()
+            (!visibleFrame(element) || !element.isHittable) &&
+            (app.buttons["Done"].firstMatch.exists || app.buttons["Hide keyboard"].firstMatch.exists || app.buttons["exerly.keypadDone"].exists) {
+            dismissKeyboard(app)
         }
         for _ in 0..<48 {
             // The system can present the sheet after the diary first appears.
@@ -3191,12 +4034,19 @@ final class ProductionUITests: XCTestCase {
             // allowlist drag the content 48 times before tapping a visible tab.
             if visibleFrame(element) && element.isHittable,
                app.tabBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
+            // Persistent meal actions are outside the scrolling viewport.
+            // Tap them directly when visible, while keeping other drags above them.
+            if visibleFrame(element) && element.isHittable,
+               persistentActionIDs.contains(element.identifier) { return }
             // Stacked sheets expose the diary's navigation bar as well as
             // their own. Find the control in any bar instead of assuming
             // the last accessibility node is the frontmost navigation bar.
             if visibleFrame(element) && element.isHittable,
                app.navigationBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
-            let lowerEdge = visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30
+            // Native search fields can belong to the navigation bar itself.
+            // They are already visible above the scrolling content's top edge.
+            if visibleFrame(element), element.elementType == .searchField, element.isHittable { return }
+            let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30, fixedFooterTop(in: app))
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             // The saved-account notice is outside the navigation stack. Its
             // Retry button is already visible above the bar; scrolling the
@@ -3226,6 +4076,18 @@ final class ProductionUITests: XCTestCase {
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
+    }
+    private func fixedFooterTop(in app: XCUIApplication) -> CGFloat {
+        // Stacked sheets can expose the scroll view underneath. Never start a
+        // content drag inside the current sheet's persistent action buttons.
+        persistentActionIDs.compactMap { identifier in
+            let button = app.buttons[identifier]
+            return button.exists && button.isHittable ? button.frame.minY - 12 : nil
+        }.min() ?? app.frame.height
+    }
+    private var persistentActionIDs: [String] {
+        ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
+         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save"]
     }
     private func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
@@ -3285,12 +4147,15 @@ final class ProductionUITests: XCTestCase {
         }
     }
     private func dismissKeyboard(_ app: XCUIApplication) {
-        if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
+        if app.buttons["exerly.keypadDone"].firstMatch.exists { app.buttons["exerly.keypadDone"].firstMatch.tap() }
+        else if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
         else if app.buttons["Done"].firstMatch.exists { app.buttons["Done"].firstMatch.tap() }
         else { app.swipeUp() }
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        if name.hasPrefix("design") { Thread.sleep(forTimeInterval: 0.5) }
+        if name.hasPrefix("design") || name.hasPrefix("setup") || name.hasPrefix("guided-plan") || name.hasPrefix("gym") {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
         if dismissPasswordPrompt(in: app) { Thread.sleep(forTimeInterval: 0.8) }
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

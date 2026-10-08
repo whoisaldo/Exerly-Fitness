@@ -45,11 +45,13 @@ struct NutritionDiaryView: View {
     }
 
     private enum Destination: Identifiable {
-        case date, add(LocalDate, String), edit(FoodEntry), notes(LocalDate), copy(LocalDate, String?), status(StatusReview)
+        case date, add(LocalDate, String), scan(LocalDate, String), quick(LocalDate, String), edit(FoodEntry), notes(LocalDate), copy(LocalDate, String?), status(StatusReview)
         var id: String {
             switch self {
             case .date: "date"
             case .add(let date, let meal): "add-\(date)-\(meal)"
+            case .scan(let date, let meal): "scan-\(date)-\(meal)"
+            case .quick(let date, let meal): "quick-\(date)-\(meal)"
             case .edit(let entry): "edit-\(entry.id)"
             case .notes(let date): "notes-\(date)"
             case .copy(let date, let meal): "copy-\(date)-\(meal ?? "all")"
@@ -83,6 +85,9 @@ struct NutritionDiaryView: View {
                     dayStatus
                     Spacer(minLength: 0)
                     Menu {
+                        Button("Quick calories & macros", systemImage: "bolt") {
+                            destination = .quick(date, store.entries.last?.meal ?? "Snacks")
+                        }.accessibilityIdentifier("nutrition.quickAdd")
                         Button(store.day(date).notes.isEmpty ? "Add a note" : "Edit note", systemImage: "square.and.pencil") {
                             destination = .notes(date)
                         }.accessibilityIdentifier("nutrition.editNote")
@@ -93,6 +98,7 @@ struct NutritionDiaryView: View {
                     }.accessibilityLabel("Diary actions").accessibilityIdentifier("nutrition.dayActions")
                 }
                 }
+                loggingActions
                 if !store.day(date).notes.isEmpty {
                     Button { destination = .notes(date) } label: {
                         Label(store.day(date).notes, systemImage: "text.alignleft")
@@ -121,9 +127,10 @@ struct NutritionDiaryView: View {
                     }
                 }
                 if store.entries(on: date).isEmpty {
-                    ExEmptyState(icon: "fork.knife", title: "Your day starts here",
-                                 message: "Find a food, scan a label, or log one of your own.", action: "Add your first food") {
-                        destination = .add(date, "Breakfast")
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        Text("Start with your first meal").font(.exH2)
+                        Text("Have the package? Scan its barcode. For fruit, a homemade meal or a restaurant food, search by name.")
+                            .font(.exBody).foregroundStyle(Color.exTextSecondary)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -181,6 +188,32 @@ struct NutritionDiaryView: View {
     }
 
     private var store: NutritionStore { workspace.nutrition }
+
+    private var loggingActions: some View {
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: ExSpacing.item) { loggingButtons(horizontal: false) }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: ExSpacing.item) { loggingButtons(horizontal: true) }
+                    VStack(spacing: ExSpacing.item) { loggingButtons(horizontal: false) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func loggingButtons(horizontal: Bool) -> some View {
+            Button {
+                actions.clearError()
+                destination = .scan(date, store.entries.last?.meal ?? "Snacks")
+            } label: { Label("Scan barcode", systemImage: "barcode.viewfinder").fixedSize(horizontal: horizontal, vertical: true) }
+                .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.scanBarcodeDirect")
+            Button {
+                actions.clearError()
+                destination = .add(date, store.entries.last?.meal ?? "Snacks")
+            } label: { Label("Search food", systemImage: "magnifyingglass").fixedSize(horizontal: horizontal, vertical: true) }
+                .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.searchFoodDirect")
+    }
 
     private var dateNavigation: some View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
@@ -286,6 +319,11 @@ struct NutritionDiaryView: View {
         case .add(let date, let meal):
             NutritionFoodPicker(workspace: workspace, api: api, date: date, meal: meal,
                                 timeZone: timeZone, unit: unit, actions: actions) {}
+        case .scan(let date, let meal):
+            NutritionFoodPicker(workspace: workspace, api: api, date: date, meal: meal,
+                                timeZone: timeZone, unit: unit, actions: actions, onLogged: {}, startsWithBarcode: true)
+        case .quick(let date, let meal):
+            NutritionQuickAddView(workspace: workspace, date: date, meal: meal, timeZone: timeZone) {}
         case .edit(let entry):
             NutritionEntryEditor(workspace: workspace,
                 food: entry.food.foodForLogging(serving: entry.serving),

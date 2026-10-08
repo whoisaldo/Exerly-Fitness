@@ -13,6 +13,7 @@ struct OnboardingDraft: Codable {
     var cloudBaseline: Data?
     var pendingCloudSave: SetupDraftSave?
     var repairSteps: [Int]?
+    var planningPage: Int?
 }
 
 struct SetupDraftContent: Codable {
@@ -53,7 +54,7 @@ final class OnboardingState: ObservableObject {
     @Published var direction: Edge = .trailing
     @Published var name = "" { didSet { saveCheckpoint() } }
     @Published var age = 25 { didSet { saveCheckpoint() } }
-    @Published var gender: Gender = .male {
+    @Published var gender: Gender = .other {
         didSet {
             if !restoring { preservedGender = nil }
             answered("gender"); saveCheckpoint()
@@ -71,6 +72,11 @@ final class OnboardingState: ObservableObject {
     @Published var timelineWeeks = 12 { didSet { saveCheckpoint() } }
     @Published var activityLevel: ActivityLevel = .moderate { didSet { answered("activityLevel"); saveCheckpoint() } }
     @Published var activityTypes: Set<ActivityType> = [] { didSet { saveCheckpoint() } }
+    @Published var planningPage = 0 { didSet { saveCheckpoint() } }
+    @Published var experienceLevel = "beginner" { didSet { saveCheckpoint() } }
+    @Published var workoutDaysPerWeek = 3 { didSet { saveCheckpoint() } }
+    @Published var workoutDays: [String] = [] { didSet { saveCheckpoint() } }
+    @Published var dietType: String? = "balanced" { didSet { saveCheckpoint() } }
     @Published var dietaryStyle: DietaryStyle = .standard {
         didSet { if !restoring { dietaryStyleEdited = true }; saveCheckpoint() }
     }
@@ -128,6 +134,8 @@ final class OnboardingState: ObservableObject {
         self.automaticallySync = automaticallySync
     }
     var totalSteps: Int { 5 }
+    var questionNumber: Int { step < 3 ? step + 1 : step == 3 ? 4 + planningPage : 8 }
+    var questionCount: Int { 8 }
     var visibleSteps: [Int] { repairSteps ?? Array(0..<totalSteps) }
     var previewIdentity: Data? { signature(content()) }
     private func checkpointKey(_ accountID: String) -> String {
@@ -186,7 +194,11 @@ final class OnboardingState: ObservableObject {
             if nutritionGoal == "lose" && targetWeightKg > weightKg { return "Your target weight must be below your current weight." }
             if nutritionGoal == "gain" && targetWeightKg < weightKg { return "Your target weight must be above your current weight." }
             return nil
-        case 3: return unansweredFields.contains("activityLevel") ? "Choose your usual activity level." : nil
+        case 3:
+            if unansweredFields.contains("activityLevel") { return "Choose your usual activity level." }
+            if !["beginner", "intermediate", "advanced"].contains(experienceLevel) { return "Choose your training experience." }
+            if !(0...7).contains(workoutDaysPerWeek) { return "Choose how many days you plan to train." }
+            return nil
         default: return nil
         }
     }
@@ -194,14 +206,24 @@ final class OnboardingState: ObservableObject {
     func nextStep() {
         guard !isSubmitting else { return }
         validationError = errorForStep(step)
+        if step == 3, repairSteps == nil, planningPage < 3, validationError == nil {
+            planningPage += 1
+            return
+        }
         guard validationError == nil, let next = visibleSteps.first(where: { $0 > step }) else { return }
         direction = .trailing
         step = next
     }
     func prevStep() {
+        if !isSubmitting, step == 3, repairSteps == nil, planningPage > 0 {
+            validationError = nil
+            planningPage -= 1
+            return
+        }
         guard !isSubmitting, let previous = visibleSteps.last(where: { $0 < step }) else { return }
         validationError = nil
         direction = .leading
+        if step == 4, previous == 3, repairSteps == nil { planningPage = 3 }
         step = previous
     }
 
@@ -212,12 +234,12 @@ final class OnboardingState: ObservableObject {
             targetWeight: nutritionGoal == "maintain" ? nil : targetWeightKg)
         if let preservedAnswers {
             answer.timezone = preservedAnswers.timezone
-            answer.experienceLevel = preservedAnswers.experienceLevel
-            answer.workoutDaysPerWeek = preservedAnswers.workoutDaysPerWeek
-            answer.workoutDays = preservedAnswers.workoutDays
             answer.rateKgPerWeek = preservedAnswers.rateKgPerWeek
-            answer.dietType = preservedAnswers.dietType
         }
+        answer.experienceLevel = experienceLevel
+        answer.workoutDaysPerWeek = workoutDaysPerWeek
+        answer.workoutDays = workoutDays
+        answer.dietType = dietType
         answer.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         answer.sex = physiologicalSex.isEmpty ? nil : physiologicalSex
         answer.nutritionGoal = nutritionGoal
@@ -287,7 +309,8 @@ final class OnboardingState: ObservableObject {
         guard !restoring, let accountID else { return }
         let draft = OnboardingDraft(accountID: accountID, step: step, answers: request(),
             operationID: operationID, submittedPayload: submittedPayload, serverRevision: serverRevision,
-            cloudBaseline: cloudBaseline, pendingCloudSave: pendingCloudSave, repairSteps: repairSteps)
+            cloudBaseline: cloudBaseline, pendingCloudSave: pendingCloudSave, repairSteps: repairSteps,
+            planningPage: planningPage)
         if let data = try? JSONEncoder().encode(draft) {
             defaults.set(data, forKey: checkpointKey(accountID))
         }
@@ -322,6 +345,7 @@ final class OnboardingState: ObservableObject {
         submittedPayload = draft.submittedPayload
         repairSteps = draft.repairSteps
         apply(draft.answers, step: draft.step, schema: draft.schemaVersion)
+        planningPage = min(max(draft.planningPage ?? 0, 0), 3)
         // The old app used the production API. A staging build must never
         // adopt those answers merely because its account ID happens to match.
         defaults.set(data, forKey: checkpointKey(accountID))
@@ -349,6 +373,11 @@ final class OnboardingState: ObservableObject {
         targetWeightKg = a.targetWeight ?? a.weight
         timelineWeeks = a.timelineWeeks
         activityLevel = ActivityLevel(rawValue: a.activityLevel) ?? .moderate
+        experienceLevel = a.experienceLevel
+        workoutDaysPerWeek = a.workoutDaysPerWeek
+        workoutDays = a.workoutDays
+        dietType = a.dietType
+        planningPage = 0
         activityTypes = Set(a.activityTypes.compactMap(ActivityType.init(rawValue:)))
         dietaryStyle = DietaryStyle(rawValue: a.dietaryStyle) ?? .standard
         allergies = Set(a.allergies.compactMap(Allergy.init(rawValue:)))

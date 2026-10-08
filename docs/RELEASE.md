@@ -5,61 +5,57 @@ Review require Ali's decision after the build and review material are ready.
 
 ## Current build
 
-U.S. portion milestone A10, version 1.0 build 2610071410, is available in
+Beginner milestone A13, version 1.0 build 2610072129, is available in
 internal TestFlight. Apple reports VALID and IN_BETA_TESTING. The Ali-only
-group contains exactly this build, with the English notes verified. Availability
-was verified at 10:22 EDT on 2026-10-07. The phone needs Tailscale for devbox1
-staging and the existing internal account.
+group contains one tester and exactly this build, with English notes verified
+at 18:25 EDT on 2026-10-07. The phone needs Tailscale for devbox1 staging and
+the existing internal account.
 
-New U.S. food portions default to ounces, or fluid ounces when a food has a
-recorded density. Switching between ounces, grams, fluid ounces, milliliters and
-named servings preserves exact weight and nutrients. Saved measures survive
-offline logging and relaunch. Explicit metric preferences remain metric.
-Estimated density is labeled and selected portion presets have a checkmark.
-Calories remain kcal, macros grams, body measurements pounds and feet/inches,
-and water U.S. fluid ounces by default.
+The diary offers Scan first, Search second and manual entry under More.
+The eight-question setup explains and saves training experience, frequency,
+measurements and nutrition preferences. Build my workout plan uses those
+answers and available equipment to create a Core-generated proposal. Review
+each day before saving, keep an existing program, and undo the new plan even
+after an offline relaunch. U.S. units remain the default. A13 also includes
+A12's multi-food meal builder and A11's nutrition-label recognition.
 
-A9's staged entry nutrient corrections and scrolling fix are included. A8's
-original purple/pink identity, dark default, pulse logo and summary hierarchy
-remain. Nutrition label scanning is being tested separately and is not included.
+Core 308, API 261, all 197 active hosted tests and the device build pass.
+The fixed full UI gate covers all 59 declared methods exactly once, with
+50 passes and nine context-specific skips. Its manifest is
+artifacts/nutrition/a13-verified-manifest.json in the release worktree.
+Native Health authorization and the seeded label-photo test pass. Setup and
+plan journeys also pass in default light/dark and largest text. Default
+primary and empty screens were captured and reviewed in light and dark.
+All selected A13 release captures were inspected. Public comparisons are
+artifacts/design/contact-review/a13-barcode-reference.png and
+a13-workout-reference.png in the primary tree.
 
-The complete fixed-source A10 gate passed175 active hosted tests and44 UI
-journeys, plus one credential skip and nine documented opt-in/cross-client UI
-skips. All53 UI methods ran exactly once. After rebasing onto Logic's progression
-update, Core305, API260, full175 hosted tests, device build and both affected
-planned-workout/program-builder journeys passed. App and UI test sources were
-identical across that rebase. Evidence is artifacts/nutrition/a10-verified-manifest.json
-in the release worktree. Portion checks also pass at default light/dark and
-largest type, including offline relaunch and exact exported weight checks.
+The gallery is http://100.80.149.7:39215. Physical installation, camera capture,
+Apple sign-in, Health authorization, VoiceOver and measured phone performance
+remain unverified. Full feature parity is open. Gym inventory is in progress
+for the next release and is not in A13.
 
-Fresh primary light/dark captures and portion review are in
-artifacts/design/a10-primary-_, a10-verified-3 and portion-_-final-ax in the primary
-worktree. Every primary capture was reviewed alongside the public App Store
-references. The portion comparison is contact-review/a10-portions-reference.png.
-The gallery is http://100.80.149.7:39215. Physical installation, Apple sign-in,
-Health authorization, VoiceOver and measured phone performance remain unverified.
-Full feature parity is open.
-
-Signed archive and IPA checks passed identity, entitlements, profile, privacy
-manifest, icon, version, staging endpoint and absence of debug hooks.
+Signed archive and exported IPA checks passed identity, entitlements, profile,
+privacy manifest, icon, version, staging endpoint and absence of debug hooks.
 
 - Release worktree: `/Users/aldo/Desktop/Exerly-Fitness-app-programs`.
-- Archive: `apps/ios/build/release/2610071410/Exerly.xcarchive`.
-- IPA: `apps/ios/build/release/2610071410/export/Exerly.ipa`.
-- Logs: `apps/ios/build/release/2610071410/{archive,export,upload}.log`.
-- Build and delivery UUID: `4b0598ef-61f7-469b-96c7-1f76ac5724b5`.
-- Fixed source tag: `ios/internal-2610071410`, commit79d4c213.
+- Archive: `apps/ios/build/release/2610072129/Exerly.xcarchive`.
+- IPA: `apps/ios/build/release/2610072129/export/Exerly.ipa`.
+- Archive/export/upload logs: `apps/ios/build/release/2610072129/{archive,export,upload}.log`.
+- Build and delivery UUID: `cb866d14-31e9-44c2-91f6-94547943bf0c`.
+- Fixed source tag: `ios/internal-2610072129`, commit `208ed075`.
 - Bundle: `com.exerly.fitness`, Apple bundle resource `UJ5X8TJKNL`.
-- Team: `9X79V37Q89`. Distribution certificate expires2027-09-25.
+- Team: `9X79V37Q89`. Distribution certificate expires 2027-09-25.
 - Exerly profile: `J5J395Y9AF`, HealthKit and Apple sign-in, same expiry.
 - App Store Connect: Exerly, app ID `6819776832`.
 - Internal group: `Exerly Internal · Ali`, `c5ae1d39-0fe4-4bee-af89-0374d9519afe`.
   Only Ali, no public link or automatic future builds.
-- Availability evidence: `artifacts/nutrition/a10-internal-2610071410.json`.
-- Exact test notes: `docs/release/a10-internal-notes.txt`.
+- Availability evidence: `artifacts/nutrition/a13-internal-2610072129.json`.
+- Exact test notes: `docs/release/a13-internal-notes.txt`.
 
-A9 build2610071223 was detached only after1410 became available. No other app's
-identifiers or profiles changed. Credentials stay outside the repository.
+A12 build 2610072011 was detached only after A13 became available. The source
+tag is pushed. No other app's identifiers or profiles changed. Credentials
+stay outside the repository.
 
 ## Repeatable commands
 
@@ -104,10 +100,10 @@ bundles are not given an unsupported provisioning profile.
 | App icon                          | Built                 | Established purple E/pulse mark, opaque 1024px; replaces the rejected mint monogram.                                                                   |
 | App Store Connect record          | Done                  | Exerly created, app ID 6819776832.                                                                                                                     |
 | Internal group                    | Done                  | Exerly Internal · Ali; only account-holder Ali, no public link, explicit builds.                                                                       |
-| Internal TestFlight upload        | Available internally  | 1.0 (2610071410), valid and in beta testing; only Ali and only this build.                                                                             |
+| Internal TestFlight upload        | Available internally  | 1.0 (2610072129), valid and in beta testing; only Ali and only this build.                                                                             |
 | Feature parity                    | Open                  | Every PARITY.md row must have device evidence.                                                                                                         |
 | Beyond                            | Open                  | Ship and measure B01-B12; no unproven superiority claims.                                                                                              |
-| Native test suite                 | In progress           | A10: API260, Core305,175 hosted and44 active UI pass, plus focused light/dark/AX checks. Device build passes.                                          |
+| Native test suite                 | In progress           | A13: API 261, Core 308, 197 hosted and all 50 active UI methods pass. Light/dark/AX setup and plan journeys and device build pass.                     |
 | Light/dark and Dynamic Type       | Open                  | Inspect all major flows at largest text on small/large phones.                                                                                         |
 | VoiceOver/contrast/reduced motion | Open                  | Device audit, accessible form errors and charts, no clipped controls.                                                                                  |
 | Performance                       | Open                  | Cold-launch measurements and 60 fps scrolling traces on a physical phone.                                                                              |

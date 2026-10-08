@@ -46,7 +46,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Exerly needs camera access to scan food barcodes for nutritional information.</string>
+	<string>Exerly uses the camera to scan food barcodes and read nutrition labels on your device.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Exerly reads steps and active Calories to show your daily activity. You choose which data to share.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -54,7 +54,7 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Exerly uses your local network during development to connect to the backend running on your computer.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose progress photos to keep and compare in Exerly.</string>
+	<string>Choose progress photos to keep in Exerly, or a food label to read on your device.</string>
 	<key>EXERLY_API_BASE_URL</key>
 	<string>$(EXERLY_API_BASE_URL)</string>
 	<key>EXERLY_BUILD_ENVIRONMENT</key>

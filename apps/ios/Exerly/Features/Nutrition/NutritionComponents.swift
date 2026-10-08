@@ -6,11 +6,12 @@ struct NutritionNumberInput: View {
     @Binding var text: String
     var identifier = ""
     var integer = false
+    var placeholder = "Unknown"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            ExNumericTextField(title: title, text: $text, placeholder: "Unknown", integer: integer, identifier: identifier)
+            ExNumericTextField(title: title, text: $text, placeholder: placeholder, integer: integer, identifier: identifier)
                 .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
         }
     }
@@ -99,8 +100,9 @@ struct NutritionDailySummary: View {
                 : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
             energyLayout {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(amount(.energy).map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
-                    .font(.system(size: energySize, weight: .bold, design: .rounded)).foregroundStyle(Color.exTextPrimary)
+                Text(amount(.energy).map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "–")
+                    .font(.system(size: energySize, weight: .bold, design: .rounded))
+                    .foregroundStyle(amount(.energy) == nil ? Color.exTextSecondary : Color.exTextPrimary)
                     .contentTransition(.numericText())
                 Text("kcal").font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }.accessibilityElement(children: .combine)
@@ -145,8 +147,8 @@ struct NutritionDailySummary: View {
                 Circle().fill(color).frame(width: 5, height: 5).accessibilityHidden(true)
                 Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
-            Text(amount(nutrient).map { "\($0.formatted(.number.precision(.fractionLength(0)))) g" } ?? "—")
-                .font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+            Text(amount(nutrient).map { "\($0.formatted(.number.precision(.fractionLength(0)))) g" } ?? "–")
+                .font(.exStatSmall).foregroundStyle(amount(nutrient) == nil ? Color.exTextSecondary : Color.exTextPrimary)
             if let target {
                 ExProgressBar(value: amounts[nutrient] ?? 0, total: target, color: color)
                 Text("of \(target.formatted(.number.precision(.fractionLength(0)))) g").font(.exSmall)
@@ -195,8 +197,9 @@ enum NutritionFormat {
         }
     }
 
-    static func portion(_ entry: FoodEntry) -> String {
-        let grams = TrainingFormat.number(entry.grams)
+    static func portion(_ entry: FoodEntry, roundedGrams: Bool = false) -> String {
+        if entry.food.unweighed == true { return "Whole portion" }
+        let grams = roundedGrams ? entry.grams.formatted(.number.precision(.fractionLength(0))) : TrainingFormat.number(entry.grams)
         if let serving = entry.serving, let quantity = entry.quantity {
             let measure = NutritionPortionMeasure.saved(serving, food: entry.food.foodForLogging())
             if !measure.symbol.isEmpty {

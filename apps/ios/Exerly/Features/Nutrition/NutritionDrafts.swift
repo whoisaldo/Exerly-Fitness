@@ -91,6 +91,16 @@ final class NutritionFoodDraft: ObservableObject {
         initialServings = portions
     }
 
+    convenience init(store: NutritionStore, label: LabelReading) {
+        self.init(store: store)
+        nutrients = Dictionary(uniqueKeysWithValues: Nutrient.allCases.map { ($0, NutritionNumberField(label.amounts[$0])) })
+        basis = label.basis == .per100g ? .per100g : .perServing
+        if label.basis == .serving { labelGrams = NutritionNumberField(label.servingGrams) }
+        if let grams = label.servingGrams, label.basis != .per100ml {
+            servings = [NutritionServingFields(Serving(label.servingText ?? "Label serving", grams: grams))]
+        }
+    }
+
     var hasChanges: Bool {
         name != template.name || brand != (template.brand ?? "") || favorite != template.favorite ||
             nutrients != initialNutrients || servings != initialServings || basis != .per100g || !labelGrams.text.isEmpty
@@ -221,6 +231,36 @@ final class NutritionEntryDraft: ObservableObject {
         var measures = NutritionPortionMeasure.available(for: food, unit: preferredUnit)
         if !measures.contains(measure) { measures.append(measure) }
         return measures
+    }
+
+    var publishedServings: [Serving] {
+        guard snapshot.unweighed != true else { return [] }
+        return (food.servings + (food.recipeServing.map { [$0] } ?? [])).reduce(into: []) { result, serving in
+            // Reopened entries also carry a synthetic oz/ml/fl oz serving.
+            // Those are measures, not portions supplied by the food label.
+            guard case .serving = NutritionPortionMeasure.saved(serving, food: food) else { return }
+            if !result.contains(serving) { result.append(serving) }
+        }
+    }
+
+    /// Choosing a label portion replaces the amount. Switching its measure
+    /// below preserves the current amount instead.
+    @discardableResult
+    func selectPortion(_ serving: Serving) -> Bool {
+        errors = []
+        do {
+            guard publishedServings.contains(serving) else {
+                throw NutritionDraftError.input("Choose a portion provided for this food.")
+            }
+            let portion = try NutritionStore.preview(snapshot.foodForLogging(serving: serving), serving: serving, quantity: 1)
+            let selected = NutritionPortionMeasure.saved(serving, food: food)
+            let field = NutritionNumberField(1)
+            anchor = PortionAnchor(measure: selected, amount: field, grams: portion.grams,
+                                   serving: portion.serving, quantity: portion.quantity)
+            measure = selected
+            amount = field
+            return true
+        } catch { errors = NutritionDraftError.messages(error); return false }
     }
 
     @discardableResult

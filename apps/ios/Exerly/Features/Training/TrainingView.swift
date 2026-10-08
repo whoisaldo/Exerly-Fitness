@@ -42,16 +42,23 @@ struct TrainingView: View {
     @State private var starting = false
     @State private var browsing = false
     @State private var reviewingPlan = false
+    @State private var buildingPlan = false
 
     var body: some View {
         Group {
             if let session = store.activeSession {
-                ActiveWorkoutView(store: store, session: session, unit: unit)
+                ActiveWorkoutView(store: store, session: session, unit: unit, gym: workspace?.gyms.active)
             } else {
                 ExScreen {
                     if let workspace, workspace.programs.active != nil {
                         NextTrainingWorkoutSection(workspace: workspace) { reviewingPlan = true }
                         Button("Start a different workout", systemImage: "plus") { starting = true }
+                            .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
+                    } else if workspace != nil {
+                        ExEmptyState(icon: "dumbbell", title: "Your first workout starts here",
+                                     message: "Tell us your goal, time and equipment. Review a plan built around your answers.",
+                                     action: "Build my workout plan", actionID: "planSetup.open") { buildingPlan = true }
+                        Button("Start a workout yourself", systemImage: "plus") { starting = true }
                             .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
                     } else {
                         ExEmptyState(icon: "dumbbell", title: "No workout planned",
@@ -88,6 +95,10 @@ struct TrainingView: View {
                                     .accessibilityIdentifier("programs.open")
                                 Divider().overlay(Color.exBorder.opacity(0.3))
                                 NavigationLink {
+                                    TrainingGymsView(workspace: workspace, unit: unit)
+                                } label: { ExNavigationLabel(title: "Gyms & equipment", icon: "building.2", detail: workspace.gyms.active?.name ?? "Use the weights you have") }
+                                    .accessibilityIdentifier("gyms.open")
+                                NavigationLink {
                                     AgentReviewView(workspace: workspace, unit: unit)
                                 } label: { ExNavigationLabel(title: "Suggestions", icon: "tray", detail: "Review changes from your agents") }
                                     .accessibilityIdentifier("suggestions.open")
@@ -119,10 +130,13 @@ struct TrainingView: View {
             NewWorkoutView(store: store, unit: unit, timeZone: timeZone)
         }
         .sheet(isPresented: $browsing) {
-            ExercisePickerView(store: store, onSelect: nil)
+            ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active)
         }
         .sheet(isPresented: $reviewingPlan) {
             if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
+        }
+        .sheet(isPresented: $buildingPlan) {
+            if let workspace { TrainingPlanSetupView(workspace: workspace, unit: unit) }
         }
     }
 }
@@ -181,10 +195,12 @@ private struct NewWorkoutView: View {
 struct ExercisePickerView: View {
     let store: TrainingStore
     let onSelect: ((ExerlyCore.Exercise) throws -> Void)?
+    var gym: GymProfile?
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var muscle: Muscle?
     @State private var error: String?
+    @State private var useGym = true
 
     var body: some View {
         NavigationStack {
@@ -196,12 +212,18 @@ struct ExercisePickerView: View {
                     }.padding(.vertical, ExSpacing.small)
                 }.listRowBackground(Color.clear)
                 Section {
+                    if let gym {
+                        VStack(alignment: .leading, spacing: ExSpacing.small) {
+                            Text(gym.name).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                            ExChoiceChips(values: [true, false], selection: $useGym) { $0 ? "At this gym" : "All exercises" }
+                        }.padding(.vertical, ExSpacing.small)
+                    }
                     Picker("Target muscle", selection: $muscle) {
                         Text("All muscles").tag(Muscle?.none)
                         ForEach(Muscle.allCases, id: \.self) { Text($0.name).tag(Optional($0)) }
                     }
                 }
-                let matches = store.library.search(query, muscle: muscle)
+                let matches = store.library.search(query, muscle: muscle).filter { !useGym || gym?.allows($0) != false }
                 if matches.isEmpty {
                     ContentUnavailableView.search(text: query)
                 } else {
@@ -214,7 +236,7 @@ struct ExercisePickerView: View {
                             .accessibilityLabel("Add \(exercise.name)")
                         } else {
                             NavigationLink {
-                                ExerciseInformationView(exercise: exercise)
+                                ExerciseGuideView(exercise: exercise)
                             } label: { ExerciseLibraryRow(exercise: exercise) }
                         }
                     }
@@ -222,12 +244,31 @@ struct ExercisePickerView: View {
             }
             .exListStyle()
             .searchable(text: $query, prompt: "Search exercises")
+            .modifier(ExerciseSearchToolbar())
+            .onSubmit(of: .search) {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             .navigationTitle(onSelect == nil ? "Exercises" : "Add exercise")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }.accessibilityIdentifier("training.exerciseClose")
+                }
+            }
             .alert("Could not add exercise", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("OK") { error = nil }
             } message: { Text(error ?? "") }
+        }
+    }
+}
+
+private struct ExerciseSearchToolbar: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 17.1, *) {
+            content.searchPresentationToolbarBehavior(.avoidHidingContent)
+        } else {
+            content
         }
     }
 }
@@ -242,32 +283,5 @@ private struct ExerciseLibraryRow: View {
             Text(exercise.equipment.map { TrainingFormat.words($0.rawValue) }.joined(separator: ", "))
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(.vertical, 5).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-    }
-}
-
-private struct ExerciseInformationView: View {
-    let exercise: ExerlyCore.Exercise
-    var body: some View {
-        ExList {
-            Section {
-                ExCard(accent: true) {
-                    ExEyebrow(TrainingFormat.words(exercise.metric.rawValue), color: .exPrimaryText)
-                    Text(exercise.name).font(.exH2)
-                    Text(exercise.targetMuscles.map(\.name).joined(separator: " · ")).font(.exBody).foregroundStyle(Color.exTextSecondary)
-                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
-            }
-            Section("Target muscles") { Text(exercise.targetMuscles.map(\.name).joined(separator: ", ")) }
-            if !exercise.synergistMuscles.isEmpty {
-                Section("Assisting muscles") { Text(exercise.synergistMuscles.map(\.name).joined(separator: ", ")) }
-            }
-            Section("Equipment") {
-                ForEach(exercise.equipment + exercise.support, id: \.self) { Text(TrainingFormat.words($0.rawValue)) }
-            }
-            Section("Movement") {
-                LabeledContent("Laterality", value: TrainingFormat.words(exercise.laterality.rawValue))
-                LabeledContent("Tracking", value: TrainingFormat.words(exercise.metric.rawValue))
-                ForEach(exercise.actions, id: \.self) { Text(TrainingFormat.words($0.rawValue)) }
-            }
-        }.exListStyle().navigationTitle(exercise.name).navigationBarTitleDisplayMode(.inline)
     }
 }

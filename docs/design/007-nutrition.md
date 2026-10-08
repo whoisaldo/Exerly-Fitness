@@ -46,6 +46,11 @@ synced documents and pure functions, and the app's screens use only ExerlyCore.
   - Correcting one entry's nutrients changes only its snapshot and marks it
     `edited`. The food ID and source stay, so attribution and the library's
     label are unchanged.
+  - A quick add logs calories and macros for a whole portion, with no food
+    and no weight. Its snapshot is `unweighed` (the nutrients are the whole
+    portion's, and the entry's 100 g is nominal, so screens and exports show
+    no weight), with a `quick:` food ID that is never a saved food. Shortcuts
+    items of unknown weight are `unweighed` too.
 - **`nutrition_day`**: a day's status (unlogged, partial, complete or fasting)
   and notes. The expenditure estimate trusts only complete and fasting days.
 - **`weight_entry`**: a weigh-in instant, its local date, the weight as entered,

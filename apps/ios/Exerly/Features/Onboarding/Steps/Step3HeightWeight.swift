@@ -39,7 +39,8 @@ struct MeasurementFields: View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
             Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             TextField(label, value: value, format: .number)
-                .keyboardType(.numberPad).textFieldStyle(.roundedBorder)
+                .keyboardType(.numberPad)
+                .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .frame(minHeight: 44).font(.exStatSmall).accessibilityLabel("Height, \(label.lowercased())")
         }
     }
@@ -48,7 +49,8 @@ struct MeasurementFields: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label).font(.headline)
             TextField(label, value: value, format: .number.precision(.fractionLength(0...2)))
-                .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                .keyboardType(.decimalPad)
+                .padding(ExSpacing.item).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .frame(minHeight: 44).font(.exStatSmall).accessibilityLabel(label)
         }
     }

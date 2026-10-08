@@ -8,7 +8,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { startServer, signUp } = require('./helpers/server');
 const docs = require('../lib/documents');
-const { foodProblems } = require('../lib/nutrition/validate');
+const { foodEntryProblems, foodProblems } = require('../lib/nutrition/validate');
 
 let api;
 test.before(async () => {
@@ -754,5 +754,27 @@ test('a recipe keeps its serving count and preparation; an agent cannot write a 
   assert.deepEqual(foodProblems({ ...recipe, servingCount: 0, preparation: 3 }, 'R1'), [
     'the serving count must be positive',
     'preparation must be text',
+  ]);
+});
+
+test('an unweighed quick add is a valid entry; its flag must be true or false', () => {
+  const id = randomUUID().toUpperCase();
+  const entry = {
+    id,
+    date: '2026-10-07',
+    meal: 'Lunch',
+    loggedAt: '2026-10-07T16:30:00.000Z',
+    grams: 100,
+    food: {
+      foodID: `quick:${id}`,
+      name: 'Quick add',
+      source: 'custom',
+      per100g: { energy: 450 },
+      unweighed: true,
+    },
+  };
+  assert.deepEqual(foodEntryProblems(entry, id), []);
+  assert.deepEqual(foodEntryProblems({ ...entry, food: { ...entry.food, unweighed: 'yes' } }, id), [
+    'food.unweighed must be true or false',
   ]);
 });

@@ -6,15 +6,17 @@ struct TrainingProgramsView: View {
     let unit: MassUnit
     let timeZone: TimeZone
     @State private var creating = false
+    @State private var buildingPlan = false
 
     var body: some View {
         ExList {
             Section {
                 if workspace.programs.programs.isEmpty {
-                    ExEmptyState(icon: "square.stack.3d.up", title: "Build your first program",
-                                 message: "Arrange your training days, choose exercises, and set the targets you want to repeat.",
-                                 action: "Create program", actionID: "program.create") { creating = true }
+                    ExEmptyState(icon: "square.stack.3d.up", title: "A plan that fits your week",
+                                 message: "Choose your goal, experience, time and equipment. Review the exercises before saving.",
+                                 action: "Build my workout plan", actionID: "planSetup.open") { buildingPlan = true }
                         .listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                    Button("Create program yourself") { creating = true }.accessibilityIdentifier("program.create")
                 } else {
                     ExCard(accent: true) {
                         ExEyebrow("Training plans", color: .exPrimaryText)
@@ -28,6 +30,8 @@ struct TrainingProgramsView: View {
                             Text("Follow a saved program to see your next workout in Training.")
                                 .font(.exBody).foregroundStyle(Color.exTextSecondary)
                         }
+                        Button("Build a new plan", systemImage: "plus") { buildingPlan = true }
+                            .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("planSetup.open")
                     }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
             }
@@ -47,6 +51,7 @@ struct TrainingProgramsView: View {
             }
         }
         .sheet(isPresented: $creating) { TrainingProgramEditor(workspace: workspace) }
+        .sheet(isPresented: $buildingPlan) { TrainingPlanSetupView(workspace: workspace, unit: unit) }
         .refreshable { await workspace.synchronize() }
     }
 
@@ -79,7 +84,7 @@ struct TrainingProgramsView: View {
     }
 }
 
-private struct TrainingProgramDetailView: View {
+struct TrainingProgramDetailView: View {
     let workspace: TrainingWorkspace
     let programID: UUID
     @State private var editing: Program?
@@ -229,9 +234,10 @@ struct TrainingProgramConfirmation: View {
 struct TrainingProgramDays: View {
     let program: Program
     let library: ExerlyCore.ExerciseLibrary
+    var onlyDay: UUID?
 
     var body: some View {
-        ForEach(Array(program.days.enumerated()), id: \.element.id) { index, day in
+        ForEach(Array(program.days.enumerated()).filter { onlyDay == nil || $0.element.id == onlyDay }, id: \.element.id) { index, day in
             Section("Day \(index + 1) · \(day.name)") {
                 if day.isRest { Text("Rest day").foregroundStyle(.secondary) }
                 ForEach(day.slots) { slot in

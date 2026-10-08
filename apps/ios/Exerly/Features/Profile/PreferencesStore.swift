@@ -268,6 +268,9 @@ final class PreferencesStore: ObservableObject {
         defer { isLoading = false }
         do { try await refresh() } catch { fail(error) }
     }
+    /// Read saved answers for the training builder without resending a pending
+    /// edit or replacing the person's unfinished preferences draft.
+    func savedSnapshot() async throws -> PreferencesSnapshot { try await fetch() }
     private func fetch() async throws -> PreferencesSnapshot {
         let remote: PreferencesSnapshot = try await api.request("GET", path: "/api/preferences", expectedAccountID: accountID)
         try assertOwned()

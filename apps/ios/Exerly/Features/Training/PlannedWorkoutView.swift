@@ -52,6 +52,14 @@ struct PlannedWorkoutView: View {
                         ExCard(accent: true) {
                             ExEyebrow(plan.isDeload ? "Deload session" : "Up next", color: .exPrimaryText)
                             Text(plan.name).font(.exH2)
+                            if let gym = workspace.gyms.active {
+                                NavigationLink {
+                                    TrainingGymsView(workspace: workspace, unit: unit)
+                                } label: {
+                                    Label(gym.name, systemImage: "building.2").font(.exBodyMedium)
+                                        .foregroundStyle(Color.exPrimaryText).frame(minHeight: 44)
+                                }.accessibilityLabel("Change gym, currently \(gym.name)").accessibilityIdentifier("program.gym")
+                            }
                             if let reference = plan.program {
                                 Text("Cycle \(reference.cycle + 1) · \(plan.exercises.count) \(plan.exercises.count == 1 ? "exercise" : "exercises")").font(.exCaption)
                             }
@@ -66,7 +74,7 @@ struct PlannedWorkoutView: View {
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, planned in
-                        PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit)
+                        PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit, gym: workspace.gyms.active)
                     }
                 } else if error == nil {
                     Section { Text("No next workout is available. Check the program selected in Training.") }
@@ -81,6 +89,7 @@ struct PlannedWorkoutView: View {
             .task { refresh() }
             .onChange(of: bodyweight) { _, _ in refresh() }
             .onChange(of: workspace.programs.active) { _, _ in refresh() }
+            .onChange(of: workspace.gyms.active) { _, _ in refresh() }
             .onChange(of: TrainingAnalysisInput(workspace.store.history)) { _, _ in refresh() }
         }
     }
@@ -93,7 +102,7 @@ struct PlannedWorkoutView: View {
 
     private func refresh() {
         do {
-            plan = workspace.programs.nextWorkout(bodyweight: try weight())
+            plan = workspace.nextWorkout(bodyweight: try weight())
             error = nil
         } catch {
             plan = nil
@@ -104,10 +113,10 @@ struct PlannedWorkoutView: View {
     private func start(_ reviewed: WorkoutPlan) {
         do {
             let bodyweight = try weight()
-            let latest = workspace.programs.nextWorkout(bodyweight: bodyweight)
+            let latest = workspace.nextWorkout(bodyweight: bodyweight)
             guard latest == reviewed else {
                 plan = latest
-                error = "Your program or workout history changed. Review the updated targets before starting."
+                error = "Your program, gym or workout history changed. Review the updated targets before starting."
                 return
             }
             try workspace.store.startSession(from: reviewed, bodyweight: bodyweight, timeZone: timeZone)
@@ -123,12 +132,17 @@ private struct PlannedExerciseSection: View {
     let planned: ExerlyCore.PlannedExercise
     let store: TrainingStore
     let unit: MassUnit
+    let gym: GymProfile?
 
     var body: some View {
         let exercise = store.library.exercise(planned.exerciseID)
         Section(exercise?.name ?? planned.exerciseID.rawValue) {
             Text(TrainingProgramFormat.target(planned.target, exercise: exercise))
             if let exercise {
+                if let gym, !gym.allows(exercise) {
+                    Label("Not available at \(gym.name). Change gyms or edit this program if you need a different exercise.", systemImage: "exclamationmark.triangle")
+                        .font(.exCaption).foregroundStyle(Color.exWarning)
+                }
                 Text(TrainingProgramFormat.reason(planned.recommendation, exercise: exercise, target: planned.target))
                     .foregroundStyle(.secondary)
             }

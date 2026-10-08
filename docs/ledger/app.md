@@ -1,24 +1,859 @@
 # App agent ledger (Astra)
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
-met. No parity row is fully device-verified. Continue without ending at a
-milestone. Current date 2026-10-07, updated 10:17 EDT.
+met. No parity row is fully device-verified. Continue through milestones.
+Current date 2026-10-08, updated 17:24 EDT.
 
 ## Merge status
 
-Integration is `79d4c213`, pushed after the complete A10 gate. A10 build
-2610071410 is live in Ali-only internal TestFlight, fixed/tagged79d4c213. Release
-status documentation is the next small landing. N15 label capture remains in
-progress in the primary worktree, with no Core/API edits or integration hold.
+Integration has the portion slice 9b4e8e8c and profile-decoder fix 95427d17.
+A15 build 2610072338 is uploaded from fixed cb39dddd but WITHHELD from Ali:
+a later largest-text guide capture exposed broken words in the existing rest
+panel. A13 2610072129 stays live. A14 also remains withheld. A16 will include
+the rest layout correction, direct portions and offline exercise guides.
+Guide/rest fdfecd50 landed and pushed to both branches. A16 is fixed to
+fdfecd50c0e5a69b6e31784be15d6815c85c0136; build 2610081807. All 63 UI
+methods are assigned exactly once across three release jobs, now running.
+Its first archive fails to find a usable distribution identity; diagnosis
+continues without replacing certificates. Recipe UI work continues in primary.
 
-| App branch                         | Unlanded work                                      | Last landed / cleanup                                   |
-| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                             | Deleted locally/remotely                                |
-| `agent/app-next`                   | None, git cherry empty                             | Deleted locally/remotely; worktree removed              |
-| `agent/app-programs`               | None, git cherry empty                             | A6 landed 19925b28; branch deleted                      |
-| `release/app-nutrition-foundation` | None                                               | Foundation landed 60e83cf9; branch deleted              |
-| `agent/app-nutrition`              | N15 label capture in progress; no unlanded commits | A10 0b5e74e9 and A9 release docs 79d4c213 landed/pushed |
-| `release/app-design`               | None, fixed79d4c213 for A10 archive                | Only release worktree; A9 shipped                       |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition`              | Recipe checkpoint for draft PR; not landed to integration                                          | Guide/rest landed/pushed fdfecd50, Oct 8   |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
+| `release/app-design`               | None; A16 release tests running; A15 withheld                                                      | Fixed fdfecd50; candidate 2610081807       |
+
+## PR checkpoint requested by Ali, 2026-10-08
+
+Ali asked to commit everything to a PR for now. Preserve the current app
+work on agent/app-nutrition and open a draft PR against main, including the
+completed changes already landed to integration. Do not merge the recipe
+work or assign a release as part of this checkpoint.
+
+The recipe editor is implemented in primary: scan/search ingredients,
+portion review, equal servings, optional finished weight in ounces for U.S.
+accounts, preparation, reordering/removal and saved recipe details. Core
+performs conversions, totals and validation. Four new presentation tests
+pass for draft isolation, exact weights, history, stale/account rejection
+and offline reopening. All 214 active hosted tests pass, one credential skip.
+The new end-to-end recipe journey is written but has NOT run. Default-size
+light/dark and largest-text recipe review have NOT run. N11 remains Partial.
+The latest device build and test-target compilation pass. Changed nutrition
+files pass SwiftLint after two style corrections.
+
+The recipe completeness P1 in to-logic.md is unresolved. Recipe snapshots
+currently hide ingredient-level missing coverage in day progress/insights;
+the editor's general caption does not resolve that domain issue. Finish the
+Core contract before calling this release-ready. Ingredient volume units are
+retained while editing the draft; Core RecipeIngredient stores exact grams
+and snapshots, so reopened ingredient editors use the account's weight unit.
+
+A native Security API probe successfully signs with the existing private
+key. Certificate/chain verification also succeeds, but the CLI identity
+lookup and Xcode archive still fail. The temporary diagnostic default and
+search-list changes were restored; both point to login.keychain-db. A16's
+fixed release tests continue independently in the release worktree. A13
+2610072129 remains the only live Ali build. A14/A15 remain withheld and A16
+has not uploaded.
+
+Resume from this checkpoint:
+
+1. Run the new recipe UI journey and the existing library/meal regressions,
+   then inspect light/dark and largest-text captures against design 033.
+2. Resolve the recipe missing-nutrient contract with Logic, add its regression
+   cases, update PARITY and land the passing recipe slice.
+3. Collect the three A16 fixed-source results, resolve identity discovery,
+   rerun signing without changing certificates, and complete visual/IPA
+   verification before internal TestFlight assignment.
+
+## Fixed A16 release and signing investigation, 2026-10-08 14:15 EDT
+
+A16 release tests run in release/app-design at fixed fdfecd50. Jobs:
+28102/group1, 66125/group2, 28130/group3. Logs/results are
+artifacts/nutrition/a16-verified-{1,2,3}; expected manifest has 63 UI methods.
+Fixture ports 39225, 39222, 39226 return HTTP 200 at /api/health. The first
+archive 2610081807 fails before compiling: Xcode finds no usable iOS
+Distribution identity. The authorized existing p12 imports into an isolated
+keychain, its leaf/chain verify successfully and expire September 2027, but
+security find-identity reports zero valid identities and a temporary signing
+probe fails item-not-found. No replacement certificate or trust override.
+Temporary keychains/search-list changes have been cleaned up and restored.
+Keep A13 live. Do not upload or assign A16 before this and its full gate pass.
+
+Guide fdfecd50 passed the 308 Core tests and 210 active hosted tests, one
+credential skip. Both push hooks passed, including API 261. Six latest dark
+rest/action captures also reviewed. Design 033 describes the next recipe UI;
+the missing-ingredient coverage issue is still open with Logic.
+
+## Exercise guidance final review, 2026-10-08 14:05 EDT
+
+Final largest-text guide/rest test passes in 447.692 seconds. All six final
+AX captures were inspected: Rest, Add 30 s and Skip rest remain whole and
+usable. The test extends/skips rest, reopens guidance after offline relaunch,
+and verifies one completed 75.5 lb × 8 rep set in the exact account export.
+Final light passes in 155.457 seconds. Final dark and all 210 active hosted
+tests pass, one credential skip. Device build and changed-file lint pass.
+The added default-dark rest-action assertion passes in 144.955 seconds.
+Core passes all 308 tests. API 261 will run again in the push hook.
+
+All five final light and five app dark captures were reviewed, alongside
+six AX captures. The extra dark attachment is the synthetic label fixture.
+Comparison contact-review/a16-exercise-guide-reference.png shows before/after
+and MacroFactor Workouts' public App Store reference. Exerly now explains
+setup, steps and one cue in context. MacroFactor is denser and its visual
+exercise thumbnails are easier to recognize. Seven written guides, broader
+coverage and demonstrations remain Partial T02. No physical-device claim.
+
+A15 remains explicitly ineligible for assignment in its visual-review JSON.
+A16 notes cover all changes since the live A13. Recipe UI is the next slice;
+Core's sum currently loses ingredient missing-nutrient coverage. P1 and a
+request for a snapshot/progress/insights contract are in both Logic inboxes.
+
+## Rest timer visual finding, 2026-10-08 13:50 EDT
+
+A15 2610072338 uploaded successfully, delivery UUID
+172f2606-fcfa-4a88-8309-75df75e4bcea. It has NOT been assigned to Ali. During
+the subsequent guide largest-text review, the active workout's existing rest
+panel broke Rest and Skip inside words. That active-workout state was absent
+from the earlier primary captures. Keep A15 withheld and A13 live. Ship the
+correction with portions and guides in A16 after its fixed full gate.
+
+RestTimerView now stacks the rest label, countdown and full-width controls
+at accessibility sizes. Default sizes retain the compact bar. This changes
+layout only. The first guide AX journey passed functionally, but the captures
+are a failed visual review. Final light/dark and AX checks must cover the
+correction before landing. The new capture anchors also expose the entire
+movement and reference card for inspection.
+
+## A15 upload and profile-decoder correction, 2026-10-08 13:46 EDT
+
+All six resumed fixed-source primary/empty capture methods pass. All 48
+light/dark/largest-text attachments were inspected, alongside 46 selected
+original full-gate captures and the public Quick Add/gym comparisons. The
+fixed candidate has no new blocking visual finding. Its existing coverage
+limits remain in the notes. Staging health returns healthy/Postgres connected.
+
+The final exported-IPA recheck exposed a macOS profile-decoder issue:
+security cms tried importing public signer certificates into the unavailable
+login keychain and returned Write permissions error. read_profile now uses a
+disposable keychain, deletes it on success or rejection and leaves the login
+keychain and search list unchanged. The same IPA passes every signature,
+profile, identity, entitlement and privacy check with that correction.
+Eight release-check tests pass, including failure cleanup. This is a release
+verification fix; no app source was changed in the fixed A15 checkout.
+The guarded upload has started; Apple processing/assignment remain.
+
+The guide's default light journey passes in 162.363 seconds, dark in 133.538,
+and the existing workout relaunch/prefill regression in 97.381. All five light
+captures were reviewed. The cue screenshot ended at its heading, so capture
+anchors now reach the final movement step and full reference link for the
+next review. Largest text is still running. Device build and 210 active
+hosted tests pass. T02 remains incomplete until broader coverage and demos.
+
+## Resumed release and exercise guidance, 2026-10-08 13:40 EDT
+
+Remote checks confirm the portion commit on both integration and the app
+branch. No new Logic/Core/API commits since the previous review. Main remains
+a982be2d and its merge request is still in the Logic inbox.
+
+A15's three original jobs completed successfully yesterday. A strict manifest
+matches all 61 declared UI methods exactly once, with only the nine known
+context skips. It also verifies 205 active hosted passes and one credential
+skip. All 46 selected existing release captures were inspected. Quick add,
+gym inventory and Close during active exercise search show no new blocker.
+The existing public Quick Add/gym comparison critiques still apply.
+
+The first resumed screenshot attempts and new guide UI attempt failed before
+entering app flows because all temporary fixture servers stopped during the
+pause. These failed bundles are retained. Fresh fixtures on app scratch ports
+return HTTP 200. Repeated default light/dark and largest-text primary captures
+are now running against the fixed A15 source. Guide UI runs in primary.
+All 210 active hosted tests pass, one credential skip; changed-file lint is
+clean. The guide device build is running. No new upload or device claim.
+
+The guide draft adds offline setup, movement and one cue for seven bundled
+movements, referenced to original ACE/NASM pages. Active workout and library
+share it. A catalog test verifies IDs and rejects name-based custom matching.
+Broader coverage and original/licensed demonstrations remain open.
+
+## Final portion checks pass, 2026-10-07 20:02 EDT
+
+The filtered-portion final run passes all 209 active hosted tests, with one
+credential skip. The direct-choice journey passes in 103.460 seconds and the
+fluid-ounce relaunch regression in 125.222 seconds. The latest device build
+and changed-file SwiftLint pass. All 11 final liquid/portion attachments were inspected. The earlier 25
+light, three dark and four AX captures and the
+public comparison were inspected. No physical-device claim. Four presentation
+tests now cover label/recipe choices, invalid input, exact offline persistence,
+edited nutrition, unknown/zero and exclusion of synthetic measurement units.
+
+The comparison is contact-review/a16-portion-reference.png. N03 remains Built.
+A16 notes are drafted. Land this passing slice independently of A15. The new
+ExerciseGuideView.swift and design 032 are unregistered drafts for the next
+milestone and must not be included in the portion commit.
+
+## Portion capture review correction, 2026-10-07 19:57 EDT
+
+All 25 final light regression captures, three default dark and four largest
+text captures were inspected. The summary-first food entry and ounce display
+are clearer than the first iteration. Comparison a16-portion-reference.png
+includes the public MacroFactor logging guide and App Store screenshot. Its
+compact keypad and target-impact display remain follow-ups. The entry now
+shows nutrition before inputs and keeps the meal/date in its header.
+
+The liquid relaunch capture exposed a synthetic fl oz measure in Label
+portions. Published choices now exclude Core-recognized measuring units.
+An added hosted regression passes and verifies the exact saved weight is
+unchanged. The full hosted suite and native portion/fluid-ounce regressions
+are rerunning on this final correction. Do not land until those finish.
+The prior complete light group passed correction 286.701 s, explicit portion
+108.356 s, scrolling 44.267 s, unweighed 120.460 s and fluid ounces 116.905 s.
+Largest-text explicit portion passed 248.502 s; default dark also passed.
+
+A15 remains fixed at cb39dddd while these later changes continue. It is signed
+and validated, with its full UI gate still running. No A15 upload yet. The next
+app slice designs offline exercise technique guidance from public primary
+references. Design 032 is a draft, with no implementation or release claim.
+
+## A15 fixed; portion review continues, 2026-10-07 19:44 EDT
+
+All A14 jobs exited before advancing the release checkout. A15 is tracked
+clean at cb39ddddcc1ea2af3f3045d1c5aae4ee13ec255c. Build 2610072338 passes
+both signed-archive and exported-IPA validation. The full gate includes all
+61 declared UI methods exactly once, with all 205 active hosted tests in
+group 2. The three groups use 7D/39225, 02/39222 and 718/39226. Do not touch
+those simulators or advance the release tree until all groups finish.
+
+The primary's explicit-portion draft uses only published servings and Core
+preview. A tap changes the draft to one of that serving; its name is never
+parsed. Three new presentation tests pass with all 208 active hosted tests.
+Initial light/dark/AX journeys pass. The revised summary-first layout also
+passes light/dark/AX journeys; inspect its final AX and initial-screen light
+captures after export. Changed-file SwiftLint and the device build pass.
+Entry correction, unweighed totals, fluid ounces and scrolling regressions
+are running after the hierarchy change. These are separate from A15.
+
+P08 review found that the current session drops its original recommendation,
+slot target and gym increments. The Logic inbox requests a persisted Core
+contract before applying adjustments that must survive offline relaunch.
+Do not recreate that domain snapshot or progression math in app preferences.
+
+## Search toolbar corrected, 2026-10-07 19:33 EDT
+
+The same largest-phone gym journey now passes in 269.850 seconds. Default
+SE light passes in 198.751 seconds with all 205 active hosted tests and one
+credential skip. Largest text passes in 519.243 seconds, and all seven final attachments
+were inspected. Close stays visible and the inventory headings wrap cleanly. The device build and changed-file SwiftLint pass.
+The fix keeps Close visible during active exercise search on iOS 17.1+.
+The regression explicitly requires the button to be visible and tappable.
+The default light/dark captures, eight and seven attachments, were inspected.
+
+A14 group 1 passed all 15 methods. Group 2 completed all 25 declared methods,
+including its expected context skips. Group 3 is an interrupted failure and
+must not count as a full pass. A fresh A15 full gate will run all 61 methods
+from a fixed source with Quick add included. Integration remains open.
+
+Label portions are the next slice, separate from the staged search fix.
+Three new hosted tests pass with the complete 208 active hosted suite, one
+credential skip. Initial native light/dark journeys pass; their six captures
+were reviewed. Review found that the current nutrient summary sits too low
+and the label weight is overprecise. Fix that hierarchy and display before
+landing; stored weights must remain exact. No portion release claim yet.
+
+## Quick add ready; A14 navigation failure, 2026-10-07 19:17 EDT
+
+Final Quick add journeys pass in default light, default dark and largest text:
+147.123, 143.007 and 363.461 seconds. All four captures from each final run
+were inspected. The final device build passes, all 205 active hosted tests
+pass with one credential skip, and changed nutrition files pass SwiftLint.
+Core 308 and API 261 passed at the unchanged domain/API source. N05 is Built,
+not device-verified. Calories and macros can be logged with no food weight,
+then corrected after offline relaunch. Missing and zero remain distinct.
+
+Comparison contact-review/a15-quick-reference.png places final light/dark
+screens beside MacroFactor's public Quick Add and App Store images and the
+old manual-food editor. The four-field entry removes the old food/weight
+setup. MacroFactor is denser and offers macro-derived Calories and several
+quick items per plate. Those capabilities remain explicit follow-ups. The
+selected meal now appears in both the header and the Log to meal action.
+
+A14 group 1 completed successfully. Group 2 continues. Group 3 was stopped
+after testGymInventorySavesMixedUnitsOfflineFiltersExercisesAndRestoresArchivedPlaces
+failed to find Close during active exercise search on the largest phone.
+The screenshot a14-gym-failure.png confirms the sheet remains visible while
+its navigation toolbar is hidden. Its search-dismiss icon is at the bottom.
+The run ended with code 73 after interruption; no passing claim. A14
+2610072240 is retained as a failed candidate and will not upload. Fix the
+search toolbar in primary, land it, then cut a new fixed release candidate.
+
+## Quick add visual correction, 2026-10-07 18:56 EDT
+
+All five first light attachments and four dark captures were inspected.
+The small phone showed the selected meal below the initial fold. The header
+and persistent action now name the meal, such as Log to Lunch. Intro copy is
+shorter. The public reference is references/macrofactor-quick-add.png from
+MacroFactor's Quick Add guide. Its macro-derived Calorie estimate and plate
+integration remain explicit follow-ups; no estimate is added in app code.
+
+The subsequent dark journey and existing unweighed regression pass, together
+with all 205 active hosted tests. The device build passes. The old AX capture
+was interrupted after the destination-label change. A replacement started
+before cleanup finished and was also stopped. Both attempts ended with code
+73 and are preserved with no passing claim. Both processes have exited.
+Final default light then AX now run sequentially on 39; final dark runs on EBE.
+Do not touch either simulator until its run finishes. A14's fixed simulators
+and source remain independent.
+
+## A14 fixed and Quick add in progress, 2026-10-07 18:49 EDT
+
+181eac03 is merged and pushed to integration and the app branch. The release
+worktree is fixed, tracked-clean and building A14 2610072240. Archive and
+exported IPA pass identity, signature, HealthKit, Apple sign-in, debug-marker,
+privacy and internal-only checks. The full gate selects all 60 UI methods once.
+Release simulators 7D, 02 and 718 are reserved until those runs finish.
+
+Quick add uses the published Core contract. Four focused presentation tests
+pass, including whole-portion persistence, unknown versus zero, macro-only
+values, locale parsing, invalid input, changed account and repeated save.
+The first light and dark native journeys pass, with cancellation, offline
+logging, relaunch, correction and exact synchronized export. The light run
+also passes all 205 active hosted tests. All four dark captures were inspected;
+the light export is ready for inspection. Nav title is the compact Quick add.
+
+The remaining copy now says Whole portion instead of Unweighed portion.
+Final dark runs all hosted tests, the quick journey and existing unweighed
+regression. Final AX runs the quick journey on 39. EBE runs dark. The device
+build is running. Review those captures and land this nutrition slice next,
+without changing A14's source. No physical checks or full parity claimed.
+
+## Gym inventory ready to land, 2026-10-07 18:39 EDT
+
+The final largest-text gym journey passes in 522.041 seconds. All seven new
+captures were inspected: inventory headings now wrap at spaces, with the
+count below. The final light journey passes in 190.248 seconds and all 201
+active hosted tests pass, one credential skip. All eight light attachments
+and 16 primary/empty AX captures were inspected. The latter two opt-in tests
+pass in 47.347 and 67.060 seconds. Dark gym, manual-program and guided-plan
+regressions already pass. Core 308, API 261 and the final device build pass.
+
+SwiftLint is clean for the changed components and new gym code. Its first
+invocation omitted DEVELOPER_DIR and failed to load SourceKit; retry with the
+required Xcode 26.2 environment passes. This was a tool setup failure.
+
+The gallery includes the gym captures at http://100.80.149.7:39215. The public
+comparison is contact-review/a14-gym-reference.png. T05/T06 are Partial, with
+remaining feature/device gaps recorded. A14 notes are ready. Land this slice,
+then fix the release worktree at that commit for the full 60-method gate.
+Quick-add model/view, four presentation tests and design 030 are drafted but
+not registered in the project or part of this gym commit. Continue them after
+cutting the release. Main remains a982be2d; the Logic inbox requests its merge.
+
+## Gym accessibility correction, 2026-10-07 18:31 EDT
+
+The gym's largest-text journey passed in 506.477 seconds. All seven captures
+were inspected, exposing a real layout issue despite the pass: the inventory
+heading broke a word because the count occupied the same row. ExSectionHeading
+now stacks its detail under the title at accessibility sizes. Default sizes
+retain the horizontal layout. The current-gym explanation now says equipment
+settings to avoid implying exact finite plate combinations.
+
+A fresh largest-text gym run and default-light hosted/gym regression run are
+underway. The device build passes. The first primary AX capture invocation
+skipped both opt-in methods because its capture flag was missing; it provides
+no capture evidence. A corrected capture invocation is running on EBE. No
+simulator test claims VoiceOver or physical-device verification. The visual
+comparison a14-gym-reference.png has been generated and inspected.
+
+## A13 available and gym visual review, 2026-10-07 18:28 EDT
+
+A13 build 2610072129 uploaded at 18:18 EDT. Apple now reports VALID and
+IN_BETA_TESTING. Final verification confirms one tester, only this build, and
+exact en-US notes. A12 was detached after the new build became available.
+The pushed source tag is ios/internal-2610072129 at 208ed075. Notes describe
+workouts per week, not calendar scheduling. Metadata evidence is in the
+release tree at artifacts/nutrition/a13-internal-2610072129.json.
+
+The fixed gate covers all 59 declared UI methods once: 50 pass and nine
+context skips. All 197 active hosted tests pass, with one credential skip.
+Core 308, API 261 and the signed device/archive checks pass. Final selected
+setup and beginner captures were also inspected: a13-beginner-light has 14,
+a13-setup-dark has seven. No physical-device verification is claimed.
+
+Gym light passes all 201 active hosted tests, the gym journey and manual
+program lifecycle. Dark passes the gym and guided-plan journeys. The final
+device build passes. All 15 light and 15 dark captures were inspected,
+including regression screens. The current gym now appears once; available
+weights share a compact inventory; lb is the default and saved kg remains kg.
+MacroFactor's equipment reference offers denser summaries and presets.
+Exerly now keeps its first actions visible and its inventory compact. Icons,
+presets and per-workout overrides remain explicit parity gaps.
+
+The first largest-text attempt failed because the test queried a lazy result
+before scrolling it into view. The rerun reveals the result first and has
+passed that step. It is still completing archive/restore and export. The red
+attempt remains preserved. Finish this run and inspect its captures, then
+land the gym slice promptly and cut A14 from its fixed commit.
+
+## A13 visual review and gym corrections, 2026-10-07 18:09 EDT
+
+Fixed A13 group 1 passes all 15 UI methods. The added default-light primary
+and empty-state capture also passes. All 23 selected group-1 dark captures
+and all 16 default-light captures were inspected. Folders are a13-primary-dark
+and a13-primary-light. The original E/pulse identity, visible Scan action,
+summary-first diary, clear empty-training action and readable U.S. values hold
+on SE and the larger phone. The public comparisons recorded for A13 remain
+a13-barcode-reference.png and a13-workout-reference.png. MacroFactor still
+shows more choices at once; Exerly keeps the first logging actions visible.
+The gallery is updated and returns HTTP 200 at http://100.80.149.7:39215.
+The other fixed groups continue with no failures. No A13 upload yet.
+
+Gym verification exposed two test-helper issues. A native search field lives
+in the navigation bar and must not be scrolled below it. Checking its element
+type before existence then broke lazy off-screen controls such as Undo; the
+existence guard now comes first. These red/interrupted results are retained.
+The second light gym attempt also failed to turn off a gym filter reliably
+while searching. The UI now offers explicit At this gym and All exercises
+choices and dismisses the keyboard on search submission. The test checks the
+selected state, and leaves search before closing the library. Fresh matrix:
+gym-chips-light/dark/ax. The light group includes all 201 active hosted tests
+and manual program lifecycle; dark includes guided plan regression.
+
+Current gym renders once, mixed-unit weights share a compact inventory card,
+and required weight entry now says Enter weight instead of Unknown. Planned
+workouts name the current gym, allow changing it, and flag unavailable
+exercises without silently changing the saved program. Core still supplies
+every load recommendation. The updated device build passes.
+
+## Gym checks and fixed A13, 2026-10-07 17:55 EDT
+
+Core 308, API 261 and the gym device build pass. The SE run now passes all
+201 active hosted tests with one credential skip. Its gym journey continues.
+The EBE hosted attempt never launched a test host. Diagnostics stopped at
+PID 0 and wait_for_debugger, so it was interrupted and only that owned
+simulator was shut down and rebooted. No release simulator or service changed.
+The EBE attempt has no passing-test claim and failed to finalize its log.
+
+The second gym journey saved mixed units offline and restored the current gym
+after relaunch. It then exposed the shared reveal helper treating a visible
+navigation-bar search field as scroll content. That interrupted run's four
+captures were exported and all reviewed. The current-gym repetition and roomy
+weight cards visible there are already removed. The helper now recognizes a
+visible search field and prioritizes keyboard Done over sheet Done. A fresh
+light run includes all hosted tests and the whole gym journey.
+
+A13's fixed gate has 34 active UI methods passed so far and no test failures;
+remaining methods continue. A default-light primary/empty-screen capture on
+EBE is running from fixed 208ed075 in the release tree. Reserve that simulator
+until a13-primary-light finishes, then use it for final gym dark captures.
+The main release sims remain 7D, 02 and 718.
+
+## Gym inventory in progress, 2026-10-07 17:51 EDT
+
+The primary branch and integration both pushed 208ed075. The first own-branch
+push failed only because the working ledger was unformatted; formatting and
+retry passed the hooks. A13's signed archive and exported IPA pass source,
+identity, signature, privacy, HealthKit, Apple sign-in and internal-only checks.
+The fixed 59-method UI gate continues with no test failure seen so far.
+
+New primary source adds named gyms, explicit Use, archive/restore, mixed-unit
+inventories, filtered exercise selection, and active-gym workout recommendations.
+Four hosted gym tests pass, including 32 kg standard versus an available
+32.5 kg dumbbell, offline reopen without conversion, stale edits and sign-out.
+The full hosted run, native journey, Core/API suites and device build continue.
+Nothing from this gym slice is landed or released yet.
+
+First compile fixes were a nonexistent surface token, the keyboard helper's
+argument label, and registering the test source in the compact PBX test list.
+The first native attempt exposed a keyboard-dismissal problem on SE. Its
+screenshot is artifacts/programs/gym-first-live.png. That attempt was interrupted
+with SIGINT after capture; it is not a passing run. The name now has a keyboard
+action and dismisses on scroll/return. The helper prioritizes the numeric
+keypad's Done over a sheet's Done. The second native journey continues.
+
+Reviewed the public MacroFactor gym/weight screens. The initial Exerly design
+repeated the current gym and gave every weight a separate large card. Current
+gym now appears once and weights share a compact inventory card. Final captures
+still need review in default light/dark and largest text. New app source has
+no SwiftLint warning; existing Core-owned warnings remain outside this slice.
+
+Next: finish the native journey, run the final appearance matrix and all hosted
+checks, review captures, land a passing gym slice and retain A13's fixed source
+until its upload gate completes. The EBE full hosted run is taking unusually
+long to launch, so check its log before claiming it passed.
+
+## Fixed A13 running, 2026-10-07 17:29 EDT
+
+208ed075 is fast-forwarded and pushed to integration. The release worktree
+is fixed there and its tracked tree is clean. Its scripts are
+artifacts/nutrition/run-a13-verified-1/2/3.sh. They select all 59 UI methods
+exactly once; group 2 also runs every hosted test. Separate simulator and
+fixture pairs are 7D/39225, 02/39222 and 718/39226. Do not use those in the
+primary tree until their release runs finish. Primary 39/39224 and EBE/39228
+remain available. Build 2610072129 is archiving; upload waits for the gate.
+The staging health endpoint reports PostgreSQL connected and API 2.0.0.
+
+Continue app work from primary while release verification runs. The next
+useful workout slice is named gyms and actual available weights, using the
+published GymStore contract. Connect that inventory to Core progression so
+recommendations fit the gym. Keep U.S. defaults and exact saved mass. Do not
+change the fixed release source or interrupt its simulators.
+
+## Guided workout plan ready, 2026-10-07 17:28 EDT
+
+The final native plan journey passes in light, 158.658 seconds, dark,
+119.811 seconds, and largest dark type, 414.728 seconds. It uses saved setup,
+reviews a complete day, cancels without writing, saves another exact preview
+offline, relaunches, undoes it and checks the synchronized export. All 24
+final UI captures plus the hosted synthetic label were inspected. The manual
+program lifecycle also passes. Final hosted coverage is 197 active tests
+plus one credential skip. Core 308, API 261 and the final device build pass.
+
+Review found one offline edge case: an active local gym was ignored until
+preferences loaded. The builder now seeds local equipment immediately and
+still fills frequency and experience when preferences arrive. The extended
+four-test plan suite passes with this case and verifies the read uses GET.
+A save error remains beside Save plan, preserving the exact reviewed UUID.
+
+The largest-type preview had a redundant eyebrow and long action labels.
+Removing that eyebrow and using Save plan and Build plan makes the title,
+summary and actions fit better. Equipment checks no longer consume a large
+part of the row. The final captures are plan-setup-final-light/dark/ax.
+The reference comparison is contact-review/a13-workout-reference.png.
+MacroFactor's public screen shows more training days at once and uses a
+calendar. Exerly explains its rotating cycle and gives each day a direct
+review link, so it does not imply calendar scheduling that does not exist.
+The first-use instructions remain visible to explain starting weights and
+reps in reserve. Exercise demonstrations and advanced program options remain
+open parity work, not claims of this release.
+
+P02 is now Partial. This slice builds, reviews, accepts and undoes a real
+Core-generated program; split/deload choices and physical-device verification
+remain. Release notes are prepared in docs/release/a13-internal-notes.txt.
+The fixed A13 UI manifest covers all 59 methods once, with no omissions or
+duplicates. Its run starts after this landing. Continue the remaining food
+and workout work while that fixed release verifies; do not hold integration.
+
+## Setup ready to land, 2026-10-07 17:16 EDT
+
+The final setup passes in light, 304.791 seconds, dark, 215.134 seconds, and
+largest dark type, 668.903 seconds. All 13 light captures, 30 combined dark
+captures and 13 AX captures were inspected. The corrected AX journey selects
+More carbs and verifies low_fat on the server after completion. Its exact
+training question, measurements and chosen units survive relaunch.
+
+Core 308 and API 261 pass. The combined hosted suite passes 197 active tests
+plus one credential skip, and the device build passes. The setup slice adds
+two hosted tests; the other four belong to the forthcoming plan slice.
+The manual program lifecycle still passes, 140.430 seconds. The guided-plan
+AX journey also finished successfully; inspect its captures before landing.
+
+The public comparison at contact-review/a13-barcode-reference.png shows the
+logging entry point beside MacroFactor's public App Store screenshot. Exerly
+now exposes scanning from the diary, and unavailable-camera fallback starts
+with search. MacroFactor's screenshot still fits more food choices on screen.
+No physical scan or speed superiority is claimed. Named-serving defaults are
+still a follow-up with Logic. The new setup review puts Calories and macros
+before expandable explanations and keeps Finish visible at large type. One
+iOS 26 capture caught a changing progress label and disclosure chevron; the
+capture helper now waits for those setup transitions as it already does for
+primary design captures. The fixed release run will recapture them.
+
+## Beginner setup and workout builder, 2026-10-07 17:06 EDT
+
+Barcode-first logging landed as 30bc0aed and integration is pushed. The
+setup slice is staged separately. Do not add the full UI-test file to that
+commit: its guided-workout method belongs to the following training slice.
+
+Default light and dark signup preserve appearance after relaunch and pass.
+All 29 captures from each beginner-review-light/dark run were reviewed.
+The AX rerun reached the correct training question after restoration, then
+exposed a test-helper error: a partially visible More carbs choice was tapped
+through the fixed Continue button. The captured review still said Balanced.
+The helper now excludes all fixed setup and plan actions when scrolling and
+checks that More carbs is selected. The red result remains in
+beginner-ax-restored.xcresult. Fresh tests are beginner-ax-footer and
+beginner-footer-light/dark.
+
+The review also required too much scrolling at largest type. Finish setup
+now stays visible, the target explanation expands on request, and training
+preferences sit below the Calorie and macro summary. The default appearance
+checks are being repeated for this final layout. The goal selection no
+longer forces a spring animation when Reduce Motion is enabled.
+
+The first guided-plan journey passes in default light, 165.377 seconds, and
+default dark, 127.599 seconds. It loads four days, intermediate experience,
+dumbbells and a flat bench from saved setup; previews without writing; saves
+offline; relaunches; undoes the accepted proposal; then verifies the server
+export. All eight light captures were reviewed. The proposed plan has one
+summary, readable days and a persistent Save action. The manual lifecycle
+and largest-type plan checks continue. Four new hosted tests pass within the
+197 active hosted suite, with one credential skip. The device build passes.
+This is app presentation over Core's published generator, not app-side
+exercise selection. GymStore is included in account sync and export.
+
+Next: finish setup and plan capture checks, land each passing piece, then
+cut the next internal release from a fixed commit. Keep integration moving.
+P02 still needs advanced program work and physical-device verification.
+
+## Final beginner review, 2026-10-07 16:37 EDT
+
+A12's fixed full gate passes all 49 active UI methods with nine context skips.
+Build 2610072011 uploaded successfully and Apple reports VALID. The tag is
+pushed. Group assignment and exact notes passed at 16:37 EDT: one Ali tester, only
+this build, IN_BETA_TESTING. The first final read was not yet consistent; the
+subsequent verification passed. A11 was detached only after A12 was available.
+
+The first beginner matrix passes 193 active hosted tests plus one credential
+skip, six light UI journeys, four dark UI journeys and three AX-started
+journeys. All 97 UI captures and the synthetic label attachment were inspected.
+The screenshot review revealed that signup cleared every launch argument on
+relaunch, removing both light appearance and largest type. The later setup
+captures are therefore default dark, not evidence of largest-type setup.
+The test now removes only the session-reset flag. Fresh appearance-preserving
+setup, primary and barcode journeys run as beginner-review-light/dark/ax.
+
+Visual fixes from the review: diary logging actions now stack when their full
+labels cannot fit; a found barcode visibly offers Review portion or Add to
+meal, and Search becomes secondary. The target-weight field uses the shared
+surface. These are being captured again before landing. Training generation
+remains the next milestone, using the published Core proposal contract.
+
+## Beginner flow implementation, 2026-10-07 16:22 EDT
+
+N04 is merged and pushed as 7f6ccf9e. Three redundant owned stashes were
+backed up to artifacts/nutrition/n04-retained-stash-*.patch, then dropped.
+The fixed A12 full gate has passed group 1, including Health permission in
+52.514 seconds. Groups 2 and 3 continue without test failures. Signed build
+2610072011 is archived and exported. Archive and IPA identity, signature,
+HealthKit, Apple sign-in, privacy and internal-only checks pass. Upload waits
+for the remaining full gate; A11 remains the live Ali-only build.
+
+The primary tree now has a one-tap diary scanner, adjacent Search food,
+secondary manual barcode digits, and a More food options menu for label and
+manual creation. Camera matches open the portion review automatically. Meal
+selection can also scan and add a food to its unsaved draft. The light meal
+cancellation journey passes 222.554 seconds with this path and confirms that
+no diary entry was written. Physical camera use is still unverified.
+
+The new setup presents eight questions over the existing five cloud stages.
+Training experience, weekly workouts, equipment and macro style now reach the
+existing request, rather than silently keeping defaults. The local checkpoint
+also restores the precise question inside the week stage. A cloud draft from
+another device resumes at the start of that stage with its answers retained.
+New profiles use Other/prefer not to say for gender, not an assumed male
+identity. Explicit metric and manual targets stay intact. The final review
+explains target inputs and gives first-day actions. It does not claim that a
+meal plan or generated workout has been created. ProgramGeneration UI and
+cross-device training-setup extensions remain next.
+
+Core 308, API 261, 193 active hosted tests plus one credential skip and device
+build pass. Legacy repair passes 24.115 seconds. Default setup reached the
+diary and restored the exact training question after relaunch. Its original
+run stopped later at the barcode disclosure's propagated accessibility ID.
+That ID is now on its own button. The corrected direct scanner/search/hit/miss
+and three-tap repeat journey passes 149.808 seconds. Original red/interrupted
+runs remain. The native toolbar menu also replaced a custom hit area; menu
+rows are tapped directly instead of scrolling and dismissing the open menu.
+
+All six first barcode captures and ten setup UI captures were reviewed at
+contact-review/barcode-first-light-01/02 and beginner-setup-first-dark-01
+through -04. The setup's old black target-weight field still looked like a
+stock input; it now uses the shared input surface and number style. The final
+three appearance/text-size runs are in beginner-final-light/dark/ax. Capture
+and review their results, then commit in passing pieces. A later training
+milestone must turn the saved answers into a Core-generated, reviewable plan.
+
+## Ali's usability direction; N04 ready, 2026-10-07 15:46 EDT
+
+Ali accepts the improved visual direction but finds the app hard to use. Next
+priorities are beginner-friendly food logging and guided first-time setup.
+Barcode first, search second, manual entry last. Explain the app, ask useful
+questions, and make the answers shape training and nutrition. Watch and heart
+rate are secondary and experimental; food and workouts come first. Do not
+resume quick-add or recipes ahead of these usability changes.
+
+N04's final combined gate passes: Core 308, API 261, device build, 191 active
+hosted tests plus one credential skip. Default light's primary capture and two
+meal journeys pass in 351.000 seconds; default dark in 502.220 seconds. Both
+largest-text meal journeys pass in 641.716 seconds. All 47 exported captures
+were reviewed, including default-size primary screens in both appearances.
+The public MacroFactor comparison is contact-review/a12-meal-reference.png.
+Exerly's earlier instruction card gave foods too little room. The compact
+header fixes that; whole-gram secondary labels, fully visible meal chips and
+Added checks address Logic's critique. MacroFactor still exposes scanning
+faster. Ali's next milestone directly addresses that gap.
+
+Main CI a982be2d remains failed. Its Health video shows Opening Health access
+with no native permission sheet. A fresh Exerly App iPhone 16 Pro simulator
+on iOS 18.6 passes the same journey in 45.276 seconds, including read-only
+permission, relaunch and disabling access. CI used iOS 18.5. This is evidence
+of a CI-specific failure, not proof that the CI problem is fixed. Preserve
+both results and verify Health again in the fixed full release gate.
+
+## A11 shipped; N04 combined gate, 2026-10-07 15:30 EDT
+
+A11 build 2610071910 is VALID and IN_BETA_TESTING. One Ali tester, one assigned
+build and exact English notes are verified in the release evidence. A10 was
+detached only after A11 became available. Signed archive and exported IPA pass
+all release checks. No physical-camera or pure-French-label claim is made.
+
+Unweighed-entry journeys passed default dark 111.455s, small light 98.630s and
+largest dark 268.723s. Captures were inspected. They keep the entry scope and
+whole portion explicit; largest type uses one nutrient column. A11's full gate
+retains the original missing-label-fixture failure and its passing seeded
+rerun. Final test evidence records the original and follow-up results.
+
+N04 is rebased onto 6a2ec460. Combined Core 308, API 261, 191 active hosted tests
+plus one credential skip and device build pass. Light/dark primary and both
+meal journeys are running. Largest cancellation passed 267.882s. The earlier
+footer fix passed the entire offline journey in 403.557s. No app data error was
+found. The compact selection header now leaves more room for foods, following
+the public MacroFactor comparison in contact-review/a12-meal-reference.png.
+Invalid zero portions now give one instruction instead of two equivalent Core
+messages. All stored precision remains unchanged.
+
+Main's CI run 37643561510 at a982be2d failed Health permission, leaving the app
+waiting for Apple's authorization sheet. The artifact is being downloaded for
+inspection; this is not called a passing CI run. Search ranking now passes.
+
+## Unweighed entries and final meal verification, 2026-10-07 15:07 EDT
+
+Integration advanced before N15 could fast-forward. Rebased scanner source
+onto 236fc88c and reviewed the new quick-add contract. Unweighed entries now
+hide weight and portion controls, retain their whole-portion nutrients when
+edited, and stay out of the food library. Full 185 active hosted tests plus
+one credential skip, Core 308, API 261 and device build pass on this source.
+The offline unweighed UI journey passed in 111.455 seconds, including relaunch
+and exact export. N05 creation UI is still open.
+
+The previous largest-text meal offline run failed because the test dragged
+through the fixed Add foods button while scrolling. Its original red result
+and video remain in plate-largest-dark-final. The helper now keeps gestures
+above that button; a focused rerun is in progress. Final light critique checks
+passed, including all hosted tests and both meal journeys. Fresh capture review
+and final dark captures follow. No failed run has been erased or called green.
+
+## N15 ready to land, 2026-10-07 11:35 EDT
+
+Final source includes a982be2d. Both reported basis regressions pass. All nine
+label tests pass, including actual Vision on US and bilingual Canadian images.
+Full184active hosted plus1credential skip, Core307, API260 and device build pass.
+Affected UI reruns pass: camera/manual80.355s, photo225.890s, search135.676s.
+The fixed full UI gate already covered all46active methods plus9context skips,
+with the missing-fixture photo rerun recorded separately. No known test failure
+remains in the scanner candidate. Original failing results are retained.
+
+Default light/dark primary screens and scanner light/dark/largest-type review
+were compared with public references and reviewed. A11 internal notes are ready
+in docs/release/a11-internal-notes.txt. Land the scanner, cut its fixed source,
+archive and upload, verify Ali-only delivery, then continue N04. Do not publish
+privacy drafts or submit to App Review. N04 is still only in the primary tree.
+
+## Final meal polish and label correction, 2026-10-07 11:28 EDT
+
+N04 both journeys pass default light, default dark and largest dark. Exact
+weights and unknowns pass export. The final invalid-portion check originally
+looked for an Other accessibility element; the actual combined error is a
+StaticText. Generic identifier lookup passes, and the capture confirms the
+visible message. Full181active hosted and device build pass after the error
+focus/selection/meal-row changes. UI reruns of that polish continue.
+
+Logic's four screen-review points are applied: whole grams only in the meal
+review, full-width meal chips, no second Search toolbar action when selecting
+foods, and muted short unknown-value marks. Exact stored weights are unchanged.
+Selection now shows Added with a check and keeps that state when reopened.
+The decorative plus is hidden at largest type to give the food name more room.
+These last visual adjustments still need fresh captures and verification.
+
+N15 all46active UI methods passed on fixed4d3ad510 across the three groups plus
+one seeded photo rerun;9context-specific methods skipped. Extracted failure
+video confirms the original Photos grid had only simulator landscape pictures.
+The original result remains red. N15 is rebased to17f31458 over d0b8a602;
+Core307/API260/device/full184active hosted and the three affected UI journeys
+are running in the release worktree. The title/per100g regression failed on
+d104a53e; a982be2d corrects it. Canadian bilingual actual-Vision test passes.
+Keep the app's English-label wording; no pure-French claim.
+
+## Integration and design review, 2026-10-07 11:10 EDT
+
+Rebased primary onto d104a53e. Reviewed both new Logic commits. Core307,
+API260, full181active hosted plus1credential skip, and device build pass.
+The search test now uses Synthetic oat, passed99.142s on the small phone.
+That one-line CI correction is landed as a small separate piece.
+
+N04 cancel/edit journey passes128.680s. The first failure was duplicate food
+identifiers across sheets, fixed with distinct selection-mode IDs. The second
+failure was a summary identifier propagating to three nutrient accessibility
+nodes; it now belongs to the visible heading. The offline test reruns on39.
+Both journeys also run in default dark on02 and largest dark on7D.
+Original failing results are retained. No data assertion has failed so far.
+
+N15 fixed4d3ad510 full gate groups1and2 pass. Group3 has one label-photo
+failure because718 selected a preexisting non-label image, with no label seed.
+All its other tests pass. A seeded rerun now runs on718; keep the original red.
+The failure exporter contained no failure screenshot, so do not claim visual
+inspection of that failure. The existing default/light/dark/AX scanner journeys
+already pass on the other simulators.
+
+All20 fresh N15 primary light/dark captures reviewed, plus scanner default
+dark sheets1-3 and latest AX sheets1-2. Review and fallback copy are readable;
+AX macros use one column. The side-by-side a11-label-reference.png compares
+light/dark review with MacroFactor's public App Store food picker. Exerly gives
+OCR uncertainty and the original photo more space, needed before saving. Its
+plain food picker still requires more steps than MacroFactor for multiple
+foods; N04 is addressing that gap. Core title-vs-explicit-basis review is
+requested in both Logic inboxes before scanner release. English-only wording
+stays until bilingual Vision checks pass; no claim of pure French support.
+
+## N04 meal builder and N15 gate, 2026-10-07 10:53 EDT
+
+N04 implementation is in the primary app-nutrition tree from45417cd4, separate
+from the held label feature. Design026 records the flow. Six hosted model tests
+pass, including storage failure, repeated confirmation, exact named portions,
+metric volume, stale row edits and unknown values. A disposable in-memory Core
+NutritionStore computes and validates the preview; only final Log meal writes
+through the account store's atomic plate API. The initial compile failed for a
+missing loggedAt argument in the new test, fixed before any simulator test ran.
+
+The two new UI journeys run on39B20FBF with fixture39224. Other simulators are
+reserved for N15: group1 is7D2096B8/39225; group2 is02A671D3/39222; group3 is
+7189880A/39226. Do not assume group numbering maps to a different simulator.
+The first plate compile targeted718 but never installed or ran because of that
+compile error. The corrected run uses39 only.
+
+N15 group3's label test failed because718 did not have the synthetic label photo
+seeded. Its other tests continue. Keep the original red result, inspect its
+failure capture, seed the known label after the group finishes, then rerun only
+that journey from fixed4d3ad510. Other groups continue independently. The real
+Core basis failure still blocks release, regardless of these UI results.
+
+Logic has b0fe2e6c limiting generic matches to a quarter of search results and
+requests a deterministic packaged-food search in our CI test. Read that inbox
+item from Logic's current worktree, since the primary to-app copy is older.
+Apply the small test fix separately, then review/rebase after it lands.
+
+## N15 release held for Core basis correction, 2026-10-07 10:29 EDT
+
+A10 remains live. N15's default iOS26 photo journey passes222.380s, camera
+fallback81.865s. Small default light passes153.467s/60.511s and latest AX
+passes349.766s/129.861s. The native Photos center tap fixes the iOS26 remote
+accessibility hit-point issue. Original red runs are preserved. Latest AX
+captures confirm complete Calories and carbohydrate headings in one column.
+
+Final contract review found a real P1: NutritionLabel.read treats any kJ as
+per100g even when the label explicitly says per serving. A50g/200kcal bar is
+saved as200kcal/100g instead of400. The new hosted regression proves both
+failures in label-kilojoule-basis.xcresult. Core correction is requested in
+both Logic inboxes, with the exact reproducer. N15 must not ship or land while
+this fails. No app-side arithmetic workaround.
+
+Keep N15 source in agent/app-label and its UI validation in the existing release
+worktree. Continue independent N04 plates from landed45417cd4 on
+agent/app-nutrition. Rejoin the label feature after Logic corrects the contract.
 
 ## A10 shipped; N15 full checks, 2026-10-07 10:22 EDT
 

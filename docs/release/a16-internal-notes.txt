@@ -1,0 +1,11 @@
+Faster food logging and workout guidance
+
+Quick add logs Calories and macros without creating a food or entering a weight. You can correct the entry after an offline relaunch. Missing nutrients remain distinct from known zero.
+
+Food entry now puts Calories and macros above the amount controls. Supplied label portions have direct choices such as Use 1 bar. Ounces and U.S. fluid ounces remain the defaults; your saved portions and metric preferences stay as entered.
+
+Seven common movements now have offline setup, numbered steps and a control cue. Open How to do it from your workout and return to the same sets and rest timer. Largest-text rest controls now stay readable and can extend or skip the timer.
+
+Saved gyms let you choose equipment for your training plan. Exercise search keeps Close available while you browse. Guided setup, barcode-first logging and the workout builder are included.
+
+Please try logging a food portion offline, using Quick add, and opening a guide during a rest. The written exercise guides cover seven movements; broader coverage and demonstrations are still in progress. Physical camera, VoiceOver and Watch checks remain pending.

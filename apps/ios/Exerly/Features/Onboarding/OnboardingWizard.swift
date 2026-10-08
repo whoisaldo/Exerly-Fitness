@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingWizard: View {
     @StateObject private var state = OnboardingState(automaticallySync: true)
     @EnvironmentObject private var authVM: AuthViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -94,7 +95,7 @@ struct OnboardingWizard: View {
 
             Spacer()
 
-            Text(state.repairSteps == nil ? "Step \(state.step + 2) of \(state.totalSteps + 1)" : "Repair \((state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1) of \(state.visibleSteps.count)")
+            Text(state.repairSteps == nil ? "\(state.questionNumber) of \(state.questionCount)" : "Repair \((state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1) of \(state.visibleSteps.count)")
                 .font(.exLabel)
                 .foregroundStyle(.exTextSecondary)
 
@@ -107,11 +108,11 @@ struct OnboardingWizard: View {
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.08))
+                Capsule().fill(Color.exSurface2)
                 Capsule()
                     .fill(Color.exPrimary)
                     .frame(width: geo.size.width * progress)
-                    .animation(.spring(response: 0.4), value: state.step)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: state.questionNumber)
             }
         }
         .frame(height: 4)
@@ -122,7 +123,7 @@ struct OnboardingWizard: View {
         if state.repairSteps != nil {
             return Double((state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1) / Double(state.visibleSteps.count)
         }
-        return Double(state.step + 2) / Double(state.totalSteps + 1)
+        return Double(state.questionNumber) / Double(state.questionCount)
     }
 
     private func draftSummary(_ answers: OnboardingRequest) -> some View {
