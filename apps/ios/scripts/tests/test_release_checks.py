@@ -2,6 +2,9 @@ import copy
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import plistlib
+import subprocess
 
 
 spec = importlib.util.spec_from_file_location("release_checks", Path(__file__).parents[1] / "release_checks.py")
@@ -107,6 +110,31 @@ class ReleaseChecksTests(unittest.TestCase):
         profile["ExpirationDate"] = datetime.now(timezone.utc) - timedelta(days=1)
         with self.assertRaises(ValueError):
             checks.validate_profile(profile)
+
+    def test_profile_decoding_is_isolated_and_cleans_up_on_rejection(self):
+        for rejected in [False, True]:
+            calls = []
+
+            def run(command, **kwargs):
+                calls.append(command)
+                self.assertTrue(kwargs["check"])
+                if command[1] == "cms":
+                    self.assertIn("-k", command)
+                    self.assertEqual(command[command.index("-k") + 1], calls[0][-1])
+                    if rejected:
+                        raise subprocess.CalledProcessError(1, command)
+                    return subprocess.CompletedProcess(command, 0, stdout=plistlib.dumps({"UUID": "synthetic"}))
+                return subprocess.CompletedProcess(command, 0)
+
+            with self.subTest(rejected=rejected), patch.object(checks.subprocess, "run", side_effect=run):
+                if rejected:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        checks.read_profile(Path("synthetic.mobileprovision"))
+                else:
+                    self.assertEqual(checks.read_profile(Path("synthetic.mobileprovision")), {"UUID": "synthetic"})
+            self.assertEqual(calls[-1], ["security", "delete-keychain", calls[0][-1]])
+            self.assertFalse(Path(calls[0][-1]).parent.exists())
+            self.assertFalse(any(c[1] in ["default-keychain", "list-keychains", "unlock-keychain"] for c in calls))
 
 
 if __name__ == "__main__":

@@ -2,17 +2,17 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-07, updated 20:02 EDT.
+Current date 2026-10-08, updated 13:40 EDT.
 
 ## Merge status
 
-Integration and agent/app-nutrition are pushed at cb39dddd, including Quick
-add and the exercise-search fix. A15 build 2610072338 is fixed there in the
-release worktree. Signed archive and exported IPA pass. Its fresh 61-method
-full UI gate is running across three independent fixtures. A14 2610072240 is
-withheld; A13 2610072129 remains live until A15 is actually available.
-Explicit label portions and summary-first food entry pass final checks and
-are landing next. Exercise guidance is the next slice.
+Integration and agent/app-nutrition are pushed at 9b4e8e8c, including Quick
+add, the exercise-search fix and direct published food portions. A15 build
+2610072338 stays fixed at cb39dddd. Its signed archive/export pass and its
+complete UI gate passes all 52 active methods, with nine expected context
+skips. All 205 active hosted tests pass. Final resumed visual checks run
+before upload. A13 2610072129 remains live; A14 is withheld.
+Exercise guidance is the next app slice, now compiled and under native review.
 
 | App branch                         | Unlanded work                                                                                      | Last landed / cleanup                        |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
@@ -20,9 +20,60 @@ are landing next. Exercise guidance is the next slice.
 | `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed   |
 | `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted           |
 | `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted   |
-| `agent/app-nutrition`              | Explicit label portions and entry hierarchy in progress                                            | Search fix landed/pushed cb39dddd, 19:35 EDT |
+| `agent/app-nutrition`              | Exercise guidance in progress, no unlanded commits                                                  | Portions landed/pushed 9b4e8e8c, Oct 7       |
 | `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                 |
-| `release/app-design`               | None; A15 full gate running at a fixed source                                                      | Fixed cb39dddd; candidate 2610072338         |
+| `release/app-design`               | None; A15 full gate passed, visual review before upload                                             | Fixed cb39dddd; candidate 2610072338         |
+
+## A15 upload and profile-decoder correction, 2026-10-08 13:46 EDT
+
+All six resumed fixed-source primary/empty capture methods pass. All 48
+light/dark/largest-text attachments were inspected, alongside 46 selected
+original full-gate captures and the public Quick Add/gym comparisons. The
+fixed candidate has no new blocking visual finding. Its existing coverage
+limits remain in the notes. Staging health returns healthy/Postgres connected.
+
+The final exported-IPA recheck exposed a macOS profile-decoder issue:
+security cms tried importing public signer certificates into the unavailable
+login keychain and returned Write permissions error. read_profile now uses a
+disposable keychain, deletes it on success or rejection and leaves the login
+keychain and search list unchanged. The same IPA passes every signature,
+profile, identity, entitlement and privacy check with that correction.
+Eight release-check tests pass, including failure cleanup. This is a release
+verification fix; no app source was changed in the fixed A15 checkout.
+The guarded upload has started; Apple processing/assignment remain.
+
+The guide's default light journey passes in 162.363 seconds, dark in 133.538,
+and the existing workout relaunch/prefill regression in 97.381. All five light
+captures were reviewed. The cue screenshot ended at its heading, so capture
+anchors now reach the final movement step and full reference link for the
+next review. Largest text is still running. Device build and 210 active
+hosted tests pass. T02 remains incomplete until broader coverage and demos.
+
+## Resumed release and exercise guidance, 2026-10-08 13:40 EDT
+
+Remote checks confirm the portion commit on both integration and the app
+branch. No new Logic/Core/API commits since the previous review. Main remains
+a982be2d and its merge request is still in the Logic inbox.
+
+A15's three original jobs completed successfully yesterday. A strict manifest
+matches all 61 declared UI methods exactly once, with only the nine known
+context skips. It also verifies 205 active hosted passes and one credential
+skip. All 46 selected existing release captures were inspected. Quick add,
+gym inventory and Close during active exercise search show no new blocker.
+The existing public Quick Add/gym comparison critiques still apply.
+
+The first resumed screenshot attempts and new guide UI attempt failed before
+entering app flows because all temporary fixture servers stopped during the
+pause. These failed bundles are retained. Fresh fixtures on app scratch ports
+return HTTP 200. Repeated default light/dark and largest-text primary captures
+are now running against the fixed A15 source. Guide UI runs in primary.
+All 210 active hosted tests pass, one credential skip; changed-file lint is
+clean. The guide device build is running. No new upload or device claim.
+
+The guide draft adds offline setup, movement and one cue for seven bundled
+movements, referenced to original ACE/NASM pages. Active workout and library
+share it. A catalog test verifies IDs and rejects name-based custom matching.
+Broader coverage and original/licensed demonstrations remain open.
 
 ## Final portion checks pass, 2026-10-07 20:02 EDT
 

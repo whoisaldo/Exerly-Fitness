@@ -1988,7 +1988,7 @@ liquid's density = 68.019 g). Four things:
 
 ## 2026-10-07: Quick add (N05)
 
-Status: open (contract published).
+Status: done (app): Quick add landed ce9c7b21, with offline correction and exact export coverage. A15 fixed release gate passes; upload pending final visual review.
 
 `NutritionStore.quickAdd(_ nutrients:, name: "Quick add", on:, meal:, at:)`
 logs calories and macros for a whole portion, with no reusable food and no
