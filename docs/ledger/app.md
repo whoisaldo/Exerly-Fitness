@@ -2,27 +2,42 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-08, updated 13:40 EDT.
+Current date 2026-10-08, updated 13:51 EDT.
 
 ## Merge status
 
-Integration and agent/app-nutrition are pushed at 9b4e8e8c, including Quick
-add, the exercise-search fix and direct published food portions. A15 build
-2610072338 stays fixed at cb39dddd. Its signed archive/export pass and its
-complete UI gate passes all 52 active methods, with nine expected context
-skips. All 205 active hosted tests pass. Final resumed visual checks run
-before upload. A13 2610072129 remains live; A14 is withheld.
-Exercise guidance is the next app slice, now compiled and under native review.
+Integration has the portion slice 9b4e8e8c and profile-decoder fix 95427d17.
+A15 build 2610072338 is uploaded from fixed cb39dddd but WITHHELD from Ali:
+a later largest-text guide capture exposed broken words in the existing rest
+panel. A13 2610072129 stays live. A14 also remains withheld. A16 will include
+the rest layout correction, direct portions and offline exercise guides.
+Final guide light/dark/AX checks are running in primary before landing.
 
-| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                        |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                     |
-| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed   |
-| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted           |
-| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted   |
-| `agent/app-nutrition`              | Exercise guidance in progress, no unlanded commits                                                  | Portions landed/pushed 9b4e8e8c, Oct 7       |
-| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely                 |
-| `release/app-design`               | None; A15 full gate passed, visual review before upload                                             | Fixed cb39dddd; candidate 2610072338         |
+| App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `agent/app`                        | None, git cherry empty                                                                             | Deleted locally/remotely                   |
+| `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
+| `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
+| `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
+| `agent/app-nutrition`              | Exercise guidance in progress, no unlanded commits                                                 | Portions landed/pushed 9b4e8e8c, Oct 7     |
+| `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
+| `release/app-design`               | None; A15 uploaded but withheld after later rest-panel finding                                     | Fixed cb39dddd; candidate 2610072338       |
+
+## Rest timer visual finding, 2026-10-08 13:50 EDT
+
+A15 2610072338 uploaded successfully, delivery UUID
+172f2606-fcfa-4a88-8309-75df75e4bcea. It has NOT been assigned to Ali. During
+the subsequent guide largest-text review, the active workout's existing rest
+panel broke Rest and Skip inside words. That active-workout state was absent
+from the earlier primary captures. Keep A15 withheld and A13 live. Ship the
+correction with portions and guides in A16 after its fixed full gate.
+
+RestTimerView now stacks the rest label, countdown and full-width controls
+at accessibility sizes. Default sizes retain the compact bar. This changes
+layout only. The first guide AX journey passed functionally, but the captures
+are a failed visual review. Final light/dark and AX checks must cover the
+correction before landing. The new capture anchors also expose the entire
+movement and reference card for inspection.
 
 ## A15 upload and profile-decoder correction, 2026-10-08 13:46 EDT
 
