@@ -2,7 +2,7 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-08, updated 13:51 EDT.
+Current date 2026-10-08, updated 14:05 EDT.
 
 ## Merge status
 
@@ -11,7 +11,8 @@ A15 build 2610072338 is uploaded from fixed cb39dddd but WITHHELD from Ali:
 a later largest-text guide capture exposed broken words in the existing rest
 panel. A13 2610072129 stays live. A14 also remains withheld. A16 will include
 the rest layout correction, direct portions and offline exercise guides.
-Final guide light/dark/AX checks are running in primary before landing.
+Final guide light/dark/AX checks and device build pass in primary.
+Land the slice, then fix A16 to its source while recipe UI continues.
 
 | App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -22,6 +23,30 @@ Final guide light/dark/AX checks are running in primary before landing.
 | `agent/app-nutrition`              | Exercise guidance in progress, no unlanded commits                                                 | Portions landed/pushed 9b4e8e8c, Oct 7     |
 | `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
 | `release/app-design`               | None; A15 uploaded but withheld after later rest-panel finding                                     | Fixed cb39dddd; candidate 2610072338       |
+
+## Exercise guidance final review, 2026-10-08 14:05 EDT
+
+Final largest-text guide/rest test passes in 447.692 seconds. All six final
+AX captures were inspected: Rest, Add 30 s and Skip rest remain whole and
+usable. The test extends/skips rest, reopens guidance after offline relaunch,
+and verifies one completed 75.5 lb × 8 rep set in the exact account export.
+Final light passes in 155.457 seconds. Final dark and all 210 active hosted
+tests pass, one credential skip. Device build and changed-file lint pass.
+The added default-dark rest-action assertion passes in 144.955 seconds.
+Core passes all 308 tests. API 261 will run again in the push hook.
+
+All five final light and five app dark captures were reviewed, alongside
+six AX captures. The extra dark attachment is the synthetic label fixture.
+Comparison contact-review/a16-exercise-guide-reference.png shows before/after
+and MacroFactor Workouts' public App Store reference. Exerly now explains
+setup, steps and one cue in context. MacroFactor is denser and its visual
+exercise thumbnails are easier to recognize. Seven written guides, broader
+coverage and demonstrations remain Partial T02. No physical-device claim.
+
+A15 remains explicitly ineligible for assignment in its visual-review JSON.
+A16 notes cover all changes since the live A13. Recipe UI is the next slice;
+Core's sum currently loses ingredient missing-nutrient coverage. P1 and a
+request for a snapshot/progress/insights contract are in both Logic inboxes.
 
 ## Rest timer visual finding, 2026-10-08 13:50 EDT
 

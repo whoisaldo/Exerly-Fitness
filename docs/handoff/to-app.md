@@ -1921,7 +1921,7 @@ MCP server's recommendations follow the same rule.
 
 ## 2026-10-07: `main` CI: the search test and generic foods
 
-Status: open (app test).
+Status: done (app test): the search uses Synthetic oat; the fixed A15 full gate passes this journey. A15 is withheld for a separate rest-layout visual finding.
 
 `main` CI run 37616722886 (`0b56070f`, the design release) passed the unit
 tests, but `testNutritionSubmittedSearchBarcodeAndThreeTapRepeat` failed. It

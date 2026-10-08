@@ -236,7 +236,7 @@ struct ExercisePickerView: View {
                             .accessibilityLabel("Add \(exercise.name)")
                         } else {
                             NavigationLink {
-                                ExerciseInformationView(exercise: exercise)
+                                ExerciseGuideView(exercise: exercise)
                             } label: { ExerciseLibraryRow(exercise: exercise) }
                         }
                     }
@@ -283,32 +283,5 @@ private struct ExerciseLibraryRow: View {
             Text(exercise.equipment.map { TrainingFormat.words($0.rawValue) }.joined(separator: ", "))
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(.vertical, 5).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-    }
-}
-
-private struct ExerciseInformationView: View {
-    let exercise: ExerlyCore.Exercise
-    var body: some View {
-        ExList {
-            Section {
-                ExCard(accent: true) {
-                    ExEyebrow(TrainingFormat.words(exercise.metric.rawValue), color: .exPrimaryText)
-                    Text(exercise.name).font(.exH2)
-                    Text(exercise.targetMuscles.map(\.name).joined(separator: " · ")).font(.exBody).foregroundStyle(Color.exTextSecondary)
-                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
-            }
-            Section("Target muscles") { Text(exercise.targetMuscles.map(\.name).joined(separator: ", ")) }
-            if !exercise.synergistMuscles.isEmpty {
-                Section("Assisting muscles") { Text(exercise.synergistMuscles.map(\.name).joined(separator: ", ")) }
-            }
-            Section("Equipment") {
-                ForEach(exercise.equipment + exercise.support, id: \.self) { Text(TrainingFormat.words($0.rawValue)) }
-            }
-            Section("Movement") {
-                LabeledContent("Laterality", value: TrainingFormat.words(exercise.laterality.rawValue))
-                LabeledContent("Tracking", value: TrainingFormat.words(exercise.metric.rawValue))
-                ForEach(exercise.actions, id: \.self) { Text(TrainingFormat.words($0.rawValue)) }
-            }
-        }.exListStyle().navigationTitle(exercise.name).navigationBarTitleDisplayMode(.inline)
     }
 }

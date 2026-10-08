@@ -17,6 +17,7 @@ struct ActiveWorkoutView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var adding = false
     @State private var editing: SetEditorTarget?
+    @State private var guiding: ExerlyCore.Exercise?
     @State private var details = false
     @State private var finishing = false
     @State private var discarding = false
@@ -67,7 +68,18 @@ struct ActiveWorkoutView: View {
                         Button("Add set", systemImage: "plus") { save { try store.addSet(to: performed.id) } }
                             .frame(minHeight: 44).accessibilityLabel("Add set to \(exercise.name)")
                     } header: {
-                        Text(exercise.name).font(.headline).textCase(nil).foregroundStyle(.primary)
+                        VStack(alignment: .leading, spacing: ExSpacing.small) {
+                            Text(exercise.name).font(.exH2).foregroundStyle(Color.exTextPrimary)
+                            Button {
+                                guiding = exercise
+                            } label: {
+                                Label(ExerciseGuideCatalog.guides[exercise.id] == nil ? "Exercise details" : "How to do it", systemImage: "book")
+                                    .font(.exLabel).frame(minHeight: 44)
+                            }
+                            .buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
+                            .accessibilityLabel("Guide to \(exercise.name)")
+                            .accessibilityIdentifier("training.guide.\(exercise.id.rawValue)")
+                        }.textCase(nil)
                     } footer: {
                         if !performed.notes.isEmpty { Text(performed.notes) }
                     }
@@ -106,6 +118,18 @@ struct ActiveWorkoutView: View {
             }
         }
         .sheet(isPresented: $details) { WorkoutNotesView(store: store, session: session, unit: unit) }
+        .sheet(item: $guiding) { exercise in
+            NavigationStack {
+                ExerciseGuideView(exercise: exercise)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { guiding = nil }
+                                .accessibilityLabel("Back to workout")
+                                .accessibilityIdentifier("training.guide.close")
+                        }
+                    }
+            }
+        }
         .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
             Button("Save workout") {
                 save { try store.finishSession() }
@@ -187,17 +211,38 @@ private struct RestTimerView: View {
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
                 : AnyLayout(HStackLayout(alignment: .center, spacing: 16))
             layout {
-                HStack {
-                    Image(systemName: "timer").accessibilityHidden(true)
-                    if timer.isFinished(at: context.date) { Text("Rest complete").fontWeight(.semibold) } else {
-                        Text("Rest")
-                        Text(timer.endsAt, style: .timer).monospacedDigit().fontWeight(.semibold)
+                Group {
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: ExSpacing.small) {
+                            Label(timer.isFinished(at: context.date) ? "Rest complete" : "Rest", systemImage: "timer")
+                                .font(.exLabel)
+                            if !timer.isFinished(at: context.date) {
+                                Text(timer.endsAt, style: .timer).monospacedDigit().fontWeight(.semibold)
+                            }
+                        }
+                    } else {
+                        HStack {
+                            Image(systemName: "timer").accessibilityHidden(true)
+                            if timer.isFinished(at: context.date) { Text("Rest complete").fontWeight(.semibold) } else {
+                                Text("Rest")
+                                Text(timer.endsAt, style: .timer).monospacedDigit().fontWeight(.semibold)
+                            }
+                        }
                     }
-                }.accessibilityElement(children: .combine)
-                HStack {
-                    Button("+30 s", action: extend).accessibilityLabel("Add 30 seconds of rest")
-                    Button("Skip", action: skip).accessibilityLabel("Skip rest")
-                }.buttonStyle(.bordered).controlSize(.regular)
+                }.accessibilityElement(children: .combine).accessibilityIdentifier("training.restStatus")
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        Button(action: extend) { Text("Add 30 s").frame(maxWidth: .infinity) }
+                            .accessibilityLabel("Add 30 seconds of rest")
+                        Button(action: skip) { Text("Skip rest").frame(maxWidth: .infinity) }
+                            .accessibilityLabel("Skip rest")
+                    }.buttonStyle(.bordered).controlSize(.regular)
+                } else {
+                    HStack {
+                        Button("+30 s", action: extend).accessibilityLabel("Add 30 seconds of rest")
+                        Button("Skip", action: skip).accessibilityLabel("Skip rest")
+                    }.buttonStyle(.bordered).controlSize(.regular)
+                }
             }.padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
                 .background(.regularMaterial)
         }

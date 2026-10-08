@@ -1,7 +1,11 @@
-Faster portion choices and clearer food entry
+Faster food logging and workout guidance
 
-Food entry now opens with Calories and macros above the amount controls. The header shows the selected meal and day. More detailed nutrition and corrections remain below the meal choices.
+Quick add logs Calories and macros without creating a food or entering a weight. You can correct the entry after an offline relaunch. Missing nutrients remain distinct from known zero.
 
-When a food provides a label serving, choose it directly with a button such as Use 1 bar or Use 1/2 cup. Each button selects one of that exact supplied portion. You can still adjust the quantity before logging. Ounces and U.S. fluid ounces remain the defaults; explicit metric preferences and previously saved portions stay as entered. Serving weights display in ounces for U.S. accounts, without rounding stored data.
+Food entry now puts Calories and macros above the amount controls. Supplied label portions have direct choices such as Use 1 bar. Ounces and U.S. fluid ounces remain the defaults; your saved portions and metric preferences stay as entered.
 
-Please try choosing a label portion, cancelling it, then logging offline and reopening the entry. Known zero and missing nutrients stay distinct. Quick Calories and macros, saved gyms, guided setup, barcode-first logging and the workout builder are included. Physical camera, VoiceOver and Watch checks remain pending.
+Seven common movements now have offline setup, numbered steps and a control cue. Open How to do it from your workout and return to the same sets and rest timer. Largest-text rest controls now stay readable and can extend or skip the timer.
+
+Saved gyms let you choose equipment for your training plan. Exercise search keeps Close available while you browse. Guided setup, barcode-first logging and the workout builder are included.
+
+Please try logging a food portion offline, using Quick add, and opening a guide during a rest. The written exercise guides cover seven movements; broader coverage and demonstrations are still in progress. Physical camera, VoiceOver and Watch checks remain pending.

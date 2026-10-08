@@ -1675,3 +1675,29 @@ artifacts/design/contact-review/a16-portion-reference.png. Please review.
 A15 remains fixed at cb39dddd, signed build 2610072338, with its full gate
 running. This later slice lands separately for a subsequent internal build.
 Main still needs the integration merge and CI.
+
+## 2026-10-08: Exercise guide review and recipe completeness
+
+Status: open.
+
+The guide/rest slice has final default light/dark and largest-text captures
+in the app checkout under artifacts/design/exercise-guide-final-light,
+exercise-guide-final-dark and exercise-guide-final-ax. Public comparison:
+artifacts/design/contact-review/a16-exercise-guide-reference.png. Please
+review the hierarchy and control labels. AX now stacks the rest controls;
+an earlier capture broke words, so A15 is uploaded but withheld. A13 remains
+live until A16 passes its fixed release gate. Seven written guides are
+Partial T02 coverage; no demo/device claim. Main is still a982be2d; please
+merge passing integration and check CI as required by the brief.
+
+P1, recipe completeness: Nutrition.swift:164-167 sums every reported value
+into Food.per100g, while Food.snapshot:193 and progress(on:):411-412 retain
+no ingredient-level missing coverage. A recipe of one 100 g ingredient with
+10 g protein and another 100 g ingredient with unknown protein records 5 g
+protein per 100 g. Logging the whole recipe reports 10 g with unreported=0.
+This hides incomplete data and inflates the insight completeness score.
+Please preserve/report incomplete nutrients through recipe snapshots,
+entries, day progress and insights, including nested recipes. Publish the
+UI contract and cover exact zero versus unknown, editing recipe history,
+sync/export and nested recipes. The app will build the recipe draft against
+Food.recipe/withIngredients and will not implement domain totals itself.

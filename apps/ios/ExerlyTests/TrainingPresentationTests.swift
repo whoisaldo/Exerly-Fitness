@@ -4,6 +4,23 @@ import ExerlyCore
 
 @MainActor
 final class TrainingPresentationTests: XCTestCase {
+    func testExerciseGuidesReferToBundledMovementsAndNeverMatchCustomNames() throws {
+        for (id, technique) in ExerciseGuideCatalog.guides {
+            let exercise = try XCTUnwrap(ExerciseLibrary.bundled.exercise(id), "Guide has no bundled movement: \(id)")
+            XCTAssertFalse(exercise.id.isCustom)
+            XCTAssertFalse(technique.setup.isEmpty)
+            XCTAssertFalse(technique.movement.isEmpty)
+            XCTAssertEqual(technique.reference.scheme, "https")
+            XCTAssertNotNil(technique.reference.host)
+            var custom = exercise
+            custom.id = .custom()
+            let library = try ExerciseLibrary.bundled.adding(custom)
+            let sameName = library.search(exercise.name).filter { $0.name == exercise.name }
+            XCTAssertTrue(sameName.contains { $0.id == custom.id })
+            XCTAssertNil(ExerciseGuideCatalog.guides[custom.id], "A matching name must not imply matching technique")
+        }
+    }
+
     func testRoundedWeightEntryPreservesExactMeasurementUnlessEdited() {
         let original = 72.25012345
         let display = WeightFieldText.display(original, unit: .pounds)

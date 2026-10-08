@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        8F7A6399FDFC4EA2B9B82D2E /* ExerciseGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F1B70366194DB1B6AA7EA9; };
         04DD8B7B56A0466BA3439CFB /* NutritionQuickAddPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F36EF2D484EEC8A46C675; };
         49E8068189F245EEB0412182 /* NutritionQuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20384D5BCC384B44AE4DA541; };
         388C1337938D46019543FCDD /* GymPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0534D736A5A4F21B498FC25; };
@@ -153,6 +154,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        51F1B70366194DB1B6AA7EA9 /* ExerciseGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ExerciseGuideView.swift; sourceTree = SOURCE_ROOT; };
         8F8F36EF2D484EEC8A46C675 /* NutritionQuickAddPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/NutritionQuickAddPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         20384D5BCC384B44AE4DA541 /* NutritionQuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionQuickAdd.swift; sourceTree = SOURCE_ROOT; };
         B0534D736A5A4F21B498FC25 /* GymPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/GymPresentationTests.swift; sourceTree = SOURCE_ROOT; };
@@ -577,6 +579,7 @@
 		BBBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
+                51F1B70366194DB1B6AA7EA9 /* ExerciseGuideView.swift */,
                 C6808DE00E33488E9530B0B8 /* TrainingProgramEditor.swift */,
                 EF64556D5EC5440C95B959E4 /* TrainingPlanSetupModel.swift */,
                 1463BAA436B34C9BAC2B4D9F /* GymEditorModel.swift */,
@@ -784,6 +787,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                8F7A6399FDFC4EA2B9B82D2E /* ExerciseGuideView.swift in Sources */,
                 D6CAD7BA67DA4B5FA06CE906 /* TrainingProgramEditor.swift in Sources */,
                 2FBD60E35D394BD39A00097B /* TrainingPlanSetupModel.swift in Sources */,
                 526B28C39B884D7A829AE71A /* GymEditorModel.swift in Sources */,
