@@ -2,7 +2,7 @@
 
 Read AGENT_BRIEF.md, this ledger and to-app.md after every reset. Done is not
 met. No parity row is fully device-verified. Continue through milestones.
-Current date 2026-10-08, updated 14:05 EDT.
+Current date 2026-10-08, updated 17:24 EDT.
 
 ## Merge status
 
@@ -11,8 +11,11 @@ A15 build 2610072338 is uploaded from fixed cb39dddd but WITHHELD from Ali:
 a later largest-text guide capture exposed broken words in the existing rest
 panel. A13 2610072129 stays live. A14 also remains withheld. A16 will include
 the rest layout correction, direct portions and offline exercise guides.
-Final guide light/dark/AX checks and device build pass in primary.
-Land the slice, then fix A16 to its source while recipe UI continues.
+Guide/rest fdfecd50 landed and pushed to both branches. A16 is fixed to
+fdfecd50c0e5a69b6e31784be15d6815c85c0136; build 2610081807. All 63 UI
+methods are assigned exactly once across three release jobs, now running.
+Its first archive fails to find a usable distribution identity; diagnosis
+continues without replacing certificates. Recipe UI work continues in primary.
 
 | App branch                         | Unlanded work                                                                                      | Last landed / cleanup                      |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -20,9 +23,71 @@ Land the slice, then fix A16 to its source while recipe UI continues.
 | `agent/app-next`                   | None, git cherry empty                                                                             | Deleted locally/remotely; worktree removed |
 | `agent/app-programs`               | None                                                                                               | A6 landed 19925b28; branch deleted         |
 | `release/app-nutrition-foundation` | None                                                                                               | Foundation landed 60e83cf9; branch deleted |
-| `agent/app-nutrition`              | Exercise guidance in progress, no unlanded commits                                                 | Portions landed/pushed 9b4e8e8c, Oct 7     |
+| `agent/app-nutrition`              | Recipe checkpoint for draft PR; not landed to integration                                          | Guide/rest landed/pushed fdfecd50, Oct 8   |
 | `agent/app-label`                  | None; local commits patch-equivalent, original remote differs only by an already-landed inbox item | Deleted locally and remotely               |
-| `release/app-design`               | None; A15 uploaded but withheld after later rest-panel finding                                     | Fixed cb39dddd; candidate 2610072338       |
+| `release/app-design`               | None; A16 release tests running; A15 withheld                                                      | Fixed fdfecd50; candidate 2610081807       |
+
+## PR checkpoint requested by Ali, 2026-10-08
+
+Ali asked to commit everything to a PR for now. Preserve the current app
+work on agent/app-nutrition and open a draft PR against main, including the
+completed changes already landed to integration. Do not merge the recipe
+work or assign a release as part of this checkpoint.
+
+The recipe editor is implemented in primary: scan/search ingredients,
+portion review, equal servings, optional finished weight in ounces for U.S.
+accounts, preparation, reordering/removal and saved recipe details. Core
+performs conversions, totals and validation. Four new presentation tests
+pass for draft isolation, exact weights, history, stale/account rejection
+and offline reopening. All 214 active hosted tests pass, one credential skip.
+The new end-to-end recipe journey is written but has NOT run. Default-size
+light/dark and largest-text recipe review have NOT run. N11 remains Partial.
+The latest device build and test-target compilation pass. Changed nutrition
+files pass SwiftLint after two style corrections.
+
+The recipe completeness P1 in to-logic.md is unresolved. Recipe snapshots
+currently hide ingredient-level missing coverage in day progress/insights;
+the editor's general caption does not resolve that domain issue. Finish the
+Core contract before calling this release-ready. Ingredient volume units are
+retained while editing the draft; Core RecipeIngredient stores exact grams
+and snapshots, so reopened ingredient editors use the account's weight unit.
+
+A native Security API probe successfully signs with the existing private
+key. Certificate/chain verification also succeeds, but the CLI identity
+lookup and Xcode archive still fail. The temporary diagnostic default and
+search-list changes were restored; both point to login.keychain-db. A16's
+fixed release tests continue independently in the release worktree. A13
+2610072129 remains the only live Ali build. A14/A15 remain withheld and A16
+has not uploaded.
+
+Resume from this checkpoint:
+
+1. Run the new recipe UI journey and the existing library/meal regressions,
+   then inspect light/dark and largest-text captures against design 033.
+2. Resolve the recipe missing-nutrient contract with Logic, add its regression
+   cases, update PARITY and land the passing recipe slice.
+3. Collect the three A16 fixed-source results, resolve identity discovery,
+   rerun signing without changing certificates, and complete visual/IPA
+   verification before internal TestFlight assignment.
+
+## Fixed A16 release and signing investigation, 2026-10-08 14:15 EDT
+
+A16 release tests run in release/app-design at fixed fdfecd50. Jobs:
+28102/group1, 66125/group2, 28130/group3. Logs/results are
+artifacts/nutrition/a16-verified-{1,2,3}; expected manifest has 63 UI methods.
+Fixture ports 39225, 39222, 39226 return HTTP 200 at /api/health. The first
+archive 2610081807 fails before compiling: Xcode finds no usable iOS
+Distribution identity. The authorized existing p12 imports into an isolated
+keychain, its leaf/chain verify successfully and expire September 2027, but
+security find-identity reports zero valid identities and a temporary signing
+probe fails item-not-found. No replacement certificate or trust override.
+Temporary keychains/search-list changes have been cleaned up and restored.
+Keep A13 live. Do not upload or assign A16 before this and its full gate pass.
+
+Guide fdfecd50 passed the 308 Core tests and 210 active hosted tests, one
+credential skip. Both push hooks passed, including API 261. Six latest dark
+rest/action captures also reviewed. Design 033 describes the next recipe UI;
+the missing-ingredient coverage issue is still open with Logic.
 
 ## Exercise guidance final review, 2026-10-08 14:05 EDT
 

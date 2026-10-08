@@ -2,6 +2,8 @@ import ExerlyCore
 import SwiftUI
 
 struct NutritionFoodPicker: View {
+    enum SelectionPurpose { case meal, recipe }
+    let selectionPurpose: SelectionPurpose
     let workspace: TrainingWorkspace
     let api: AccountAPI
     let date: LocalDate
@@ -30,8 +32,9 @@ struct NutritionFoodPicker: View {
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
          timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
-         startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
+         startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], selectionPurpose: SelectionPurpose = .meal, onPick: ((ExerlyCore.Food) -> Int?)? = nil,
          pickError: @escaping () -> String? = { nil }) {
+        self.selectionPurpose = selectionPurpose
         self.workspace = workspace
         self.api = api
         self.date = date
@@ -65,7 +68,7 @@ struct NutritionFoodPicker: View {
                     }
                 } else {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
-                        ExEyebrow("\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
+                        ExEyebrow(selectionPurpose == .recipe ? "Recipe ingredients" : "\(meal) · \(NutritionFormat.day(date, timeZone: timeZone))", color: .exPrimaryText)
                         Text("Add foods, then review portions.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         Button { hideKeyboard(); showingBarcode = true } label: {
                             Label("Scan barcode", systemImage: "barcode.viewfinder")
@@ -94,12 +97,14 @@ struct NutritionFoodPicker: View {
             .scrollContentBackground(.hidden).background(Color.exBackground)
             .safeAreaInset(edge: .bottom) {
                 if onPick != nil {
-                    Button(pickedCount == 0 ? "Back to meal" : "Review meal · \(pickedCount) \(pickedCount == 1 ? "food" : "foods")") { dismiss() }
+                    Button(selectionPurpose == .recipe
+                           ? (pickedCount == 0 ? "Back to recipe" : "Review recipe · \(pickedCount) \(pickedCount == 1 ? "ingredient" : "ingredients")")
+                           : (pickedCount == 0 ? "Back to meal" : "Review meal · \(pickedCount) \(pickedCount == 1 ? "food" : "foods")")) { dismiss() }
                         .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.reviewPlate")
                         .padding(ExSpacing.page).background(Color.exBackground)
                 }
             }
-            .navigationTitle(onPick == nil ? "Add food" : "Choose foods").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(onPick == nil ? "Add food" : (selectionPurpose == .recipe ? "Choose ingredients" : "Choose foods")).navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search food database")
             .onSubmit(of: .search) { Task { await search.search(query) } }
             .onChange(of: query) { _, _ in search.clear() }
@@ -210,8 +215,8 @@ struct NutritionFoodPicker: View {
                 }
             }
         }.accessibilityIdentifier("nutrition.\(onPick == nil ? "food" : "platePick").\(food.id)")
-            .accessibilityValue(addedIDs.contains(food.id) ? "Added to meal" : "")
-            .accessibilityHint(onPick == nil ? "" : "Adds a portion. You can adjust it in the meal review.")
+            .accessibilityValue(addedIDs.contains(food.id) ? (selectionPurpose == .recipe ? "Added to recipe" : "Added to meal") : "")
+            .accessibilityHint(onPick == nil ? "" : "Adds a portion. You can adjust it in the review.")
     }
 
     private func select(_ food: ExerlyCore.Food) {

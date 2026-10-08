@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        3998F9A42D57472EBBD9F238 /* NutritionRecipeDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7F7771381A241DA8EF358FC; };
+        3017671C22FB4D628BC238A7 /* NutritionRecipeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D18B1F4DAA054E589845F8D0; };
+        5C215FA10F75437C90C8C446 /* NutritionRecipeDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6758FEC92054C19B07D0B57; };
         8F7A6399FDFC4EA2B9B82D2E /* ExerciseGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F1B70366194DB1B6AA7EA9; };
         04DD8B7B56A0466BA3439CFB /* NutritionQuickAddPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F36EF2D484EEC8A46C675; };
         49E8068189F245EEB0412182 /* NutritionQuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20384D5BCC384B44AE4DA541; };
@@ -154,6 +157,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        B7F7771381A241DA8EF358FC /* NutritionRecipeDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionRecipeDetails.swift; sourceTree = SOURCE_ROOT; };
+        D18B1F4DAA054E589845F8D0 /* NutritionRecipeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionRecipeEditor.swift; sourceTree = SOURCE_ROOT; };
+        C6758FEC92054C19B07D0B57 /* NutritionRecipeDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionRecipeDraft.swift; sourceTree = SOURCE_ROOT; };
         51F1B70366194DB1B6AA7EA9 /* ExerciseGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Training/ExerciseGuideView.swift; sourceTree = SOURCE_ROOT; };
         8F8F36EF2D484EEC8A46C675 /* NutritionQuickAddPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerlyTests/NutritionQuickAddPresentationTests.swift; sourceTree = SOURCE_ROOT; };
         20384D5BCC384B44AE4DA541 /* NutritionQuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exerly/Features/Nutrition/NutritionQuickAdd.swift; sourceTree = SOURCE_ROOT; };
@@ -596,6 +602,9 @@
                 8020E7EEC6A948FC866775E6 /* NutritionDrafts.swift */,
                 9466ADD66997466E960DF138 /* NutritionComponents.swift */,
                 9A4E4156456940E284AD8C9B /* NutritionPlateView.swift */,
+                C6758FEC92054C19B07D0B57 /* NutritionRecipeDraft.swift */,
+                D18B1F4DAA054E589845F8D0 /* NutritionRecipeEditor.swift */,
+                B7F7771381A241DA8EF358FC /* NutritionRecipeDetails.swift */,
                 617E8059E32745DE93EDF0FE /* NutritionPlateDraft.swift */,
                 DCBE4BB9D2DA439BB10E047E /* NutritionFoodEditor.swift */,
                 860ABF9074DA4AF59CA36CC4 /* NutritionEntryNutrients.swift */,
@@ -804,6 +813,9 @@
                 65319BE475B64C4E83B11FEA /* NutritionDrafts.swift in Sources */,
                 6A0912B0C6B2470CA5333FE9 /* NutritionComponents.swift in Sources */,
                 C3A00D2369094809AF3F059C /* NutritionPlateView.swift in Sources */,
+                5C215FA10F75437C90C8C446 /* NutritionRecipeDraft.swift in Sources */,
+                3017671C22FB4D628BC238A7 /* NutritionRecipeEditor.swift in Sources */,
+                3998F9A42D57472EBBD9F238 /* NutritionRecipeDetails.swift in Sources */,
                 63EC972621864F10A0F38854 /* NutritionPlateDraft.swift in Sources */,
                 0FEC17CB82D14EF29F455A23 /* NutritionFoodEditor.swift in Sources */,
                 0998AC5B0FE247F5B0EA7AA5 /* NutritionEntryNutrients.swift in Sources */,

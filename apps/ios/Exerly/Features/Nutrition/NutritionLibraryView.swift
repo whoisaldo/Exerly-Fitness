@@ -31,6 +31,7 @@ struct NutritionLibraryView: View {
     let unit: MassUnit
     @State private var query = ""
     @State private var creating = false
+    @State private var creatingRecipe = false
     @State private var showArchived = false
     @State private var loggingFood: ExerlyCore.Food?
     @StateObject private var diaryActions: NutritionDiaryActions
@@ -53,6 +54,10 @@ struct NutritionLibraryView: View {
                              title: query.isEmpty ? (showArchived ? "No archived foods" : "Keep your go-to foods here") : "No matches",
                              message: query.isEmpty ? "Create a label, or favorite a food from your diary to find it here." : "Try a different name, or create a food label.",
                              action: "Create food") { creating = true }
+                if query.isEmpty && !showArchived {
+                    Button("Create a recipe", systemImage: "fork.knife") { creatingRecipe = true }
+                        .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.libraryEmptyRecipe")
+                }
             } else {
                 VStack(alignment: .leading, spacing: ExSpacing.item) {
                     ExSectionHeading(showArchived ? "Archived" : "Saved foods", detail: "\(visibleFoods.count)")
@@ -101,11 +106,18 @@ struct NutritionLibraryView: View {
         .navigationTitle("Food library").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Create food", systemImage: "plus") { creating = true }
-                    .accessibilityIdentifier("nutrition.libraryCreate")
+                Menu("Create", systemImage: "plus") {
+                    Button("Create recipe", systemImage: "fork.knife") { creatingRecipe = true }
+                        .accessibilityIdentifier("nutrition.libraryCreateRecipe")
+                    Button("Create food label", systemImage: "doc.text") { creating = true }
+                        .accessibilityIdentifier("nutrition.libraryCreateFood")
+                }.accessibilityIdentifier("nutrition.libraryCreate")
             }
         }
         .sheet(isPresented: $creating) { NutritionFoodEditor(workspace: workspace) { _ in } }
+        .sheet(isPresented: $creatingRecipe) {
+            NutritionRecipeEditor(workspace: workspace, timeZone: timeZone, unit: unit) { _ in }
+        }
         .sheet(item: $loggingFood) { food in
             NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(.now, in: timeZone),
                                  meal: workspace.nutrition.entries.last { $0.food.foodID == food.id }?.meal ?? "Snacks",
@@ -218,8 +230,13 @@ private struct NutritionLibraryDetail: View {
                     ExEyebrow(food.archivedAt == nil ? NutritionFormat.source(food.source) : "Archived", color: .exPrimaryText)
                     Text(food.name).font(.exH2)
                     if let brand = food.brand { Text(brand).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
-                    ExEyebrow("Per 100 g")
-                    NutritionDailySummary(amounts: food.per100g, targets: nil, showHeading: false, showTargetNote: false)
+                    if food.source == .recipe, let summary = NutritionRecipeDraft.summary(food) {
+                        ExEyebrow(summary.serving == nil ? "Whole recipe" : "Per serving")
+                        NutritionDailySummary(amounts: summary.nutrients, targets: nil, showHeading: false, showTargetNote: false)
+                    } else {
+                        ExEyebrow("Per 100 g")
+                        NutritionDailySummary(amounts: food.per100g, targets: nil, showHeading: false, showTargetNote: false)
+                    }
                     if food.archivedAt == nil {
                         Button("Log this food", systemImage: "plus") { destination = .log(food) }
                             .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.libraryLog")
@@ -236,6 +253,7 @@ private struct NutritionLibraryDetail: View {
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         .accessibilityIdentifier("nutrition.libraryLogged")
                 }
+                if food.source == .recipe { NutritionRecipeDetails(food: food, unit: unit) }
                 ExCard {
                     ExSectionHeading("Nutrition label", detail: "Per 100 g")
                     NutritionAmountsView(amounts: food.per100g)
@@ -272,7 +290,10 @@ private struct NutritionLibraryDetail: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Menu("Food actions", systemImage: "ellipsis") {
-                        if food.source == .custom || food.source == .imported {
+                        if food.source == .recipe {
+                            Button("Edit recipe", systemImage: "square.and.pencil") { destination = .edit(food) }
+                                .accessibilityIdentifier("nutrition.libraryEditRecipe")
+                        } else if food.source == .custom || food.source == .imported {
                             Button("Edit food label", systemImage: "square.and.pencil") { destination = .edit(food) }
                                 .accessibilityIdentifier("nutrition.libraryEdit")
                         }
@@ -286,7 +307,10 @@ private struct NutritionLibraryDetail: View {
         .onChange(of: actions.error) { _, error in errorFocused = error != nil }
         .sheet(item: $destination) { destination in
             switch destination {
-            case .edit(let food): NutritionFoodEditor(workspace: workspace, editing: food) { _ in }
+            case .edit(let food):
+                if food.source == .recipe {
+                    NutritionRecipeEditor(workspace: workspace, editing: food, timeZone: timeZone, unit: unit) { _ in }
+                } else { NutritionFoodEditor(workspace: workspace, editing: food) { _ in } }
             case .log(let food):
                 NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(Date(), in: timeZone),
                                      meal: workspace.nutrition.entries.last?.meal ?? "Snacks", timeZone: timeZone, unit: unit,
