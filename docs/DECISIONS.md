@@ -328,3 +328,10 @@ screen; the Nutrition library replaced it. It is deleted. `LogFoodView`,
 only from `HomeView`'s non-health diary mode, which nothing opens; they can go
 once that mode is removed. The barcode camera they shared now lives in
 `Features/Nutrition/NutritionBarcodeCamera.swift`.
+
+## 2026-10-09: The food library manages foods; search logs them
+
+The food library's "Usual around now" and "Recently logged" lists repeated
+what food search now shows with one-tap logging, so they are removed. The
+library is for finding, editing, starring and archiving saved foods; its food
+page still logs, at the meal usual for the time of day.

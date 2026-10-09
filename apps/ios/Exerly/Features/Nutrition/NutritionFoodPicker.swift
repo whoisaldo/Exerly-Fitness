@@ -36,6 +36,7 @@ struct NutritionFoodPicker: View {
     @State private var justLogged: Set<String> = []
     @State private var logError: String?
     @State private var loggedCount = 0
+    @State private var openedOnce = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -332,6 +333,14 @@ struct NutritionFoodPicker: View {
         let suggestedIDs = Set(suggested.map(\.id))
         let recent = store.recentPortions(limit: 30).filter { !suggestedIDs.contains($0.id) }.map(item)
         shelf = FoodShelf(suggested: suggested, recent: recent)
+        // With nothing logged yet, open on the foods already saved.
+        if !openedOnce {
+            openedOnce = true
+            if suggested.isEmpty && recent.isEmpty && store.foods.contains(where: { $0.archivedAt == nil }) { scope = .mine }
+        }
+        // Results are dropped while the screen is away; bring back the ones
+        // for a search still typed (from the cache when they were fetched).
+        if !trimmedQuery.isEmpty { search.type(query) }
     }
 
     private func item(_ portion: QuickPortion) -> FoodPickerItem {

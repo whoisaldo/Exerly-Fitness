@@ -21,7 +21,11 @@ final class FoodLoggingUITests: ExerlyUITestCase {
         let confirmation = app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch
         XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
         XCTAssertEqual(tapCount, 2, "A food eaten before: open search, then its +")
-        tap(app.buttons["nutrition.undoLog"], in: app)
+        // The confirmation floats over the list, outside the shared helper's
+        // scrolling area, so tap it where it is.
+        let undo = app.buttons["nutrition.undoLog"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 2) && undo.isHittable)
+        undo.tap()
         XCTAssertTrue(confirmation.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Add food"].exists, "Logging with + keeps the search open for the next food")
 

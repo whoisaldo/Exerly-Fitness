@@ -2093,7 +2093,7 @@ final class ProductionUITests: ExerlyUITestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
-        tap(app.buttons["nutrition.buildMeal"], in: app)
+        openBuildMeal(in: app)
         capture(app, "nutrition-plate-empty")
         tap(app.buttons["Choose foods"], in: app)
         tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
@@ -2150,7 +2150,7 @@ final class ProductionUITests: ExerlyUITestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
-        tap(app.buttons["nutrition.buildMeal"], in: app)
+        openBuildMeal(in: app)
         tap(app.buttons["Choose foods"], in: app)
         tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
         tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
@@ -2203,6 +2203,14 @@ final class ProductionUITests: ExerlyUITestCase {
             XCTAssertNil(nutrients["protein"])
             if id == liquid { XCTAssertEqual((food["volume"] as? [String: Any])?["density"] as? Double, 0.92) }
         }
+    }
+
+    private func openBuildMeal(in app: XCUIApplication) {
+        // Building a meal sits in food search's More menu; + logs single foods.
+        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
+        let option = app.buttons["nutrition.buildMeal"]
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
+        option.tap()
     }
 
     private func plateRow(_ foodID: String, in app: XCUIApplication) -> XCUIElement {
