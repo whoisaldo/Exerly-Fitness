@@ -142,9 +142,40 @@ struct NutritionFoodPicker: View {
     }
 
     @ViewBuilder private var browsing: some View {
-        tools
-        ExSegmentedControl(values: FoodListScope.allCases, selection: $scope) { $0.title }
-            .accessibilityElement(children: .contain).accessibilityIdentifier("nutrition.listScope")
+        if typeSize.isAccessibilitySize {
+            // At the largest sizes the foods come first: Barcode and a compact
+            // list choice above them, the other tools below.
+            barcodeButton(prominent: true)
+            scopeMenu
+        } else {
+            HStack(spacing: ExSpacing.small) { toolButtons(compact: false) }
+            ExSegmentedControl(values: FoodListScope.allCases, selection: $scope) { $0.title }
+                .accessibilityElement(children: .contain).accessibilityIdentifier("nutrition.listScope")
+        }
+        scopeContent
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                ExEyebrow("More ways to log")
+                otherTools
+            }.padding(.top, ExSpacing.small)
+        }
+    }
+
+    private var scopeMenu: some View {
+        Menu {
+            Picker("Show", selection: $scope) {
+                ForEach(FoodListScope.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+        } label: {
+            HStack {
+                Text("Showing \(scope.title)").font(.exBodyMedium).multilineTextAlignment(.leading)
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down").font(.exCaption)
+            }.foregroundStyle(Color.exPrimaryText).frame(minHeight: 44).contentShape(Rectangle())
+        }.accessibilityIdentifier("nutrition.listScope")
+    }
+
+    @ViewBuilder private var scopeContent: some View {
         switch scope {
         case .recent:
             if shelf.suggested.isEmpty && shelf.recent.isEmpty {
@@ -176,25 +207,28 @@ struct NutritionFoodPicker: View {
         databaseSection(excluding: Set(local.map(\.id)))
         VStack(alignment: .leading, spacing: ExSpacing.small) {
             ExEyebrow("Can't find it?")
-            HStack(spacing: ExSpacing.small) { toolButtons(compact: true) }
+            if typeSize.isAccessibilitySize {
+                barcodeButton(prominent: false)
+                otherTools
+            } else {
+                HStack(spacing: ExSpacing.small) { toolButtons(compact: true) }
+            }
         }.padding(.top, ExSpacing.small)
     }
 
-    private var tools: some View {
-        Group {
-            if typeSize.isAccessibilitySize {
-                VStack(spacing: ExSpacing.small) { toolButtons(compact: false) }
-            } else {
-                HStack(spacing: ExSpacing.small) { toolButtons(compact: false) }
-            }
-        }
+    @ViewBuilder private func toolButtons(compact: Bool) -> some View {
+        barcodeButton(prominent: !compact)
+        otherTools
     }
 
-    @ViewBuilder private func toolButtons(compact: Bool) -> some View {
-        FoodToolButton(title: "Barcode", icon: "barcode.viewfinder", prominent: !compact,
+    private func barcodeButton(prominent: Bool) -> some View {
+        FoodToolButton(title: typeSize.isAccessibilitySize ? "Scan barcode" : "Barcode", icon: "barcode.viewfinder", prominent: prominent,
                        identifier: picking ? "nutrition.plateBarcode" : "nutrition.barcode") {
             hideKeyboard(); showingBarcode = true
         }.accessibilityLabel("Scan barcode")
+    }
+
+    @ViewBuilder private var otherTools: some View {
         FoodToolButton(title: "Label", icon: "text.viewfinder", identifier: "nutrition.scanLabel") {
             hideKeyboard(); scanningLabel = true
         }.accessibilityLabel("Scan nutrition label")

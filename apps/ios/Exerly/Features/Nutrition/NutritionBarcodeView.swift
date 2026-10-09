@@ -179,7 +179,7 @@ struct NutritionBarcodeView: View {
         } else if barcodeMissing {
             ExCard(accent: true) {
                 Label("Not in the database yet", systemImage: "barcode").font(.exH3).foregroundStyle(Color.exTextPrimary)
-                Text("Photograph the Nutrition Facts label and we'll read it, then this barcode is one scan away next time.")
+                Text("Photograph its Nutrition Facts label and we'll read the numbers for you, or type them in.")
                     .font(.exBody).foregroundStyle(Color.exTextSecondary)
                     .accessibilityIdentifier("nutrition.barcodeNotFound")
                 Button("Scan nutrition label", systemImage: "text.viewfinder") { camera.stop(); scanningLabel = true }

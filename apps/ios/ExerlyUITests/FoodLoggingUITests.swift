@@ -147,11 +147,11 @@ final class FoodLoggingUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.quickLog.\(Self.yogurt)"], in: app)
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch.waitForExistence(timeout: 5))
         capture(app, "food-02-logged-undo")
-        tap(app.buttons["Favorites"], in: app)
+        chooseList("Favorites", in: app)
         capture(app, "food-03-favorites")
-        tap(app.buttons["My foods"], in: app)
+        chooseList("My foods", in: app)
         capture(app, "food-04-my-foods")
-        tap(app.buttons["Recent"], in: app)
+        chooseList("Recent", in: app)
         tap(app.buttons["nutrition.food.\(Self.oats)"], in: app)
         XCTAssertTrue(app.buttons["nutrition.saveEntry"].waitForExistence(timeout: 5))
         capture(app, "food-05-portion-sheet")
@@ -174,6 +174,13 @@ final class FoodLoggingUITests: ExerlyUITestCase {
     }
 
     // MARK: Helpers
+
+    /// Recent, Favorites or My foods: a segmented choice, or a menu at the
+    /// largest text sizes.
+    private func chooseList(_ title: String, in app: XCUIApplication) {
+        if !app.buttons[title].exists { tap(app.buttons["nutrition.listScope"], in: app) }
+        tap(app.buttons[title], in: app)
+    }
 
     /// Opens food search from the home screen and counts it as one tap.
     private func openSearch(_ app: XCUIApplication) {

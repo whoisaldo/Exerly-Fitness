@@ -281,28 +281,44 @@ struct FoodPortionSummary: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
-            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
-                : AnyLayout(HStackLayout(alignment: .lastTextBaseline, spacing: ExSpacing.content))
-            layout {
-                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text(FoodFormat.kcal(amounts?[.energy]))
-                        .font(.system(size: heroSize, weight: .bold, design: .rounded))
-                        .foregroundStyle(amounts?[.energy] == nil ? Color.exTextSecondary : Color.exTextPrimary)
-                        .contentTransition(.numericText()).lineLimit(1).minimumScaleFactor(0.6)
-                    Text("kcal").font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
-                }.accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(FoodFormat.kcal(amounts?[.energy])) kilocalories")
-                    .accessibilityIdentifier("nutrition.portionEnergy")
-                if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                HStack(alignment: .top, spacing: ExSpacing.content) {
-                    macro(.protein, "Protein", .exPrimaryText)
-                    macro(.carbohydrate, "Carbs", .exAccent)
-                    macro(.fat, "Fat", .exSecondary)
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: ExSpacing.small) { hero; macros }
+            } else {
+                // Macros sit beside the energy when they fit, under it on a narrow phone.
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .lastTextBaseline, spacing: ExSpacing.content) { hero; Spacer(minLength: 0); macros }
+                    VStack(alignment: .leading, spacing: ExSpacing.small) { hero; macros }
                 }
             }
             shareBar
         }
         .animation(.snappy, value: amounts)
+    }
+
+    private var hero: some View {
+        HStack(alignment: .lastTextBaseline, spacing: 4) {
+            Text(FoodFormat.kcal(amounts?[.energy]))
+                .font(.system(size: heroSize, weight: .bold, design: .rounded))
+                .foregroundStyle(amounts?[.energy] == nil ? Color.exTextSecondary : Color.exTextPrimary)
+                .contentTransition(.numericText()).lineLimit(1)
+            Text("kcal").font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
+        }.fixedSize()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(FoodFormat.kcal(amounts?[.energy])) kilocalories")
+            .accessibilityIdentifier("nutrition.portionEnergy")
+    }
+
+    private var macros: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: ExSpacing.content) { macroValues }
+            VStack(alignment: .leading, spacing: ExSpacing.small) { macroValues }
+        }
+    }
+
+    @ViewBuilder private var macroValues: some View {
+        macro(.protein, "Protein", .exPrimaryText)
+        macro(.carbohydrate, "Carbs", .exAccent)
+        macro(.fat, "Fat", .exSecondary)
     }
 
     private func macro(_ nutrient: Nutrient, _ label: String, _ color: Color) -> some View {
@@ -313,7 +329,7 @@ struct FoodPortionSummary: View {
                 Circle().fill(color).frame(width: 6, height: 6)
                 Text(label).font(.exSmall).foregroundStyle(Color.exTextSecondary)
             }
-        }.accessibilityElement(children: .ignore)
+        }.fixedSize().accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
             .accessibilityValue(amounts?[nutrient].map { "\(FoodFormat.grams($0)) grams" } ?? "Not reported")
     }
