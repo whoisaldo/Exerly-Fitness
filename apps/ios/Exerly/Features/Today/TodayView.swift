@@ -116,6 +116,7 @@ struct TodayView: View {
         .scrollIndicators(.hidden)
         .exScrollEdges()
         .background(Color.exBackground)
+        .accessibilityIdentifier("today.screen")
         .navigationTitle(title)
         .navigationSubtitle(subtitle)
         .navigationBarTitleDisplayMode(.large)
@@ -406,9 +407,9 @@ struct TodayView: View {
                     Image(systemName: complete ? "checkmark.circle.fill" : "circle").font(.title3)
                         .foregroundStyle(complete ? Color.exSuccess : Color.exTextMuted).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(complete ? "Day logged completely" : day.status == .unlogged ? "Mark this day complete" : NutritionFormat.status(day.status))
+                        Text(day.status == .unlogged ? "Mark this day complete" : NutritionFormat.status(day.status))
                             .font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                        Text("Complete days improve your expenditure estimate").font(.exSmall).foregroundStyle(Color.exTextSecondary)
+                        Text(Self.statusDetail(day.status)).font(.exSmall).foregroundStyle(Color.exTextSecondary)
                     }
                     Spacer(minLength: 0)
                 }
@@ -467,6 +468,15 @@ struct TodayView: View {
             Label(title, systemImage: icon).font(.exCaption.weight(.medium)).foregroundStyle(Color.exPrimaryText)
                 .frame(minHeight: 44).padding(.horizontal, 4)
         }.buttonStyle(.plain).accessibilityIdentifier(id)
+    }
+
+    private static func statusDetail(_ status: DayStatus) -> String {
+        switch status {
+        case .unlogged: "Complete days improve your expenditure estimate"
+        case .complete: "Counts toward your expenditure estimate"
+        case .partial: "Left out of your expenditure estimate"
+        case .fasting: "Counts as a day with no intake"
+        }
     }
 
     private func setStatus(_ status: DayStatus) {
@@ -580,7 +590,7 @@ struct TodayMealCard: View {
         .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5) }
         .contextMenu {
-            if !entries.isEmpty { Button("Copy \(meal) to another day", systemImage: "doc.on.doc", action: copy) }
+            if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
         }
     }
 

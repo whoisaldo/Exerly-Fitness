@@ -300,6 +300,77 @@ class ExerlyUITestCase: XCTestCase {
             try? screenshot.pngRepresentation.write(to: url.appendingPathComponent(name + ".png"))
         }
     }
+    // MARK: Today
+
+    /// The Today screen, whatever day it shows.
+    func todayScreen(_ app: XCUIApplication) -> XCUIElement { app.scrollViews["today.screen"] }
+
+    /// The day Today shows, as YYYY-MM-DD.
+    func shownDay(_ app: XCUIApplication) -> String? {
+        app.descendants(matching: .any)["diary.selected-day"].value as? String
+    }
+
+    /// Moves Today by whole days through the week strip, the way a person
+    /// would: tap the day, or swipe to the previous week first.
+    func shiftDay(_ days: Int, in app: XCUIApplication) {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let current = shownDay(app).flatMap(formatter.date(from:)) else { return XCTFail("No day shown") }
+        let target = formatter.string(from: current.addingTimeInterval(Double(days) * 86_400))
+        let button = app.buttons["today.day.\(target)"]
+        let strip = app.descendants(matching: .any)["diary.selected-day"]
+        for _ in 0..<8 where !button.exists {
+            if strip.exists, strip.isHittable { days < 0 ? strip.swipeRight() : strip.swipeLeft() }
+            else { app.swipeDown() }
+        }
+        tap(button, in: app)
+        XCTAssertEqual(shownDay(app), target)
+    }
+
+    func showToday(in app: XCUIApplication) {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = app.buttons["today.day.\(formatter.string(from: Date()))"]
+        for _ in 0..<8 where !today.exists { app.descendants(matching: .any)["diary.selected-day"].swipeLeft() }
+        tap(today, in: app)
+    }
+
+    /// Chooses a logging status from the day's status menu. A tap toggles
+    /// complete; a long press opens every status.
+    func setDayStatus(_ status: String, in app: XCUIApplication) {
+        let control = app.buttons["nutrition.dayStatus"]
+        reveal(control, in: app)
+        control.press(forDuration: 1.0)
+        tapCount += 1
+        tap(app.buttons["nutrition.status.\(status)"], in: app)
+    }
+
+    /// Opens a meal's actions with a long press on its name.
+    func openMealActions(_ meal: String, in app: XCUIApplication) {
+        let title = todayScreen(app).staticTexts[meal]
+        reveal(title, in: app)
+        title.press(forDuration: 1.0)
+        tapCount += 1
+    }
+
+    /// The calorie target Today shows, read from the ring's spoken value.
+    func targetEnergy(_ app: XCUIApplication) -> Double? {
+        let value = app.descendants(matching: .any)["nutrition.targetEnergy"].value as? String ?? ""
+        guard let range = value.range(of: #"eaten of ([0-9,]+)"#, options: .regularExpression) else { return nil }
+        let digits = value[range].filter(\.isNumber)
+        return Double(String(digits))
+    }
+
+    /// Saved foods moved from a tab to Profile → Foods & recipes.
+    func openFoodLibrary(_ app: XCUIApplication) {
+        tap(app.buttons["Profile"], in: app)
+        tap(app.buttons["profile.foods"], in: app)
+    }
+
     func control(_ body: [String: Any]) async throws {
         _ = try await request("POST", "/__test/control", body: body)
     }
