@@ -50,6 +50,7 @@ struct WorkoutDetailView: View {
     let sessionID: UUID
     let unit: MassUnit
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accountTimeZone) private var accountTimeZone
     @State private var deleting = false
     @State private var error: String?
 
@@ -62,16 +63,18 @@ struct WorkoutDetailView: View {
                         ExEyebrow("Completed session", color: .exPrimaryText)
                         Text(session.name).font(.exH2)
                         Text(TrainingFormat.date(session))
-                        Text(session.timeZoneID).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        if let zone = TrainingFormat.zoneNote(session.timeZone, account: accountTimeZone) {
+                            Text(zone).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }
                         let summary = store.summary(of: session)
                         LabeledContent("Working sets", value: String(summary.workingSets))
-                        LabeledContent("Volume", value: "\(summary.tonnage.total(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unit == .kilograms ? "kg" : "lb")·reps")
+                        LabeledContent("Volume", value: TrainingFormat.volume(summary.tonnage, unit: unit))
                         if !summary.tonnage.isComplete {
                             Text("Volume is incomplete because bodyweight was not recorded.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         if let duration = session.duration {
-                            LabeledContent("Duration", value: Duration.seconds(duration).formatted(.time(pattern: .hourMinuteSecond)))
+                            LabeledContent("Duration", value: TrainingFormat.minutes(duration))
                         }
                         if let weight = session.bodyweight { LabeledContent("Bodyweight", value: TrainingFormat.mass(weight, unit: unit)) }
                         if !session.notes.isEmpty { Text(session.notes) }

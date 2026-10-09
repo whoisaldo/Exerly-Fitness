@@ -41,7 +41,7 @@ enum SetGrid {
     static func text(_ field: TrainingCell.Field, of set: PerformedSet, unit: MassUnit) -> String {
         let effort = set.primary
         switch field {
-        case .load: return effort.load.map { TrainingFormat.number($0.value(in: unit)) } ?? ""
+        case .load: return effort.load.map { TrainingFormat.load($0.value(in: unit)) } ?? ""
         case .reps: return effort.reps.map(String.init) ?? ""
         case .rir: return set.rir.map { $0 >= 6 ? "6+" : TrainingFormat.number($0) } ?? ""
         case .duration: return effort.duration.map(TrainingFormat.number) ?? ""

@@ -162,7 +162,7 @@ private struct PlannedSetsPreview: View {
     }
 
     private func row(_ set: PlannedSet, index: Int) -> some View {
-        let load = set.effort.load.map { TrainingFormat.number($0.value(in: unit)) } ?? "Choose"
+        let load = set.effort.load.map { TrainingFormat.load($0.value(in: unit)) } ?? "Choose"
         let loadLabel = set.effort.load.map { "Load \(TrainingFormat.mass($0, unit: unit))" } ?? "Choose your load"
         let reps = set.effort.reps.map { String($0) } ?? "Not set"
         return GridRow {

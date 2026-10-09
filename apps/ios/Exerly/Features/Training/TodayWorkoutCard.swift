@@ -110,6 +110,60 @@ struct TodayWorkoutCard: View {
     }
 }
 
+/// The Train tab's hero once a workout is saved today, as Today shows it:
+/// what was done, with the program's next workout one step behind.
+struct TrainingDoneCard: View {
+    let session: WorkoutSession
+    let summary: WorkoutSummary
+    let unit: MassUnit
+    /// The program's next day, if there is one.
+    let next: String?
+    let start: () -> Void
+    let preview: () -> Void
+    let empty: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let title = TrainingFormat.title(of: session)
+        TrainingHeroSurface {
+            HStack(spacing: ExSpacing.small) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.exSuccess).accessibilityHidden(true)
+                ExEyebrow("Workout done", color: .exPrimaryText)
+            }
+            VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                Text(title.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
+                    .accessibilityAddTraits(.isHeader).accessibilityIdentifier("training.doneName")
+                Text(([title.program].compactMap { $0 } + [details]).joined(separator: " · "))
+                    .font(.exLabel).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+            if let next {
+                Button(action: start) { Label("Start next: \(next)", systemImage: "play.fill").font(.exBodyMedium.weight(.semibold)) }
+                    .buttonStyle(ExActionStyle(secondary: true))
+                    .accessibilityIdentifier("training.startNext")
+                    .accessibilityHint("Starts the next workout in your program")
+            }
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+                : AnyLayout(HStackLayout(spacing: ExSpacing.content))
+            layout {
+                if next != nil {
+                    Button(action: preview) { Label("Preview", systemImage: "list.bullet.rectangle") }
+                        .accessibilityIdentifier("program.nextWorkout")
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                }
+                Button(action: empty) { Label("Empty workout", systemImage: "plus") }
+                    .accessibilityIdentifier("training.start")
+            }
+            .buttonStyle(TrainingTextButtonStyle())
+        }
+    }
+
+    private var details: String {
+        let sets = summary.workingSets == 1 ? "1 working set" : "\(summary.workingSets) working sets"
+        return "\(sets) · \(TrainingFormat.volume(summary.tonnage, unit: unit)) · \(TrainingFormat.minutes(summary.duration))"
+    }
+}
+
 /// The hero when there's no plan to follow, or the plan is finished.
 struct TrainingPromptCard<Primary: View>: View {
     let eyebrow: String

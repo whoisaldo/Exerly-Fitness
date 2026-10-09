@@ -46,7 +46,14 @@ struct MainTabView: View {
             selectedTab = .training
         })
         .tint(Color.exPrimaryText)
+        .environment(\.accountTimeZone, timeZone)
     }
+}
+
+extension EnvironmentValues {
+    /// The account's time zone, for screens deep in a stack that only need
+    /// to compare against it.
+    @Entry var accountTimeZone: TimeZone = .current
 }
 
 /// The workout in progress above the tab bar on every other tab, like a

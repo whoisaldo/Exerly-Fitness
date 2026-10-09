@@ -94,6 +94,24 @@ public struct PersonalRecord: Sendable, Hashable {
     public var previous: Double
     /// The load for a reps-at-load record, in kilograms.
     public var load: Mass?
+
+    /// The one record per exercise worth announcing after a workout: a
+    /// heavier weight first, then a higher estimated 1RM, then more reps at a
+    /// weight, then the rest. Exercises keep the order the records came in.
+    public static func headlines(_ records: [PersonalRecord]) -> [PersonalRecord] {
+        let rank: [Kind: Int] = [.heaviestLoad: 0, .oneRepMax: 1, .repsAtLoad: 2, .setVolume: 3, .duration: 4, .distance: 5]
+        var best: [ExerciseID: PersonalRecord] = [:]
+        var order: [ExerciseID] = []
+        for record in records {
+            guard let current = best[record.exerciseID] else {
+                best[record.exerciseID] = record
+                order.append(record.exerciseID)
+                continue
+            }
+            if rank[record.kind, default: .max] < rank[current.kind, default: .max] { best[record.exerciseID] = record }
+        }
+        return order.compactMap { best[$0] }
+    }
 }
 
 /// The analysable view of every session. Build a new one after a change; it

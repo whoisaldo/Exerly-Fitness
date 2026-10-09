@@ -61,8 +61,10 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         tap(app.buttons["Save workout"], in: app)
         XCTAssertTrue(app.buttons["training.summaryDone"].waitForExistence(timeout: 10))
         tap(app.buttons["training.summaryDone"], in: app)
-        XCTAssertTrue(app.buttons["training.startToday"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.staticTexts["training.todayName"].label, "Lower A", "The program moves on to the next day")
+        // Train says the workout is done, with the program's next day behind it.
+        XCTAssertTrue(app.staticTexts["training.doneName"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["training.startToday"].exists)
+        XCTAssertEqual(app.buttons["training.startNext"].label, "Start next: Lower A", "The program moves on to the next day")
     }
 
     func testDesignTrainingCapture() async throws {
@@ -112,7 +114,7 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         XCTAssertTrue(app.buttons["training.summaryDone"].waitForExistence(timeout: 10))
         capture(app, "after-10-finish-summary")
         tap(app.buttons["training.summaryDone"], in: app)
-        XCTAssertTrue(app.buttons["training.startToday"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["training.startNext"].waitForExistence(timeout: 10))
         capture(app, "after-11-train-home-next")
     }
 
