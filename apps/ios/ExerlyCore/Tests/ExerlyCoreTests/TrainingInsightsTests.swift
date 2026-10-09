@@ -214,6 +214,67 @@ import Testing
         #expect(pressed.points.count == 6)
     }
 
+    @Test func trendLineRunsThroughLinearProgress() throws {
+        let sessions = [
+            Fixture.session(days: -14, [bench(100)]),
+            Fixture.session(days: -10, [bench(104)]),
+            Fixture.session(days: 0, [bench(114)]),
+        ]
+        let history = TrainingHistory(sessions: sessions, library: library)
+        let lift = try #require(TrainingInsights.summary(of: "barbell-bench-press", in: history,
+                                                         from: LocalDate("2026-09-14")!, through: wednesday))
+        let line = try #require(lift.trendLine)
+        #expect(line.start == LocalDate("2026-09-21") && line.end == LocalDate("2026-10-05"))
+        #expect(close(line.startValue, 100.0 * 36 / 32, tolerance: 1e-9))
+        #expect(close(line.endValue, 114.0 * 36 / 32, tolerance: 1e-9))
+        let short = try #require(TrainingInsights.summary(of: "barbell-bench-press", in: history,
+                                                          from: LocalDate("2026-10-05")!, through: wednesday))
+        #expect(short.trendLine == nil)
+    }
+
+    @Test func liftReportGathersOneLiftsSpan() throws {
+        let sessions = [
+            Fixture.session(days: -120, [bench(90)]),
+            Fixture.session(days: -14, [bench(100), ("back-squat", [Fixture.set(5, 140)])]),
+            Fixture.session(days: -7, [bench(105)]),
+            Fixture.session(days: 0, [bench(110), ("back-squat", [Fixture.set(5, 150)])]),
+        ]
+        let history = TrainingHistory(sessions: sessions, library: library)
+        let report = TrainingInsights.liftReport("barbell-bench-press", in: history, span: .fourWeeks, through: wednesday)
+        #expect(report.from == LocalDate("2026-09-14"))
+        #expect(report.sessions.map(\.date.description) == ["2026-09-21", "2026-09-28", "2026-10-05"])
+        #expect(report.statistics?.totalSets == 9)
+        #expect(report.statistics?.heaviestLoad == .kg(110))
+        #expect(report.summary?.sessions == 3)
+        #expect(report.bestSets.first?.record.set.primary.load == .kg(110))
+        #expect(report.records.allSatisfy { $0.record.exerciseID == "barbell-bench-press" })
+        #expect(report.records.first?.date == LocalDate("2026-10-05"))
+        // Bench's first session was months earlier, so the span's first session sets records too.
+        #expect(report.records.contains { $0.date == LocalDate("2026-09-21") })
+        let all = TrainingInsights.liftReport("barbell-bench-press", in: history, span: .all, through: wednesday)
+        #expect(all.sessions.count == 4)
+        let none = TrainingInsights.liftReport("deadlift", in: history, span: .all, through: wednesday)
+        #expect(none.sessions.isEmpty && none.statistics == nil && none.summary == nil && none.records.isEmpty)
+    }
+
+    @Test func weeklyAveragesUseCompleteWeeks() {
+        let sessions = [
+            Fixture.session(days: -14, [bench(100)]),
+            Fixture.session(days: -13, [bench(100)]),
+            Fixture.session(days: 0, [bench(100)]),
+        ]
+        let history = TrainingHistory(sessions: sessions, library: library)
+        let report = TrainingInsights.report(history, span: .fourWeeks, through: wednesday)
+        #expect(report.weeks.map(\.sessions) == [2, 0, 1])
+        #expect(report.weeklyAverage { Double($0.sessions) } == 1)
+        #expect(report.weeklyAverage(\.sets) == 3)
+        #expect(report.trainedWeeks == 2)
+        let first = TrainingInsights.report(TrainingHistory(sessions: [sessions[2]], library: library), span: .fourWeeks, through: wednesday)
+        #expect(first.weeklyAverage { Double($0.sessions) } == 1)
+        let empty = TrainingInsights.report(TrainingHistory(sessions: [], library: library), span: .fourWeeks, through: wednesday)
+        #expect(empty.weeklyAverage(\.sets) == nil)
+    }
+
     // MARK: Report
 
     @Test func reportPutsTheSpanTogether() throws {

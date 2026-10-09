@@ -51,8 +51,9 @@ public enum TrainingInsights {
     }
 
     /// Weekly sets for one muscle over the span's complete weeks.
-    public struct MuscleLoad: Sendable, Hashable {
+    public struct MuscleLoad: Sendable, Hashable, Identifiable {
         public var muscle: Muscle
+        public var id: Muscle { muscle }
         /// Mean fractional sets per complete week, or this week's so far when
         /// there is no complete week yet.
         public var averageSets: Double
@@ -94,6 +95,24 @@ public enum TrainingInsights {
         public var change: Double? { trend.map { $0.slopePerWeek * Double($0.from.days(until: $0.through)) / 7 } }
         /// The change as a share of the trend's mean.
         public var relativeChange: Double? { trend.flatMap { trend in change.map { $0 / trend.meanOneRepMax } } }
+
+        /// The trend's fitted line from the first session to the last, for drawing.
+        public var trendLine: TrendLine? {
+            guard let trend, let first = points.first?.date, let last = points.last?.date, first < last else { return nil }
+            let xs = points.map { Double(first.days(until: $0.date)) / 7 }
+            let meanX = xs.reduce(0, +) / Double(xs.count)
+            let span = Double(first.days(until: last)) / 7
+            return TrendLine(start: first, startValue: trend.meanOneRepMax + trend.slopePerWeek * (0 - meanX),
+                             end: last, endValue: trend.meanOneRepMax + trend.slopePerWeek * (span - meanX))
+        }
+    }
+
+    /// A straight line between two dates, in kilograms.
+    public struct TrendLine: Sendable, Hashable {
+        public var start: LocalDate
+        public var startValue: Double
+        public var end: LocalDate
+        public var endValue: Double
     }
 
     /// A personal record with the day and workout it was set in.
@@ -151,6 +170,16 @@ public enum TrainingInsights {
 
         /// True when there are too few complete weeks to judge weekly volume.
         public var isVolumeProvisional: Bool { completeWeeks < minimumWeeksToJudge }
+        /// Weeks in the span with at least one session.
+        public var trainedWeeks: Int { weeks.filter { $0.sessions > 0 }.count }
+
+        /// The mean of a weekly value over complete weeks, or over the
+        /// current week alone before any week is complete. Nil without weeks.
+        public func weeklyAverage(_ value: (Week) -> Double) -> Double? {
+            let complete = weeks.filter { !$0.isPartial }
+            let pool = complete.isEmpty ? weeks : complete
+            return pool.isEmpty ? nil : pool.map(value).reduce(0, +) / Double(pool.count)
+        }
         public var tonnage: Tonnage { weeks.reduce(.zero) { $0 + $1.tonnage } }
         public var sets: Double { weeks.reduce(0) { $0 + $1.sets } }
     }
@@ -277,15 +306,53 @@ public enum TrainingInsights {
     /// Lifts with an e1RM in the range, most sessions first, then most sets.
     public static func lifts(_ history: TrainingHistory, from: LocalDate, through end: LocalDate) -> [LiftSummary] {
         let ids = Set(history.sessions.filter { (from...end).contains($0.localDate) }.flatMap { $0.exercises.map(\.exerciseID) })
-        let days = from.days(until: end) + 1
-        let lifts = ids.compactMap { id -> LiftSummary? in
-            let points = points(of: id, in: history, from: from, through: end)
-            guard let latest = points.last, let best = points.max(by: { $0.oneRepMax < $1.oneRepMax }) else { return nil }
-            return LiftSummary(exerciseID: id, sessions: points.count, sets: history.sets(of: id, from: from, through: end).count,
-                               points: points, best: best, latest: latest,
-                               trend: TrainingSignals.trend(of: id, in: history, through: end, days: days))
-        }
-        return lifts.sorted { ($0.sessions, $0.sets, $1.exerciseID) > ($1.sessions, $1.sets, $0.exerciseID) }
+        return ids.compactMap { summary(of: $0, in: history, from: from, through: end) }
+            .sorted { ($0.sessions, $0.sets, $1.exerciseID) > ($1.sessions, $1.sets, $0.exerciseID) }
+    }
+
+    /// One lift's e1RM over the range, or nil when no set in it has one.
+    public static func summary(of exerciseID: ExerciseID, in history: TrainingHistory, from: LocalDate,
+                               through end: LocalDate) -> LiftSummary? {
+        let points = points(of: exerciseID, in: history, from: from, through: end)
+        guard let latest = points.last, let best = points.max(by: { $0.oneRepMax < $1.oneRepMax }) else { return nil }
+        return LiftSummary(exerciseID: exerciseID, sessions: points.count,
+                           sets: history.sets(of: exerciseID, from: from, through: end).count,
+                           points: points, best: best, latest: latest,
+                           trend: TrainingSignals.trend(of: exerciseID, in: history, through: end, days: from.days(until: end) + 1))
+    }
+
+    /// Everything a lift's detail shows for a span.
+    public struct LiftReport: Sendable, Hashable {
+        public var exerciseID: ExerciseID
+        public var from: LocalDate
+        public var through: LocalDate
+        /// Each session in the span, oldest first.
+        public var sessions: [LiftSession]
+        /// Every working set in the span together: MacroFactor's exercise stats.
+        public var statistics: ExerciseStatistics?
+        /// The e1RM trend, when any set has an e1RM.
+        public var summary: LiftSummary?
+        public var bestSets: [RankedSet]
+        /// The lift's records in the span, newest first.
+        public var records: [DatedRecord]
+    }
+
+    public static func liftReport(_ exerciseID: ExerciseID, in history: TrainingHistory, span: Span, through end: LocalDate,
+                                  firstWeekday: Weekday = .monday) -> LiftReport {
+        let from = span.start(through: end, firstSession: history.sessions.map(\.localDate).min(), firstWeekday: firstWeekday)
+        let records = history.sessions
+            .filter { (from...end).contains($0.localDate) && $0.exercises.contains { $0.exerciseID == exerciseID } }
+            .reversed()
+            .flatMap { session in
+                history.records(in: session).filter { $0.exerciseID == exerciseID }
+                    .map { DatedRecord(record: $0, date: session.localDate, sessionName: session.name) }
+            }
+        return LiftReport(exerciseID: exerciseID, from: from, through: end,
+                          sessions: sessions(of: exerciseID, in: history, from: from, through: end),
+                          statistics: history.statistics(of: exerciseID, from: from, through: end),
+                          summary: summary(of: exerciseID, in: history, from: from, through: end),
+                          bestSets: bestSets(of: exerciseID, in: history, from: from, through: end),
+                          records: records)
     }
 
     /// One session of a lift: its statistics and its best set by e1RM.
