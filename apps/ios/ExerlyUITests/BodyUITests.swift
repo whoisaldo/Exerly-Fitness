@@ -59,7 +59,7 @@ final class BodyUITests: ExerlyUITestCase {
         settle(app)
         tap(app.buttons["Progress"], in: app)
         // Setup's 72.25 kg becomes an ExerlyCore weigh-in.
-        XCTAssertTrue(app.buttons["Weigh-in, Today, 72.3 kilograms"].waitForExistence(timeout: 30), app.debugDescription)
+        XCTAssertTrue(app.buttons["Weigh-in, Today, 72.25 kilograms"].waitForExistence(timeout: 30), app.debugDescription)
         let setup = try await waitForWeighIn(token: person.token) { ($0["weight"] as? [String: Any])?["value"] as? Double == 72.25 }
         XCTAssertEqual(setup?["date"] as? String, today)
 
@@ -124,13 +124,14 @@ final class BodyUITests: ExerlyUITestCase {
         settle(app)
         tap(app.buttons["Progress"], in: app)
         XCTAssertTrue(app.descendants(matching: .any)["body.chart"].waitForExistence(timeout: 30))
+        tap(app.buttons["body.range.3M"], in: app)
         try await Task.sleep(for: .seconds(1))
         capture(app, "body-01-progress")
-        reveal(app.descendants(matching: .any)["body.expenditure"], in: app)
+        app.swipeUp(velocity: .slow)
         capture(app, "body-02-expenditure")
-        app.swipeUp()
+        app.swipeUp(velocity: .slow)
         capture(app, "body-03-history")
-        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        for _ in 0..<4 { app.swipeDown() }
         tap(app.buttons["body.weighIn"], in: app)
         XCTAssertTrue(app.buttons["weighIn.value"].waitForExistence(timeout: 5))
         try await Task.sleep(for: .seconds(0.6))
@@ -153,7 +154,7 @@ final class BodyUITests: ExerlyUITestCase {
         let chart = app.descendants(matching: .any)["body.chart"]
         chart.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.5)).press(forDuration: 0.6)
         capture(app, "body-07-one-month")
-        reveal(app.descendants(matching: .any)["weightCard"], in: app)
+        for _ in 0..<6 { app.swipeUp() }
         capture(app, "body-08-card")
     }
 

@@ -55,6 +55,13 @@ public enum WeightTrend {
         public var loggedDays: Int
         public var weighInDays: Int
 
+        public init(kcal: Double, error: Double, loggedDays: Int, weighInDays: Int) {
+            self.kcal = kcal
+            self.error = error
+            self.loggedDays = loggedDays
+            self.weighInDays = weighInDays
+        }
+
         public var isMeasured: Bool {
             loggedDays >= WeightTrend.minimumLoggedDays && weighInDays >= WeightTrend.minimumWeighInDays
                 && error <= WeightTrend.maximumExpenditureError

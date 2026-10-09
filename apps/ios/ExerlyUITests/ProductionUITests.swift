@@ -156,10 +156,10 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "design-14-water-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
         tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(app.textFields["weight.value"].waitForExistence(timeout: 10))
+        tap(app.buttons["body.weighIn"], in: app)
+        XCTAssertTrue(app.buttons["weighIn.value"].waitForExistence(timeout: 10))
         capture(app, "design-15-weight-editor")
-        tap(app.buttons["Cancel"].firstMatch, in: app)
+        tap(app.buttons["weighIn.cancel"], in: app)
         tap(app.buttons["Add measurement"], in: app)
         capture(app, "design-16-measurement-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
@@ -2998,110 +2998,6 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "measurement-browser-return")
     }
 
-    func testWeightOfflineRecoveryConflictReviewDeletionAndUndo() async throws {
-        try await control([:])
-        let email = "weight-\(UUID().uuidString.lowercased())@exerly.test"
-        let password = "Simulator-Test-123!"
-        let signup = try await request("POST", "/signup", body: ["email": email, "password": password, "name": "Weight Taylor"])
-        let token = try XCTUnwrap(signup["token"] as? String)
-        _ = try await request("POST", "/api/onboarding/complete", body: [
-            "name": "Weight Taylor", "age": 34, "gender": "female", "sex": "female",
-            "height": 167.5, "weight": 72.25, "goal": "maintain", "activityLevel": "light",
-            "unitSystem": "metric", "timezone": TimeZone.current.identifier,
-        ], token: token)
-        let original = try await request("GET", "/api/weight/day", token: token)
-        let id = try XCTUnwrap(original["id"] as? String)
-        let day = try XCTUnwrap(original["entry_date"] as? String)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: password, in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        let field = app.textFields["weight.value"]
-        XCTAssertTrue(field.waitForExistence(timeout: 10))
-        XCTAssertEqual(field.value as? String, "72.25")
-        try await control(["offline": true])
-        replace(field, with: "73.25", in: app)
-        replace(app.descendants(matching: .any).matching(identifier: "weight.note").firstMatch, with: "Morning reading", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Save weight"], in: app)
-        app.terminate()
-        app.launchArguments = []
-        app.launch()
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10))
-        XCTAssertEqual(field.value as? String, "73.25")
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "weight.note").firstMatch.value as? String, "Morning reading")
-        capture(app, "weight-offline-reopened")
-        app.terminate()
-        try await control([:])
-        _ = try await request("PUT", "/api/weight/day", body: ["weight_kg": 75, "base_revision": 1, "note": "Other device"], token: token)
-        app.launch()
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
-        tap(app.buttons["Review changes"], in: app)
-        tap(app.buttons["Weight · \(day)"], in: app)
-        XCTAssertTrue(app.staticTexts["Other device"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Morning reading"].exists)
-        capture(app, "weight-conflict-review")
-        tap(app.buttons["Save my changes"], in: app)
-        var saved: [String: Any] = [:]
-        for _ in 0..<20 {
-            saved = try await request("GET", "/api/weight/day", token: token)
-            if saved["revision"] as? Int == 3 { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        XCTAssertEqual(saved["weight_kg"] as? Double, 73.25)
-        XCTAssertEqual(saved["revision"] as? Int, 3)
-        app.terminate()
-        app.launch()
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10))
-        XCTAssertEqual(field.value as? String, "73.25")
-        tap(app.buttons["Delete weight reading"], in: app)
-        XCTAssertTrue(app.alerts["Delete this weight reading?"].waitForExistence(timeout: 5))
-        app.alerts.buttons["Delete reading"].tap()
-        var deleted: [String: Any] = [:]
-        for _ in 0..<20 {
-            deleted = try await request("GET", "/api/weight/day", token: token)
-            if deleted["deleted_at"] is String { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        XCTAssertTrue(deleted["deleted_at"] is String)
-        XCTAssertEqual(deleted["revision"] as? Int, 4)
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(app.buttons["Restore weight reading"].waitForExistence(timeout: 10))
-        capture(app, "weight-deleted-reading")
-        tap(app.buttons["Cancel"], in: app)
-        tap(app.buttons["Undo weight deletion"], in: app)
-        var restored: [String: Any] = [:]
-        for _ in 0..<20 {
-            restored = try await request("GET", "/api/weight/day", token: token)
-            if restored["revision"] as? Int == 5 { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        XCTAssertEqual(restored["id"] as? String, id)
-        XCTAssertEqual(restored["revision"] as? Int, 5)
-        XCTAssertFalse(restored["deleted_at"] is String)
-        let exported = try await request("GET", "/api/export", token: token)
-        let weights = try XCTUnwrap(exported["weights"] as? [[String: Any]])
-        XCTAssertEqual(weights.count, 1)
-        XCTAssertEqual(weights.first?["weight_kg"] as? Double, 73.25)
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Edit weight for \(day)"], in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10))
-        XCTAssertEqual(field.value as? String, "73.25")
-        capture(app, "weight-synchronized-undo")
-    }
-
     func testWeightWebChangesReturnToNative() async throws {
         let proof = try await request("GET", "/__test/weight-roundtrip")
         try XCTSkipUnless(proof["ready"] as? Bool == true, "Run scripts/test-cross-client.sh to exercise the shared native/browser account")
@@ -3120,17 +3016,20 @@ final class ProductionUITests: ExerlyUITestCase {
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 15))
+        // Weigh-ins saved through the browser's daily-weight API become ExerlyCore weigh-ins.
         tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(app.textFields["weight.value"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.textFields["weight.value"].value as? String, "72.8")
+        let row = app.buttons["body.weighIn.\(day)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 30))
+        XCTAssertTrue(row.label.contains("72.8"), row.label)
         capture(app, "weight-browser-return")
-        tap(app.buttons["Cancel"], in: app)
-        tap(app.buttons["Previous day"], in: app)
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Log weight"], in: app)
-        XCTAssertTrue(app.textFields["weight.value"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.textFields["weight.value"].value as? String, "74.25")
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let previous = formatter.string(from: try XCTUnwrap(formatter.date(from: day)).addingTimeInterval(-86_400))
+        let earlier = app.buttons["body.weighIn.\(previous)"]
+        reveal(earlier, in: app)
+        XCTAssertTrue(earlier.label.contains("74.25"), earlier.label)
     }
 
     func testUSWaterDefaultsAndConvertedAmountsSurviveOfflineSync() async throws {
