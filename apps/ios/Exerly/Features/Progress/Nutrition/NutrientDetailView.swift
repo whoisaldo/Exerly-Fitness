@@ -52,7 +52,7 @@ struct NutrientDetailView: View {
                 : "Not reported by any food logged on these days")
             .accessibilityIdentifier("nutrition.detail.average")
             if goal != nil { NutrientGoalBar(average: reported ? row.average : nil, goal: goal, nutrient: nutrient, height: 8) }
-            VStack(spacing: ExSpacing.small) {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
                 if let target = goal?.target {
                     fact("Target", IntakeFormat.amount(target, nutrient) + vary, spoken: IntakeFormat.spokenAmount(target, nutrient) + vary)
                 }
@@ -104,6 +104,7 @@ struct NutrientDetailView: View {
             Text(value).font(.exCaption.weight(.medium)).foregroundStyle(Color.exTextPrimary).monospacedDigit()
                 .multilineTextAlignment(typeSize.isAccessibilitySize ? .leading : .trailing)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(title): \(spoken)")
     }
@@ -147,18 +148,23 @@ struct NutrientDetailView: View {
 
     private func foodRow(_ food: FoodContribution, rank: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
-                if !typeSize.isAccessibilitySize {
+            if typeSize.isAccessibilitySize {
+                Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
+                Text(IntakeFormat.percent(food.share)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+                Text(foodDetail(food)).font(.exSmall).foregroundStyle(Color.exTextMuted).monospacedDigit()
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
                     Text("\(rank)").font(.exCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Color.exTextMuted)
                         .frame(minWidth: 18, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
+                        Text(foodDetail(food)).font(.exSmall).foregroundStyle(Color.exTextMuted).monospacedDigit()
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: ExSpacing.small)
+                    Text(IntakeFormat.percent(food.share)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
                 }
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
-                    Text(foodDetail(food)).font(.exSmall).foregroundStyle(Color.exTextMuted).monospacedDigit()
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: ExSpacing.small)
-                Text(IntakeFormat.percent(food.share)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
             }
             ExProgressBar(value: food.share, total: 1, color: IntakeFormat.color(nutrient))
                 .padding(.leading, typeSize.isAccessibilitySize ? 0 : 26)

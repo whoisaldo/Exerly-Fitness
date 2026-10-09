@@ -37,11 +37,15 @@ struct IntakeTrendCard: View {
 
     // MARK: Tiles
 
+    /// Four across when they fit unscaled, else two by two, else one column.
     private var tiles: some View {
-        let columns = typeSize.isAccessibilitySize ? 1 : typeSize >= .xxLarge ? 2 : 4
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: ExSpacing.small), count: columns),
-                         spacing: ExSpacing.small) {
-            ForEach(Self.metrics, id: \.self) { tile($0) }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: ExSpacing.small) { ForEach(Self.metrics, id: \.self) { tile($0) } }
+            Grid(horizontalSpacing: ExSpacing.small, verticalSpacing: ExSpacing.small) {
+                GridRow { tile(.energy); tile(.protein) }
+                GridRow { tile(.carbohydrate); tile(.fat) }
+            }
+            VStack(spacing: ExSpacing.small) { ForEach(Self.metrics, id: \.self) { tile($0) } }
         }
     }
 
@@ -61,9 +65,10 @@ struct IntakeTrendCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(average.map { IntakeFormat.number($0, nutrient.unit) } ?? "–").font(.exStatSmall).monospacedDigit()
                         .foregroundStyle(Color.exTextPrimary)
-                    Text(nutrient.unit.rawValue).font(.exSmall).foregroundStyle(Color.exTextMuted)
+                    // The tile's name already says calories.
+                    if nutrient != .energy { Text(nutrient.unit.rawValue).font(.exSmall).foregroundStyle(Color.exTextMuted) }
                 }
-                .lineLimit(1).minimumScaleFactor(0.7)
+                .lineLimit(1)
                 ExProgressBar(value: comparison?.share ?? 0, total: 1, color: IntakeFormat.color(nutrient))
                 Text(comparison?.share.map(IntakeFormat.percent) ?? "No target").font(.exSmall).monospacedDigit()
                     .foregroundStyle(Color.exTextMuted).lineLimit(1)

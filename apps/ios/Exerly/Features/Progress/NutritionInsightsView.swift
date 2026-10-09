@@ -199,15 +199,21 @@ private struct NutritionInsightsContent: View {
                     .accessibilityIdentifier("nutrition.topFoods.all")
                 }
                 ForEach(Array(energy.foods.prefix(5).enumerated()), id: \.element.id) { index, food in
+                    let amount = range == .yesterday ? IntakeFormat.amount(food.amount, .energy)
+                        : "\(IntakeFormat.amount(food.perDay, .energy)) a day"
                     VStack(alignment: .leading, spacing: 5) {
-                        HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
-                            Text(food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-                            Spacer(minLength: ExSpacing.small)
-                            Text(range == .yesterday ? IntakeFormat.amount(food.amount, .energy) : "\(IntakeFormat.amount(food.perDay, .energy)) a day")
-                                .font(.exCaption).monospacedDigit()
-                                .foregroundStyle(Color.exTextMuted)
-                            Text(IntakeFormat.percent(food.share)).font(.exCaption.weight(.semibold)).monospacedDigit()
-                                .foregroundStyle(Color.exTextPrimary).frame(minWidth: 36, alignment: .trailing)
+                        if typeSize.isAccessibilitySize {
+                            Text(food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
+                            Text("\(IntakeFormat.percent(food.share)) · \(amount)").font(.exCaption).monospacedDigit()
+                                .foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+                                Text(food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(1)
+                                Spacer(minLength: ExSpacing.small)
+                                Text(amount).font(.exCaption).monospacedDigit().foregroundStyle(Color.exTextMuted)
+                                Text(IntakeFormat.percent(food.share)).font(.exCaption.weight(.semibold)).monospacedDigit()
+                                    .foregroundStyle(Color.exTextPrimary).frame(minWidth: 36, alignment: .trailing)
+                            }
                         }
                         ExProgressBar(value: food.share, total: energy.foods.first?.share ?? 1, color: .exPrimary)
                     }
