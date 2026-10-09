@@ -37,6 +37,11 @@ now on must produce a change Ali can see on his phone.
   the Device panel. Ship an internal TestFlight build whenever something visible changed,
   at least daily. A minor flaw is a reason to fix it in the next build, not to withhold
   this one.
+- **Waiting inside T3.** `ScheduleWakeup` and cron never fire in T3 threads, and T3 stops
+  a session after 30 idle minutes with no background work. Never end a turn without
+  something running in the background. If no helper or test is running, start
+  `sleep 1200` with `run_in_background`; its completion wakes you. After a restart,
+  resume stopped helpers with SendMessage and check their worktrees.
 
 ## Ranked outcomes
 
