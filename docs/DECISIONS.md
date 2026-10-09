@@ -324,3 +324,23 @@ home screen. Removed along the way:
 
 Finishing a workout now shows a summary with time, working sets, volume and
 any personal records.
+
+## 2026-10-09: Releases sign in the user's session
+
+Agent shells on devbox1 can run in a Background launchd session, where macOS
+consults only the System keychain domain. There Xcode can't see the signing
+identity that `release.sh` imports into its temporary keychain, and archives
+fail with "No signing certificate". `apps/ios/scripts/release-in-session.sh`
+runs the unchanged `release.sh` as a transient job in the logged-in user's GUI
+session. That job can't read `~/Desktop`, so the committed `apps/ios` is
+exported to `~/Library/Caches/exerly-release/<build>` first, which also means
+every build comes from a commit. Nothing about certificates, profiles or the
+keychain handling changed.
+
+## 2026-10-09: CI runs unit tests and tap budgets; the full UI suite runs locally
+
+The iOS job ran every UI test on one GitHub runner, took over three hours, and
+never finished green. CI now runs the unit tests and the Today tap-budget tests
+within an hour. The full UI suite runs locally before each landing, sharded
+across simulators with one fixture each. The browser round-trip step went with
+it, since the web dashboard is out of scope.
