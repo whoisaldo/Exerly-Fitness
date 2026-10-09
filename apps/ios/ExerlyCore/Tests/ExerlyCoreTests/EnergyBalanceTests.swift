@@ -16,6 +16,8 @@ import Testing
         var logBias = 1.0
         var weighInChance = 0.9
         var completeChance = 0.85
+        /// The first day food is logged; days before it are weighed but not logged.
+        var loggingStarts = 0
         /// (days, change from starting expenditure).
         var phases: [(Int, Double)] = [(14, 0), (70, -500), (56, 0)]
     }
@@ -53,7 +55,7 @@ import Testing
             let scale = weight + water + 0.1 * random.normal()
             let roll = random.unit()
             let logged: Double? = roll < person.completeChance ? max(0, intake * person.logBias + 120 * random.normal()) : nil
-            days.append(EnergyBalance.Day(date: start.adding(days: day), intake: logged,
+            days.append(EnergyBalance.Day(date: start.adding(days: day), intake: day < person.loggingStarts ? nil : logged,
                                           weights: random.unit() < person.weighInChance ? [scale] : []))
             truthE.append(expenditure * person.logBias)
             truthW.append(weight)
@@ -142,6 +144,93 @@ import Testing
             #expect(Double(score.covered) / Double(score.expenditure.count) >= 0.88, "The band is honest")
             #expect(Score.mean(score.trend) < Score.mean(score.legacyTrend))
             #expect(Score.mean(score.expenditure) <= Score.mean(score.legacyExpenditure))
+        }
+    }
+
+    // MARK: Logging that starts late
+
+    /// One estimate's error against the truth on a simulated day.
+    struct Sample {
+        var day: Int
+        var trend: Double
+        var expenditure: Double
+        /// The ±2 SD expenditure band holds the truth.
+        var covered: Bool
+    }
+
+    /// Errors for every day: real-time, as the trend card sees each day, and in
+    /// the smoothed history the chart draws once the whole series is known.
+    static func run(_ people: [Person]) -> (realTime: [Sample], history: [Sample]) {
+        var realTime: [Sample] = [], history: [Sample] = []
+        for person in people {
+            let truth = simulate(person)
+            func sample(_ day: Int, _ estimate: EnergyBalance.Estimate) -> Sample {
+                let error = estimate.expenditure - truth.expenditure[day]
+                return Sample(day: day, trend: estimate.trend - truth.weight[day], expenditure: error,
+                              covered: abs(error) <= 2 * estimate.expenditureError)
+            }
+            for day in 0..<person.days {
+                if let latest = EnergyBalance.estimate(Array(truth.days[...day])).last { realTime.append(sample(day, latest)) }
+            }
+            let all = EnergyBalance.estimate(truth.days)
+            for (index, estimate) in all.enumerated() { history.append(sample(person.days - all.count + index, estimate)) }
+        }
+        return (realTime, history)
+    }
+
+    struct Window: CustomStringConvertible {
+        /// Mean absolute errors, the worst day's mean trend error, and band coverage.
+        var trend: Double, worstDayTrend: Double, expenditure: Double, covered: Double
+
+        init(_ samples: [Sample], days: ClosedRange<Int>) {
+            let inside = samples.filter { days.contains($0.day) }
+            trend = Score.mean(inside.map(\.trend))
+            expenditure = Score.mean(inside.map(\.expenditure))
+            covered = Double(inside.filter(\.covered).count) / Double(max(1, inside.count))
+            worstDayTrend = days.map { day in Score.mean(inside.filter { $0.day == day }.map(\.trend)) }.max() ?? 0
+        }
+
+        var description: String {
+            String(format: "trend |%.2f| kg (worst day %.2f), expenditure |%.0f| kcal, band covers %.0f%%",
+                   trend, worstDayTrend, expenditure, covered * 100)
+        }
+    }
+
+    /// The M5b people through nine weeks of a steady 500 kcal deficit, weighed
+    /// most days, with food logged from `loggingStarts` on.
+    static func lateLoggers(from loggingStarts: Int, phases: [(Int, Double)] = [(63, -500)]) -> [Person] {
+        people(weighIns: 0.9).map { person in
+            var person = person
+            person.days = 63
+            person.phases = phases
+            person.loggingStarts = loggingStarts
+            return person
+        }
+    }
+
+    /// Weeks of weigh-ins before any food is logged, a common history. The
+    /// weight change before logging must move the trend, not expenditure, and
+    /// expenditure must stay uncertain until logged days pin it down.
+    @Test func logsThatStartWeeksAfterTheWeighInsKeepTheTrendAndAnHonestExpenditure() {
+        let scenarios: [(String, [Person])] = [
+            ("always logged", Self.lateLoggers(from: 0)),
+            ("logged from day 21", Self.lateLoggers(from: 21)),
+            ("never logged", Self.lateLoggers(from: 63)),
+            ("diet and logging start on day 21", Self.lateLoggers(from: 21, phases: [(21, 0), (42, -500)])),
+        ]
+        for (name, people) in scenarios {
+            let (realTime, history) = Self.run(people)
+            for (label, samples) in [("real-time", realTime), ("history", history)] {
+                print("Late logging, \(name), \(label): all \(Window(samples, days: 0...62)); "
+                    + "days 14-34 \(Window(samples, days: 14...34)); before logging \(Window(samples, days: 0...20))")
+            }
+            for day in [7, 14, 18, 20, 21, 22, 24, 28, 35, 42, 56, 62] {
+                let r = realTime.filter { $0.day == day }, h = history.filter { $0.day == day }
+                print(String(format: "  %@ day %2d: real-time trend %.2f E %.0f cov %.0f%% | history trend %.2f E %.0f",
+                             name, day, Score.mean(r.map(\.trend)), Score.mean(r.map(\.expenditure)),
+                             Double(r.filter(\.covered).count) * 100 / Double(max(1, r.count)),
+                             Score.mean(h.map(\.trend)), Score.mean(h.map(\.expenditure))))
+            }
         }
     }
 
