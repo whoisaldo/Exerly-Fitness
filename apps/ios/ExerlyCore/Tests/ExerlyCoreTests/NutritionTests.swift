@@ -209,7 +209,7 @@ enum Foods {
         let parts = try nutrition.logIngredients(of: porridge, serving: porridge.servings[0], on: monday, meal: "Breakfast")
         #expect(parts.map(\.food.name) == ["Rolled oats", "Milk"] && parts.map(\.grams) == [40, 150])
         let whole = try NutritionStore.preview(porridge, grams: 200).nutrients
-        #expect(close(parts.reduce(0) { $0 + ($1.nutrients.energy ?? 0) }, whole.energy))
+        #expect(close(parts.reduce(0) { $0 + $1.nutrients.energy }, whole.energy))
         #expect(throws: NutritionStore.StoreError.invalid(["Rolled oats has no ingredients"])) {
             try nutrition.logIngredients(of: Foods.oats, grams: 100, on: monday, meal: "Breakfast")
         }

@@ -42,7 +42,7 @@ struct NutritionPlateView: View {
                                 .accessibilityIdentifier("nutrition.plateSummary")
                             if let summary = draft.summary {
                                 NutritionDailySummary(amounts: summary.totals, targets: nil, progress: draft.progress,
-                                                      showHeading: false, showTargetNote: false)
+                                                      showHeading: false)
                             }
                         }
                         VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -185,7 +185,7 @@ private struct NutritionPlatePortionEditor: View {
                     if let amount = try? draft.preview() {
                         ExCard(accent: true) {
                             ExEyebrow("This portion", color: .exPrimaryText)
-                            NutritionDailySummary(amounts: amount.nutrients, targets: nil, showHeading: false, showTargetNote: false)
+                            NutritionDailySummary(amounts: amount.nutrients, targets: nil, showHeading: false)
                         }
                     }
                     if !errors.isEmpty {

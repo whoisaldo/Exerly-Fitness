@@ -164,7 +164,7 @@ private struct NutritionLibraryDetail: View {
                     Text(food.name).font(.exH2)
                     if let brand = food.brand { Text(brand).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
                     ExEyebrow("Per 100 g")
-                    NutritionDailySummary(amounts: food.per100g, targets: nil, showHeading: false, showTargetNote: false)
+                    NutritionDailySummary(amounts: food.per100g, targets: nil, showHeading: false)
                     if food.archivedAt == nil {
                         Button("Log this food", systemImage: "plus") { destination = .log(food) }
                             .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.libraryLog")

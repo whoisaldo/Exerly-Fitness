@@ -332,28 +332,6 @@ extension APIClient {
     }
 }
 
-// MARK: - Program
-
-extension APIClient {
-    func getProgram() async throws -> ProgramDTO {
-        try await get("/api/program")
-    }
-
-    func updateProgram(_ update: ProgramUpdateRequest) async throws -> ProgramDTO {
-        try await put("/api/program", body: update)
-    }
-
-    /// Re-measures expenditure and moves the targets. Weekly is the intended
-    /// cadence; the server reports `needsCheckin` when one is due.
-    func runCheckin() async throws -> CheckinResponseDTO {
-        try await post("/api/program/checkin")
-    }
-
-    func getCheckins(limit: Int = 12) async throws -> [CheckinDTO] {
-        let safeLimit = min(104, max(1, limit))
-        return try await get("/api/program/checkins?limit=\(safeLimit)")
-    }
-}
 
 // MARK: - Daily summary
 

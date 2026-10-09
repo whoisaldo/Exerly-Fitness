@@ -47,8 +47,9 @@ public enum NutritionCheckIn {
     /// Reviews the check-in due by `today` for `plan`, the version in force.
     /// `days` is the log up to yesterday (`NutritionStore.energyBalanceDays`),
     /// and `prior` an expenditure guess for its start, with one standard deviation.
+    /// Evidence text uses `unit`; the plan and its numbers stay in kilograms.
     public static func review(plan: NutritionPlan, days: [EnergyBalance.Day], prior: (mean: Double, error: Double)?,
-                              today: LocalDate, existing: [Proposal], now: Date) throws -> Review {
+                              today: LocalDate, existing: [Proposal], now: Date, unit: MassUnit = .kilograms) throws -> Review {
         let date = today.startOfWeek(firstWeekday: plan.checkInDay)
         let id = UUID(named: "\(plan.id.uuidString)/\(date)", in: namespace)
         let week = days.filter { $0.date < date && $0.date >= date.adding(days: -7) }
@@ -100,8 +101,8 @@ public enum NutritionCheckIn {
                 level: .personalData, caveats: caveats, dataRefs: [planRef]),
         ]
         if let change = review.weekChange {
-            evidence.append(Evidence(claim: "Your trend weight changed \(kilograms(change)) this week; the goal is "
-                + "\(kilograms(goalPerWeek)) a week.", level: .personalData, caveats: ["n=1"], dataRefs: [planRef]))
+            evidence.append(Evidence(claim: "Your trend weight changed \(mass(change, unit)) this week; the goal is "
+                + "\(mass(goalPerWeek, unit)) a week.", level: .personalData, caveats: ["n=1"], dataRefs: [planRef]))
         }
         let confidence: Confidence = estimate.expenditureError < 100 ? .high : estimate.expenditureError < 175 ? .medium : .low
         review.outcome = .proposed
@@ -112,25 +113,26 @@ public enum NutritionCheckIn {
                 + "\(Int(after.rounded())) kcal, from your expenditure and trend weight.",
             changes: [try ProposedChange(kind: NutritionStore.planKind, id: next.id.uuidString, before: nil as NutritionPlan?, after: next)],
             evidence: evidence, confidence: confidence,
-            falsifier: "Your trend weight keeps moving \(kilograms(goalPerWeek)) a week on the current targets.")
+            falsifier: "Your trend weight keeps moving \(mass(goalPerWeek, unit)) a week on the current targets.")
         return review
     }
 
-    private static func kilograms(_ value: Double) -> String {
-        let rounded = (value * 100).rounded() / 100
-        return "\(rounded > 0 ? "+" : "")\(rounded == 0 ? "0" : String(rounded)) kg"
+    /// A signed change in kilograms, written in `unit` to two decimals.
+    private static func mass(_ kilograms: Double, _ unit: MassUnit) -> String {
+        let rounded = (kilograms / unit.kilogramsPerUnit * 100).rounded() / 100
+        return "\(rounded > 0 ? "+" : "")\(rounded == 0 ? "0" : String(rounded)) \(unit.rawValue)"
     }
 }
 
 extension NutritionStore {
     /// The check-in due by `today` for the plan in force, from this store's log.
     /// The first plan's basis is the prior for expenditure. Nil without a plan.
-    public func checkIn(today: LocalDate, existing: [Proposal]) throws -> NutritionCheckIn.Review? {
+    public func checkIn(today: LocalDate, existing: [Proposal], unit: MassUnit = .kilograms) throws -> NutritionCheckIn.Review? {
         guard let plan = plan(on: today), let first = plans.first else { return nil }
         let start = min(weights.first?.date ?? first.startDate, first.startDate)
         let days = energyBalanceDays(from: start, through: today.adding(days: -1))
         return try NutritionCheckIn.review(plan: plan, days: days,
                                            prior: first.basis.map { ($0.expenditure, $0.expenditureError) },
-                                           today: today, existing: existing, now: Date())
+                                           today: today, existing: existing, now: Date(), unit: unit)
     }
 }

@@ -140,7 +140,7 @@ import Testing
         #expect(proposal.author == EntryErrorDetector.author)
         #expect(proposal.falsifier == "You really did 1050 kg for 5 reps.")
         #expect(proposal.evidence.first?.level == .personalData)
-        #expect(try JSONValue.diff(proposal.changes[0].before, proposal.changes[0].after).map(\.path)
+        #expect(JSONValue.diff(proposal.changes[0].before, proposal.changes[0].after).map(\.path)
             == ["exercises[0].sets[1].efforts[0].load.value"])
         // Never twice for the same session, whatever the person decided.
         #expect(try EntryErrorDetector.proposal(for: today, history: log, existing: [proposal], now: Self.monday) == nil)

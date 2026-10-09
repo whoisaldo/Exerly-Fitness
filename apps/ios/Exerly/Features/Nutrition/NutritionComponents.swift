@@ -85,7 +85,6 @@ struct NutritionDailySummary: View {
     let targets: DailyTargets?
     var progress: DayProgress?
     var showHeading = true
-    var showTargetNote = true
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .largeTitle) private var energySize: CGFloat = 46
 
@@ -131,12 +130,6 @@ struct NutritionDailySummary: View {
             if let progress, [progress.energy, progress.protein, progress.carbohydrate, progress.fat].contains(where: { $0.unreported > 0 }) {
                 Text("Some food labels omit nutrients. Totals may be low.")
                     .font(.exSmall).foregroundStyle(Color.exTextSecondary)
-            }
-            if targets == nil && showTargetNote {
-                NavigationLink { ProgramView() } label: {
-                    Label("Review nutrition targets", systemImage: "target").font(.exCaption).frame(minHeight: 44)
-                }
-                Text("No targets set for this day").font(.exSmall).foregroundStyle(Color.exTextSecondary)
             }
         }.fixedSize(horizontal: false, vertical: true)
     }

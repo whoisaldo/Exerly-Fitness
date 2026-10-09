@@ -142,7 +142,10 @@ struct TodayNutritionCard: View {
                     .accessibilityIdentifier("today.setTargets")
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture { if progress.hasTargets { onSetTargets() } }
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: "Open targets") { onSetTargets() }
     }
 
     private var ring: some View {

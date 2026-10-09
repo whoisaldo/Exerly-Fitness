@@ -437,13 +437,13 @@ struct TargetsView: View {
             if latest.status == .pending {
                 excluded = latest.id
             } else if latest.status != .accepted || plan.id == proposed.id {
-                let review = try? store.checkIn(today: today, existing: proposals)
+                let review = try? store.checkIn(today: today, existing: proposals, unit: unit)
                 return .decided(latest, proposed: proposed, before: store.plan(before: proposed),
                                 canUndo: latest.status == .accepted,
                                 next: review.map { NutritionCheckIn.nextDate(plan: plan, review: $0) } ?? weekStart.adding(days: 7))
             }
         }
-        guard let review = try? store.checkIn(today: today, existing: proposals.filter { $0.id != excluded }) else {
+        guard let review = try? store.checkIn(today: today, existing: proposals.filter { $0.id != excluded }, unit: unit) else {
             return .scheduled(weekStart.adding(days: 7))
         }
         let next = NutritionCheckIn.nextDate(plan: plan, review: review)

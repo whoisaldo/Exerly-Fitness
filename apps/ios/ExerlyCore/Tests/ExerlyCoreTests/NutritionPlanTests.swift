@@ -177,6 +177,11 @@ import Testing
         #expect(proposal.title == "New targets: \(Int((next.weeklyEnergy / 7).rounded())) kcal a day")
         #expect(proposal.evidence.first?.claim.hasPrefix("Your expenditure is about ") == true)
         #expect(proposal.evidence.first?.caveats.contains("7 of the last 7 days fully logged") == true)
+        let pounds = try #require(try NutritionCheckIn.review(plan: current, days: steadyDays(), prior: (2500, 400),
+                                                               today: monday.adding(days: 21), existing: [],
+                                                               now: Fixture.instant(days: 21), unit: .pounds).proposal)
+        let texts = pounds.evidence.map(\.claim) + [pounds.falsifier]
+        #expect(texts.contains { $0.contains(" lb") } && !texts.contains { $0.contains(" kg") })
 
         // The same check-in on another device is the same proposal, and once filed it isn't proposed again.
         #expect(try review(current, steadyDays(), today: monday.adding(days: 22)).proposal?.id == proposal.id)

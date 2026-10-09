@@ -92,8 +92,7 @@ import Testing
         #expect(nutrition.entries(on: monday) == [entry])
     }
 
-    @Test func aSuggestionBecomesTheSamePortion() throws {
-        let nutrition = try store()
+    @Test func aSuggestionBecomesTheSamePortion() {
         let suggestion = FoodSuggestion(food: Foods.milk.snapshot, meal: "Breakfast", grams: 244,
                                         serving: Foods.milk.servings[0], quantity: 1, days: 3)
         let portion = QuickPortion(suggestion)
