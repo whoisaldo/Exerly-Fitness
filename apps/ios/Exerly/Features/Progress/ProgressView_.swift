@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 enum ProgressTab: String, CaseIterable {
@@ -18,6 +19,16 @@ struct ProgressView_: View {
     let initialDate: CalendarDay
     @State private var selectedTab: ProgressTab = .measurements
     @Environment(\.dynamicTypeSize) private var typeSize
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @EnvironmentObject private var auth: AuthViewModel
+
+    /// The signed-in account's ExerlyCore data, where weigh-ins live.
+    private var workspace: TrainingWorkspace? {
+        guard let workspace = account.training, workspace.accountID == auth.currentUser?.id else { return nil }
+        return workspace
+    }
+    private var unit: MassUnit { auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds }
+    private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,7 +64,9 @@ struct ProgressView_: View {
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
-        case .measurements: MeasurementsTab(initialDate: initialDate)
+        case .measurements:
+            MeasurementsTab(initialDate: initialDate, workspace: workspace, unit: unit, timeZone: timeZone,
+                            openingError: account.openingError)
         case .photos: PhotosTab()
         case .achievements: AchievementsTab { selectedTab = .measurements }
         }
