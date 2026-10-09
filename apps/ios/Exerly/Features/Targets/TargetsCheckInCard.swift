@@ -129,7 +129,7 @@ struct TargetsCheckInCard: View {
     }
 
     private func macroChanges(from before: DailyTargets, to after: DailyTargets) -> some View {
-        VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
             macroChange("Protein", before.protein, after.protein, color: .exPrimaryText)
             macroChange("Carbs", before.carbohydrate, after.carbohydrate, color: .exAccent)
             macroChange("Fat", before.fat, after.fat, color: .exSecondary)

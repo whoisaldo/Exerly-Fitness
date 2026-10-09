@@ -298,8 +298,10 @@ struct TargetsPlanEditor: View {
             draft.mode = mode
         } label: {
             HStack(alignment: .top, spacing: ExSpacing.item) {
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3)
-                    .foregroundStyle(selected ? Color.exPrimaryText : Color.exTextMuted).accessibilityHidden(true)
+                if !typeSize.isAccessibilitySize {
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3)
+                        .foregroundStyle(selected ? Color.exPrimaryText : Color.exTextMuted).accessibilityHidden(true)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(TargetsFormat.mode(mode)).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                     Text(TargetsFormat.modeDetail(mode)).font(.exCaption).foregroundStyle(Color.exTextSecondary)

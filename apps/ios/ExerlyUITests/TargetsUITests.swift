@@ -68,7 +68,9 @@ final class TargetsUITests: ExerlyUITestCase {
         XCTAssertEqual(energy.value as? String, saved, "The plan is still on the device")
 
         try await control([:])
-        app.scrollViews["targets.screen"].swipeDown()
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 20))
         let plans = try await waitForDocuments("nutrition_plan", token: person.token) { !$0.isEmpty }
         XCTAssertEqual((plans.first?["targets"] as? [[String: Any]])?.first?["energy"] as? Double, 1978)
     }
@@ -125,6 +127,25 @@ final class TargetsUITests: ExerlyUITestCase {
         XCTAssertEqual(todayEnergy(app), before)
         _ = try await waitForDocuments("proposal", token: person.token) { $0.contains { $0["status"] as? String == "undone" } }
         _ = try await waitForDocuments("nutrition_plan", token: person.token) { $0.count == 1 }
+    }
+
+    /// A collaborative plan's check-in can be changed before it's accepted,
+    /// and is accepted as the check-in with the change.
+    func testACollaborativeCheckInIsAdjustedBeforeAccepting() async throws {
+        let (app, person) = try await signedInWithCheckIn(prefix: "targets-adjust", mode: "collaborative")
+        openTargets(app)
+        let adjust = app.buttons["targets.checkIn.adjust"]
+        XCTAssertTrue(adjust.waitForExistence(timeout: 30), app.debugDescription)
+        tap(adjust, in: app)
+        XCTAssertEqual(app.buttons["planEditor.save"].label, "Accept adjusted targets")
+        XCTAssertFalse(app.buttons["planEditor.mode.coached"].exists, "The check-in keeps its coaching mode")
+        tap(app.buttons["Low carb"], in: app)
+        tap(app.buttons["planEditor.save"], in: app)
+        XCTAssertTrue(app.buttons["targets.checkIn.undo"].waitForExistence(timeout: 5))
+        let proposals = try await waitForDocuments("proposal", token: person.token) { $0.contains { $0["status"] as? String == "accepted" } }
+        XCTAssertTrue((proposals.first?["title"] as? String ?? "").hasPrefix("New targets, adjusted: "))
+        let plans = try await waitForDocuments("nutrition_plan", token: person.token) { $0.count == 2 }
+        XCTAssertTrue(plans.contains { $0["diet"] as? String == "lowCarb" && $0["mode"] as? String == "collaborative" })
     }
 
     // MARK: Captures
@@ -203,7 +224,7 @@ final class TargetsUITests: ExerlyUITestCase {
     /// An account with eight weeks of logs and weigh-ins, and a coached plan
     /// from two weeks ago whose check-in falls today, started from a guess
     /// of expenditure well under what the logs show.
-    private func signedInWithCheckIn(prefix: String, weights: [Double] = Array(repeating: 1, count: 7),
+    private func signedInWithCheckIn(prefix: String, mode: String = "coached", weights: [Double] = Array(repeating: 1, count: 7),
                                      goalWeight: Double? = nil) async throws -> (XCUIApplication, (email: String, token: String)) {
         try await control([:])
         let person = try await createAccount(prefix: prefix, units: "imperial")
@@ -211,7 +232,7 @@ final class TargetsUITests: ExerlyUITestCase {
         try await seedHistory(token: person.token)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = Self.newYork
-        _ = try await seedPlan(token: person.token, startOffset: -14, checkInDay: calendar.component(.weekday, from: Date()),
+        _ = try await seedPlan(token: person.token, startOffset: -14, mode: mode, checkInDay: calendar.component(.weekday, from: Date()),
                                weights: weights, goalWeight: goalWeight)
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
