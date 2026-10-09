@@ -135,6 +135,13 @@ final class NutritionInsightsUITests: ExerlyUITestCase {
         selectRange("1W", in: app)
         try await Task.sleep(for: .seconds(1))
         capture(app, "nutrition-12-week")
+        let short = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Short ")).firstMatch
+        if short.waitForExistence(timeout: 5) {
+            reveal(short, in: app)
+            tap(short, in: app)
+            try await Task.sleep(for: .seconds(0.8))
+            capture(app, "nutrition-13-short")
+        }
     }
 
     // MARK: Navigation

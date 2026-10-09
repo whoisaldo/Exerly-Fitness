@@ -9,7 +9,6 @@ struct NutrientDetailView: View {
     let series: IntakeSeries
     let range: IntakeRange
     let today: LocalDate
-    @State private var selection: LocalDate?
     @State private var showsAll = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -19,7 +18,9 @@ struct NutrientDetailView: View {
         let contributions = store.contributions(of: nutrient, from: series.from, through: series.through)
         ExScreen {
             summary(contributions)
-            if range != .yesterday, series.countedDays > 0 { chartCard }
+            if range != .yesterday, series.countedDays > 0 {
+                NutrientDayChart(series: series, nutrient: nutrient, range: range, today: today)
+            }
             foods(contributions)
         }
         .navigationTitle(IntakeFormat.name(nutrient))
@@ -107,43 +108,6 @@ struct NutrientDetailView: View {
         .accessibilityLabel("\(title): \(spoken)")
     }
 
-    // MARK: Chart
-
-    private var chartCard: some View {
-        let bars = series.bars(nutrient, length: range.barDays)
-        let picked = selection.flatMap { day in bars.first { $0.start == day } }
-        return ExCard {
-            HStack(alignment: .firstTextBaseline) {
-                ExEyebrow(range.barDays == 7 ? "By week" : "By day")
-                Spacer(minLength: ExSpacing.small)
-                if picked != nil {
-                    Button("Clear") { selection = nil }.font(.exCaption.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
-                        .frame(minHeight: 44)
-                }
-            }
-            Text(pickedText(picked)).font(.exCaption).foregroundStyle(Color.exTextSecondary).monospacedDigit()
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("nutrition.detail.readout")
-            IntakeBarChart(bars: bars, nutrient: nutrient, average: series.average(nutrient), range: range, selection: $selection)
-                .frame(height: typeSize.isAccessibilitySize ? 220 : 170)
-                .accessibilityLabel("\(IntakeFormat.name(nutrient)) \(range.barDays == 7 ? "by week" : "by day"), \(IntakeFormat.spoken(range))")
-                .accessibilityHint("Swipe up or down to step through the days")
-        }
-    }
-
-    private func pickedText(_ picked: IntakeBar?) -> String {
-        guard let picked else { return "Touch a bar for that day. The dashed line is the average; the solid line is the target." }
-        let when = picked.days > 1 ? IntakeFormat.span(picked.start, picked.end, today: today) : BodyFormat.day(picked.start, today: today)
-        if let value = picked.value {
-            var text = "\(when): \(IntakeFormat.amount(value, nutrient))"
-            if picked.days > 1 { text += " a day over \(IntakeFormat.days(picked.countedDays)) counted" }
-            if let reference = picked.goal?.reference { text += " · goal \(IntakeFormat.amount(reference, nutrient))" }
-            return text
-        }
-        if let logged = picked.uncounted { return "\(when): \(IntakeFormat.amount(logged, nutrient)) logged, marked partial, not counted" }
-        return "\(when): nothing counted"
-    }
-
     // MARK: Foods
 
     @ViewBuilder
@@ -210,5 +174,51 @@ struct NutrientDetailView: View {
         if range != .yesterday { parts.append("\(IntakeFormat.amount(food.perDay, nutrient)) a day") }
         parts.append(IntakeFormat.entries(food.entries))
         return parts.joined(separator: " · ")
+    }
+}
+
+/// One nutrient day by day, with the picked day's amount. Its own view, so
+/// scrubbing redraws only the chart.
+private struct NutrientDayChart: View {
+    let series: IntakeSeries
+    let nutrient: Nutrient
+    let range: IntakeRange
+    let today: LocalDate
+    @State private var selection: LocalDate?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let bars = series.bars(nutrient, length: range.barDays)
+        let picked = selection.flatMap { day in bars.first { $0.start == day } }
+        ExCard {
+            HStack(alignment: .firstTextBaseline) {
+                ExEyebrow(range.barDays == 7 ? "By week" : "By day")
+                Spacer(minLength: ExSpacing.small)
+                if picked != nil {
+                    Button("Clear") { selection = nil }.font(.exCaption.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
+                        .frame(minHeight: 44)
+                }
+            }
+            Text(pickedText(picked)).font(.exCaption).foregroundStyle(Color.exTextSecondary).monospacedDigit()
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("nutrition.detail.readout")
+            IntakeBarChart(bars: bars, nutrient: nutrient, average: series.average(nutrient), range: range, selection: $selection)
+                .frame(height: typeSize.isAccessibilitySize ? 220 : 170)
+                .accessibilityLabel("\(IntakeFormat.name(nutrient)) \(range.barDays == 7 ? "by week" : "by day"), \(IntakeFormat.spoken(range))")
+                .accessibilityHint("Swipe up or down to step through the days")
+        }
+    }
+
+    private func pickedText(_ picked: IntakeBar?) -> String {
+        guard let picked else { return "Tap a bar for that day. The dashed line is the average; the solid line is the target." }
+        let when = picked.days > 1 ? IntakeFormat.span(picked.start, picked.end, today: today) : BodyFormat.day(picked.start, today: today)
+        if let value = picked.value {
+            var text = "\(when): \(IntakeFormat.amount(value, nutrient))"
+            if picked.days > 1 { text += " a day over \(IntakeFormat.days(picked.countedDays)) counted" }
+            if let reference = picked.goal?.reference { text += " · goal \(IntakeFormat.amount(reference, nutrient))" }
+            return text
+        }
+        if let logged = picked.uncounted { return "\(when): \(IntakeFormat.amount(logged, nutrient)) logged, marked partial, not counted" }
+        return "\(when): nothing counted"
     }
 }

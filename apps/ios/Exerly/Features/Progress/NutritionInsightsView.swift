@@ -106,14 +106,20 @@ private struct NutritionInsightsContent: View {
         let caution = cautionText(series, firstLogged: firstLogged)
         return ExCard {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
-                let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
-                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
-                layout {
-                    Text(IntakeFormat.span(series.from, series.through, today: today)).font(.exBodyMedium)
-                        .foregroundStyle(Color.exTextPrimary)
-                    if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
-                    Text("\(series.countedDays) of \(IntakeFormat.days(series.days.count)) counted").font(.exLabel)
-                        .monospacedDigit().foregroundStyle(series.countedDays > 0 ? Color.exTextPrimary : Color.exWarning)
+                let span = Text(IntakeFormat.span(series.from, series.through, today: today)).font(.exBodyMedium)
+                    .foregroundStyle(Color.exTextPrimary)
+                let counted = Text("\(series.countedDays) of \(IntakeFormat.days(series.days.count)) counted").font(.exLabel)
+                    .monospacedDigit().foregroundStyle(series.countedDays > 0 ? Color.exTextPrimary : Color.exWarning)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline) {
+                        span.lineLimit(1)
+                        Spacer(minLength: ExSpacing.small)
+                        counted.lineLimit(1)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        span.fixedSize(horizontal: false, vertical: true)
+                        counted.fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 IntakeCoverageStrip(days: series.days)
                     .frame(height: series.days.count > 31 ? 12 : 10)
@@ -142,11 +148,14 @@ private struct NutritionInsightsContent: View {
 
     /// The strip's colours with their counts.
     private func legend(_ series: IntakeSeries, fasts: Int) -> Text {
-        func swatch(_ color: Color) -> Text { Text(Image(systemName: "square.fill")).foregroundStyle(color) }
-        var text = Text("\(swatch(IntakeCoverageStrip.counted)) \(series.countedDays) counted")
-        if series.partialDays > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.partial)) \(series.partialDays) partial") }
-        if series.emptyDays > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.empty)) \(series.emptyDays) not logged") }
-        if fasts > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.fast)) \(fasts == 1 ? "1 fast" : "\(fasts) fasts") as zero") }
+        // Each swatch keeps its words with it when the line wraps.
+        func item(_ color: Color, _ words: String) -> Text {
+            Text("\(Text(Image(systemName: "square.fill")).foregroundStyle(color))\u{00A0}\(words.replacingOccurrences(of: " ", with: "\u{00A0}"))")
+        }
+        var text = item(IntakeCoverageStrip.counted, "\(series.countedDays) counted")
+        if series.partialDays > 0 { text = Text("\(text)   \(item(IntakeCoverageStrip.partial, "\(series.partialDays) partial"))") }
+        if series.emptyDays > 0 { text = Text("\(text)   \(item(IntakeCoverageStrip.empty, "\(series.emptyDays) not logged"))") }
+        if fasts > 0 { text = Text("\(text)   \(item(IntakeCoverageStrip.fast, "\(fasts == 1 ? "1 fast" : "\(fasts) fasts") as zero"))") }
         return text
     }
 

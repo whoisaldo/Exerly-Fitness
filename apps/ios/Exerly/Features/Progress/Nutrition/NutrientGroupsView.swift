@@ -13,17 +13,61 @@ struct NutrientGroupsView<Detail: View>: View {
         [[.energy, .macros], [.carbohydrates], [.fats], [.vitamins], [.minerals], [.aminoAcids], [.other]]
     }
 
+    @State private var filter: Filter = .all
+
+    /// Every nutrient, or those standing one way against their goals.
+    enum Filter: Hashable {
+        case all
+        case standing(NutrientStanding)
+    }
+
     var body: some View {
+        let counts = series.standings(overview)
+        let filters = [Filter.all] + [NutrientStanding.short, .met, .over, .unreported]
+            .filter { counts[$0, default: 0] > 0 }.map(Filter.standing)
+        let shown = overview.rows.filter { row in
+            if case .standing(let standing) = filter { return series.standing(row) == standing }
+            return true
+        }
         VStack(alignment: .leading, spacing: ExSpacing.item) {
             ExSectionHeading("Every nutrient", detail: "Average per counted day")
+            ExChoiceChips(values: filters, selection: $filter) { title($0, counts: counts) }
+                .accessibilityIdentifier("nutrition.nutrientFilter")
+            if let note = shortNote(counts: counts) {
+                Text(note).font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+            }
             ForEach(Self.groups, id: \.self) { groups in
-                let rows = overview.rows.filter { groups.contains($0.nutrient.group) }
+                let rows = shown.filter { groups.contains($0.nutrient.group) }
                 if !rows.isEmpty { group(groups[0], rows: rows) }
             }
             Text("Percentages compare each counted day with the goal in force that day. Goals without your own come from "
                 + "the US FDA's daily values. A food that doesn't report a nutrient adds nothing, so check how many entries reported it.")
                 .font(.exCaption).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
         }
+        .onChange(of: filters) { _, filters in if !filters.contains(filter) { filter = .all } }
+    }
+
+    private func title(_ filter: Filter, counts: [NutrientStanding: Int]) -> String {
+        switch filter {
+        case .all: "All \(overview.rows.count)"
+        case .standing(let standing):
+            switch standing {
+            case .short: "Short \(counts[.short, default: 0])"
+            case .met: "Met \(counts[.met, default: 0])"
+            case .over: "Over \(counts[.over, default: 0])"
+            case .unreported: "Not reported \(counts[.unreported, default: 0])"
+            case .noGoal: "No goal \(counts[.noGoal, default: 0])"
+            }
+        }
+    }
+
+    /// How many shortfalls rest on thin reporting, so a low number isn't read as a deficiency.
+    private func shortNote(counts: [NutrientStanding: Int]) -> String? {
+        let short = overview.rows.filter { series.standing($0) == .short }
+        let thin = short.filter { $0.completeness < 0.5 }.count
+        guard !short.isEmpty, thin > 0 else { return nil }
+        return "\(thin) of the \(short.count) short of their goal \(thin == 1 ? "was" : "were") reported by fewer than half "
+            + "the entries, so real intake may be higher than shown."
     }
 
     private func group(_ group: Nutrient.Group, rows: [NutrientOverview.Row]) -> some View {
@@ -40,7 +84,8 @@ struct NutrientGroupsView<Detail: View>: View {
             ForEach(Array(rows.enumerated()), id: \.element.nutrient) { index, row in
                 if index > 0 { Rectangle().fill(Color.exBorder.opacity(0.45)).frame(height: 0.5).padding(.leading, ExSpacing.content) }
                 NavigationLink { detail(row) } label: {
-                    NutrientRow(row: row, goal: series.averageGoal(row.nutrient), goalsVary: series.goalsVary(row.nutrient))
+                    NutrientRow(row: row, goal: series.averageGoal(row.nutrient), goalsVary: series.goalsVary(row.nutrient),
+                                standing: series.standing(row))
                 }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("nutrition.nutrient.\(row.nutrient.rawValue)")
@@ -61,6 +106,7 @@ struct NutrientRow: View {
     /// The counted days' goals averaged.
     let goal: NutrientGoal?
     let goalsVary: Bool
+    let standing: NutrientStanding
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private var reported: Bool { row.observedDays > 0 }
@@ -102,9 +148,11 @@ struct NutrientRow: View {
 
     /// Over a limit warns; meeting the goal reads plainly; short of it is muted.
     private var shareColor: Color {
-        guard let goal else { return .exTextSecondary }
-        if let ceiling = goal.ceiling, row.average > ceiling { return .exWarning }
-        return goal.contains(row.average) ? .exTextPrimary : .exTextSecondary
+        switch standing {
+        case .over: goal?.ceiling != nil ? .exWarning : .exTextPrimary
+        case .met: .exTextPrimary
+        default: .exTextSecondary
+        }
     }
 
     private var note: String? {
