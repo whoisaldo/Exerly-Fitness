@@ -23,7 +23,7 @@ struct ExerlyApp: App {
             KeychainService.shared.deleteToken()
             if let base = ProcessInfo.processInfo.environment["EXERLY_API_BASE_URL"],
                let fixture = URL(string: base), fixture.scheme == "http", fixture.host == "127.0.0.1",
-               let port = fixture.port, (39001...39003).contains(port) || (39200...39299).contains(port),
+               let port = fixture.port, (39000...39299).contains(port),
                let store = ProcessInfo.processInfo.environment["EXERLY_TEST_STORE_ID"], UUID(uuidString: store) != nil,
                let token = ProcessInfo.processInfo.environment["EXERLY_TEST_LEGACY_TOKEN"] {
                 KeychainService.shared.saveToken(token)
