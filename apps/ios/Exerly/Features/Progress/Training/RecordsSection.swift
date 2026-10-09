@@ -9,18 +9,20 @@ struct RecordsSection: View {
     let unit: MassUnit
     let today: LocalDate
     var identifier = "training.records"
-    @State private var filter: RecordFilter = .all
+    /// Off inside a lift's detail, where every record is that lift's.
+    var showsExercise = true
+    @State private var filter: RecordFilter = .oneRepMax
     @State private var showsAll = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     static let shown = 6
 
     enum RecordFilter: String, CaseIterable, Identifiable {
-        case all = "All", oneRepMax = "e1RM", heaviest = "Heaviest", reps = "Reps", volume = "Set volume"
+        case oneRepMax = "e1RM", heaviest = "Heaviest", reps = "Reps", volume = "Set volume"
         var id: String { rawValue }
 
         func includes(_ kind: PersonalRecord.Kind) -> Bool {
             switch self {
-            case .all: true
             case .oneRepMax: kind == .oneRepMax
             case .heaviest: kind == .heaviestLoad
             case .reps: kind == .repsAtLoad
@@ -33,7 +35,8 @@ struct RecordsSection: View {
         let filtered = records.filter { filter.includes($0.record.kind) }
         let shown = showsAll ? filtered : Array(filtered.prefix(Self.shown))
         VStack(alignment: .leading, spacing: ExSpacing.item) {
-            ExSectionHeading("Records", detail: records.isEmpty ? nil : "\(records.count) in \(span == .all ? "all time" : InsightFormat.spokenSpan(span))")
+            ExSectionHeading("Records", detail: records.isEmpty ? nil
+                : "\(filtered.count) in \(span == .all ? "all time" : InsightFormat.spokenSpan(span))")
             if records.isEmpty {
                 ExCard {
                     Text("No records in \(InsightFormat.spanPhrase(span)) yet. A record needs an earlier session of the same lift to beat, so a lift's first session never sets one.")
@@ -66,16 +69,36 @@ struct RecordsSection: View {
     }
 
     private func row(_ item: TrainingInsights.DatedRecord) -> some View {
-        let name = library.exercise(item.record.exerciseID)?.name ?? "Removed exercise"
+        let exercise = library.exercise(item.record.exerciseID)
+        let name = exercise?.name ?? "Removed exercise"
         let value = InsightFormat.recordValue(item.record, unit: unit)
         let day = InsightFormat.day(item.date, today: today)
+        let withBodyweight = exercise?.metric.usesBodyweight == true && [.oneRepMax, .heaviestLoad].contains(item.record.kind)
+        let kind = InsightFormat.recordTitle(item.record.kind) + (withBodyweight ? " incl. bodyweight" : "")
         return HStack(spacing: ExSpacing.item) {
-            InsightIcon(systemName: InsightFormat.recordIcon(item.record.kind), color: .exAccent)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
-                Text("\(InsightFormat.recordTitle(item.record.kind)) · \(day)").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if !typeSize.isAccessibilitySize {
+                InsightIcon(systemName: InsightFormat.recordIcon(item.record.kind), color: .exAccent)
             }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(showsExercise ? name : kind).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(showsExercise ? "\(kind) · \(day)" : day).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if typeSize.isAccessibilitySize {
+                    Text(value.value).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+                    Text(value.detail).font(.exCaption).foregroundStyle(Color.exTextMuted)
+                }
+            }
+            if !typeSize.isAccessibilitySize { trailing(value) }
+        }
+        .padding(.vertical, ExSpacing.item)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(name), \(kind), \(value.spoken), \(day)")
+    }
+
+    private func trailing(_ value: (value: String, detail: String, spoken: String)) -> some View {
+        Group {
             Spacer(minLength: ExSpacing.small)
             VStack(alignment: .trailing, spacing: 2) {
                 Text(value.value).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
@@ -83,8 +106,5 @@ struct RecordsSection: View {
                 Text(value.detail).font(.exSmall).foregroundStyle(Color.exTextMuted)
             }
         }
-        .padding(.vertical, ExSpacing.item)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(name), \(InsightFormat.recordTitle(item.record.kind)), \(value.spoken), \(day)")
     }
 }

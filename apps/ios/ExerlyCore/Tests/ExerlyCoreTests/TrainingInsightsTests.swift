@@ -61,10 +61,11 @@ import Testing
 
     // MARK: Muscles
 
-    @Test func rangesComeFromProgramGenerationsHypertrophyTargets() {
-        #expect(TrainingInsights.weeklySetRange(for: .chest) == 10...18)
-        #expect(TrainingInsights.weeklySetRange(for: .calves) == 6...10)
-        #expect(TrainingInsights.weeklySetRange(for: .rearDelts) == 6...10)
+    @Test func rangesSpanEveryGeneratedProgramsTargets() {
+        // Strength beginners get 8 sets for larger muscles; advanced hypertrophy 18.
+        #expect(TrainingInsights.weeklySetRange(for: .chest) == 8...18)
+        #expect(TrainingInsights.weeklySetRange(for: .calves) == 4...10)
+        #expect(TrainingInsights.weeklySetRange(for: .rearDelts) == 4...10)
         #expect(TrainingInsights.weeklySetRange(for: .frontDelts) == nil)
     }
 
@@ -80,7 +81,7 @@ import Testing
         let chest = try #require(muscles.first { $0.muscle == .chest })
         #expect(chest.averageSets == 5)
         #expect(chest.thisWeek == 2)
-        #expect(chest.range == 10...18)
+        #expect(chest.range == 8...18)
         #expect(chest.status == .below)
         #expect(chest.contributors.map(\.exerciseID) == ["barbell-bench-press"])
         #expect(chest.contributors.first?.sets == 5)
@@ -108,6 +109,7 @@ import Testing
         #expect(chest.muscle == .chest)
         #expect(chest.averageSets == 12)
         #expect(chest.status == .within)
+        #expect(report.muscles.first { $0.muscle == .abs }?.status == .below)
     }
 
     // MARK: Lifts
@@ -149,12 +151,12 @@ import Testing
         // 90 x 8 at RIR 2 (10 to failure, 120) beats 105 x 3 at RIR 1 (4 to failure, about 114.5).
         #expect(rows[0].bestSet?.primary.load == .kg(90))
         #expect(close(rows[0].bestSetOneRepMax, 120))
-        // 100 x 5 at RIR 1 (6 to failure, about 116.1) ranks above the heavier triple.
+        // One per session: 90 x 8 from the first, then 100 x 5 at RIR 1 (about 116.1).
         let best = TrainingInsights.bestSets(of: "barbell-bench-press", in: history, from: from, through: wednesday, limit: 4)
-        #expect(best.map(\.record.set.primary.load) == [.kg(90), .kg(100), .kg(100), .kg(105)])
-        // Equal sets: the earlier one ranks first.
+        #expect(best.map(\.record.set.primary.load) == [.kg(90), .kg(100)])
+        // Equal sets: the earlier one is the session's best.
         let ties = TrainingInsights.bestSets(of: "barbell-bench-press", in: history, from: LocalDate("2026-10-05")!, through: wednesday)
-        #expect(ties.count == 2)
+        #expect(ties.count == 1)
         #expect(ties[0].record.set.id == sessions[2].exercises[0].sets[0].id)
     }
 
@@ -224,12 +226,14 @@ import Testing
         let lift = try #require(TrainingInsights.summary(of: "barbell-bench-press", in: history,
                                                          from: LocalDate("2026-09-14")!, through: wednesday))
         let line = try #require(lift.trendLine)
+        #expect(close(lift.current, line.endValue))
         #expect(line.start == LocalDate("2026-09-21") && line.end == LocalDate("2026-10-05"))
         #expect(close(line.startValue, 100.0 * 36 / 32, tolerance: 1e-9))
         #expect(close(line.endValue, 114.0 * 36 / 32, tolerance: 1e-9))
         let short = try #require(TrainingInsights.summary(of: "barbell-bench-press", in: history,
                                                           from: LocalDate("2026-10-05")!, through: wednesday))
         #expect(short.trendLine == nil)
+        #expect(close(short.current, 114.0 * 36 / 32))
     }
 
     @Test func liftReportGathersOneLiftsSpan() throws {

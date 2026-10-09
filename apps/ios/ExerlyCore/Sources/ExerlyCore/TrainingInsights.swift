@@ -88,6 +88,10 @@ public enum TrainingInsights {
         /// The best e1RM in the span and the session it came from.
         public var best: LiftPoint
         public var latest: LiftPoint
+        /// Where the lift stands now: the trend's value at the last session,
+        /// or the last session's best before there's a trend. Steadier than
+        /// one session, which a light day pulls down.
+        public var current: Double { trendLine?.endValue ?? latest.oneRepMax }
         /// The least-squares trend over the span, from three sessions on.
         public var trend: TrainingSignals.Trend?
 
@@ -238,13 +242,17 @@ public enum TrainingInsights {
 
     // MARK: Muscles
 
-    /// Exerly's weekly set range for a muscle: from the beginner to the
-    /// advanced hypertrophy target that program generation uses. Nil for
-    /// muscles Exerly sets no target for, which compound lifts mostly cover.
+    /// Exerly's weekly set range for a muscle: from the lowest to the highest
+    /// weekly target any generated program sets it, across goals and
+    /// experience. Under it is less than any Exerly program would plan. Nil
+    /// for muscles Exerly sets no target for, which compound lifts cover.
     public static func weeklySetRange(for muscle: Muscle) -> ClosedRange<Double>? {
-        let low = ProgramGeneration.targets(for: .init(daysPerWeek: 3, goal: .hypertrophy, experience: .beginner))
-        let high = ProgramGeneration.targets(for: .init(daysPerWeek: 3, goal: .hypertrophy, experience: .advanced))
-        guard let lower = low[muscle], let upper = high[muscle] else { return nil }
+        let targets = ProgramGeneration.Goal.allCases.flatMap { goal in
+            ProgramGeneration.Experience.allCases.compactMap { experience in
+                ProgramGeneration.targets(for: .init(daysPerWeek: 3, goal: goal, experience: experience))[muscle]
+            }
+        }
+        guard let lower = targets.min(), let upper = targets.max() else { return nil }
         return lower...upper
     }
 
@@ -389,7 +397,8 @@ public enum TrainingInsights {
         public var oneRepMax: Double
     }
 
-    /// The range's sets with the highest e1RM, best first; ties go to the earlier set.
+    /// The range's best sets by e1RM, one per session, best first; ties go
+    /// to the earlier set.
     public static func bestSets(of exerciseID: ExerciseID, in history: TrainingHistory, from: LocalDate,
                                 through end: LocalDate, limit: Int = 5) -> [RankedSet] {
         guard let exercise = history.library.exercise(exerciseID) else { return [] }
@@ -397,7 +406,10 @@ public enum TrainingInsights {
             ExerciseStatistics.oneRepMax(record.set, exercise: exercise, bodyweight: record.bodyweight)
                 .map { (index, RankedSet(record: record, oneRepMax: $0)) }
         }
-        return ranked.sorted { ($0.1.oneRepMax, -$0.0) > ($1.1.oneRepMax, -$1.0) }.prefix(limit).map(\.1)
+        var sessions = Set<UUID>()
+        return ranked.sorted { ($0.1.oneRepMax, -$0.0) > ($1.1.oneRepMax, -$1.0) }
+            .filter { sessions.insert($0.1.record.sessionID).inserted }
+            .prefix(limit).map(\.1)
     }
 
     // MARK: Records

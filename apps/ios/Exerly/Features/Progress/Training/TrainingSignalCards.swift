@@ -9,6 +9,9 @@ struct TrainingSignalsSection: View {
     let unit: MassUnit
     let timeZone: TimeZone
     let span: TrainingInsights.Span
+    @State private var showsAll = false
+
+    static let shown = 2
 
     var body: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -29,8 +32,18 @@ struct TrainingSignalsSection: View {
                     .accessibilityIdentifier("training.signals.none")
                 }
             } else {
-                ForEach(Array(signals.enumerated()), id: \.offset) { _, signal in
+                ForEach(Array((showsAll ? signals : Array(signals.prefix(Self.shown))).enumerated()), id: \.offset) { _, signal in
                     TrainingSignalCard(signal: signal, store: store, unit: unit, timeZone: timeZone, span: span)
+                }
+                if signals.count > Self.shown {
+                    Button(showsAll ? "Show fewer signals" : "Show \(signals.count - Self.shown) more: "
+                        + signals.dropFirst(Self.shown).flatMap(\.lifts).map { store.library.exercise($0.exerciseID)?.name ?? "a lift" }
+                            .joined(separator: ", ")) {
+                        withAnimation(.snappy) { showsAll.toggle() }
+                    }
+                    .font(.exLabel).foregroundStyle(Color.exPrimaryText).multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .accessibilityIdentifier("training.signals.all")
                 }
             }
         }
@@ -110,9 +123,11 @@ struct TrainingSignalCard: View {
         }
         guard let trend = lift.trend else { return ("", "", "") }
         let weeks = max(1, trend.from.days(until: trend.through) / 7)
+        let flat = InsightFormat.amount(trend.slopePerWeek, unit, withUnit: false) == InsightFormat.amount(0, unit, withUnit: false)
+            && InsightFormat.amount(trend.standardError, unit, withUnit: false) == InsightFormat.amount(0, unit, withUnit: false)
         return ("e1RM about \(InsightFormat.estimate(trend.meanOneRepMax, unit))",
-                "\(InsightFormat.rate(trend.slopePerWeek, unit)) a week (± \(InsightFormat.amount(trend.standardError, unit))) · "
-                    + "\(InsightFormat.sessions(trend.sessions)) in \(InsightFormat.weeks(weeks))",
+                (flat ? "Flat" : "\(InsightFormat.rate(trend.slopePerWeek, unit)) a week (± \(InsightFormat.amount(trend.standardError, unit)))")
+                    + " · \(InsightFormat.sessions(trend.sessions)) in \(InsightFormat.weeks(weeks))",
                 "Estimated 1RM about \(InsightFormat.spokenEstimate(trend.meanOneRepMax, unit)), "
                     + "\(InsightFormat.spokenRate(trend.slopePerWeek, unit)), give or take "
                     + "\(InsightFormat.amount(trend.standardError, unit, withUnit: false)) \(InsightFormat.unitName(unit)), "

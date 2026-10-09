@@ -165,7 +165,7 @@ private struct WeeklyBarChart: View {
     var body: some View {
         Chart {
             ForEach(weeks, id: \.start) { week in
-                BarMark(x: .value("Week", BodyDates.anchor(week.start.adding(days: 3))), y: .value(metric.rawValue, value(week)),
+                BarMark(x: .value("Week", BodyDates.anchor(week.start), unit: .weekOfYear), y: .value(metric.rawValue, value(week)),
                         width: .ratio(0.62))
                     .foregroundStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .bottom, endPoint: .top)
                         .opacity(opacity(week)))
@@ -179,7 +179,7 @@ private struct WeeklyBarChart: View {
         }
         .chartXScale(domain: BodyDates.anchor(weeks.first!.start)...BodyDates.anchor(weeks.last!.start.adding(days: 7)))
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+            AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
                 AxisValueLabel(format: InsightFormat.axisFormat(span), centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)
             }
         }
@@ -203,7 +203,7 @@ private struct WeeklyBarChart: View {
             }
         }
         .sensoryFeedback(.selection, trigger: selection)
-        .environment(\.timeZone, BodyDates.utc).environment(\.calendar, BodyDates.calendar)
+        .environment(\.timeZone, BodyDates.utc).environment(\.calendar, calendar)
         .accessibilityElement(children: .ignore)
         .accessibilityChartDescriptor(WeeklyChartDescriptor(weeks: weeks, metric: metric, unit: unit, values: weeks.map(value)))
     }
@@ -214,6 +214,13 @@ private struct WeeklyBarChart: View {
         case .sets: week.sets
         case .volume: Mass.kg(week.tonnage.total).value(in: unit)
         }
+    }
+
+    /// UTC dates, with weeks starting where the report's weeks start.
+    private var calendar: Calendar {
+        var calendar = BodyDates.calendar
+        calendar.firstWeekday = weeks.first?.start.weekday.rawValue ?? 2
+        return calendar
     }
 
     private func opacity(_ week: TrainingInsights.Week) -> Double {

@@ -47,7 +47,7 @@ struct LiftDetailView: View {
                     if let statistics = report.statistics { stats(statistics, sessions: report.sessions.count) }
                     bestSets(report.bestSets, today: today)
                     RecordsSection(records: report.records, span: span, library: store.library, unit: unit, today: today,
-                                   identifier: "liftDetail.records")
+                                   identifier: "liftDetail.records", showsExercise: false)
                 }
                 NavigationLink {
                     ExerciseLogView(store: store, exerciseID: exerciseID, unit: unit)
@@ -84,24 +84,27 @@ struct LiftDetailView: View {
         let picked = selected.flatMap { id in sessions.first { $0.sessionID == id } }
         let shown = picked ?? sessions.last!
         let tracksLoad = exercise?.metric.tracksLoad ?? true
+        // With no session picked, the e1RM is where the trend stands now.
+        let now = picked == nil && metric == .oneRepMax ? report.summary.map { Mass.kg($0.current).value(in: unit) } : nil
+        let value = now ?? metric.value(shown, unit: unit)
+        let detail = now != nil ? currentLine(report, today: today) : sessionLine(shown, isLatest: picked == nil, today: today)
         return ExCard {
             ExEyebrow(metric.title)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(metric.value(shown, unit: unit).map { metric.format($0, unit: unit) } ?? "–")
+                    Text(value.map { metric.format($0, unit: unit) } ?? "–")
                         .font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
                         .contentTransition(.numericText())
                     Text(metric.suffix(unit)).font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
                 }
-                Text(sessionLine(shown, isLatest: picked == nil, today: today)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(metric.title), \(metric.value(shown, unit: unit).map { metric.spoken($0, unit: unit) } ?? "not recorded"). "
-                + sessionLine(shown, isLatest: picked == nil, today: today))
+            .accessibilityLabel("\(metric.title)\(now != nil ? " now" : ""), \(value.map { metric.spoken($0, unit: unit) } ?? "not recorded"). \(detail)")
             .accessibilityIdentifier(metric == .oneRepMax ? "liftDetail.estimate" : "liftDetail.readout")
             if metric == .oneRepMax, picked == nil { trendLine(report.summary) }
-            ExChoiceChips(values: LiftMetric.allCases.filter { tracksLoad || !$0.needsLoad }, selection: $metric) { $0.title }
+            ExChoiceChips(values: LiftMetric.allCases.filter { tracksLoad || !$0.needsLoad }, selection: $metric) { $0.chip }
                 .onChange(of: metric) { _, _ in selected = nil }
             if sessions.count >= 2 {
                 LiftChart(sessions: sessions, metric: metric, unit: unit, span: span,
@@ -114,6 +117,14 @@ struct LiftDetailView: View {
                 Text("The chart starts with a second session in this span.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
         }
+    }
+
+    private func currentLine(_ report: TrainingInsights.LiftReport, today: LocalDate) -> String {
+        guard let summary = report.summary else { return "" }
+        let basis = summary.trend == nil ? "Last session" : "Trend now"
+        return "\(basis) · best \(InsightFormat.estimate(summary.best.oneRepMax, unit)) "
+            + "\(InsightFormat.day(summary.best.date, today: today).lowercased().hasPrefix("to") ? "today" : "on " + InsightFormat.day(summary.best.date, today: today))"
+            + (exercise?.metric.usesBodyweight == true ? " · includes bodyweight" : "")
     }
 
     private func sessionLine(_ session: TrainingInsights.LiftSession, isLatest: Bool, today: LocalDate) -> String {
@@ -256,6 +267,16 @@ enum LiftMetric: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    var chip: String {
+        switch self {
+        case .oneRepMax: "e1RM"
+        case .heaviest: "Heaviest"
+        case .bestSetVolume: "Best set"
+        case .volume: "Volume"
+        case .reps: "Reps"
+        }
+    }
+
     var needsLoad: Bool { self != .reps }
 
     /// The session's value in the display unit.
@@ -320,20 +341,23 @@ private struct LiftChart: View {
             ForEach(points, id: \.session.sessionID) { point in
                 LineMark(x: .value("Day", BodyDates.anchor(point.session.date)), y: .value(metric.title, point.value),
                          series: .value("Series", "Sessions"))
-                    .foregroundStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .leading, endPoint: .trailing))
-                    .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                    .interpolationMethod(.monotone)
+                    .foregroundStyle(trend == nil
+                        ? AnyShapeStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .leading, endPoint: .trailing))
+                        : AnyShapeStyle(Color.exPrimary.opacity(0.45)))
+                    .lineStyle(StrokeStyle(lineWidth: trend == nil ? 2.4 : 1.4, lineCap: .round, lineJoin: .round))
                 PointMark(x: .value("Day", BodyDates.anchor(point.session.date)), y: .value(metric.title, point.value))
-                    .symbolSize(points.count > 40 ? 10 : 26)
+                    .symbolSize(points.count > 40 ? 10 : 24)
                     .foregroundStyle(Color.exPrimary.opacity(picked == nil ? 0.9 : 0.4))
             }
             if let trend {
                 LineMark(x: .value("Day", BodyDates.anchor(trend.start)), y: .value("Trend", Mass.kg(trend.startValue).value(in: unit)),
                          series: .value("Series", "Trend"))
-                    .foregroundStyle(Color.exTextSecondary.opacity(0.8)).lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
+                    .foregroundStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .leading, endPoint: .trailing))
+                    .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
                 LineMark(x: .value("Day", BodyDates.anchor(trend.end)), y: .value("Trend", Mass.kg(trend.endValue).value(in: unit)),
                          series: .value("Series", "Trend"))
-                    .foregroundStyle(Color.exTextSecondary.opacity(0.8)).lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
+                    .foregroundStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .leading, endPoint: .trailing))
+                    .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
             }
             if let picked {
                 RuleMark(x: .value("Day", BodyDates.anchor(picked.session.date)))
@@ -344,7 +368,7 @@ private struct LiftChart: View {
         }
         .chartYScale(domain: max(0, low - pad)...(high + pad))
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+            AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
                 AxisValueLabel(format: InsightFormat.axisFormat(span), centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)
             }
         }

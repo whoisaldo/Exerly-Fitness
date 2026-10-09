@@ -54,21 +54,17 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         openTraining(in: app)
-        try await Task.sleep(for: .seconds(2))
+        guard app.descendants(matching: .any)["training.consistency"].waitForExistence(timeout: 30) else {
+            capture(app, "training-1-top")
+            return XCTFail(app.debugDescription)
+        }
+        try await Task.sleep(for: .seconds(1))
         capture(app, "training-1-top")
-        let muscles = app.descendants(matching: .any)["training.muscles"]
-        guard muscles.waitForExistence(timeout: 30) else { return XCTFail(app.debugDescription) }
-        reveal(muscles, in: app)
-        capture(app, "training-2-muscles")
-        let lifts = app.descendants(matching: .any)["training.lifts"]
-        reveal(lifts, in: app)
-        capture(app, "training-3-lifts")
-        let records = app.descendants(matching: .any)["training.records"]
-        reveal(records, in: app)
-        capture(app, "training-4-records")
-        let consistency = app.descendants(matching: .any)["training.consistency"]
-        reveal(consistency, in: app)
-        capture(app, "training-5-consistency")
+        for (index, section) in ["signals", "muscles", "lifts", "records"].enumerated() {
+            let element = app.descendants(matching: .any)["training.\(section)"]
+            reveal(element, in: app)
+            capture(app, "training-\(index + 2)-\(section)")
+        }
         app.swipeUp()
         capture(app, "training-6-end")
         tap(app.buttons["training.lift.back-squat"], in: app)
@@ -121,34 +117,39 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
         _ = try await request("PUT", "/v1/documents/workout_session/\(id)", body: ["base_revision": 0, "payload": payload], token: token)
     }
 
-    /// Ten weeks, three days a week: squat, bench, row and deadlift climb;
-    /// the overhead press stays put, so it reads as a stall. Calves and
-    /// rear delts get little direct work.
+    /// Ten weeks of a three-day split. The main lifts climb, accessories
+    /// creep up every other week, the overhead press stays put (a stall),
+    /// and abs and calves get little work.
     private func seedTrainingBlock(token: String) async throws {
         for week in 0..<10 {
             let base = 70 - week * 7
-            let w = Double(week)
+            let w = Double(week), every2 = Double(week / 2)
             let squat = 205 + w * 5, bench = 165 + w * 2.5, row = 135 + w * 2.5, dead = 255 + w * 10
-            try await seedSession(name: "Upper and squat", daysAgo: base, exercises: [
-                ("back-squat", [(5, squat, 2), (5, squat, 2), (5, squat, 1)]),
-                ("barbell-bench-press", [(5, bench, 2), (5, bench, 2), (5, bench, 1)]),
-                ("barbell-row", [(8, row, 2), (8, row, 2), (8, row, 2)]),
-                ("dumbbell-lateral-raise", [(12, 20, 2), (12, 20, 1)]),
-                ("triceps-pushdown", [(12, 50 + w * 2.5, 2), (12, 50 + w * 2.5, 1)]),
+            try await seedSession(name: "Squat and bench", daysAgo: base, exercises: [
+                ("back-squat", [(5, squat, 2), (5, squat, 2), (5, squat, 2), (5, squat, 1)]),
+                ("barbell-bench-press", [(5, bench, 2), (5, bench, 2), (5, bench, 2), (5, bench, 1)]),
+                ("barbell-row", [(8, row, 2), (8, row, 2), (8, row, 2), (8, row, 2)]),
+                ("incline-dumbbell-bench-press", [(10, 55 + every2 * 5, 2), (10, 55 + every2 * 5, 2), (10, 55 + every2 * 5, 1)]),
+                ("dumbbell-lateral-raise", [(15, 20 + every2 * 2.5, 2), (15, 20 + every2 * 2.5, 1), (15, 20 + every2 * 2.5, 1)]),
+                ("triceps-pushdown", [(12, 50 + w * 2.5, 2), (12, 50 + w * 2.5, 2), (12, 50 + w * 2.5, 1)]),
             ], token: token)
             try await seedSession(name: "Pull and press", daysAgo: base - 2, exercises: [
-                ("deadlift", [(5, dead, 2), (5, dead - 30, 3)]),
-                ("overhead-press", [(5, 115, 1), (5, 115, 1), (4, 115, 0)]),
-                ("pull-up", [(8, 0, 2), (8, 0, 2), (7, 0, 1)]),
-                ("dumbbell-curl", [(10, 30, 2), (10, 30, 1)]),
+                ("deadlift", [(5, dead, 2), (5, dead - 30, 3), (5, dead - 30, 3)]),
+                ("overhead-press", [(5, 115, 1), (5, 115, 1), (week % 2 == 0 ? 5 : 4, 115, 1), (4, 115, 0)]),
+                ("pull-up", [(8 + week / 3, 0, 2), (8 + week / 3, 0, 2), (7 + week / 3, 0, 1), (7 + week / 3, 0, 1)]),
+                ("romanian-deadlift", [(8, 185 + every2 * 10, 2), (8, 185 + every2 * 10, 2), (8, 185 + every2 * 10, 2)]),
+                ("dumbbell-curl", [(10, 30 + every2 * 2.5, 2), (10, 30 + every2 * 2.5, 1), (10, 30 + every2 * 2.5, 1)]),
+                ("face-pull", [(15, 40 + every2 * 5, 2), (15, 40 + every2 * 5, 2)]),
             ], token: token)
             guard base - 4 > 0 else { continue }
-            try await seedSession(name: "Squat and bench", daysAgo: base - 4, exercises: [
-                ("back-squat", [(8, squat - 40, 3), (8, squat - 40, 2)]),
-                ("barbell-bench-press", [(8, bench - 25, 2), (8, bench - 25, 2), (8, bench - 25, 1)]),
-                ("lat-pulldown", [(10, 140 + w * 5, 2), (10, 140 + w * 5, 2)]),
-                ("lying-leg-curl", [(10, 90 + w * 2.5, 2), (10, 90 + w * 2.5, 1)]),
-                ("standing-calf-raise", [(12, 180, 2), (12, 180, 2)]),
+            try await seedSession(name: "Volume day", daysAgo: base - 4, exercises: [
+                ("back-squat", [(8, squat - 40, 3), (8, squat - 40, 3), (8, squat - 40, 2)]),
+                ("barbell-bench-press", [(8, bench - 25, 3), (8, bench - 25, 2), (8, bench - 25, 2)]),
+                ("lat-pulldown", [(10, 140 + w * 5, 2), (10, 140 + w * 5, 2), (10, 140 + w * 5, 1)]),
+                ("lying-leg-curl", [(10, 90 + every2 * 5, 2), (10, 90 + every2 * 5, 2), (10, 90 + every2 * 5, 1)]),
+                ("dumbbell-lateral-raise", [(15, 20 + every2 * 2.5, 2), (15, 20 + every2 * 2.5, 1)]),
+                ("standing-calf-raise", [(12, 180 + every2 * 10, 2), (12, 180 + every2 * 10, 2)]),
+                ("cable-crunch", [(12, 70 + every2 * 5, 2), (12, 70 + every2 * 5, 2)]),
             ], token: token)
         }
     }

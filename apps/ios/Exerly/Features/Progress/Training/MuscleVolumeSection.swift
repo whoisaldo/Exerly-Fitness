@@ -9,6 +9,8 @@ struct MuscleVolumeSection: View {
     @State private var showsOthers = false
     @State private var opened: TrainingInsights.MuscleLoad?
     @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .body) private var valueWidth: CGFloat = 40
+    @ScaledMetric(relativeTo: .subheadline) private var nameWidth: CGFloat = 92
 
     private var ranged: [TrainingInsights.MuscleLoad] { report.muscles.filter { $0.range != nil } }
     private var others: [TrainingInsights.MuscleLoad] { report.muscles.filter { $0.range == nil } }
@@ -110,17 +112,17 @@ struct MuscleVolumeSection: View {
                             Text(InsightFormat.sets(load.averageSets)).font(.exStatSmall).monospacedDigit()
                                 .foregroundStyle(MuscleColors.text(load.status))
                         }
-                        MuscleBar(load: load, scale: scale).frame(height: 12)
+                        MuscleBar(load: load, scale: scale).frame(height: 14)
                     }
                 } else {
                     HStack(spacing: ExSpacing.item) {
                         Text(load.muscle.name).font(.exLabel).foregroundStyle(Color.exTextPrimary)
                             .lineLimit(1).minimumScaleFactor(0.85)
-                            .frame(width: 92, alignment: .leading)
-                        MuscleBar(load: load, scale: scale).frame(height: 12)
+                            .frame(width: nameWidth, alignment: .leading)
+                        MuscleBar(load: load, scale: scale).frame(height: 14)
                         Text(InsightFormat.sets(load.averageSets)).font(.exStatSmall).monospacedDigit()
                             .foregroundStyle(MuscleColors.text(load.status))
-                            .frame(minWidth: 34, alignment: .trailing)
+                            .frame(width: valueWidth, alignment: .trailing)
                     }
                 }
             }
@@ -147,8 +149,9 @@ struct MuscleVolumeSection: View {
             : AnyLayout(HStackLayout(spacing: ExSpacing.item))
         return layout {
             HStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 2).fill(Color.exPrimary.opacity(0.22)).frame(width: 14, height: 8)
-                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.exPrimary.opacity(0.5), lineWidth: 0.5))
+                Rectangle().fill(Color.exPrimary.opacity(0.3)).frame(width: 14, height: 6)
+                    .overlay(alignment: .leading) { Rectangle().fill(Color.exPrimaryText).frame(width: 1.5, height: 10) }
+                    .overlay(alignment: .trailing) { Rectangle().fill(Color.exPrimaryText).frame(width: 1.5, height: 10) }
                 Text("Exerly's range")
             }
             HStack(spacing: 5) {
@@ -190,29 +193,33 @@ enum MuscleColors {
     }
 }
 
-/// A track with the muscle's range shaded and its average as a filled bar.
+/// One track per muscle: the range as a tinted segment with ticks at its
+/// ends, and the average as a bar from zero on the same track.
 private struct MuscleBar: View {
     let load: TrainingInsights.MuscleLoad
     let scale: Double
 
     var body: some View {
         GeometryReader { geometry in
-            let width = geometry.size.width
+            let width = geometry.size.width, height = geometry.size.height
             let x = { (value: Double) in width * min(max(value / scale, 0), 1) }
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.exSurface3)
+                Capsule().fill(Color.exSurface3).frame(height: height * 0.62)
                 if let range = load.range {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.exPrimary.opacity(0.22))
-                        .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.exPrimary.opacity(0.5), lineWidth: 0.5))
-                        .frame(width: max(2, x(range.upperBound) - x(range.lowerBound)), height: geometry.size.height + 4)
+                    Rectangle().fill(Color.exPrimary.opacity(0.3))
+                        .frame(width: max(2, x(range.upperBound) - x(range.lowerBound)), height: height * 0.62)
                         .offset(x: x(range.lowerBound))
+                    ForEach([range.lowerBound, range.upperBound], id: \.self) { bound in
+                        Capsule().fill(Color.exPrimaryText.opacity(0.8)).frame(width: 1.5, height: height)
+                            .offset(x: x(bound) - 0.75)
+                    }
                 }
-                Capsule().fill(MuscleColors.fill(load.status))
-                    .frame(width: load.averageSets > 0 ? max(4, x(load.averageSets)) : 0, height: geometry.size.height * 0.6)
-                    .padding(.leading, 0)
+                if load.averageSets > 0 {
+                    Capsule().fill(MuscleColors.fill(load.status))
+                        .frame(width: max(height * 0.62, x(load.averageSets)), height: height * 0.62)
+                }
             }
-            .frame(height: geometry.size.height)
+            .frame(width: width, height: height, alignment: .leading)
         }
         .accessibilityHidden(true)
     }

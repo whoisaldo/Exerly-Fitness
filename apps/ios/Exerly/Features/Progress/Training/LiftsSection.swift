@@ -30,7 +30,9 @@ struct LiftsSection: View {
                             LiftDetailView(store: store, exerciseID: lift.exerciseID, unit: unit, timeZone: timeZone,
                                            initialSpan: report.span)
                         } label: {
-                            LiftRow(lift: lift, name: name(lift.exerciseID), unit: unit, span: report.span)
+                            LiftRow(lift: lift, name: name(lift.exerciseID),
+                                    includesBodyweight: store.library.exercise(lift.exerciseID)?.metric.usesBodyweight == true,
+                                    unit: unit, span: report.span)
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("training.lift.\(lift.exerciseID.rawValue)")
@@ -55,6 +57,7 @@ struct LiftsSection: View {
 private struct LiftRow: View {
     let lift: TrainingInsights.LiftSummary
     let name: String
+    var includesBodyweight = false
     let unit: MassUnit
     let span: TrainingInsights.Span
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -64,7 +67,7 @@ private struct LiftRow: View {
             if typeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                    Text(InsightFormat.estimate(lift.latest.oneRepMax, unit)).font(.exStatSmall).monospacedDigit()
+                    Text(InsightFormat.estimate(lift.current, unit)).font(.exStatSmall).monospacedDigit()
                         .foregroundStyle(Color.exTextPrimary)
                     detail
                 }
@@ -78,7 +81,7 @@ private struct LiftRow: View {
                     Spacer(minLength: ExSpacing.small)
                     LiftSparkline(points: lift.points, line: lift.trendLine).frame(width: 64, height: 30)
                     VStack(alignment: .trailing, spacing: 0) {
-                        Text(InsightFormat.estimate(lift.latest.oneRepMax, unit, withUnit: false)).font(.exStatSmall).monospacedDigit()
+                        Text(InsightFormat.estimate(lift.current, unit, withUnit: false)).font(.exStatSmall).monospacedDigit()
                             .foregroundStyle(Color.exTextPrimary)
                         Text(unit.rawValue).font(.exSmall).foregroundStyle(Color.exTextMuted)
                     }
@@ -101,14 +104,15 @@ private struct LiftRow: View {
                 Text(InsightFormat.change(change, unit))
                     .monospacedDigit()
             }
-            Text(lift.change == nil ? InsightFormat.sessions(lift.sessions) : "· \(InsightFormat.sessions(lift.sessions))")
+            Text((lift.change == nil ? "" : "· ") + InsightFormat.sessions(lift.sessions) + (includesBodyweight ? " · incl. bodyweight" : ""))
                 .foregroundStyle(Color.exTextSecondary)
         }
         .font(.exCaption).foregroundStyle(lift.change.map { LiftTone.color($0, unit: unit) } ?? Color.exTextSecondary)
     }
 
     private var spoken: String {
-        var parts = ["\(name), estimated 1RM \(InsightFormat.spokenEstimate(lift.latest.oneRepMax, unit)) last session"]
+        var parts = ["\(name), estimated 1RM about \(InsightFormat.spokenEstimate(lift.current, unit))"
+            + "\(includesBodyweight ? " including bodyweight" : "") now"]
         if let change = lift.change { parts.append("\(InsightFormat.spokenChange(change, unit)) over \(InsightFormat.spanPhrase(span))") }
         parts.append(InsightFormat.sessions(lift.sessions))
         if lift.best.sessionID != lift.latest.sessionID {
@@ -132,7 +136,8 @@ enum LiftTone {
     }
 }
 
-/// Session bests as a small line, with the fitted trend dashed.
+/// The fitted trend as the line, with each session's best as a faint dot.
+/// Without a trend (under three sessions) the dots are joined instead.
 struct LiftSparkline: View {
     let points: [TrainingInsights.LiftPoint]
     var line: TrainingInsights.TrendLine?
@@ -144,21 +149,21 @@ struct LiftSparkline: View {
         let pad = max((high - low) * 0.15, high * 0.01, 0.5)
         Chart {
             ForEach(points, id: \.sessionID) { point in
-                LineMark(x: .value("Day", BodyDates.anchor(point.date)), y: .value("e1RM", point.oneRepMax),
-                         series: .value("Series", "Sessions"))
-                    .foregroundStyle(LinearGradient(colors: [color, .exAccent], startPoint: .leading, endPoint: .trailing))
-                    .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .interpolationMethod(.monotone)
-            }
-            if let last = points.last {
-                PointMark(x: .value("Day", BodyDates.anchor(last.date)), y: .value("e1RM", last.oneRepMax))
-                    .symbolSize(18).foregroundStyle(Color.exAccent)
+                if line == nil {
+                    LineMark(x: .value("Day", BodyDates.anchor(point.date)), y: .value("e1RM", point.oneRepMax),
+                             series: .value("Series", "Sessions"))
+                        .foregroundStyle(color).lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                }
+                PointMark(x: .value("Day", BodyDates.anchor(point.date)), y: .value("e1RM", point.oneRepMax))
+                    .symbolSize(line == nil ? 14 : 8).foregroundStyle(color.opacity(line == nil ? 1 : 0.45))
             }
             if let line {
                 LineMark(x: .value("Day", BodyDates.anchor(line.start)), y: .value("Trend", line.startValue), series: .value("Series", "Trend"))
-                    .foregroundStyle(Color.exTextMuted.opacity(0.7)).lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .foregroundStyle(LinearGradient(colors: [color, .exAccent], startPoint: .leading, endPoint: .trailing))
+                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
                 LineMark(x: .value("Day", BodyDates.anchor(line.end)), y: .value("Trend", line.endValue), series: .value("Series", "Trend"))
-                    .foregroundStyle(Color.exTextMuted.opacity(0.7)).lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .foregroundStyle(LinearGradient(colors: [color, .exAccent], startPoint: .leading, endPoint: .trailing))
+                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
             }
         }
         .chartYScale(domain: (low - pad)...(high + pad))
