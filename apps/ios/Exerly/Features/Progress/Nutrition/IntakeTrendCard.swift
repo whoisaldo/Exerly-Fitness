@@ -37,15 +37,18 @@ struct IntakeTrendCard: View {
 
     // MARK: Tiles
 
-    /// Four across when they fit unscaled, else two by two, else one column.
+    /// Four across, two by two from extra-large text, one column at accessibility sizes.
+    @ViewBuilder
     private var tiles: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: ExSpacing.small) { ForEach(Self.metrics, id: \.self) { tile($0) } }
+        if typeSize.isAccessibilitySize {
+            VStack(spacing: ExSpacing.small) { ForEach(Self.metrics, id: \.self) { tile($0) } }
+        } else if typeSize >= .xLarge {
             Grid(horizontalSpacing: ExSpacing.small, verticalSpacing: ExSpacing.small) {
                 GridRow { tile(.energy); tile(.protein) }
                 GridRow { tile(.carbohydrate); tile(.fat) }
             }
-            VStack(spacing: ExSpacing.small) { ForEach(Self.metrics, id: \.self) { tile($0) } }
+        } else {
+            HStack(spacing: 6) { ForEach(Self.metrics, id: \.self) { tile($0) } }
         }
     }
 
@@ -57,23 +60,20 @@ struct IntakeTrendCard: View {
             withAnimation(.snappy) { metric = nutrient }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 5) {
-                    Circle().fill(IntakeFormat.color(nutrient)).frame(width: 6, height: 6)
-                    Text(IntakeFormat.name(nutrient, short: true)).font(.exCaption.weight(.medium))
-                        .foregroundStyle(Color.exTextSecondary).lineLimit(1)
-                }
+                Text(IntakeFormat.name(nutrient, short: true)).font(.exCaption.weight(.medium))
+                    .foregroundStyle(Color.exTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(average.map { IntakeFormat.number($0, nutrient.unit) } ?? "–").font(.exStatSmall).monospacedDigit()
                         .foregroundStyle(Color.exTextPrimary)
                     // The tile's name already says calories.
                     if nutrient != .energy { Text(nutrient.unit.rawValue).font(.exSmall).foregroundStyle(Color.exTextMuted) }
                 }
-                .lineLimit(1)
+                .lineLimit(1).minimumScaleFactor(0.85)
                 ExProgressBar(value: comparison?.share ?? 0, total: 1, color: IntakeFormat.color(nutrient))
                 Text(comparison?.share.map(IntakeFormat.percent) ?? "No target").font(.exSmall).monospacedDigit()
                     .foregroundStyle(Color.exTextMuted).lineLimit(1)
             }
-            .padding(ExSpacing.small + 2)
+            .padding(.horizontal, ExSpacing.small).padding(.vertical, ExSpacing.small + 2)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(selected ? Color.exPrimary.opacity(0.12) : Color.exSurface2,
                         in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
