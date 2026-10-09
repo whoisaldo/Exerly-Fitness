@@ -59,22 +59,33 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
             return XCTFail(app.debugDescription)
         }
         try await Task.sleep(for: .seconds(1))
-        capture(app, "training-1-top")
-        for (index, section) in ["signals", "muscles", "lifts", "records"].enumerated() {
-            let element = app.descendants(matching: .any)["training.\(section)"]
-            reveal(element, in: app)
-            capture(app, "training-\(index + 2)-\(section)")
+        capture(app, "training-01")
+        // Page down a screen at a time until the footnote shows.
+        let footnote = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Hard sets exclude")).firstMatch
+        for page in 2...14 {
+            scrollPage(app)
+            capture(app, String(format: "training-%02d", page))
+            if footnote.exists, footnote.isHittable { break }
         }
-        app.swipeUp()
-        capture(app, "training-6-end")
         tap(app.buttons["training.lift.back-squat"], in: app)
         XCTAssertTrue(app.descendants(matching: .any)["liftDetail.estimate"].waitForExistence(timeout: 10))
         try await Task.sleep(for: .seconds(1))
-        capture(app, "training-7-lift")
-        app.swipeUp()
-        capture(app, "training-8-lift-stats")
-        app.swipeUp()
-        capture(app, "training-9-lift-sets")
+        capture(app, "lift-01")
+        let method = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Estimated 1RM comes from")).firstMatch
+        for page in 2...10 {
+            scrollPage(app)
+            capture(app, String(format: "lift-%02d", page))
+            if method.exists, method.isHittable { break }
+        }
+    }
+
+    /// Scrolls the content up by most of the visible area, between the bars.
+    private func scrollPage(_ app: XCUIApplication) {
+        let top = app.navigationBars.firstMatch.frame.maxY + 90
+        let bottom = (app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.height) - 30
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: bottom / app.frame.height))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: top / app.frame.height))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
     }
 
     // MARK: Helpers

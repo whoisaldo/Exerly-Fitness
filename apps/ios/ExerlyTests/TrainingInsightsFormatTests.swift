@@ -24,8 +24,10 @@ final class TrainingInsightsFormatTests: XCTestCase {
         XCTAssertEqual(InsightFormat.volume(Mass.lb(52_300).kilograms, .pounds), "52.3K lb")
         XCTAssertEqual(InsightFormat.volume(Mass.lb(1_680).kilograms, .pounds), "1,680 lb")
         XCTAssertEqual(InsightFormat.spokenVolume(Mass.lb(52_300).kilograms, .pounds), "52,300 pounds")
-        XCTAssertEqual(InsightFormat.sets(7.25), "7.5")
+        XCTAssertEqual(InsightFormat.sets(7.25), "7.2")
+        XCTAssertEqual(InsightFormat.sets(7.96), "7.9", "Just under a range of 8 never reads as 8")
         XCTAssertEqual(InsightFormat.sets(12), "12")
+        XCTAssertEqual(InsightFormat.sets(0.3 * 3 * 10), "9", "Floating error doesn't cut a whole number")
     }
 
     func testRecordsReadInTheAccountsUnit() throws {

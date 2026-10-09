@@ -80,9 +80,10 @@ enum InsightFormat {
         "\(Mass.kg(kilograms).value(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unitName(unit))"
     }
 
-    /// Fractional sets to 0.5 at most: "12", "7.5".
+    /// Fractional sets, cut (not rounded) to 0.1: "12", "7.9". Cutting keeps
+    /// a muscle just under its range from reading as exactly on it.
     static func sets(_ value: Double) -> String {
-        ((value * 2).rounded() / 2).formatted(.number.precision(.fractionLength(0...1)))
+        ((value * 10 + 1e-6).rounded(.down) / 10).formatted(.number.precision(.fractionLength(0...1)))
     }
 
     static func hours(_ seconds: Double) -> String {

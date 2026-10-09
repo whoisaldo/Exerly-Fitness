@@ -80,9 +80,9 @@ struct RecordsSection: View {
                 InsightIcon(systemName: InsightFormat.recordIcon(item.record.kind), color: .exAccent)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(showsExercise ? name : kind).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                Text(showsExercise ? name : day).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(showsExercise ? "\(kind) · \(day)" : day).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text(showsExercise ? "\(kind) · \(day)" : kind).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if typeSize.isAccessibilitySize {
                     Text(value.value).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
