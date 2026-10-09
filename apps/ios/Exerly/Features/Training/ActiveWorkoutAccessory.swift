@@ -27,7 +27,7 @@ struct ActiveWorkoutAccessory: View {
                             .font(.system(.subheadline, design: .rounded, weight: .semibold)).monospacedDigit()
                             .foregroundStyle(Color.exPrimaryText)
                     } else {
-                        Text(session.name).font(.subheadline.weight(.semibold)).foregroundStyle(Color.exTextPrimary)
+                        Text(TrainingFormat.title(of: session).name).font(.subheadline.weight(.semibold)).foregroundStyle(Color.exTextPrimary)
                             .lineLimit(1).truncationMode(.tail)
                             .layoutPriority(-1)
                         if placement != .inline {
