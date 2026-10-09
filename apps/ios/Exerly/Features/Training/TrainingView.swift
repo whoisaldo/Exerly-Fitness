@@ -195,7 +195,7 @@ struct TrainingView: View {
                     divider
                     NavigationLink {
                         TrainingObservationsView(workspace: workspace, unit: unit, timeZone: timeZone)
-                    } label: { TrainingToolLabel(title: "Insights", icon: "chart.xyaxis.line", detail: "Stalls and trends") }
+                    } label: { TrainingToolLabel(title: "Checks & suggestions", icon: "checklist", detail: "Entries to double-check and coach ideas") }
                         .accessibilityIdentifier("observations.open")
                     divider
                     let pending = workspace.agent.proposals.filter { $0.status == .pending }.count

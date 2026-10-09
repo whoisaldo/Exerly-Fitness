@@ -117,6 +117,20 @@ import Testing
         #expect(TrainingSignals.stalls(in: history, through: lastDay).map(\.exerciseIDs) == [["barbell-bench-press"]])
     }
 
+    @Test func evidenceSpeaksThePersonsUnit() throws {
+        let history = log("barbell-bench-press", weeks: 12, oneRepMax: { index in index < 12 ? 100 + Double(index) : 112 })
+        let kilograms = try #require(TrainingSignals.stall(of: "barbell-bench-press", in: history, through: lastDay))
+        let pounds = try #require(TrainingSignals.stall(of: "barbell-bench-press", in: history, through: lastDay, unit: .pounds))
+        #expect(kilograms.evidence[0].claim.contains(" kg"))
+        #expect(pounds.evidence.allSatisfy { !$0.claim.contains(" kg") })
+        #expect(pounds.evidence[0].claim.contains(" lb"))
+        // Numbers convert as well as the label: about 2.2 lb to the kilogram.
+        let around = { (claim: String) in Double(claim.components(separatedBy: "around ")[1].components(separatedBy: " ")[0]) ?? 0 }
+        #expect(abs(around(pounds.evidence[0].claim) / around(kilograms.evidence[0].claim) - 2.204_622_62) < 0.01)
+        // Machine-readable evidence stays in kilograms.
+        #expect(pounds.evidence.compactMap(\.metric) == kilograms.evidence.compactMap(\.metric))
+    }
+
     @Test func aProgressingLiftOrTooLittleDataIsNotAStall() {
         let rising = log("back-squat", weeks: 12, oneRepMax: { 140 * (1 + 0.004 * Double($0)) })
         #expect(TrainingSignals.stall(of: "back-squat", in: rising, through: lastDay) == nil)
@@ -158,5 +172,7 @@ import Testing
         #expect(diagnosis.kind == .deload)
         #expect(Set(diagnosis.exerciseIDs) == ["barbell-bench-press", "back-squat", "deadlift"])
         #expect(TrainingSignals.deload(in: history, through: lastDay.adding(days: -14)) == nil)
+        let pounds = try #require(TrainingSignals.deload(in: history, through: lastDay, unit: .pounds))
+        #expect(pounds.evidence.allSatisfy { $0.claim.contains(" lb") && !$0.claim.contains(" kg") })
     }
 }

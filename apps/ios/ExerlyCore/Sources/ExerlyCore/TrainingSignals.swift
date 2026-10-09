@@ -86,8 +86,9 @@ public enum TrainingSignals {
     /// A stall: over the last eight weeks, at least six sessions spanning three
     /// weeks, and even the optimistic end of the trend (one standard error up)
     /// gains less than 0.3 % a week.
+    /// Evidence text uses `unit`; machine-readable metrics stay in kilograms.
     public static func stall(of exerciseID: ExerciseID, in history: TrainingHistory, through end: LocalDate,
-                             firstWeekday: Weekday = .monday) -> Diagnosis? {
+                             firstWeekday: Weekday = .monday, unit: MassUnit = .kilograms) -> Diagnosis? {
         guard let trend = trend(of: exerciseID, in: history, through: end),
               trend.sessions >= stallMinimumSessions,
               trend.from.days(until: trend.through) >= stallMinimumSpanDays,
@@ -104,13 +105,15 @@ public enum TrainingSignals {
             caveats.append(change)
         }
         var evidence = [Evidence(
-            claim: "Your best \(exercise.name) e1RM per session moved \(signed(trend.slopePerWeek)) kg a week "
-                + "(± \(oneDecimal(trend.standardError))), around \(oneDecimal(trend.meanOneRepMax)) kg.",
+            claim: "Your best \(exercise.name) e1RM per session moved \(signed(trend.slopePerWeek / unit.kilogramsPerUnit)) "
+                + "\(unit.rawValue) a week (± \(oneDecimal(trend.standardError / unit.kilogramsPerUnit))), "
+                + "around \(oneDecimal(trend.meanOneRepMax / unit.kilogramsPerUnit)) \(unit.rawValue).",
             level: .personalData, caveats: caveats,
             dataRefs: [DataRef(kind: "exercise", id: exerciseID.rawValue)])]
         if let earlyBest, let lateBest {
             evidence.append(Evidence(
-                claim: "Best e1RM was \(oneDecimal(earlyBest)) kg in the first half and \(oneDecimal(lateBest)) kg in the second.",
+                claim: "Best e1RM was \(oneDecimal(earlyBest / unit.kilogramsPerUnit)) \(unit.rawValue) in the first half "
+                    + "and \(oneDecimal(lateBest / unit.kilogramsPerUnit)) \(unit.rawValue) in the second.",
                 level: .personalData, caveats: ["Single best sets are noisy"],
                 metric: .bestOneRepMax(exercise: exerciseID, from: halfway.adding(days: 1), through: trend.through,
                                        claimedKilograms: lateBest)))
@@ -129,10 +132,11 @@ public enum TrainingSignals {
     }
 
     /// Stalls across every exercise logged in the window, most sessions first.
-    public static func stalls(in history: TrainingHistory, through end: LocalDate, firstWeekday: Weekday = .monday) -> [Diagnosis] {
+    public static func stalls(in history: TrainingHistory, through end: LocalDate, firstWeekday: Weekday = .monday,
+                              unit: MassUnit = .kilograms) -> [Diagnosis] {
         let start = end.adding(days: -(stallWindowDays - 1))
         let ids = Set(history.sessions.filter { (start...end).contains($0.localDate) }.flatMap { $0.exercises.map(\.exerciseID) })
-        return ids.sorted().compactMap { stall(of: $0, in: history, through: end, firstWeekday: firstWeekday) }
+        return ids.sorted().compactMap { stall(of: $0, in: history, through: end, firstWeekday: firstWeekday, unit: unit) }
     }
 
     public static let deloadRecentDays = 10
@@ -144,7 +148,7 @@ public enum TrainingSignals {
     /// exercises, and at least half of those with enough data, average 4 % or
     /// more under their mean e1RM of the four weeks before. Effort is already
     /// in the e1RM through reps in reserve.
-    public static func deload(in history: TrainingHistory, through end: LocalDate) -> Diagnosis? {
+    public static func deload(in history: TrainingHistory, through end: LocalDate, unit: MassUnit = .kilograms) -> Diagnosis? {
         let recentStart = end.adding(days: -(deloadRecentDays - 1))
         let baselineEnd = recentStart.adding(days: -1)
         let baselineStart = baselineEnd.adding(days: -(deloadBaselineDays - 1))
@@ -162,8 +166,9 @@ public enum TrainingSignals {
         guard down.count >= 2, down.count * 2 >= changes.count else { return nil }
         let names = down.map { history.library.exercise($0.0)?.name ?? $0.0.rawValue }
         let evidence = down.map { id, baseline, recent in
-            Evidence(claim: "\(history.library.exercise(id)?.name ?? id.rawValue): e1RM averaged \(oneDecimal(recent)) kg "
-                + "in the last \(deloadRecentDays) days against \(oneDecimal(baseline)) kg in the \(deloadBaselineDays) days before "
+            Evidence(claim: "\(history.library.exercise(id)?.name ?? id.rawValue): e1RM averaged "
+                + "\(oneDecimal(recent / unit.kilogramsPerUnit)) \(unit.rawValue) in the last \(deloadRecentDays) days against "
+                + "\(oneDecimal(baseline / unit.kilogramsPerUnit)) \(unit.rawValue) in the \(deloadBaselineDays) days before "
                 + "(\(signed((recent / baseline - 1) * 100)) %).",
                 level: .personalData,
                 caveats: ["Your own log (n=1)", "Fatigue, poor sleep, illness and technique changes look alike here"],

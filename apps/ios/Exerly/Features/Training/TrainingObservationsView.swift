@@ -9,14 +9,14 @@ final class TrainingObservationsModel: ObservableObject {
     @Published private(set) var through: LocalDate?
     private var generation = 0
 
-    func refresh(history: TrainingHistory, now: Date, timeZone: TimeZone) async {
+    func refresh(history: TrainingHistory, now: Date, timeZone: TimeZone, unit: MassUnit) async {
         generation += 1
         let current = generation
         let date = LocalDate(now, in: timeZone)
         isLoading = true
         let task = Task.detached(priority: .utility) {
-            var result = TrainingSignals.stalls(in: history, through: date)
-            if let deload = TrainingSignals.deload(in: history, through: date) { result.append(deload) }
+            var result = TrainingSignals.stalls(in: history, through: date, unit: unit)
+            if let deload = TrainingSignals.deload(in: history, through: date, unit: unit) { result.append(deload) }
             return result
         }
         let result = await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
@@ -89,7 +89,7 @@ struct TrainingObservationsView: View {
     }
 
     private func refresh() async {
-        await observations.refresh(history: workspace.store.history, now: Date(), timeZone: timeZone)
+        await observations.refresh(history: workspace.store.history, now: Date(), timeZone: timeZone, unit: unit)
     }
 }
 
