@@ -273,7 +273,8 @@ struct TrainingToolLabel: View {
                 if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
                 if let detail {
                     Text(detail).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .multilineTextAlignment(typeSize.isAccessibilitySize ? .leading : .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             if typeSize.isAccessibilitySize { Spacer(minLength: 0) }

@@ -65,7 +65,7 @@ struct TodayWeekStrip: View {
             UISelectionFeedbackGenerator().selectionChanged()
         } label: {
             VStack(spacing: 6) {
-                Text(parts.weekday).font(.caption2.weight(.semibold))
+                Text(parts.weekday).font(.exSmall.weight(.semibold))
                     .foregroundStyle(selected ? Color.exPrimaryText : Color.exTextMuted)
                 ZStack {
                     Circle().stroke(Color.exPrimary.opacity(future ? 0.06 : 0.16), lineWidth: 3)
@@ -162,7 +162,7 @@ struct TodayNutritionCard: View {
                     .contentTransition(.numericText()).minimumScaleFactor(0.6).lineLimit(1)
                 Text(over ? "kcal over" : "kcal left").font(.exSmall.weight(.medium)).foregroundStyle(Color.exTextSecondary)
                 Text("\(Self.number(energy.consumed)) / \(Self.number(energy.target ?? 0))")
-                    .font(.caption2).monospacedDigit().foregroundStyle(Color.exTextMuted).padding(.top, 2)
+                    .font(.exSmall).monospacedDigit().foregroundStyle(Color.exTextMuted).padding(.top, 2)
             }.padding(14)
         }
         .frame(width: ringSize, height: ringSize)
