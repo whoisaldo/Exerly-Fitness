@@ -93,6 +93,26 @@ sedentary to 1.9 very active). Its trend weight is the weight entered at setup.
 Manual plans get no proposals. The proposal ID is a name-based UUID from the
 plan and the date, so two devices propose the same check-in once.
 
+A check-in reviewed after its day (the app wasn't opened on it) still uses
+the data up to the check-in day, but its version starts on the day it is
+reviewed, so days already eaten keep their targets.
+
+## The targets screen (2026-10-09)
+
+`Features/Targets` shows the plan in force and its check-in, built only on
+ExerlyCore (`NutritionPlanning.swift` holds the arithmetic: rates in the
+person's unit, weekday shares, typed manual targets, the basis a new version
+rests on, live previews and goal projections).
+
+- The app files a check-in's proposal only when the person decides: Accept
+  files and accepts it, Keep current files and rejects it, so nothing pending
+  goes stale when the plan changes first. Undo is `AgentStore.undo`.
+- Collaborative plans add Adjust: the proposed version opens in the editor,
+  and the changed version is filed and accepted under the check-in's ID.
+- A new version from the editor rests on the measured expenditure when
+  there is one, else the last plan's, else the profile's formula, at today's
+  trend weight.
+
 ## Checked against simulated people (closed loop)
 
 The M5b simulator gains people who eat to their targets: true intake is the

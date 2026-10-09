@@ -551,7 +551,7 @@ struct TodayView: View {
             WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone)
         case .targets:
             NavigationStack {
-                ProgramView()
+                TargetsView(workspace: workspace, unit: unit, timeZone: timeZone)
                     .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { self.destination = nil } } }
             }
         }
