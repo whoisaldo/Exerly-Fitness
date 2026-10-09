@@ -52,9 +52,10 @@ struct NutritionEntryEditor: View {
                     if draft.snapshot.unweighed == true {
                         ExCard {
                             ExEyebrow("Whole portion", color: .exPrimaryText)
-                            Text("This entry was logged without a weight. Edit its Calories and nutrients below.")
+                            Text("Logged as totals, without a weight. Change its Calories and nutrients directly.")
                                 .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                        }.accessibilityIdentifier("nutrition.unweighedEntry")
+                            editNutritionButton
+                        }.accessibilityElement(children: .contain).accessibilityIdentifier("nutrition.unweighedEntry")
                     } else {
                         amount
                     }
@@ -172,10 +173,7 @@ struct NutritionEntryEditor: View {
                 DisclosureGroup("All portion nutrients") { NutritionAmountsView(amounts: amount.nutrients) }
                     .font(.exLabel)
             }
-            Button("Edit entry nutrition", systemImage: "pencil") {
-                typing = false
-                nutritionEditing = draft.reviewNutrition()
-            }.font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("nutrition.editEntryNutrients")
+            if draft.snapshot.unweighed != true { editNutritionButton }
             DisclosureGroup("About this food") {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
                     Text(NutritionFormat.source(draft.food.source))
@@ -199,6 +197,14 @@ struct NutritionEntryEditor: View {
                 }.font(.exCaption).frame(maxWidth: .infinity, alignment: .leading)
             }.font(.exLabel)
         }
+    }
+
+    private var editNutritionButton: some View {
+        Button("Edit entry nutrition", systemImage: "pencil") {
+            typing = false
+            nutritionEditing = draft.reviewNutrition()
+        }.font(.exLabel).frame(minHeight: 44).contentShape(Rectangle())
+            .accessibilityIdentifier("nutrition.editEntryNutrients")
     }
 
     @ViewBuilder private var favoriteButton: some View {

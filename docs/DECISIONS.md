@@ -314,8 +314,9 @@ API meant for type-ahead.
 
 The portion editor is a sheet sized to show the energy, macros, unit chips,
 amount, meal and a pinned Log button without scrolling; dates, nutrient
-corrections and the source are below. A serving chip sets one of that
-serving; a unit chip converts the current amount. The separate "Portion
+corrections and the source are below. Switching unit or serving chips
+converts the amount and keeps its weight; the presets under the amount set
+whole servings. The separate "Portion
 measure" sheet (`NutritionMeasureSelection`) is removed, and the meal
 builder's portion editor uses the same chips. A barcode that matches one food,
 typed or scanned, opens its portion directly.

@@ -78,8 +78,9 @@ enum NutritionPortionMeasure: Hashable {
     }
 }
 
-/// Grams, ounces, volumes and the food's own servings as chips. A serving
-/// chip sets one of that serving; a unit chip converts the current amount.
+/// Grams, ounces, volumes and the food's own servings as chips. Switching
+/// converts the amount and keeps its weight; the presets below it set whole
+/// servings. A label serving chosen while the amount is invalid starts at one.
 struct NutritionMeasureChips: View {
     @ObservedObject var draft: NutritionEntryDraft
     let unit: MassUnit
@@ -94,9 +95,10 @@ struct NutritionMeasureChips: View {
                         onChoose()
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         guard !selected else { return }
-                        if case .serving(let serving) = measure, draft.publishedServings.contains(serving) {
+                        if !draft.selectMeasure(measure), case .serving(let serving) = measure,
+                           draft.publishedServings.contains(serving) {
                             draft.selectPortion(serving)
-                        } else { draft.selectMeasure(measure) }
+                        }
                     } label: {
                         Text(title(measure)).font(.exLabel.weight(selected ? .semibold : .medium))
                             .padding(.horizontal, 14).frame(minHeight: 34)
