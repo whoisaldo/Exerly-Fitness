@@ -285,3 +285,19 @@ systems would mean a second, plainer version of every primary screen.
 
 `ConfettiView` was only reachable through an onboarding flag that nothing set.
 It is deleted, consistent with the no-confetti principle.
+
+## 2026-10-09: Today replaces the Diary, and the Library tab goes
+
+The app opens on Today: the day's calories and macros against targets, the
+foods usually eaten at this time with a plus that logs each in one tap, today's
+workout with Start, and the meals, each with a one-tap repeat of the last time
+it was logged. Measured on the simulator: a usual food, a repeated meal and
+starting the planned workout each take one tap from launch.
+
+The tabs are now Today, Train, Progress and Profile, plus an iOS 26 search tab
+that opens food search from anywhere. The Library tab is removed: recents and
+favourites already lead the food search, and the saved-foods manager moved to
+Profile → Foods & recipes. The status menu ("In progress") became a single
+"Mark this day complete" control, because complete days are what the
+expenditure estimate uses. The week strip is the last seven days, so yesterday
+is always one tap away.

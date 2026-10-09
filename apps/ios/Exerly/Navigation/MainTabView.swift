@@ -1,66 +1,87 @@
 import SwiftUI
 import ExerlyCore
 
-enum MainTab: Int, CaseIterable {
-    case home, training, library, progress, profile
-
-    var icon: String {
-        switch self {
-        case .home: "house"
-        case .training: "dumbbell"
-        case .library: "book"
-        case .progress: "chart.line.uptrend.xyaxis"
-        case .profile: "person.crop.circle"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .home: "Home"
-        case .training: "Train"
-        case .library: "Library"
-        case .progress: "Progress"
-        case .profile: "Profile"
-        }
-    }
+enum MainTab: Hashable {
+    case today, training, progress, profile, search
 }
 
 struct MainTabView: View {
     @EnvironmentObject private var sync: SyncEngine
     @EnvironmentObject private var auth: AuthViewModel
-    @State private var selectedTab: MainTab = .home
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @State private var selectedTab: MainTab = .today
+
+    private var unit: MassUnit { auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds }
+    private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
-                if let account = auth.currentUser?.id {
-                    NutritionHostView(accountID: account,
-                                      unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
-                                      timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+            Tab("Today", systemImage: "house", value: .today) {
+                NavigationStack {
+                    if let id = auth.currentUser?.id {
+                        TodayHostView(accountID: id, unit: unit, timeZone: timeZone) { selectedTab = .training }
+                    }
                 }
             }
-                .tabItem { Label(MainTab.home.label, systemImage: MainTab.home.icon) }.tag(MainTab.home)
-            NavigationStack {
-                if let account = auth.currentUser?.id {
-                    TrainingHostView(accountID: account,
-                                     unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
-                                     timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt)
+            Tab("Train", systemImage: "dumbbell", value: .training) {
+                NavigationStack {
+                    if let id = auth.currentUser?.id {
+                        TrainingHostView(accountID: id, unit: unit, timeZone: timeZone)
+                    }
                 }
             }
-            .tabItem { Label(MainTab.training.label, systemImage: MainTab.training.icon) }.tag(MainTab.training)
-            NavigationStack {
-                if let account = auth.currentUser?.id {
-                    NutritionLibraryHostView(accountID: account,
-                        timeZone: TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt,
-                        unit: auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds)
+            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: .progress) {
+                NavigationStack { ProgressView_(initialDate: sync.today) }
+            }
+            Tab("Profile", systemImage: "person.crop.circle", value: .profile) {
+                NavigationStack { ProfileView() }
+            }
+            Tab("Log food", systemImage: "magnifyingglass", value: .search, role: .search) {
+                if let id = auth.currentUser?.id {
+                    FoodSearchTab(accountID: id, unit: unit, timeZone: timeZone)
                 }
             }
-                .tabItem { Label(MainTab.library.label, systemImage: MainTab.library.icon) }.tag(MainTab.library)
-            NavigationStack { ProgressView_(initialDate: sync.today) }
-                .tabItem { Label(MainTab.progress.label, systemImage: MainTab.progress.icon) }.tag(MainTab.progress)
-            NavigationStack { ProfileView() }
-                .tabItem { Label(MainTab.profile.label, systemImage: MainTab.profile.icon) }.tag(MainTab.profile)
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
         .tint(Color.exPrimaryText)
+    }
+}
+
+/// Food search as a tab, so a food is two taps from anywhere.
+private struct FoodSearchTab: View {
+    let accountID: String
+    let unit: MassUnit
+    let timeZone: TimeZone
+    @EnvironmentObject private var account: AppAccountWorkspace
+    @EnvironmentObject private var auth: AuthViewModel
+
+    var body: some View {
+        if let workspace = account.training, workspace.accountID == accountID,
+           let api = auth.accountAPI, api.accountID == accountID {
+            FoodSearchTabContent(workspace: workspace, api: api, unit: unit, timeZone: timeZone)
+                .id(workspace.identity)
+        } else { ProgressView("Opening foods…") }
+    }
+}
+
+private struct FoodSearchTabContent: View {
+    let workspace: TrainingWorkspace
+    let api: AccountAPI
+    let unit: MassUnit
+    let timeZone: TimeZone
+    @StateObject private var actions: NutritionDiaryActions
+
+    init(workspace: TrainingWorkspace, api: AccountAPI, unit: MassUnit, timeZone: TimeZone) {
+        self.workspace = workspace
+        self.api = api
+        self.unit = unit
+        self.timeZone = timeZone
+        _actions = StateObject(wrappedValue: NutritionDiaryActions(store: workspace.nutrition))
+    }
+
+    var body: some View {
+        NutritionFoodPicker(workspace: workspace, api: api, date: LocalDate(Date(), in: timeZone),
+                            meal: workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone),
+                            timeZone: timeZone, unit: unit, actions: actions) {}
     }
 }

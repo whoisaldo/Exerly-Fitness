@@ -81,6 +81,14 @@ struct ProfileView: View {
                 NavigationLink(destination: ProgramView()) {
                     settingsRowContent(icon: "target", title: "Nutrition Program")
                 }
+                NavigationLink {
+                    NutritionLibraryHostView(accountID: authVM.currentUser?.id ?? "",
+                                             timeZone: TimeZone(identifier: authVM.currentUser?.timezone ?? "UTC") ?? .gmt,
+                                             unit: authVM.currentUser?.unitSystem == "metric" ? .kilograms : .pounds)
+                } label: {
+                    settingsRowContent(icon: "fork.knife", title: "Foods & recipes")
+                }
+                .accessibilityIdentifier("profile.foods")
             }
             settingsGroup("Preferences") {
                 Button { showEditProfile = true } label: {

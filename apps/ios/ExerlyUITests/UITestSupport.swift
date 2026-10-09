@@ -85,7 +85,7 @@ class ExerlyUITestCase: XCTestCase {
         replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 20))
         dismissPasswordPrompt(in: app)
     }
     func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil) -> XCUIApplication {
