@@ -99,7 +99,7 @@ struct TrainingView: View {
     private var hero: some View {
         if let workspace, let program = workspace.programs.active {
             if let position = ProgramSchedule.next(for: program, in: store.history),
-               let plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight) {
+               let plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight, unit: unit) {
                 TodayWorkoutCard(plan: plan, position: position, program: program, library: store.library,
                                  restPolicy: store.restPolicy, unit: unit, start: startToday,
                                  preview: { previewing = true }, empty: startEmpty)
@@ -129,7 +129,7 @@ struct TrainingView: View {
     private func startToday() {
         guard let workspace else { return }
         do {
-            if try !workspace.startNextWorkout(timeZone: timeZone) {
+            if try !workspace.startNextWorkout(timeZone: timeZone, unit: unit) {
                 error = "Your program has no workout left. Choose another in Programs."
             } else { error = nil }
         } catch { self.error = "The workout could not start. Your saved program is still here. Try again." }

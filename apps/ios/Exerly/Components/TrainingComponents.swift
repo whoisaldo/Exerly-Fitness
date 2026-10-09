@@ -8,9 +8,10 @@ struct TrainingCell: Hashable {
     let field: Field
 }
 
-/// A set value edited in place. Tapping it selects the whole value and opens
-/// the training keypad, so the first digit replaces it. The value is
-/// committed when editing ends, through Next, Done or another cell.
+/// A set value edited in place. Tapping it opens the training keypad; the
+/// first key replaces the value, as in other gym loggers, and later keys add
+/// to it. The value is committed when editing ends, through Next, Done or
+/// another cell.
 struct TrainingValueField: UIViewRepresentable {
     let cell: TrainingCell
     let text: String
@@ -68,7 +69,8 @@ struct TrainingValueField: UIViewRepresentable {
         field.accessibilityIdentifier = identifier
         field.keyboardType = decimal ? .decimalPad : .numberPad
         field.textColor = UIColor(Color.exTextPrimary)
-        field.tintColor = UIColor(Color.exPrimary)
+        // The focused cell's border shows editing; a caret would suggest typing appends.
+        field.tintColor = .clear
         let base = UIFont.preferredFont(forTextStyle: .body)
         let descriptor = (base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor)
             .addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]])
@@ -89,15 +91,19 @@ struct TrainingValueField: UIViewRepresentable {
         TrainingKeypad(title: title, decimal: decimal, stepLabel: stepLabel, hasNext: next != nil, colorScheme: colorScheme,
                        insert: { [weak field, weak coordinator] key in
                            guard let field, let coordinator else { return }
-                           if coordinator.textField(field, shouldChangeCharactersIn: field.selectedRange, replacementString: key) {
-                               field.insertText(key)
-                           }
+                           _ = coordinator.textField(field, shouldChangeCharactersIn: NSRange(location: (field.text ?? "").utf16.count, length: 0),
+                                                     replacementString: key, applying: true)
                        },
-                       delete: { [weak field] in field?.deleteBackward() },
+                       delete: { [weak field, weak coordinator] in
+                           guard let field, let coordinator else { return }
+                           let text = field.text ?? ""
+                           _ = coordinator.textField(field, shouldChangeCharactersIn: NSRange(location: max(0, text.utf16.count - 1), length: text.isEmpty ? 0 : 1),
+                                                     replacementString: "", applying: true)
+                       },
                        step: { [weak field, weak coordinator] up in
                            guard let field, let coordinator, let value = coordinator.parent.step(field.text ?? "", up) else { return }
                            field.text = value
-                           coordinator.selectAll(field)
+                           coordinator.replaceOnInput = true
                        },
                        next: { [weak coordinator] in coordinator?.parent.next?() },
                        done: { [weak coordinator] in coordinator?.parent.focus = nil })
@@ -106,14 +112,16 @@ struct TrainingValueField: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: TrainingValueField
         var host: UIHostingController<TrainingKeypad>?
+        /// Set when editing begins and after a step, so the next key starts a new value.
+        var replaceOnInput = false
         private var initial = ""
 
         init(_ parent: TrainingValueField) { self.parent = parent }
 
         func textFieldDidBeginEditing(_ field: UITextField) {
             initial = field.text ?? ""
+            replaceOnInput = true
             if parent.focus != parent.cell { parent.focus = parent.cell }
-            DispatchQueue.main.async { self.selectAll(field) }
         }
 
         func textFieldDidEndEditing(_ field: UITextField) {
@@ -123,13 +131,26 @@ struct TrainingValueField: UIViewRepresentable {
         }
 
         func textField(_ field: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            textField(field, shouldChangeCharactersIn: range, replacementString: string, applying: false)
+        }
+
+        /// Hardware keys and pasted text arrive here and are allowed through;
+        /// the training keypad applies its keys itself. Either way the first
+        /// change after editing begins replaces the whole value.
+        func textField(_ field: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String,
+                       applying: Bool) -> Bool {
             let separator = Locale.current.decimalSeparator ?? "."
-            let current = (field.text ?? "") as NSString
-            let result = current.replacingCharacters(in: range, with: string)
-            guard result.count <= 7 else { return false }
             let allowed = parent.decimal ? CharacterSet(charactersIn: "0123456789" + separator) : CharacterSet(charactersIn: "0123456789")
             guard string.unicodeScalars.allSatisfy(allowed.contains) else { return false }
-            return result.components(separatedBy: separator).count <= 2
+            let replacing = replaceOnInput
+            let result = replacing ? string : ((field.text ?? "") as NSString).replacingCharacters(in: range, with: string)
+            guard result.count <= 7, result.components(separatedBy: separator).count <= 2 else { return false }
+            replaceOnInput = false
+            if replacing || applying {
+                field.text = result
+                return false
+            }
+            return true
         }
 
         func textFieldShouldReturn(_ field: UITextField) -> Bool {
@@ -137,16 +158,6 @@ struct TrainingValueField: UIViewRepresentable {
             return false
         }
 
-        func selectAll(_ field: UITextField) {
-            field.selectedTextRange = field.textRange(from: field.beginningOfDocument, to: field.endOfDocument)
-        }
-    }
-}
-
-private extension UITextField {
-    var selectedRange: NSRange {
-        guard let range = selectedTextRange else { return NSRange(location: (text ?? "").utf16.count, length: 0) }
-        return NSRange(location: offset(from: beginningOfDocument, to: range.start), length: offset(from: range.start, to: range.end))
     }
 }
 

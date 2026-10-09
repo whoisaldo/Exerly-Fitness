@@ -57,7 +57,7 @@ struct PlannedWorkoutView: View {
     }
 
     private func refresh() {
-        plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight)
+        plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight, unit: unit)
         error = nil
     }
 
@@ -65,7 +65,7 @@ struct PlannedWorkoutView: View {
         do {
             // The latest weigh-in stands in for bodyweight; change it in the workout's details.
             let bodyweight = workspace.latestBodyweight
-            let latest = workspace.nextWorkout(bodyweight: bodyweight)
+            let latest = workspace.nextWorkout(bodyweight: bodyweight, unit: unit)
             guard latest == reviewed else {
                 plan = latest
                 error = "Your program, gym or workout history changed. Review the updated targets before starting."

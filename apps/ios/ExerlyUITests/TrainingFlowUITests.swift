@@ -233,4 +233,15 @@ extension ExerlyUITestCase {
             Thread.sleep(forTimeInterval: 0.4)
         }
     }
+
+    /// Starts an empty workout from the Train tab and names it in its details.
+    func startNamedWorkout(_ name: String, in app: XCUIApplication) {
+        tap(app.buttons["training.start"], in: app)
+        XCTAssertTrue(app.buttons["training.menu"].waitForExistence(timeout: 10))
+        tap(app.buttons["training.menu"], in: app)
+        tap(app.buttons["Workout details"], in: app)
+        replace(app.textFields["training.name"], with: name, in: app)
+        tap(app.buttons["training.saveDetails"], in: app)
+        XCTAssertTrue(app.navigationBars[name].waitForExistence(timeout: 10))
+    }
 }

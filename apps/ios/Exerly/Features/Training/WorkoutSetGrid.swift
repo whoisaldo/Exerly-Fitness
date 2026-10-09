@@ -110,7 +110,7 @@ struct SetGridHeader: View {
             ForEach(SetGrid.fields(metric), id: \.self) { field in
                 Text(SetGrid.shortTitle(field, metric: metric, unit: unit)).frame(width: metrics.width(field))
             }
-            Image(systemName: "checkmark").frame(width: metrics.check)
+            Color.clear.frame(width: metrics.check, height: 1)
         }
         .font(.caption2.weight(.semibold)).tracking(0.6).foregroundStyle(Color.exTextMuted)
         .lineLimit(1).minimumScaleFactor(0.7)

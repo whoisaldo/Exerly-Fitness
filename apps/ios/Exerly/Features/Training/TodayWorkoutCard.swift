@@ -75,7 +75,8 @@ struct TodayWorkoutCard: View {
             HStack(spacing: ExSpacing.small) {
                 Text(setsAndReps(planned, exercise: exercise)).foregroundStyle(Color.exTextSecondary)
                 if let load {
-                    Text(TrainingFormat.mass(load, unit: unit)).foregroundStyle(Color.exPrimaryText)
+                    let sign = exercise?.metric == .bodyweightReps ? "+" : exercise?.metric == .assistedReps ? "−" : ""
+                    Text(sign + TrainingFormat.mass(load, unit: unit)).foregroundStyle(Color.exPrimaryText)
                 }
             }
             .font(.system(.subheadline, design: .rounded, weight: .medium))

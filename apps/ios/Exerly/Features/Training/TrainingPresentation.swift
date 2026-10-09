@@ -81,8 +81,12 @@ final class TrainingWorkspace: ObservableObject {
         if await entryChecks.refresh() { try? await sync?.sync() }
     }
 
-    func nextWorkout(bodyweight: Mass?) -> WorkoutPlan? {
-        programs.nextWorkout(bodyweight: bodyweight, increments: gyms.increments(for:))
+    /// The active program's next workout. With `unit`, every recommended load
+    /// is in that unit, on a weight the equipment allows.
+    func nextWorkout(bodyweight: Mass?, unit: MassUnit? = nil) -> WorkoutPlan? {
+        let plan = programs.nextWorkout(bodyweight: bodyweight, increments: gyms.increments(for:))
+        guard let unit else { return plan }
+        return plan?.expressed(in: unit, library: store.library, increments: gyms.increments(for:))
     }
 
     /// The latest weigh-in, used for bodyweight exercises without asking.
@@ -91,8 +95,8 @@ final class TrainingWorkspace: ObservableObject {
     /// Starts the next workout of the active program, with the latest
     /// weigh-in. Returns false when the program has nothing left to do.
     @discardableResult
-    func startNextWorkout(timeZone: TimeZone) throws -> Bool {
-        guard let plan = nextWorkout(bodyweight: latestBodyweight) else { return false }
+    func startNextWorkout(timeZone: TimeZone, unit: MassUnit? = nil) throws -> Bool {
+        guard let plan = nextWorkout(bodyweight: latestBodyweight, unit: unit) else { return false }
         try store.startSession(from: plan, bodyweight: latestBodyweight, timeZone: timeZone)
         return true
     }

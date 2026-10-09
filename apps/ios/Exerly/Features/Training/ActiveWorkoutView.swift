@@ -74,6 +74,7 @@ struct ActiveWorkoutView: View {
             .environment(\.defaultMinListRowHeight, 40)
             .tint(Color.exPrimaryText)
             .exScrollEdges()
+            .contentMargins(.top, ExSpacing.small, for: .scrollContent)
             .scrollDismissesKeyboard(.interactively)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -224,7 +225,10 @@ struct ActiveWorkoutView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Guide to \(exercise.name)")
                 .accessibilityIdentifier("training.guide.\(exercise.id.rawValue)")
-                Text(subtitle(performed, exercise: exercise)).font(.exLabel).foregroundStyle(Color.exPrimaryText)
+                let target = performed.slotID.flatMap { targets[$0] }
+                Text(target.map { TrainingFormat.compactTarget($0, exercise: exercise) }
+                     ?? exercise.targetMuscles.prefix(2).map(\.name).joined(separator: " · "))
+                    .font(.exLabel).foregroundStyle(target == nil ? Color.exTextSecondary : Color.exPrimaryText)
                 if !performed.notes.isEmpty {
                     Text(performed.notes).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
@@ -253,13 +257,6 @@ struct ActiveWorkoutView: View {
             .accessibilityIdentifier("training.exerciseMenu.\(exercise.id.rawValue)")
         }
         .padding(.top, ExSpacing.tight)
-    }
-
-    private func subtitle(_ performed: PerformedExercise, exercise: ExerlyCore.Exercise) -> String {
-        if let slot = performed.slotID, let target = targets[slot] {
-            return TrainingFormat.compactTarget(target, exercise: exercise)
-        }
-        return exercise.targetMuscles.prefix(2).map(\.name).joined(separator: " · ")
     }
 
     // MARK: Set actions
