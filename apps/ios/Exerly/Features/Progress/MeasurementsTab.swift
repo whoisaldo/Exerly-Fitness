@@ -5,44 +5,21 @@ import SwiftUI
 
 private let centimetersPerInch = USUnits.centimetersPerInch
 
-private enum WeightRange: Int, CaseIterable, Identifiable {
-    case month = 30
-    case quarter = 90
-    case halfYear = 180
-    case year = 365
-
-    var id: Int { rawValue }
-
-    var label: String {
-        switch self {
-        case .month: "30d"
-        case .quarter: "90d"
-        case .halfYear: "6m"
-        case .year: "1y"
-        }
-    }
-}
-
 @MainActor
 final class MeasurementsViewModel: ObservableObject {
-    @Published private(set) var trend: TrendResponseDTO?
     @Published private(set) var isLoading = false
     @Published var error: String?
     @Published private(set) var measurements: [BodyMeasurementDTO] = []
-    @Published private(set) var weights: [WeightDayDTO] = []
     private var generation = UUID()
 
-    func load(days: Int, today: CalendarDay) async {
+    /// Body measurements stay on the daily-log sync for now; weigh-ins live in ExerlyCore.
+    func load(today: CalendarDay) async {
         let generation = UUID()
         self.generation = generation
         isLoading = true
         error = nil
-        let from = today.adding(days: -(days - 1))!.rawValue
+        let from = today.adding(days: -3650)!.rawValue
         let to = today.rawValue
-        if let saved = try? await SyncEngine.shared.weights(from: from, to: to, cachedOnly: true), self.generation == generation {
-            weights = saved
-            trend = .savedWeights(saved, from: from, to: to)
-        }
         if let saved = try? await SyncEngine.shared.measurements(from: from, to: to, cachedOnly: true), self.generation == generation {
             measurements = saved
         }
@@ -50,358 +27,217 @@ final class MeasurementsViewModel: ObservableObject {
             let values = try await SyncEngine.shared.measurements(from: from, to: to)
             guard self.generation == generation else { return }
             measurements = values
+        } catch is CancellationError {
+            // A newer load replaced this one.
         } catch {
             if self.generation == generation { self.error = error.localizedDescription }
         }
-        do {
-            let readings = try await SyncEngine.shared.weights(from: from, to: to)
-            guard self.generation == generation else { return }
-            weights = readings
-            trend = .savedWeights(readings, from: from, to: to)
-        } catch { if self.generation == generation { self.error = error.localizedDescription } }
         if self.generation == generation { isLoading = false }
     }
 }
 
+/// What the weigh-in sheet opens on.
+private enum WeighInRequest: Identifiable {
+    case new
+    case edit(WeightEntry)
+
+    var id: String {
+        switch self {
+        case .new: "new"
+        case .edit(let entry): entry.id.uuidString
+        }
+    }
+}
+
 struct MeasurementsTab: View {
+    let workspace: TrainingWorkspace?
+    let unit: MassUnit
+    let timeZone: TimeZone
+    let openingError: String?
     @Query private var legacyMeasurements: [Measurement]
     @EnvironmentObject private var sync: SyncEngine
     @AppStorage("unitSystem") private var unitSystem = "imperial"
     @StateObject private var viewModel = MeasurementsViewModel()
-    @State private var selectedRange: WeightRange = .quarter
     @State private var showAddSheet = false
     @State private var editing: BodyMeasurementDTO?
     @State private var lastDeletedID: String?
     @State private var actionError: String?
     @State private var showLegacyReview = false
-    @State private var addingWeight = false
-    @State private var weightDate: CalendarDay
-    @State private var lastDeletedWeight: String?
+    @State private var weighIn: WeighInRequest?
+    @State private var deletedWeight: WeightEntry?
 
-    init(initialDate: CalendarDay) { _weightDate = State(initialValue: initialDate) }
-
-    private var nonWeightMeasurements: [BodyMeasurementDTO] {
-        viewModel.measurements
+    init(initialDate: CalendarDay, workspace: TrainingWorkspace?, unit: MassUnit, timeZone: TimeZone, openingError: String? = nil) {
+        self.workspace = workspace
+        self.unit = unit
+        self.timeZone = timeZone
+        self.openingError = openingError
     }
-
-    private var weighIns: [WeightDayDTO] { viewModel.weights }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                if lastDeletedID != nil {
-                    HStack {
-                        Text("Measurement removed.")
-                        Spacer()
-                        Button("Undo") {
-                            do {
-                                try sync.undoMeasurementDeletion(entityID: lastDeletedID!)
-                                lastDeletedID = nil
-                            } catch { actionError = error.localizedDescription }
-                        }.frame(minHeight: 44)
-                    }.font(.callout)
+            VStack(alignment: .leading, spacing: ExSpacing.page) {
+                if let deletedWeight {
+                    banner("Weigh-in deleted.", action: "Undo") { undoDelete(deletedWeight) }
+                        .accessibilityIdentifier("body.undoDelete")
                 }
-                if lastDeletedWeight != nil {
-                    HStack {
-                        Text("Weight reading removed.")
-                        Spacer()
-                        Button("Undo weight deletion") {
-                            do { try sync.undoWeightDeletion(entityID: lastDeletedWeight!); lastDeletedWeight = nil } catch { actionError = error.localizedDescription }
-                        }.frame(minHeight: 44)
+                if lastDeletedID != nil {
+                    banner("Measurement removed.", action: "Undo") {
+                        do {
+                            try sync.undoMeasurementDeletion(entityID: lastDeletedID!)
+                            lastDeletedID = nil
+                        } catch { actionError = error.localizedDescription }
                     }
                 }
-                if let actionError { Text(actionError).foregroundStyle(.exError) }
-                summarySection
-                if viewModel.trend?.summary?.weighIns != 1 { chartSection }
-                historySection
+                if let actionError { Text(actionError).font(.exCaption).foregroundStyle(Color.exError) }
+                if let workspace {
+                    BodyWeightSection(workspace: workspace, unit: unit, timeZone: timeZone, onWeighIn: { weighIn = .new },
+                                      onEdit: { weighIn = .edit($0) }, onDelete: delete)
+                } else if let openingError {
+                    ExCard { Text(openingError).font(.exBody).foregroundStyle(Color.exTextSecondary) }
+                } else {
+                    LoadingStateView(message: "Opening your weigh-ins…").frame(height: 160)
+                }
+                measurementsSection
                 if !legacyMeasurements.isEmpty {
                     Text("Measurements from an older version are preserved on this device. They have not been assigned to this account.")
-                        .font(.callout).foregroundStyle(.exTextSecondary)
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     Button("Review older measurements") { showLegacyReview = true }.frame(minHeight: 44)
                 }
                 if sync.attentionCount > 0 {
                     NavigationLink("Review unsynced changes") { SavedChangesReviewView() }
                         .frame(minHeight: 44)
                 }
+                #if DEBUG
+                // Design review only: the home screen's card, shown here until Today hosts it.
+                if let workspace, ProcessInfo.processInfo.environment["EXERLY_SHOW_WEIGHT_CARD"] == "1" {
+                    ExSectionHeading("Home card preview")
+                    WeightTrendCard(workspace: workspace, unit: unit, timeZone: timeZone) { weighIn = .new }
+                }
+                #endif
             }
-            .padding(20)
+            .frame(maxWidth: 700, alignment: .leading)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, ExSpacing.page)
+            .padding(.top, ExSpacing.small)
             .padding(.bottom, ExSpacing.major)
         }
         .exScrollEdges()
-        .refreshable { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
+        .refreshable {
+            await viewModel.load(today: sync.today)
+            await workspace?.synchronize()
+        }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { weightDate = sync.today; addingWeight = true } label: { Label("Log weight", systemImage: "scalemass") }
-                    .frame(minHeight: 44).accessibilityLabel("Log weight")
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showAddSheet = true } label: { Image(systemName: "plus") }
                     .frame(minWidth: 44, minHeight: 44).accessibilityLabel("Add measurement")
             }
         }
-        .sheet(isPresented: $addingWeight) {
-            WeightEntrySheet(date: weightDate, onDeleted: { lastDeletedWeight = $0 }, onSaved: {
-                Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
-            })
+        .sheet(item: $weighIn) { request in
+            if let workspace {
+                switch request {
+                case .new: WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone)
+                case .edit(let entry):
+                    WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone, editing: entry,
+                                 onDeleted: { deletedWeight = $0 })
+                }
+            }
         }
         .sheet(isPresented: $showAddSheet) {
             AddMeasurementSheet(initialDate: sync.today, onSaved: {
-                Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
+                Task { await viewModel.load(today: sync.today) }
             })
         }
         .sheet(item: $editing) { measurement in
             AddMeasurementSheet(initialDate: sync.today, editing: measurement, onDeleted: { lastDeletedID = $0 },
-                                onSaved: { Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } })
+                                onSaved: { Task { await viewModel.load(today: sync.today) } })
         }
         .sheet(isPresented: $showLegacyReview) { LegacyMeasurementReview() }
-        .onChange(of: sync.changeToken) { _, _ in Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) } }
-        .task(id: "\(selectedRange.rawValue)-\(sync.today.rawValue)-\(sync.calendar.timeZoneIdentifier)") {
-            await viewModel.load(days: selectedRange.rawValue, today: sync.today)
+        .onChange(of: sync.changeToken) { _, _ in Task { await viewModel.load(today: sync.today) } }
+        .task(id: "\(sync.today.rawValue)-\(sync.calendar.timeZoneIdentifier)") {
+            await viewModel.load(today: sync.today)
+        }
+        .task(id: workspace?.identity) {
+            if let workspace { await LegacyWeighIns.importIfNeeded(workspace, timeZone: timeZone) }
         }
     }
 
-    @ViewBuilder
-    private var summarySection: some View {
-        if let summary = viewModel.trend?.summary {
-            ExCard(accent: true) {
-                ExEyebrow("Weight trend", color: .exPrimaryText)
-                Text(formatWeight(summary.currentTrendKg, digits: 1)).font(.exStat).foregroundStyle(Color.exTextPrimary)
-                if let weight = summary.currentWeightKg {
-                    Text("Last scale \(formatWeight(weight, digits: 1))").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                }
-                if summary.weighIns >= 2 {
-                    HStack(alignment: .top, spacing: ExSpacing.page) {
-                        summaryValue("Change · \(selectedRange.label)", value: signedWeight(summary.changeKg))
-                        summaryValue("Weekly rate", value: signedWeight(summary.weeklyRateKg, suffix: "/wk"))
-                    }
-                } else {
-                    Text("A starting point. Add another weigh-in to see the change.").font(.exCaption)
-                        .foregroundStyle(Color.exTextSecondary)
-                    Button("Log a weigh-in") { weightDate = sync.today; addingWeight = true }
-                        .buttonStyle(ExActionStyle())
-                }
-            }
+    private func banner(_ message: String, action: String, perform: @escaping () -> Void) -> some View {
+        HStack {
+            Text(message).font(.exBody).foregroundStyle(Color.exTextPrimary)
+            Spacer()
+            Button(action, action: perform).font(.exBodyMedium).foregroundStyle(Color.exPrimaryText).frame(minHeight: 44)
+        }
+        .padding(.horizontal, ExSpacing.content)
+        .background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
+    }
+
+    private func delete(_ entry: WeightEntry) {
+        guard let workspace else { return }
+        do {
+            try workspace.nutrition.deleteWeight(entry.id)
+        } catch {
+            actionError = BodyFormat.message(error)
+            return
+        }
+        deletedWeight = entry
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Task {
+            await LegacyWeighIns.forget(entry, accountID: workspace.accountID)
+            await workspace.synchronize()
         }
     }
 
-    private func summaryValue(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.exCaption).foregroundStyle(Color.exTextSecondary)
-            Text(value).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
-        }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
+    /// Brings a deleted weigh-in back as a new one with the same reading and time.
+    private func undoDelete(_ entry: WeightEntry) {
+        guard let workspace else { return }
+        do {
+            try workspace.nutrition.logWeight(entry.weight, bodyFat: entry.bodyFat, at: entry.at, timeZone: timeZone)
+            deletedWeight = nil
+            Task { await workspace.synchronize() }
+        } catch { actionError = BodyFormat.message(error) }
     }
 
-    private var chartSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Weight trend")
-                            .font(.exH3)
-                            .foregroundStyle(.exTextPrimary)
-                        Text("Dots show recorded weights. The line shows your trend.")
-                            .font(.exCaption)
-                            .foregroundStyle(.exTextMuted)
-                    }
-                    Spacer()
+    private var measurementsSection: some View {
+        VStack(alignment: .leading, spacing: ExSpacing.item) {
+            ExSectionHeading("Measurements", detail: viewModel.measurements.isEmpty ? nil : "\(viewModel.measurements.count)")
+            if viewModel.measurements.isEmpty {
+                ExCard {
+                    Text(viewModel.isLoading ? "Loading measurements…" : "Waist, hips, arms and more. Add one with +.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    if let error = viewModel.error { Text(error).font(.exCaption).foregroundStyle(Color.exError) }
                 }
-
-                rangeSelector
-
-                if viewModel.isLoading && viewModel.trend == nil {
-                    LoadingStateView(message: "Loading trend…")
-                        .frame(height: 220)
-                } else if let error = viewModel.error, viewModel.trend == nil {
-                    ErrorStateView(message: error) {
-                        Task { await viewModel.load(days: selectedRange.rawValue, today: sync.today) }
-                    }
-                    .frame(height: 240)
-                } else if let series = viewModel.trend?.series, series.count >= 2 {
-                    trendChart(series)
-                    if let summary = viewModel.trend?.summary {
-                        Text("\(summary.weighIns) weigh-ins across \(summary.days) days")
-                            .font(.exSmall)
-                            .foregroundStyle(.exTextMuted)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        Text("One reading at a time").font(.exH3)
-                        Text("Your chart will appear after two weigh-ins.").font(.exBody).foregroundStyle(Color.exTextSecondary)
-                        Button("Log a weigh-in") { weightDate = sync.today; addingWeight = true }.buttonStyle(ExActionStyle())
-                    }.padding(.vertical, ExSpacing.item)
-                }
-            }
-        }
-    }
-
-    private var rangeSelector: some View {
-        ExSegmentedControl(values: WeightRange.allCases, selection: $selectedRange) { $0.label }
-    }
-
-    private func trendChart(_ series: [TrendPointDTO]) -> some View {
-        Chart {
-            ForEach(series) { point in
-                if let date = CalendarDay(rawValue: point.date)?.pickerDate {
-                    AreaMark(
-                        x: .value("Date", date),
-                        yStart: .value("Baseline", chartDomain(series).lowerBound),
-                        yEnd: .value("Trend", displayValue(point.trend))
-                    )
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.exPrimary.opacity(0.18), .exPrimary.opacity(0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-
-                    LineMark(
-                        x: .value("Date", date),
-                        y: .value("Trend", displayValue(point.trend))
-                    )
-                    .foregroundStyle(Color.exPrimaryText)
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-
-                    if let weight = point.weight {
-                        PointMark(
-                            x: .value("Date", date),
-                            y: .value("Scale", displayValue(weight))
-                        )
-                        .symbolSize(20)
-                        .foregroundStyle(Color.exTextSecondary.opacity(0.55))
-                    }
-                }
-            }
-        }
-        .environment(\.calendar, CalendarDay.pickerCalendar)
-        .environment(\.timeZone, CalendarDay.pickerCalendar.timeZone)
-        .chartYScale(domain: chartDomain(series))
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine().foregroundStyle(Color.clear)
-                AxisValueLabel {
-                    if let date = value.as(Date.self), let day = CalendarDay(pickerDate: date) {
-                        Text(day.formatted()).foregroundStyle(Color.exTextMuted).font(.exSmall)
-                    }
-                }
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine().foregroundStyle(Color.exBorder)
-                AxisValueLabel {
-                    if let number = value.as(Double.self) {
-                        Text(number.formatted(.number.precision(.fractionLength(1))))
-                            .font(.exSmall)
-                            .foregroundStyle(.exTextMuted)
-                    }
-                }
-            }
-        }
-        .frame(height: 220)
-        .accessibilityLabel("Weight trend chart")
-    }
-
-    private func chartDomain(_ series: [TrendPointDTO]) -> ClosedRange<Double> {
-        let values = series.flatMap { point -> [Double] in
-            var values = [displayValue(point.trend)]
-            if let weight = point.weight { values.append(displayValue(weight)) }
-            return values
-        }
-        guard let low = values.min(), let high = values.max() else { return 0...1 }
-        let padding = max((high - low) * 0.15, unitSystem == "imperial" ? 0.8 : 0.4)
-        return (low - padding)...(high + padding)
-    }
-
-    private var historySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("History")
-                .font(.exLabel)
-                .foregroundStyle(.exTextSecondary)
-
-            if weighIns.isEmpty && nonWeightMeasurements.isEmpty {
-                EmptyStateView(
-                    icon: "ruler",
-                    title: "No measurements",
-                    message: "Track weight and body measurements to see progress."
-                )
             } else {
-                ForEach(weighIns, id: \.entry_date) { point in
-                    Button {
-                        guard let day = CalendarDay(rawValue: point.entry_date) else { return }
-                        weightDate = day
-                        addingWeight = true
-                    } label: {
-                    GlassCard(padding: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Weight")
-                                    .font(.exBodyMedium)
-                                    .foregroundStyle(.exTextPrimary)
-                                Text(formattedDay(point.entry_date))
-                                    .font(.exCaption)
-                                    .foregroundStyle(.exTextMuted)
+                VStack(spacing: 0) {
+                    ForEach(Array(viewModel.measurements.enumerated()), id: \.element.id) { index, measurement in
+                        if index > 0 { Rectangle().fill(Color.exBorder.opacity(0.5)).frame(height: 0.5).padding(.leading, ExSpacing.content) }
+                        Button { editing = measurement } label: {
+                            HStack(spacing: ExSpacing.item) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(measurement.type.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                                    Text(measurement.day?.formatted() ?? measurement.entry_date)
+                                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                                    if measurement.sync_state != "synced" {
+                                        Text(measurement.sync_state == "attention" ? "Needs review" : "Waiting to sync")
+                                            .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                                    }
+                                }
+                                Spacer(minLength: ExSpacing.small)
+                                Text(formatBodyMeasurement(measurement)).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
+                                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
+                                    .accessibilityHidden(true)
                             }
-                            Spacer()
-                            Text(formatWeight(point.weight_kg ?? 0, digits: 2))
-                                .font(.exStatSmall)
-                                .foregroundStyle(.exPrimaryText)
+                            .padding(.horizontal, ExSpacing.content).frame(minHeight: 56).contentShape(Rectangle())
                         }
-                    }
-                    }.buttonStyle(.plain).accessibilityLabel("Edit weight for \(point.entry_date)")
-                    if point.sync_state != "synced" {
-                        Text(point.sync_state == "attention" ? "Needs review" : "Saved on this device. Waiting to sync.").font(.caption)
+                        .buttonStyle(.plain).accessibilityLabel("Edit \(measurement.type) measurement")
                     }
                 }
-
-                ForEach(nonWeightMeasurements) { measurement in
-                    Button { editing = measurement } label: {
-                    GlassCard(padding: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(measurement.type.capitalized)
-                                    .font(.exBodyMedium)
-                                    .foregroundStyle(.exTextPrimary)
-                                Text(measurement.day?.formatted() ?? measurement.entry_date)
-                                    .font(.exCaption)
-                                    .foregroundStyle(.exTextMuted)
-                                if measurement.sync_state != "synced" {
-                                    Text(measurement.sync_state == "attention" ? "Needs review" : "Waiting to sync")
-                                        .font(.caption).foregroundStyle(.exTextSecondary)
-                                }
-                            }
-                            Spacer()
-                            Text(formatBodyMeasurement(measurement))
-                                .font(.exStatSmall)
-                                .foregroundStyle(.exPrimaryText)
-                        }
-                    }
-                    }.buttonStyle(.plain).accessibilityLabel("Edit \(measurement.type) measurement")
+                .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5)
                 }
             }
         }
-    }
-
-    private func displayValue(_ kilograms: Double) -> Double {
-        Mass.kg(kilograms).value(in: unitSystem == "imperial" ? .pounds : .kilograms)
-    }
-
-    private func formatWeight(_ kilograms: Double, digits: Int) -> String {
-        let scale = pow(10, Double(digits))
-        let value = (displayValue(kilograms) * scale).rounded() / scale
-        let unit = unitSystem == "imperial" ? "lb" : "kg"
-        return "\(value.formatted(.number.precision(.fractionLength(digits)))) \(unit)"
-    }
-
-    private func signedWeight(_ kilograms: Double, suffix: String = "") -> String {
-        let value = displayValue(kilograms)
-        let sign = value > 0 ? "+" : ""
-        let unit = unitSystem == "imperial" ? "lb" : "kg"
-        return "\(sign)\(value.formatted(.number.precision(.fractionLength(2)))) \(unit)\(suffix)"
-    }
-
-    private func formattedDay(_ day: String) -> String {
-        CalendarDay(rawValue: day)?.formatted() ?? day
     }
 
     private func formatBodyMeasurement(_ measurement: BodyMeasurementDTO) -> String {
@@ -616,123 +452,5 @@ private struct LegacyMeasurementReview: View {
             try data.write(to: url, options: [.atomic, .completeFileProtection])
             exportURL = url
         } catch { self.error = error.localizedDescription }
-    }
-}
-
-struct WeightEntrySheet: View {
-    let onDeleted: (String) -> Void
-    let onSaved: () -> Void
-    @EnvironmentObject private var sync: SyncEngine
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("unitSystem") private var unitSystem = "imperial"
-    @State private var date: CalendarDay
-    @State private var current: WeightDayDTO?
-    @State private var value = ""
-    @State private var note = ""
-    @State private var error: String?
-    @State private var offline = false
-    @State private var confirmingDelete = false
-    @FocusState private var focused: Bool
-
-    init(date: CalendarDay, onDeleted: @escaping (String) -> Void = { _ in }, onSaved: @escaping () -> Void = {}) {
-        _date = State(initialValue: date)
-        self.onDeleted = onDeleted
-        self.onSaved = onSaved
-    }
-    private var unit: String { unitSystem == "imperial" ? "lb" : "kg" }
-    var body: some View {
-        NavigationStack {
-            ExScreen {
-                ExCard {
-                    if let current {
-                        if current.deleted_at != nil {
-                            Text("This reading was deleted. Restore it to keep the same reading and history.")
-                            Button("Restore weight reading") {
-                                do { try sync.undoWeightDeletion(entityID: current.entry_date); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
-                            }.frame(minHeight: 44)
-                        } else {
-                            ExEyebrow("Daily weigh-in", color: .exPrimaryText)
-                            ExQuantityControl(title: "Weight (\(unit))", text: $value, step: unitSystem == "imperial" ? 0.5 : 0.1, identifier: "weight.value")
-                            TextField("Note", text: $note, prompt: Text("Note").foregroundColor(.exTextSecondary), axis: .vertical)
-                                .accessibilityLabel("Optional note")
-                                .focused($focused).accessibilityIdentifier("weight.note")
-                            if current.exists {
-                                Text("Saved: \(Mass.kg(current.weight_kg ?? 0).value(in: unitSystem == "imperial" ? .pounds : .kilograms), format: .number.precision(.fractionLength(0...2))) \(unit) · \(current.source == "onboarding" ? "Initial setup" : TrainingFormat.words(current.source ?? "manual"))")
-                                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                                Button("Delete weight reading", role: .destructive) { confirmingDelete = true }.frame(minHeight: 44)
-                            }
-                        }
-                        if current.sync_state == "pending" { Text("Saved on this device. Waiting to sync.").font(.callout) }
-                        if current.sync_state == "attention" { NavigationLink("Review weight changes") { SavedChangesReviewView() } }
-                    } else { ProgressView("Loading this day's reading") }
-                }
-                ExCard {
-                    ExSectionHeading("Reading date")
-                    CalendarDayPicker("Reading date", selection: $date, today: sync.today,
-                                      timeZoneIdentifier: sync.calendar.timeZoneIdentifier)
-                        .labelsHidden().datePickerStyle(.compact)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if offline { ExCard { Text("Offline. Your reading will be saved on this device and checked for competing changes when you reconnect.").font(.callout) } }
-                if let error { ExCard { Text(error).foregroundStyle(.red) } }
-            }
-            .navigationTitle("Log weight").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save weight") { save() }
-                        .disabled(current == nil || current?.deleted_at != nil || value.isEmpty)
-                }
-                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
-            }
-            .alert("Delete this weight reading?", isPresented: $confirmingDelete) {
-                Button("Delete reading", role: .destructive) {
-                    guard let current else { return }
-                    do { onDeleted(try sync.deleteWeight(current)); onSaved(); dismiss() } catch { self.error = error.localizedDescription }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: { Text("You can undo the deletion after closing this form.") }
-            .task(id: date.rawValue) { await load() }
-        }
-    }
-    private func load() async {
-        let selectedDay = date.rawValue
-        current = nil; error = nil; offline = false
-        do {
-            let row: WeightDayDTO
-            do { row = try await sync.weightDay(for: date) } catch {
-                if error is CancellationError { throw error }
-                if let apiError = error as? APIError, !apiError.permitsReadRetry { throw error }
-                row = try await sync.weightDay(for: date, cachedOnly: true)
-                offline = true
-            }
-            guard date.rawValue == selectedDay, !Task.isCancelled else { return }
-            current = row
-            value = WeightFieldText.display(row.weight_kg, unit: unitSystem == "imperial" ? .pounds : .kilograms)
-            note = row.note ?? ""
-        } catch { self.error = error.localizedDescription }
-    }
-    private func save() {
-        guard let current else { return }
-        guard let kilograms = WeightFieldText.kilograms(value, original: current.weight_kg,
-                                                        unit: unitSystem == "imperial" ? .pounds : .kilograms) else {
-            error = "Enter a valid weight in \(unit)."; return
-        }
-        do {
-            try sync.saveWeight(current, kilograms: kilograms, note: note)
-            onSaved(); dismiss()
-        } catch { self.error = error.localizedDescription }
-    }
-}
-
-enum WeightFieldText {
-    static func display(_ kilograms: Double?, unit: MassUnit) -> String {
-        kilograms.map { Mass.kg($0).value(in: unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2))) } ?? ""
-    }
-
-    static func kilograms(_ text: String, original: Double?, unit: MassUnit) -> Double? {
-        if let original, text == display(original, unit: unit) { return original }
-        guard let number = TrainingInput.number(text) else { return nil }
-        return Mass(number, unit).kilograms
     }
 }
