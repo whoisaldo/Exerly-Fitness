@@ -46,10 +46,11 @@ struct BodyWeightSection: View {
             readout(summary, points: points, today: today)
             rangePicker
             if summary.weighInDays >= 2, points.count >= 2 {
+                let shown = range.phrase(start: start, firstShown: points.first?.date)
                 WeightTrendChart(points: points, readings: readings, unit: unit, range: range, selection: $selection)
                     .frame(height: typeSize.isAccessibilitySize ? 280 : 230)
-                    .accessibilityLabel("Weight trend, \(range.spoken)")
-                    .accessibilityValue(chartSummary(summary, points: points, readings: readings))
+                    .accessibilityLabel("Weight trend, \(shown == range.phrase ? range.spoken : shown)")
+                    .accessibilityValue(chartSummary(summary, points: points, readings: readings, shown: shown))
                     .accessibilityIdentifier("body.chart")
                 legend
             } else {
@@ -153,7 +154,8 @@ struct BodyWeightSection: View {
         let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.item))
             : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.item))
         return layout {
-            stat("Change", value: change.map { BodyFormat.change($0.kilograms, unit) } ?? "–", detail: range.phrase,
+            stat("Change", value: change.map { BodyFormat.change($0.kilograms, unit) } ?? "–",
+                 detail: range.phrase(start: start, firstShown: points.first?.date),
                  spoken: change.map { BodyFormat.spokenChange($0.kilograms, unit) } ?? "Not enough weigh-ins")
             stat("Weekly rate", value: change?.weeklyRate.map { BodyFormat.change($0, unit, digits: 2) } ?? "–",
                  detail: change?.weeklyRate == nil ? "needs a week" : "per week",
@@ -175,10 +177,11 @@ struct BodyWeightSection: View {
         .accessibilityLabel("\(title): \(spoken)")
     }
 
-    private func chartSummary(_ summary: WeightTrend.Summary, points: [WeightTrend.Point], readings: [WeightEntry]) -> String {
+    private func chartSummary(_ summary: WeightTrend.Summary, points: [WeightTrend.Point], readings: [WeightEntry],
+                              shown: String) -> String {
         var parts = ["Trend now \(BodyFormat.spokenWeight(summary.trend, unit))"]
         if let first = points.first, let last = points.last, first.date < last.date {
-            parts.append("\(BodyFormat.spokenChange(last.trend - first.trend, unit)) over the \(range.phrase)")
+            parts.append("\(BodyFormat.spokenChange(last.trend - first.trend, unit)) \(shown == range.phrase ? "over the " + shown : shown)")
         }
         let values = readings.map { $0.weight.value(in: unit) }
         if let low = values.min(), let high = values.max() {

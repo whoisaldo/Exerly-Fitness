@@ -43,6 +43,13 @@ enum BodyRange: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The span the chart really covers: the range's phrase, or "since
+    /// Sep 13" when the trend starts after the range does.
+    func phrase(start: LocalDate, firstShown: LocalDate?) -> String {
+        guard let firstShown, firstShown > start else { return phrase }
+        return "since \(BodyFormat.shortDate(firstShown))"
+    }
+
     func start(today: LocalDate, first: LocalDate?) -> LocalDate {
         days.map { today.adding(days: -($0 - 1)) } ?? first ?? today
     }

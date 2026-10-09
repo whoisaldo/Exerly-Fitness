@@ -137,10 +137,12 @@ struct WeighInSheet: View {
     }
 
     private var reading: some View {
-        VStack(spacing: 6) {
+        // What's typed so far, once there is something, else the weight.
+        let shown = typing == .weight && !typed.isEmpty ? typed : Self.display(value)
+        return VStack(spacing: 6) {
             Button { if !fromHealth { startTyping(.weight) } } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(typing == .weight && !typed.isEmpty ? typed : Self.display(value))
+                    Text(shown)
                         .font(.system(size: numberSize, weight: .bold, design: .rounded)).monospacedDigit()
                         .foregroundStyle(typing == .weight && typed.isEmpty ? Color.exTextMuted : Color.exTextPrimary)
                         .contentTransition(.numericText(value: value))
@@ -154,7 +156,7 @@ struct WeighInSheet: View {
                 .frame(maxWidth: .infinity).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Weight, \(Self.display(value)) \(BodyFormat.unitName(unit))")
+            .accessibilityLabel("Weight, \(shown) \(BodyFormat.unitName(unit))")
             .accessibilityHint(fromHealth ? "" : "Double-tap to type a weight")
             .accessibilityIdentifier("weighIn.value")
             if let context {
