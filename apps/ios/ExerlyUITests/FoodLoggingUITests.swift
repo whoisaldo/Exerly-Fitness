@@ -129,8 +129,14 @@ final class FoodLoggingUITests: ExerlyUITestCase {
         let saved = app.buttons["nutrition.quickLog.off:0012345678905"]
         XCTAssertTrue(saved.waitForExistence(timeout: 5), "Foods already logged are found offline")
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.group.local").firstMatch.exists)
+        XCTAssertTrue(saved.label.hasPrefix("Logged "), "The row keeps its check while search is open: \(saved.label)")
+        // Its check takes the food back off, offline too.
         tap(saved, in: app)
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch.waitForExistence(timeout: 5))
+        let checked = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label BEGINSWITH %@", "nutrition.quickLog.off:0012345678905", "Logged "))
+        XCTAssertTrue(checked.firstMatch.waitForNonExistence(timeout: 5))
+        tap(app.buttons["nutrition.closePicker"], in: app)
+        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Synthetic oat bar")).firstMatch.exists)
         try await control([:])
     }
 

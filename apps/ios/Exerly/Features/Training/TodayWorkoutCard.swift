@@ -133,8 +133,8 @@ struct TrainingDoneCard: View {
             VStack(alignment: .leading, spacing: ExSpacing.tight) {
                 Text(title.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("training.doneName")
-                Text(([title.program].compactMap { $0 } + [details]).joined(separator: " · "))
-                    .font(.exLabel).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                if let program = title.program { Text(program).font(.exLabel).foregroundStyle(Color.exTextSecondary) }
+                Text(details).font(.exLabel).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
             if let next {

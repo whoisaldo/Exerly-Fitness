@@ -574,8 +574,9 @@ private struct LoggedConfirmation: Identifiable {
     let detail: String
 }
 
-/// As a sheet the search field stays under the title; in the search tab,
-/// iOS places it in the tab bar.
+/// As a sheet the search field stays under the title, which stays while
+/// typing so Done is one tap away; in the search tab, iOS places it in the
+/// tab bar.
 private struct FoodSearchField: ViewModifier {
     @Binding var text: String
     let presentation: FoodPickerPresentation
@@ -584,6 +585,7 @@ private struct FoodSearchField: ViewModifier {
         switch presentation {
         case .sheet:
             content.searchable(text: $text, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search foods")
+                .searchPresentationToolbarBehavior(.avoidHidingContent)
         case .tab:
             content.searchable(text: $text, prompt: "Search foods")
         }

@@ -278,7 +278,7 @@ struct ExerciseHistorySection: View {
                 } else {
                     if let summary = report.summary { estimate(summary) }
                     if report.summary != nil, report.sessions.count >= 2 {
-                        LiftChart(sessions: report.sessions, metric: .oneRepMax, unit: unit, span: .all,
+                        LiftChart(sessions: report.sessions, metric: .oneRepMax, unit: unit, span: axisSpan(report, today: today),
                                   trend: report.summary?.trendLine, selection: $selected)
                             .frame(height: 150)
                             .accessibilityLabel("Estimated 1RM by session")
@@ -312,6 +312,12 @@ struct ExerciseHistorySection: View {
             guard !Task.isCancelled else { return }
             report = result
         }
+    }
+
+    /// The shortest span covering every session, for the axis's date labels.
+    private func axisSpan(_ report: TrainingInsights.LiftReport, today: LocalDate) -> TrainingInsights.Span {
+        let days = report.sessions.first.map { $0.date.days(until: today) } ?? 0
+        return days < 28 ? .fourWeeks : days < 91 ? .threeMonths : days < 365 ? .year : .all
     }
 
     private func estimate(_ summary: TrainingInsights.LiftSummary) -> some View {

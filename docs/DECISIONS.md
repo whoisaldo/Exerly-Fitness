@@ -402,3 +402,15 @@ The food library's "Usual around now" and "Recently logged" lists repeated
 what food search now shows with one-tap logging, so they are removed. The
 library is for finding, editing, starring and archiving saved foods; its food
 page still logs, at the meal usual for the time of day.
+
+## 2026-10-09: A logged row keeps its check, and a second tap takes it back
+
+From the usability run: food search's "+" turned back into "+" two seconds
+after logging, and Today's "Log again" chips reflowed as soon as one was used.
+Now a row or chip logged from the screen keeps a check while the screen is
+open, and tapping the check removes exactly what it logged. Logging a second
+portion of the same food goes through the row's portion sheet. Today's chips
+are fixed when the screen opens and refresh on a new day, on returning to the
+app and on pull to refresh. The finish summary headlines one record per
+exercise (heavier weight, then estimated 1RM, then reps); Progress still lists
+every record.
