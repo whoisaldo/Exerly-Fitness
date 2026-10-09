@@ -194,7 +194,13 @@ class ExerlyUITestCase: XCTestCase {
             // Native search fields can belong to the navigation bar itself.
             // They are already visible above the scrolling content's top edge.
             if visibleFrame(element), element.elementType == .searchField, element.isHittable { return }
-            let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30, fixedFooterTop(in: app))
+            // A system keyboard covers the content under it, and a drag that
+            // starts on it swipe-types into the focused field. Keypad keys
+            // are what a person taps there, so they don't count.
+            let keypadKey = element.identifier.hasPrefix("exerly.keypad") || element.identifier.hasPrefix("training.keypad")
+            let keyboardTop = keypadKey ? .infinity : (try? app.keyboards.firstMatch.snapshot())?.frame.minY ?? .infinity
+            let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30,
+                                fixedFooterTop(in: app), keyboardTop - 10)
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
             // The saved-account notice is outside the navigation stack. Its
             // Retry button is already visible above the bar; scrolling the
@@ -233,9 +239,13 @@ class ExerlyUITestCase: XCTestCase {
             return button.exists && button.isHittable ? button.frame.minY - 12 : nil
         }.min() ?? app.frame.height
     }
+    /// The portion sheet pins its Log button, and the live workout accessory
+    /// floats above the tab bar on every other tab: content under either
+    /// isn't tappable.
     var persistentActionIDs: [String] {
         ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
-         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save"]
+         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save", "nutrition.saveEntry",
+         "workout.accessory"]
     }
     func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
@@ -261,11 +271,16 @@ class ExerlyUITestCase: XCTestCase {
         // XCTest can call a partly obscured SwiftUI field hittable while its
         // tap point falls in the keyboard toolbar. Reveal the whole field
         // before switching focus, as a person scrolling the editor would.
-        if field.exists, app.keyboards.firstMatch.exists,
-           field.frame.maxY > app.keyboards.firstMatch.frame.minY - 50 {
+        // Read the keyboard once: a keyboard that is animating away can exist
+        // for one query and be gone for the next, which fails the test.
+        if field.exists, let keyboard = try? app.keyboards.firstMatch.snapshot(),
+           field.frame.maxY > keyboard.frame.minY - 50 {
             dismissKeyboard(app)
         }
         tap(field, in: app)
+        // A sheet at a small detent grows when the keypad opens. Selecting
+        // the text mid-animation can land on whatever slid under the old frame.
+        waitUntilStill(field)
         let existing = field.value as? String ?? ""
         // Tapping a populated field can put the caret at its start, including
         // UIKit numeric fields. Select the paragraph before deleting so a
@@ -293,6 +308,15 @@ class ExerlyUITestCase: XCTestCase {
                 for character in text { field.typeText(String(character)) }
             }
             XCTAssertTrue(matchesExpectedValue(), "Expected '\(text)', found '\(field.value as? String ?? "unavailable")'")
+        }
+    }
+    /// Returns once an element reports the same frame twice in a row, or is gone.
+    func waitUntilStill(_ element: XCUIElement, timeout: TimeInterval = 3) {
+        var last = CGRect.null
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline, let frame = (try? element.snapshot())?.frame, frame != last {
+            last = frame
+            Thread.sleep(forTimeInterval: 0.3)
         }
     }
     func dismissKeyboard(_ app: XCUIApplication) {
