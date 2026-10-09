@@ -57,6 +57,7 @@ struct RestTimerBar: View {
                     control(finished ? "Done" : "Skip", label: "Skip rest", prominent: true, action: skip)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, ExSpacing.item).padding(.trailing, ExSpacing.small).padding(.vertical, ExSpacing.small)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: typeSize.isAccessibilitySize ? 24 : 30, style: .continuous))
             .padding(.horizontal, ExSpacing.small).padding(.bottom, ExSpacing.small)

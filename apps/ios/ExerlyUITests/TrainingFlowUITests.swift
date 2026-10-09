@@ -116,6 +116,32 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         capture(app, "after-11-train-home-next")
     }
 
+    /// The workout as the tab bar's accessory shows it from another tab,
+    /// resting and between sets. The tab view mounts the accessory.
+    func testDesignWorkoutAccessoryCapture() async throws {
+        guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
+            throw XCTSkip("Opt-in visual review of the workout accessory")
+        }
+        try await control([:])
+        let person = try await createAccount(prefix: "train-accessory", units: "imperial")
+        try await seedStrengthPlan(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        settleAfterSignIn(app)
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["training.startToday"], in: app)
+        tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
+        capture(app, "accessory-01-train-resting")
+        tap(app.tabBars.buttons.element(boundBy: 0), in: app)
+        capture(app, "accessory-02-home-resting")
+        tap(app.buttons["Train"], in: app)
+        tap(app.buttons["Skip rest"], in: app)
+        tap(app.tabBars.buttons.element(boundBy: 0), in: app)
+        capture(app, "accessory-03-home-elapsed")
+        app.swipeUp()
+        capture(app, "accessory-04-home-scrolled")
+    }
+
     func testDesignTrainingEmptyCapture() async throws {
         guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
             throw XCTSkip("Opt-in visual review of the training flow without a plan")
