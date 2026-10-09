@@ -129,7 +129,7 @@ class ExerlyUITestCase: XCTestCase {
         // text sizes on SE. Keep upward-list navigation in the visible list too.
         for _ in 0..<24 where !element.exists {
             let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
-            let home = app.buttons["Home"]
+            let home = app.tabBars.firstMatch
             let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
             let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
             let height = max(80, bottom - top)
@@ -158,7 +158,7 @@ class ExerlyUITestCase: XCTestCase {
         for _ in 0..<48 {
             // The system can present the sheet after the diary first appears.
             dismissPasswordPrompt(in: app)
-            let home = app.buttons["Home"]
+            let home = app.tabBars.firstMatch
             // Identify native tab controls by their container. iOS can expose
             // the tab's symbol as its element label, which made the old label
             // allowlist drag the content 48 times before tapping a visible tab.

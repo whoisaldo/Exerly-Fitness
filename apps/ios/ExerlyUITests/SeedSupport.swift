@@ -56,11 +56,115 @@ extension ExerlyUITestCase {
         try await control([:])
         let person = try await createAccount(prefix: prefix, units: "imperial")
         try await seedWeek(token: person.token)
+        try await deleteSetupWeight(token: person.token)
+        for reading in syntheticReadings(days: 28) {
+            let pounds = (reading.kilograms / 0.453_592_37 * 10).rounded() / 10
+            try await seedWeighIn(token: person.token, date: reading.date, at: reading.at, value: pounds, unit: "lb")
+        }
         _ = try await seedProgram(name: "Strength foundations", activated: "2026-10-01T12:00:00.000Z", token: person.token)
         _ = try await seedTrainingWorkout(name: "Full body", loads: [60, 65, 65], daysAgo: 2,
                                            exercises: ["deadlift", "barbell-bench-press"], token: person.token)
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         return app
+    }
+
+    // MARK: Weigh-ins
+
+    /// Setup records its weight for today through the older API; captures want a clean history.
+    func deleteSetupWeight(token: String) async throws {
+        let row = try await request("GET", "/api/weight/day", token: token)
+        guard let id = row["id"] as? String, let revision = row["revision"] as? Int else { return }
+        _ = try await request("DELETE", "/api/weight/\(id)?base_revision=\(revision)", token: token)
+    }
+
+    func seedWeighIn(token: String, date: String, at: Date, value: Double, unit: String) async throws {
+        let id = UUID().uuidString
+        let payload: [String: Any] = ["id": id, "at": Self.iso(at), "date": date, "weight": ["unit": unit, "value": value]]
+        _ = try await request("PUT", "/v1/documents/weight_entry/\(id)", body: ["base_revision": 0, "payload": payload], token: token)
+    }
+
+    /// Eight weeks of a steady cut, weighed most mornings, with food fully logged on most days.
+    func seedHistory(token: String) async throws {
+        for reading in syntheticReadings(days: 56) {
+            let pounds = (reading.kilograms / 0.453_592_37 * 10).rounded() / 10
+            try await seedWeighIn(token: token, date: reading.date, at: reading.at, value: pounds, unit: "lb")
+        }
+        for back in 1...56 where back % 7 != 3 {
+            let day = Self.day(-back)
+            let id = UUID().uuidString
+            let energy = 2150 + 180 * sin(Double(back) * 2.3)
+            let food: [String: Any] = ["foodID": "quick:\(id)", "name": "Logged day", "source": "custom", "unweighed": true,
+                                       "per100g": ["energy": energy, "protein": 165, "carbohydrate": 210, "fat": 70]]
+            let entry: [String: Any] = ["id": id, "date": day.date, "meal": "Dinner", "loggedAt": Self.iso(day.at), "food": food, "grams": 100]
+            _ = try await request("PUT", "/v1/documents/food_entry/\(id)", body: ["base_revision": 0, "payload": entry], token: token)
+            let status: [String: Any] = ["id": day.date, "date": day.date, "status": "complete", "notes": "", "tags": [String]()]
+            _ = try await request("PUT", "/v1/documents/nutrition_day/\(day.date)", body: ["base_revision": 0, "payload": status], token: token)
+        }
+    }
+
+    /// The account's live weigh-in documents by ID, from the change feed.
+    func weighIns(token: String) async throws -> [String: [String: Any]] {
+        var latest: [String: [String: Any]?] = [:]
+        var cursor = 0
+        while true {
+            let page = try await request("GET", "/v1/changes?after=\(cursor)&limit=1000", token: token)
+            for change in page["changes"] as? [[String: Any]] ?? [] where change["kind"] as? String == "weight_entry" {
+                guard let id = change["id"] as? String else { continue }
+                latest[id] = change["payload"] as? [String: Any]
+            }
+            cursor = page["cursor"] as? Int ?? cursor
+            guard page["has_more"] as? Bool == true else { break }
+        }
+        return latest.compactMapValues { $0 }
+    }
+
+    func waitForWeighIn(token: String, timeout: Int = 40, _ matches: @escaping ([String: Any]) -> Bool) async throws -> [String: Any]? {
+        for _ in 0..<timeout {
+            if let found = try await weighIns(token: token).values.first(where: matches) { return found }
+            try await Task.sleep(for: .milliseconds(500))
+        }
+        XCTFail("No matching weigh-in reached the server")
+        return nil
+    }
+
+    struct Reading {
+        let date: String
+        let kilograms: Double
+        let at: Date
+    }
+
+    static let newYork = TimeZone(identifier: "America/New_York")!
+
+    static func iso(_ date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
+    }
+
+    /// A local date in New York `offset` days from today, and 07:10 that morning.
+    static func day(_ offset: Int) -> (date: String, at: Date) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = newYork
+        let date = calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: Date()))!
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = newYork
+        formatter.dateFormat = "yyyy-MM-dd"
+        let at = offset == 0 ? min(Date(), calendar.date(bySettingHour: 7, minute: 10, second: 0, of: date)!)
+            : calendar.date(bySettingHour: 7, minute: 10, second: 0, of: date)!
+        return (formatter.string(from: date), at)
+    }
+
+    /// A steady cut of about 0.45 kg a week with water swings, weighed on most mornings.
+    func syntheticReadings(days: Int) -> [Reading] {
+        (1...days).reversed().compactMap { back -> Reading? in
+            guard back % 9 != 4, back % 13 != 6 else { return nil }
+            let day = Double(days - back)
+            let water = 0.42 * sin(day * 1.7) + 0.22 * sin(day * 0.53 + 1) + 0.12 * cos(day * 3.1)
+            let kilograms = ((84.2 - 0.064 * day + water) * 10).rounded() / 10
+            let local = Self.day(-back)
+            return Reading(date: local.date, kilograms: kilograms, at: local.at.addingTimeInterval(Double(back % 20) * 60))
+        }
     }
 }

@@ -55,7 +55,7 @@ struct TodayView: View {
 
     enum Destination: Identifiable {
         case date, add(String), scan(String), quick(String), edit(FoodEntry), log(FoodSuggestion),
-             notes, copy(String?), nutrients, targets
+             notes, copy(String?), nutrients, targets, weighIn
         var id: String {
             switch self {
             case .date: "date"
@@ -68,6 +68,7 @@ struct TodayView: View {
             case .copy(let meal): "copy-\(meal ?? "day")"
             case .nutrients: "nutrients"
             case .targets: "targets"
+            case .weighIn: "weighIn"
             }
         }
     }
@@ -97,6 +98,16 @@ struct TodayView: View {
                     return progress.energy.fraction ?? -1
                 }
                 .padding(.horizontal, -ExSpacing.small)
+                if dailySync.attentionCount > 0 {
+                    NavigationLink { SavedChangesReviewView() } label: {
+                        ExNavigationLabel(title: "Review changes", icon: "exclamationmark.arrow.triangle.2.circlepath",
+                                          detail: "Something changed on another device")
+                            .padding(.horizontal, ExSpacing.item)
+                            .background(Color.exWarning.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Review changes")
+                }
                 TodayNutritionCard(progress: store.progress(on: date)) { destination = .targets }
                 quickActions
                 if isToday { suggestions }
@@ -104,6 +115,9 @@ struct TodayView: View {
                     Label(error, systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exError)
                 }
                 training
+                if isToday {
+                    WeightTrendCard(workspace: workspace, unit: unit, timeZone: timeZone) { destination = .weighIn }
+                }
                 meals
                 dayFooter
             }
@@ -180,6 +194,9 @@ struct TodayView: View {
             }
             TodayQuickAction(title: "Quick add", icon: "bolt.fill", identifier: "nutrition.quickAdd") {
                 destination = .quick(defaultMeal)
+            }
+            TodayQuickAction(title: "Weigh in", icon: "scalemass.fill", identifier: "today.weighIn") {
+                destination = .weighIn
             }
         }
     }
@@ -438,12 +455,6 @@ struct TodayView: View {
             } else if let engine = workspace.sync, case .failed = engine.state {
                 NavigationLink("Some changes could not sync") { AccountSyncView(workspace: workspace) }.font(.exCaption)
             }
-            if dailySync.attentionCount > 0 {
-                NavigationLink { SavedChangesReviewView() } label: {
-                    ExNavigationLabel(title: "Review changes", icon: "arrow.triangle.2.circlepath",
-                                      detail: "Activity or body measurements changed on another device")
-                }
-            }
         }
     }
 
@@ -519,6 +530,8 @@ struct TodayView: View {
                 .navigationTitle("Nutrients").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { self.destination = nil } } }
             }
+        case .weighIn:
+            WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone)
         case .targets:
             NavigationStack {
                 ProgramView()

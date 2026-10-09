@@ -97,10 +97,12 @@ struct WeightTrendCard: View {
     @ViewBuilder
     private func weekLine(_ summary: WeightTrend.Summary) -> some View {
         if let week = summary.weekChange {
+            // The arrow follows the change as shown, so a rounded 0.0 reads as steady.
+            let shown = (Mass.kg(week.kilograms).value(in: unit) * 10).rounded() / 10
             HStack(spacing: 4) {
-                Image(systemName: week.kilograms < 0 ? "arrow.down.right" : week.kilograms > 0 ? "arrow.up.right" : "arrow.right")
+                Image(systemName: shown < 0 ? "arrow.down.right" : shown > 0 ? "arrow.up.right" : "arrow.right")
                     .font(.exCaption.weight(.semibold)).accessibilityHidden(true)
-                Text("\(BodyFormat.change(week.kilograms, unit)) this week").font(.exLabel)
+                Text(shown == 0 ? "Steady this week" : "\(BodyFormat.change(week.kilograms, unit)) this week").font(.exLabel)
             }.foregroundStyle(Color.exTextSecondary)
         } else {
             Text(summary.weighInDays < 2 ? "One reading so far" : "Weekly change after 7 days")

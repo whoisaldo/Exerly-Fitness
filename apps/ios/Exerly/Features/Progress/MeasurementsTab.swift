@@ -107,13 +107,6 @@ struct MeasurementsTab: View {
                     NavigationLink("Review unsynced changes") { SavedChangesReviewView() }
                         .frame(minHeight: 44)
                 }
-                #if DEBUG
-                // Design review only: the home screen's card, shown here until Today hosts it.
-                if let workspace, ProcessInfo.processInfo.environment["EXERLY_SHOW_WEIGHT_CARD"] == "1" {
-                    ExSectionHeading("Home card preview")
-                    WeightTrendCard(workspace: workspace, unit: unit, timeZone: timeZone) { weighIn = .new }
-                }
-                #endif
             }
             .frame(maxWidth: 700, alignment: .leading)
             .frame(maxWidth: .infinity)

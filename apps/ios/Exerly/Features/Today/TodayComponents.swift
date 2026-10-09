@@ -33,23 +33,25 @@ struct TodayWeekStrip: View {
         .accessibilityValue(date.description)
         .accessibilityAdjustableAction { direction in
             switch direction {
-            case .increment: if date < today { date = date.adding(days: 1) }
+            case .increment: date = date.adding(days: 1)
             case .decrement: date = date.adding(days: -1)
             @unknown default: break
             }
         }
     }
 
+    /// The window's last day: today until the date leaves the window.
+    /// Future days are reachable for planning by swiping on.
     private func window(for date: LocalDate) -> LocalDate {
-        let current = min(end ?? today, today)
+        let current = end ?? today
         if date <= current && date > current.adding(days: -7) { return current }
-        return date > current ? min(date.adding(days: 3), today) : date.adding(days: 3)
+        return date > current ? date : max(date.adding(days: 3), min(today, date.adding(days: 6)))
     }
 
     private func shift(by days: Int) {
-        let target = min(date.adding(days: days), today)
+        let target = date.adding(days: days)
         withAnimation(.snappy) {
-            end = min(window(for: date).adding(days: days), today)
+            end = window(for: date).adding(days: days)
             date = target
         }
         UISelectionFeedbackGenerator().selectionChanged()
@@ -87,7 +89,6 @@ struct TodayWeekStrip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(future)
         .accessibilityLabel("\(isToday ? "Today, " : "")\(parts.full)")
         .accessibilityValue(fraction(day).map { $0 < 0 ? "Food logged" : "\(Int(($0 * 100).rounded())) percent of calorie target" } ?? "Nothing logged")
         .accessibilityAddTraits(selected ? .isSelected : [])

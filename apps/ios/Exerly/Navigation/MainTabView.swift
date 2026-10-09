@@ -42,7 +42,6 @@ struct MainTabView: View {
                 }
             }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
         .tint(Color.exPrimaryText)
     }
 }
