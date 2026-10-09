@@ -61,6 +61,19 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
         }
         try await Task.sleep(for: .seconds(1))
         capture(app, "training-01")
+        // A signal's limits, then one muscle's weeks and exercises.
+        let limits = app.buttons["training.signal.limits"]
+        if limits.waitForExistence(timeout: 5) {
+            tap(limits, in: app)
+            capture(app, "signal-limits")
+            tap(limits, in: app)
+        }
+        tap(app.buttons["training.muscle.hamstrings"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any)["muscle.weeks"].waitForExistence(timeout: 5))
+        try await Task.sleep(for: .seconds(1))
+        capture(app, "muscle-sheet")
+        tap(app.buttons["Done"], in: app)
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
         // Page down a screen at a time until the footnote shows.
         let footnote = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Hard sets exclude")).firstMatch
         for page in 2...14 {

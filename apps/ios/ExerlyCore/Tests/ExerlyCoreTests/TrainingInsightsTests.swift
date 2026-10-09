@@ -90,6 +90,10 @@ import Testing
         #expect(triceps.averageSets == 3.5)
         #expect(triceps.contributors.map(\.exerciseID) == ["barbell-bench-press", "triceps-pushdown"])
         #expect(triceps.contributors.map(\.sets) == [2.5, 1])
+        // Week by week, including the current one so far.
+        #expect(chest.weeks.map(\.start.description) == ["2026-09-21", "2026-09-28", "2026-10-05"])
+        #expect(chest.weeks.map(\.sets) == [4, 6, 2])
+        #expect(triceps.weeks.map(\.sets) == [2, 5, 1])
         // Front delts have no range but were trained; neck was not and has none.
         #expect(muscles.first { $0.muscle == .frontDelts }?.status == .noRange)
         #expect(!muscles.contains { $0.muscle == .neck })

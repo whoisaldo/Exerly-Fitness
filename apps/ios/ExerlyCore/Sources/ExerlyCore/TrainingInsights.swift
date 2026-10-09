@@ -63,6 +63,14 @@ public enum TrainingInsights {
         public var status: VolumeStatus
         /// Exercises that contributed, most sets first, over the averaged weeks.
         public var contributors: [Contribution]
+        /// Sets in each calendar week from the first counted week through
+        /// this one, oldest first; the last may still be going.
+        public var weeks: [WeekSets]
+
+        public struct WeekSets: Sendable, Hashable {
+            public var start: LocalDate
+            public var sets: Double
+        }
 
         public struct Contribution: Sendable, Hashable {
             public var exerciseID: ExerciseID
@@ -272,9 +280,11 @@ public enum TrainingInsights {
         var totals: [Muscle: Double] = [:]
         var current: [Muscle: Double] = [:]
         var byExercise: [Muscle: [ExerciseID: Double]] = [:]
+        var byWeek: [Muscle: [LocalDate: Double]] = [:]
         for session in history.sessions where (start...end).contains(session.localDate) {
             let averaged = session.localDate <= averagedEnd
             let isCurrent = session.localDate >= thisWeek
+            let week = session.localDate.startOfWeek(firstWeekday: firstWeekday)
             for performed in session.exercises {
                 guard let exercise = history.library.exercise(performed.exerciseID) else { continue }
                 let credit = performed.sets.reduce(0) { $0 + Volume.setCredit($1, exercise: exercise) }
@@ -285,9 +295,11 @@ public enum TrainingInsights {
                         byExercise[muscle, default: [:]][exercise.id, default: 0] += credit * share
                     }
                     if isCurrent { current[muscle, default: 0] += credit * share }
+                    byWeek[muscle, default: [:]][week, default: 0] += credit * share
                 }
             }
         }
+        let weekStarts = stride(from: 0, through: start.days(until: thisWeek), by: 7).map { start.adding(days: $0) }
         let listed = Muscle.allCases.filter { weeklySetRange(for: $0) != nil || (totals[$0] ?? 0) > 0 || (current[$0] ?? 0) > 0 }
         return listed.map { muscle in
             let average = (totals[muscle] ?? 0) / divisor
@@ -297,7 +309,8 @@ public enum TrainingInsights {
                 .map { MuscleLoad.Contribution(exerciseID: $0.key, sets: $0.value / divisor) }
                 .sorted { ($0.sets, $1.exerciseID) > ($1.sets, $0.exerciseID) }
             return MuscleLoad(muscle: muscle, averageSets: average, thisWeek: current[muscle] ?? 0, range: range,
-                              status: status, contributors: contributors)
+                              status: status, contributors: contributors,
+                              weeks: weekStarts.map { .init(start: $0, sets: byWeek[muscle]?[$0] ?? 0) })
         }.sorted { ($0.averageSets, $1.muscle.rawValue) > ($1.averageSets, $0.muscle.rawValue) }
     }
 

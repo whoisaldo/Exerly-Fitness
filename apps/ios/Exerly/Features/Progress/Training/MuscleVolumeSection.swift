@@ -1,3 +1,4 @@
+import Charts
 import ExerlyCore
 import SwiftUI
 
@@ -57,7 +58,7 @@ struct MuscleVolumeSection: View {
         .accessibilityIdentifier("training.muscles")
         .sheet(item: $opened) { load in
             MuscleDetailSheet(load: load, library: library, provisional: report.isVolumeProvisional,
-                              weeks: report.completeWeeks)
+                              weeks: report.completeWeeks, span: report.span)
         }
     }
 
@@ -225,13 +226,59 @@ private struct MuscleBar: View {
     }
 }
 
+/// A muscle's sets week by week, with its range shaded behind the bars.
+private struct MuscleWeeksChart: View {
+    let load: TrainingInsights.MuscleLoad
+    let span: TrainingInsights.Span
+
+    var body: some View {
+        let top = max(load.weeks.map(\.sets).max() ?? 0, load.range?.upperBound ?? 0) * 1.1
+        Chart {
+            if let range = load.range {
+                RectangleMark(yStart: .value("Low", range.lowerBound), yEnd: .value("High", range.upperBound))
+                    .foregroundStyle(Color.exPrimary.opacity(0.14))
+            }
+            ForEach(load.weeks, id: \.start) { week in
+                BarMark(x: .value("Week", BodyDates.anchor(week.start), unit: .weekOfYear), y: .value("Sets", week.sets), width: .ratio(0.62))
+                    .foregroundStyle(week.start == load.weeks.last?.start ? AnyShapeStyle(Color.exPrimary.opacity(0.4))
+                        : load.range.map { week.sets < $0.lowerBound } == true ? AnyShapeStyle(Color.exWarning)
+                        : AnyShapeStyle(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .bottom, endPoint: .top)))
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            }
+        }
+        .chartYScale(domain: 0...max(top, 1))
+        .chartXAxis {
+            AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
+                AxisValueLabel(format: InsightFormat.axisFormat(span), centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 3])).foregroundStyle(Color.exBorder)
+                AxisValueLabel().font(.exSmall).foregroundStyle(Color.exTextMuted)
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        .environment(\.timeZone, BodyDates.utc).environment(\.calendar, calendar)
+        .accessibilityElement(children: .ignore)
+    }
+
+    private var calendar: Calendar {
+        var calendar = BodyDates.calendar
+        calendar.firstWeekday = load.weeks.first?.start.weekday.rawValue ?? 2
+        return calendar
+    }
+}
+
 /// The exercises behind a muscle's sets.
 private struct MuscleDetailSheet: View {
     let load: TrainingInsights.MuscleLoad
     let library: ExerlyCore.ExerciseLibrary
     let provisional: Bool
     let weeks: Int
+    let span: TrainingInsights.Span
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NavigationStack {
@@ -254,6 +301,14 @@ private struct MuscleDetailSheet: View {
                     if !provisional {
                         Text("Averaged over \(InsightFormat.weeks(weeks)). This week so far: \(InsightFormat.sets(load.thisWeek)).")
                             .font(.exCaption).foregroundStyle(Color.exTextMuted)
+                    }
+                    if load.weeks.count >= 2 {
+                        MuscleWeeksChart(load: load, span: span)
+                            .frame(height: typeSize.isAccessibilitySize ? 220 : 150)
+                            .accessibilityLabel("\(load.muscle.name) sets per week")
+                            .accessibilityValue(load.weeks.map { "Week of \(InsightFormat.shortDate($0.start)), \(InsightFormat.sets($0.sets))" }
+                                .joined(separator: "; "))
+                            .accessibilityIdentifier("muscle.weeks")
                     }
                 }
                 ExSectionHeading("Where the sets came from")
