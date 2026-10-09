@@ -203,7 +203,7 @@ struct TodayView: View {
             TodayQuickAction(title: "Scan", icon: "barcode.viewfinder", identifier: "nutrition.scanBarcodeDirect") {
                 destination = .scan(defaultMeal)
             }
-            TodayQuickAction(title: "Quick add", icon: "bolt.fill", identifier: "nutrition.quickAdd") {
+            TodayQuickAction(title: "Quick add", icon: "bolt.fill", identifier: "today.quickAdd") {
                 destination = .quick(defaultMeal)
             }
             TodayQuickAction(title: "Weigh in", icon: "scalemass.fill", identifier: "today.weighIn") {

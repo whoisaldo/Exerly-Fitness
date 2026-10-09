@@ -2260,7 +2260,7 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["Cancel"].firstMatch, in: app)
         XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "nutrition.entry.")).firstMatch.exists)
-        tap(app.buttons["nutrition.quickAdd"], in: app)
+        tap(app.buttons["today.quickAdd"], in: app)
         replace(app.textFields["nutrition.quick.energy"], with: "525", in: app)
         replace(app.textFields["nutrition.quick.fat"], with: "0", in: app)
         dismissKeyboard(app)
