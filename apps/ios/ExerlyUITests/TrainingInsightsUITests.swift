@@ -64,11 +64,14 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
         // A signal's limits, then one muscle's weeks and exercises.
         let limits = app.buttons["training.signal.limits"]
         if limits.waitForExistence(timeout: 5) {
-            tap(limits, in: app)
+            scrollAboveTabBar(limits, in: app)
+            limits.tap()
             capture(app, "signal-limits")
-            tap(limits, in: app)
+            limits.tap()
         }
-        tap(app.buttons["training.muscle.hamstrings"], in: app)
+        let hamstrings = app.buttons["training.muscle.hamstrings"]
+        scrollAboveTabBar(hamstrings, in: app)
+        hamstrings.tap()
         XCTAssertTrue(app.descendants(matching: .any)["muscle.weeks"].waitForExistence(timeout: 5))
         try await Task.sleep(for: .seconds(1))
         capture(app, "muscle-sheet")
@@ -90,6 +93,17 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
             scrollPage(app)
             capture(app, String(format: "lift-%02d", page))
             if method.exists, method.isHittable { break }
+        }
+    }
+
+    /// Short drags until the element sits fully between the bars. The shared
+    /// reveal helper can oscillate around a control just under the SE's tab bar.
+    private func scrollAboveTabBar(_ element: XCUIElement, in app: XCUIApplication) {
+        let bottom = (app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.height) - 16
+        for _ in 0..<20 where !(element.exists && element.frame.maxY < bottom && element.frame.minY > 140) {
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: element.frame.minY > 140 ? -120 : 120)),
+                        withVelocity: .slow, thenHoldForDuration: 0.3)
         }
     }
 
