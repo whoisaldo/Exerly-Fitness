@@ -257,14 +257,12 @@ final class ProductionUITests: ExerlyUITestCase {
         dismissPhotoPickerIntroduction(in: app)
         // The opt-in simulator has two freshly imported geometric PNGs first.
         let libraryPhotos = app.images.matching(identifier: "PXGGridLayout-Info")
-        XCTAssertTrue(libraryPhotos.element(boundBy: 0).waitForExistence(timeout: 10))
-        libraryPhotos.element(boundBy: 0).tap()
+        choosePickerPhoto(libraryPhotos.element(boundBy: 0), in: app)
         let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "progress.photo."))
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         tap(app.buttons["progress.addPhoto"], in: app)
         dismissPhotoPickerIntroduction(in: app)
-        XCTAssertTrue(libraryPhotos.element(boundBy: 1).waitForExistence(timeout: 10))
-        libraryPhotos.element(boundBy: 1).tap()
+        choosePickerPhoto(libraryPhotos.element(boundBy: 1), in: app)
         XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
         XCTAssertEqual(photos.count, 2)
         capture(app, "design-photos-populated")
@@ -3678,6 +3676,17 @@ final class ProductionUITests: ExerlyUITestCase {
     private func selectProgress(_ title: String, in app: XCUIApplication) {
         if app.buttons["progress.section"].exists { tap(app.buttons["progress.section"], in: app) }
         tap(app.buttons[title], in: app)
+    }
+    /// Taps a photo in iOS 26's photo picker. Its privacy introduction can
+    /// arrive after the grid, and the remote grid can report a visible
+    /// thumbnail as not hittable, so tap its visible center.
+    private func choosePickerPhoto(_ photo: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(photo.waitForExistence(timeout: 10))
+        dismissPhotoPickerIntroduction(in: app)
+        if photo.isHittable { photo.tap() } else {
+            XCTAssertTrue(app.frame.contains(CGPoint(x: photo.frame.midX, y: photo.frame.midY)), "The photo is outside the visible picker")
+            photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
     }
     private func dismissPhotoPickerIntroduction(in app: XCUIApplication) {
         let introduction = app.otherElements["PXGSingleViewContainerView_AX"]
