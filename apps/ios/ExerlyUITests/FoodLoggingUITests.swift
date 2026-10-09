@@ -138,7 +138,7 @@ final class FoodLoggingUITests: ExerlyUITestCase {
         guard capturing else { throw XCTSkip("Opt-in visual review of food logging") }
         try await control(["resetFoodDatabaseRequests": true])
         let person = try await createAccount(prefix: "design-food", units: "imperial")
-        try await seedHistory(token: person.token)
+        try await seedFoodHistory(token: person.token)
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
@@ -209,7 +209,7 @@ final class FoodLoggingUITests: ExerlyUITestCase {
 
     /// Synthetic history: a breakfast eaten around this time on recent days,
     /// a dinner yesterday, and a favorite.
-    private func seedHistory(token: String) async throws {
+    private func seedFoodHistory(token: String) async throws {
         struct Seed { let id, name: String; let brand: String?; let source: String; let per100g: [String: Double]; let serving: (String, Double)?; let favorite: Bool }
         let foods = [
             Seed(id: Self.yogurt, name: "Greek yogurt, plain", brand: "Synthetic Dairy Co.", source: "custom",
