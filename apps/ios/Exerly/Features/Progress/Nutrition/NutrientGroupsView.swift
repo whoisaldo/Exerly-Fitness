@@ -5,6 +5,7 @@ import SwiftUI
 /// counted day against its goal. Each row opens the foods behind it.
 struct NutrientGroupsView<Detail: View>: View {
     let overview: NutrientOverview
+    let series: IntakeSeries
     @ViewBuilder let detail: (NutrientOverview.Row) -> Detail
 
     /// The groups in reading order; energy and the macros read as one.
@@ -38,7 +39,9 @@ struct NutrientGroupsView<Detail: View>: View {
             .padding(.horizontal, ExSpacing.content).padding(.top, ExSpacing.content).padding(.bottom, ExSpacing.tight)
             ForEach(Array(rows.enumerated()), id: \.element.nutrient) { index, row in
                 if index > 0 { Rectangle().fill(Color.exBorder.opacity(0.45)).frame(height: 0.5).padding(.leading, ExSpacing.content) }
-                NavigationLink { detail(row) } label: { NutrientRow(row: row) }
+                NavigationLink { detail(row) } label: {
+                    NutrientRow(row: row, goal: series.averageGoal(row.nutrient), goalsVary: series.goalsVary(row.nutrient))
+                }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("nutrition.nutrient.\(row.nutrient.rawValue)")
             }
@@ -55,12 +58,15 @@ struct NutrientGroupsView<Detail: View>: View {
 /// marked, and how many entries reported it.
 struct NutrientRow: View {
     let row: NutrientOverview.Row
+    /// The counted days' goals averaged.
+    let goal: NutrientGoal?
+    let goalsVary: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private var reported: Bool { row.observedDays > 0 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
                 : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
             layout {
@@ -81,12 +87,12 @@ struct NutrientRow: View {
                     Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
                 }
             }
-            NutrientGoalBar(average: reported ? row.average : nil, goal: row.goal, nutrient: row.nutrient)
+            if goal != nil { NutrientGoalBar(average: reported ? row.average : nil, goal: goal, nutrient: row.nutrient) }
             if let note {
                 Text(note).font(.exSmall).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, ExSpacing.content).padding(.vertical, ExSpacing.item)
+        .padding(.horizontal, ExSpacing.content).padding(.vertical, 10)
         .frame(minHeight: 52)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -96,28 +102,19 @@ struct NutrientRow: View {
 
     /// Over a limit warns; meeting the goal reads plainly; short of it is muted.
     private var shareColor: Color {
-        guard let goal = row.goal else { return .exTextSecondary }
+        guard let goal else { return .exTextSecondary }
         if let ceiling = goal.ceiling, row.average > ceiling { return .exWarning }
         return goal.contains(row.average) ? .exTextPrimary : .exTextSecondary
     }
 
     private var note: String? {
-        var parts: [String] = []
-        if let goal = row.goal { parts.append(goalText(goal)) }
+        var parts = [goal.map { IntakeFormat.goal($0, row.nutrient) + (goalsVary ? " on average" : "") } ?? "No goal"]
         if !reported {
             parts.append("no food logged reported it")
         } else if row.completeness < 0.95 {
             parts.append("reported by \(IntakeFormat.percent(row.completeness)) of entries")
         }
-        guard !parts.isEmpty else { return nil }
-        let text = parts.joined(separator: " · ")
-        return text.prefix(1).uppercased() + text.dropFirst()
-    }
-
-    private func goalText(_ goal: NutrientGoal) -> String {
-        if goal.target == nil, goal.floor != nil, goal.ceiling == nil { return "Floor \(IntakeFormat.amount(goal.floor!, row.nutrient))" }
-        if goal.target == nil, goal.floor == nil, let ceiling = goal.ceiling { return "Limit \(IntakeFormat.amount(ceiling, row.nutrient))" }
-        return "Goal \(IntakeFormat.goal(goal, row.nutrient))"
+        return parts.joined(separator: " · ")
     }
 
     private var spoken: String {
@@ -128,7 +125,7 @@ struct NutrientRow: View {
         } else {
             parts.append("not reported by any food logged")
         }
-        if let goal = row.goal { parts.append("goal \(IntakeFormat.spokenGoal(goal, row.nutrient))") }
+        if let goal { parts.append("goal \(IntakeFormat.spokenGoal(goal, row.nutrient))\(goalsVary ? " on average" : "")") }
         if reported, row.completeness < 0.95 { parts.append("reported by \(IntakeFormat.spokenPercent(row.completeness)) of entries") }
         return parts.joined(separator: ", ")
     }

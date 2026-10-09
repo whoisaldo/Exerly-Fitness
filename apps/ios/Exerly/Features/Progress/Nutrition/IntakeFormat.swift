@@ -72,13 +72,20 @@ enum IntakeFormat {
     static func percent(_ share: Double) -> String { "\(Int((share * 100).rounded()))%" }
     static func spokenPercent(_ share: Double) -> String { "\(Int((share * 100).rounded())) percent" }
 
-    /// "Sep 9 – Oct 8", or one day's name.
+    /// "Sep 9 – Oct 8", or one day's name; with years when the span leaves this year.
     static func span(_ from: LocalDate, _ through: LocalDate, today: LocalDate) -> String {
-        from == through ? BodyFormat.day(from, today: today) : "\(BodyFormat.shortDate(from)) – \(BodyFormat.shortDate(through))"
+        from == through ? BodyFormat.day(from, today: today) : "\(date(from, today: today, span: (from, through))) – \(date(through, today: today, span: (from, through)))"
     }
 
     static func spokenSpan(_ from: LocalDate, _ through: LocalDate, today: LocalDate) -> String {
-        from == through ? BodyFormat.day(from, today: today) : "\(BodyFormat.shortDate(from)) to \(BodyFormat.shortDate(through))"
+        from == through ? BodyFormat.day(from, today: today) : "\(date(from, today: today, span: (from, through))) to \(date(through, today: today, span: (from, through)))"
+    }
+
+    private static func date(_ date: LocalDate, today: LocalDate, span: (LocalDate, LocalDate)) -> String {
+        guard span.0.year != today.year || span.1.year != today.year else { return BodyFormat.shortDate(date) }
+        var style = Date.FormatStyle.dateTime.month(.abbreviated).day().year()
+        style.timeZone = BodyDates.utc
+        return BodyDates.anchor(date).formatted(style)
     }
 
     /// "7 AM" or "19", in the person's clock style.
@@ -93,19 +100,14 @@ enum IntakeFormat {
 
     static func spokenHours(_ start: Int, _ end: Int) -> String { "\(hour(start)) to \(hour(end))" }
 
-    /// How a goal reads: "at least 18 mg", "up to 2,300 mg", "35 g" or a range.
+    /// How a goal reads: "Target 35 g · floor 25 g", "Limit 2,300 mg".
     static func goal(_ goal: NutrientGoal, _ nutrient: Nutrient) -> String {
-        switch (goal.floor, goal.target, goal.ceiling) {
-        case let (floor?, target?, ceiling?):
-            "\(amount(target, nutrient)) (\(number(floor, nutrient.unit))–\(amount(ceiling, nutrient)))"
-        case let (floor?, target?, nil): "\(amount(target, nutrient)), at least \(amount(floor, nutrient))"
-        case let (nil, target?, ceiling?): "\(amount(target, nutrient)), up to \(amount(ceiling, nutrient))"
-        case let (floor?, nil, ceiling?): "\(number(floor, nutrient.unit))–\(amount(ceiling, nutrient))"
-        case let (floor?, nil, nil): "at least \(amount(floor, nutrient))"
-        case let (nil, nil, ceiling?): "up to \(amount(ceiling, nutrient))"
-        case let (nil, target?, nil): amount(target, nutrient)
-        case (nil, nil, nil): ""
-        }
+        var parts: [String] = []
+        if let target = goal.target { parts.append("target \(amount(target, nutrient))") }
+        if let floor = goal.floor { parts.append("floor \(amount(floor, nutrient))") }
+        if let ceiling = goal.ceiling { parts.append("limit \(amount(ceiling, nutrient))") }
+        let text = parts.joined(separator: " · ")
+        return text.prefix(1).uppercased() + text.dropFirst()
     }
 
     static func spokenGoal(_ goal: NutrientGoal, _ nutrient: Nutrient) -> String {

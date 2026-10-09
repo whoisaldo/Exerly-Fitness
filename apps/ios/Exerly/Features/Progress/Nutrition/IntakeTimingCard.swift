@@ -6,8 +6,8 @@ import SwiftUI
 /// share in each part of the day.
 struct IntakeTimingCard: View {
     let timing: IntakeTiming
-    @State private var scrub: Double?
     @State private var hour: Int?
+    @State private var scrub: Double?
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private static let parts = ["Morning", "Midday", "Evening", "Night"]
@@ -41,19 +41,24 @@ struct IntakeTimingCard: View {
         return "Most calories between \(IntakeFormat.hour(peak)) and \(IntakeFormat.hour(peak + 1))"
     }
 
+    private struct Slot: Identifiable {
+        let hour: Int
+        let percent: Double
+        var id: Int { hour }
+    }
+
     private var chart: some View {
-        let shares = timing.shares
-        return Chart {
-            ForEach(timing.hours, id: \.hour) { slot in
-                BarMark(xStart: .value("Start", Double(slot.hour) + 0.12), xEnd: .value("End", Double(slot.hour) + 0.88),
-                        y: .value("Share", shares[slot.hour] * 100))
-                    .foregroundStyle(LinearGradient(colors: [.exAccent, .exPrimary], startPoint: .top, endPoint: .bottom))
-                    .cornerRadius(2)
-                    .opacity(hour == nil || hour == slot.hour ? 1 : 0.38)
-            }
+        let slots = timing.shares.enumerated().map { Slot(hour: $0.offset, percent: $0.element * 100) }
+        let top = max(10, (slots.map(\.percent).max() ?? 0) * 1.1)
+        return Chart(slots) { slot in
+            RectangleMark(xStart: .value("Start", Double(slot.hour) + 0.12), xEnd: .value("End", Double(slot.hour) + 0.88),
+                          yStart: .value("Zero", 0.0), yEnd: .value("Share", slot.percent))
+                .foregroundStyle(gradient)
+                .cornerRadius(2)
+                .opacity(hour == nil || hour == slot.hour ? 1 : 0.38)
         }
+        .chartYScale(domain: 0...top)
         .chartXScale(domain: 0...24)
-        .chartYScale(domain: 0...max(10, (shares.max() ?? 0) * 100 * 1.1))
         .chartXAxis {
             AxisMarks(values: [0, 6, 12, 18, 24]) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 3])).foregroundStyle(Color.exBorder)
@@ -74,10 +79,7 @@ struct IntakeTimingCard: View {
                 }
             }
         }
-        .chartXSelection(value: $scrub)
-        .onChange(of: scrub) { _, value in
-            if let value { hour = min(max(Int(value.rounded(.down)), 0), 23) }
-        }
+        .chartPicking($scrub) { (value: Double) in hour = min(max(Int(value.rounded(.down)), 0), 23) }
         .sensoryFeedback(.selection, trigger: hour)
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .accessibilityElement(children: .ignore)
@@ -85,6 +87,10 @@ struct IntakeTimingCard: View {
         .accessibilityValue(timing.peakHour.map { "Most between \(IntakeFormat.spokenHours($0, $0 + 1))" } ?? "No timed entries")
         .accessibilityChartDescriptor(TimingChartDescriptor(timing: timing))
         .accessibilityIdentifier("nutrition.timing")
+    }
+
+    private var gradient: LinearGradient {
+        LinearGradient(colors: [.exAccent, .exPrimary], startPoint: .top, endPoint: .bottom)
     }
 
     private var windows: some View {
@@ -107,11 +113,10 @@ struct IntakeTimingCard: View {
     }
 
     private var footnote: String {
-        var text = "Every entry in the span with a known time, \(IntakeFormat.entries(timing.timedEntries)), including partial days."
+        var text = "From \(IntakeFormat.entries(timing.timedEntries)) with a known time, partial days included."
         if timing.untimedEntries > 0 {
-            text += " \(IntakeFormat.entries(timing.untimedEntries)) \(timing.untimedEntries == 1 ? "was" : "were") logged on a "
-                + "different day from the one \(timing.untimedEntries == 1 ? "it counts" : "they count") for, so "
-                + "\(timing.untimedEntries == 1 ? "its" : "their") time isn't known."
+            text += " \(IntakeFormat.entries(timing.untimedEntries)) logged on another day \(timing.untimedEntries == 1 ? "has" : "have") "
+                + "no known time and \(timing.untimedEntries == 1 ? "is" : "are") left out."
         }
         return text
     }

@@ -114,6 +114,17 @@ public struct IntakeSeries: Sendable, Hashable {
         plans.last { $0.startDate <= date }?.goal(for: nutrient, on: date)
     }
 
+    /// The counted days' goals with each part averaged, so weekday targets
+    /// read as one goal; nil when no counted day had one.
+    public func averageGoal(_ nutrient: Nutrient) -> NutrientGoal? {
+        Self.mean(days.filter(\.counted).compactMap { goal(for: nutrient, on: $0.date) })
+    }
+
+    /// Whether the counted days' goals differ, so an average goal needs saying.
+    public func goalsVary(_ nutrient: Nutrient) -> Bool {
+        Set(days.filter(\.counted).compactMap { goal(for: nutrient, on: $0.date) }).count > 1
+    }
+
     /// Mean daily amount over the counted days, as `NutritionStore.overview`
     /// gives it: foods that don't report the nutrient add nothing. Nil when
     /// no day counts.

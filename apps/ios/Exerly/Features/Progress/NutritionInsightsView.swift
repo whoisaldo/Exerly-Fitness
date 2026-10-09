@@ -39,7 +39,7 @@ private struct NutritionInsightsContent: View {
                     IntakeTrendCard(series: series, range: range, today: today)
                     topFoods(store: store, series: series, overview: overview, today: today)
                     timing(store: store, span: span)
-                    NutrientGroupsView(overview: overview) { row in
+                    NutrientGroupsView(overview: overview, series: series) { row in
                         NutrientDetailView(store: store, row: row, series: series, range: range, today: today)
                     }
                 } else if !store.entries.isEmpty || store.days.values.contains(where: { $0.status == .fasting }) {
@@ -117,8 +117,8 @@ private struct NutritionInsightsContent: View {
                 }
                 IntakeCoverageStrip(days: series.days)
                     .frame(height: series.days.count > 31 ? 12 : 10)
-                if !reasons.isEmpty {
-                    Text(reasons.joined(separator: " · ")).font(.exCaption).foregroundStyle(Color.exTextSecondary).monospacedDigit()
+                if series.days.count > 1 {
+                    legend(series, fasts: fasts).font(.exCaption).foregroundStyle(Color.exTextSecondary).monospacedDigit()
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -138,6 +138,16 @@ private struct NutritionInsightsContent: View {
                 .accessibilityHidden(true)
             }
         }
+    }
+
+    /// The strip's colours with their counts.
+    private func legend(_ series: IntakeSeries, fasts: Int) -> Text {
+        func swatch(_ color: Color) -> Text { Text(Image(systemName: "square.fill")).foregroundStyle(color) }
+        var text = Text("\(swatch(IntakeCoverageStrip.counted)) \(series.countedDays) counted")
+        if series.partialDays > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.partial)) \(series.partialDays) partial") }
+        if series.emptyDays > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.empty)) \(series.emptyDays) not logged") }
+        if fasts > 0 { text = Text("\(text)   \(swatch(IntakeCoverageStrip.fast)) \(fasts == 1 ? "1 fast" : "\(fasts) fasts") as zero") }
+        return text
     }
 
     /// A plain word about spans that are short or mostly unlogged.
@@ -184,7 +194,8 @@ private struct NutritionInsightsContent: View {
                         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
                             Text(food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                             Spacer(minLength: ExSpacing.small)
-                            Text("\(IntakeFormat.amount(food.perDay, .energy)) a day").font(.exCaption).monospacedDigit()
+                            Text(range == .yesterday ? IntakeFormat.amount(food.amount, .energy) : "\(IntakeFormat.amount(food.perDay, .energy)) a day")
+                                .font(.exCaption).monospacedDigit()
                                 .foregroundStyle(Color.exTextMuted)
                             Text(IntakeFormat.percent(food.share)).font(.exCaption.weight(.semibold)).monospacedDigit()
                                 .foregroundStyle(Color.exTextPrimary).frame(minWidth: 36, alignment: .trailing)
@@ -213,6 +224,11 @@ private struct NutritionInsightsContent: View {
 struct IntakeCoverageStrip: View {
     let days: [IntakeDay]
 
+    static let counted = Color.exPrimary
+    static let fast = Color.exPrimary.opacity(0.5)
+    static let partial = Color.exTextMuted.opacity(0.55)
+    static let empty = Color.exTextSecondary.opacity(0.18)
+
     var body: some View {
         Canvas { context, size in
             guard !days.isEmpty else { return }
@@ -221,8 +237,7 @@ struct IntakeCoverageStrip: View {
             let width = max(0.5, (size.width - gap * (count - 1)) / count)
             for (index, day) in days.enumerated() {
                 let rect = CGRect(x: CGFloat(index) * (width + gap), y: 0, width: width, height: size.height)
-                let color: Color = day.counted ? (day.status == .fasting ? Color.exPrimary.opacity(0.5) : Color.exPrimary)
-                    : day.isPartial ? Color.exTextMuted.opacity(0.55) : Color.exTextSecondary.opacity(0.14)
+                let color = day.counted ? (day.status == .fasting ? Self.fast : Self.counted) : day.isPartial ? Self.partial : Self.empty
                 context.fill(Path(roundedRect: rect, cornerRadius: min(2.5, width / 2)), with: .color(color))
             }
         }

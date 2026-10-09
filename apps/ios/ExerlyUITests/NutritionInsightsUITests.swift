@@ -45,6 +45,16 @@ final class NutritionInsightsUITests: ExerlyUITestCase {
         XCTAssertTrue(energy.waitForExistence(timeout: 10))
         XCTAssertTrue((energy.value as? String ?? "").contains("508 kilocalories"), energy.value as? String ?? "")
 
+        // A tap on the chart's last day picks it, and the page still scrolls afterwards.
+        let chart = app.descendants(matching: .any)["nutrition.chart"]
+        XCTAssertTrue(chart.exists)
+        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.6)).tap()
+        let readout = app.descendants(matching: .any)["nutrition.readout"]
+        XCTAssertTrue(waitForLabel(readout, containing: "Yesterday · Complete"), readout.label)
+        XCTAssertTrue(readout.label.contains("1,016 kilocalories"), readout.label)
+        tap(app.buttons["nutrition.clearSelection"], in: app)
+        XCTAssertTrue(waitForLabel(readout, containing: "Average"), readout.label)
+
         // Vitamin D has a goal but nothing reported it.
         let vitaminD = app.buttons["nutrition.nutrient.vitaminD"]
         reveal(vitaminD, in: app)

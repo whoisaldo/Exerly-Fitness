@@ -29,14 +29,14 @@ struct IntakeBarChart: View {
             }
             ForEach(bars) { bar in
                 if let value = bar.value {
-                    BarMark(xStart: .value("Start", column(bar).lowerBound), xEnd: .value("End", column(bar).upperBound),
-                            y: .value(IntakeFormat.name(nutrient), value))
+                    RectangleMark(xStart: .value("Start", column(bar).lowerBound), xEnd: .value("End", column(bar).upperBound),
+                                  yStart: .value("Zero", 0.0), yEnd: .value(IntakeFormat.name(nutrient), value))
                         .foregroundStyle(fill)
                         .cornerRadius(bars.count > 40 ? 1 : 3)
                         .opacity(selection == nil || selection == bar.start ? 1 : 0.38)
                 } else if let logged = bar.uncounted, logged > 0 {
-                    BarMark(xStart: .value("Start", column(bar).lowerBound), xEnd: .value("End", column(bar).upperBound),
-                            y: .value("Not counted", logged))
+                    RectangleMark(xStart: .value("Start", column(bar).lowerBound), xEnd: .value("End", column(bar).upperBound),
+                                  yStart: .value("Zero", 0.0), yEnd: .value("Not counted", logged))
                         .foregroundStyle(Color.exTextMuted.opacity(selection == nil || selection == bar.start ? 0.42 : 0.2))
                         .cornerRadius(bars.count > 40 ? 1 : 3)
                 }
@@ -82,10 +82,9 @@ struct IntakeBarChart: View {
                 }
             }
         }
-        .chartXSelection(value: $scrub)
-        .onChange(of: scrub) { _, date in
-            // Lifting the finger keeps the last day picked; the readout clears it.
-            if let date, let bar = bar(at: date) { selection = bar.start }
+        // A tap picks a day and a sideways drag scrubs; the pick stays until the readout clears it.
+        .chartPicking($scrub) { (date: Date) in
+            if let bar = bar(at: date) { selection = bar.start }
         }
         .sensoryFeedback(.selection, trigger: selection)
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
@@ -148,6 +147,25 @@ struct IntakeBarChart: View {
 
     private func bar(at date: Date) -> IntakeBar? {
         bars.first { slot($0).contains(date) } ?? (date < domain.lowerBound ? bars.first : bars.last)
+    }
+}
+
+extension View {
+    /// Picks the x value under a tap, and follows Charts' own selection while
+    /// a finger scrubs. The last value stays picked when the finger lifts.
+    /// Only a tap gesture sits over the chart, so the page still scrolls.
+    func chartPicking<X: Plottable & Equatable>(_ scrub: Binding<X?>, _ pick: @escaping (X) -> Void) -> some View {
+        chartXSelection(value: scrub)
+            .onChange(of: scrub.wrappedValue) { _, value in if let value { pick(value) } }
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    Rectangle().fill(.clear).contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let plot = proxy.plotFrame else { return }
+                            if let x: X = proxy.value(atX: location.x - geometry[plot].origin.x) { pick(x) }
+                        }
+                }
+            }
     }
 }
 

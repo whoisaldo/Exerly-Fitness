@@ -80,6 +80,10 @@ import Testing
         let fiber = try #require(series.comparison(.fiber))
         #expect(fiber.reference == 35 && fiber.met == 1, "Only Monday's oats reach the 25 g floor")
         #expect(series.comparison(.water) == nil, "No goal")
+        // Three weekdays at 2,000 and a Saturday at 2,400.
+        #expect(series.averageGoal(.energy) == NutrientGoal(target: 2100) && series.goalsVary(.energy))
+        #expect(series.averageGoal(.fiber) == NutrientGoal(floor: 25, target: 35) && !series.goalsVary(.fiber))
+        #expect(series.averageGoal(.water) == nil && !series.goalsVary(.water))
     }
 
     @Test func barsAverageTheirCountedDaysAndShowPartialDaysApart() throws {

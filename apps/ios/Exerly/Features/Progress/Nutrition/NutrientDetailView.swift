@@ -30,35 +30,42 @@ struct NutrientDetailView: View {
 
     private func summary(_ contributions: NutrientContributions) -> some View {
         let comparison = series.comparison(nutrient)
+        let goal = series.averageGoal(nutrient)
+        let reported = row.observedDays > 0
+        let vary = series.goalsVary(nutrient) ? ", on average" : ""
         return ExCard {
-            ExEyebrow("\(IntakeFormat.spokenSpan(series.from, series.through, today: today)) · "
+            ExEyebrow("\(IntakeFormat.span(series.from, series.through, today: today)) · "
                 + "\(IntakeFormat.days(series.countedDays)) counted", color: .exPrimaryText)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text(row.observedDays > 0 ? IntakeFormat.number(row.average, nutrient.unit) : "–")
+                    Text(reported ? IntakeFormat.number(row.average, nutrient.unit) : "–")
                         .font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
                     Text(nutrient.unit.rawValue).font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
-                    if let share = row.shareOfGoal, row.observedDays > 0 {
-                        Text(IntakeFormat.percent(share)).font(.exLabel).monospacedDigit().foregroundStyle(Color.exTextMuted)
-                    }
                 }
-                Text(row.observedDays > 0 ? "Average per counted day" : "No food logged on these days reported it")
-                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text(caption(reported: reported)).font(.exCaption).foregroundStyle(Color.exTextSecondary).monospacedDigit()
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(row.observedDays > 0
+            .accessibilityLabel(reported
                 ? "\(IntakeFormat.spokenAmount(row.average, nutrient)) a day on average"
                     + (row.shareOfGoal.map { ", \(IntakeFormat.spokenPercent($0)) of goal" } ?? "")
                 : "Not reported by any food logged on these days")
             .accessibilityIdentifier("nutrition.detail.average")
-            NutrientGoalBar(average: row.observedDays > 0 ? row.average : nil, goal: row.goal, nutrient: nutrient, height: 8)
-            if let goal = row.goal {
-                fact("Goal", "\(IntakeFormat.goal(goal, nutrient)), \(goalSource)",
-                     spoken: "\(IntakeFormat.spokenGoal(goal, nutrient)), \(goalSource)")
-            }
-            if let comparison, row.observedDays > 0 {
-                fact("Days in range", "\(comparison.met) of \(IntakeFormat.days(comparison.days))",
-                     spoken: "\(comparison.met) of \(IntakeFormat.days(comparison.days)) met the goal")
+            if goal != nil { NutrientGoalBar(average: reported ? row.average : nil, goal: goal, nutrient: nutrient, height: 8) }
+            VStack(spacing: ExSpacing.small) {
+                if let target = goal?.target {
+                    fact("Target", IntakeFormat.amount(target, nutrient) + vary, spoken: IntakeFormat.spokenAmount(target, nutrient) + vary)
+                }
+                if let floor = goal?.floor {
+                    fact("Floor", IntakeFormat.amount(floor, nutrient) + vary, spoken: "at least \(IntakeFormat.spokenAmount(floor, nutrient))\(vary)")
+                }
+                if let ceiling = goal?.ceiling {
+                    fact("Limit", IntakeFormat.amount(ceiling, nutrient) + vary, spoken: "up to \(IntakeFormat.spokenAmount(ceiling, nutrient))\(vary)")
+                }
+                if goal != nil { fact("Set by", goalSource, spoken: goalSource) }
+                if let comparison, reported {
+                    fact("Days meeting it", "\(comparison.met) of \(IntakeFormat.days(comparison.days))",
+                         spoken: "\(comparison.met) of \(IntakeFormat.days(comparison.days))")
+                }
             }
             if contributions.unreported > 0 {
                 Label {
@@ -74,10 +81,16 @@ struct NutrientDetailView: View {
         }
     }
 
+    private func caption(reported: Bool) -> String {
+        guard reported else { return "No food logged on these days reported it" }
+        guard let share = row.shareOfGoal else { return "Average per counted day" }
+        return "Average per counted day · \(IntakeFormat.percent(share)) of goal"
+    }
+
     private var goalSource: String {
-        if [.energy, .protein, .carbohydrate, .fat].contains(nutrient) { return "from your plan" }
+        if [.energy, .protein, .carbohydrate, .fat].contains(nutrient) { return "Your plan's targets" }
         let plan = series.plans.last { $0.startDate <= series.through }
-        if plan?.nutrientGoals?[nutrient] != nil { return "your goal" }
+        if plan?.nutrientGoals?[nutrient] != nil { return "Your goal" }
         return "US FDA daily value"
     }
 
