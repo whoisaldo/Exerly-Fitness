@@ -350,7 +350,7 @@ struct TargetsPlanEditor: View {
     private func manualField(_ title: String, unit: String, text: Binding<String>, id: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.exCaption).foregroundStyle(Color.exTextSecondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
                 ExNumericTextField(title: "\(title) (\(unit))", text: text, placeholder: "0", integer: true,
                                    identifier: "planEditor.manual.\(id)")
                 Text(unit).font(.exLabel).foregroundStyle(Color.exTextMuted)
