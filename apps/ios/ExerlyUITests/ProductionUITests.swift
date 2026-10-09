@@ -1,19 +1,7 @@
 import XCTest
 
 @MainActor
-final class ProductionUITests: XCTestCase {
-    private var fixtureURL = ProcessInfo.processInfo.environment["EXERLY_UI_FIXTURE_URL"] ?? "http://127.0.0.1:39001"
-
-    // Let async test bodies finish or throw before XCTest starts the next test.
-    // Aborting at an assertion can leave their fixture requests running.
-    override func setUpWithError() throws {
-        continueAfterFailure = true
-        addUIInterruptionMonitor(withDescription: "Password saving") { alert in
-            guard alert.label.contains("Save Password"), alert.buttons["Not Now"].exists else { return false }
-            alert.buttons["Not Now"].tap()
-            return true
-        }
-    }
+final class ProductionUITests: ExerlyUITestCase {
 
     func testDesignPrimaryScreenCapture() async throws {
         guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
@@ -663,26 +651,6 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(((new["food"] as? [String: Any])?["per100g"] as? [String: Any])?["energy"] as? Double, 60)
     }
 
-    private func seedNutritionEntry(token: String, name: String = "Synthetic pear", nutrients: [String: Double] = ["energy": 57, "sodium": 0], grams: Double = 123.25, unweighed: Bool = false) async throws -> (id: String, date: String, foodID: String) {
-        let entryID = UUID().uuidString
-        let foodID = unweighed ? "quick:\(entryID)" : UUID().uuidString
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "yyyy-MM-dd"
-        let date = formatter.string(from: Date())
-        let food: [String: Any] = ["id": foodID, "name": name, "source": "custom", "per100g": nutrients,
-                                 "servings": [], "favorite": false, "createdAt": "2026-10-06T12:00:00.000Z"]
-        if !unweighed {
-            _ = try await request("PUT", "/v1/documents/saved_food/\(foodID)", body: ["base_revision": 0, "payload": food], token: token)
-        }
-        var snapshot: [String: Any] = ["foodID": foodID, "name": name, "source": "custom", "per100g": nutrients]
-        if unweighed { snapshot["unweighed"] = true }
-        let entry: [String: Any] = ["id": entryID, "date": date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
-                                  "food": snapshot, "grams": grams]
-        _ = try await request("PUT", "/v1/documents/food_entry/\(entryID)", body: ["base_revision": 0, "payload": entry], token: token)
-        return (entryID, date, foodID)
-    }
 
     func testAccountDeletionRequiresConfirmationAndFailureKeepsTheAccount() throws {
         let app = launch(resetSession: true, accountControls: "delete-error")
@@ -1296,16 +1264,6 @@ final class ProductionUITests: XCTestCase {
         XCTAssertTrue(app.buttons["training.start"].exists)
     }
 
-    private func seedProgram(name: String, activated: String? = nil, token: String) async throws -> (id: String, payload: [String: Any]) {
-        let id = UUID().uuidString
-        var payload: [String: Any] = ["id": id, "name": name, "cycles": 2, "deload": "none", "createdAt": "2026-10-01T12:00:00.000Z",
-            "days": [["id": UUID().uuidString, "name": "Pull", "slots": [["id": UUID().uuidString, "exerciseID": "deadlift", "notes": "",
-                "target": ["sets": 3, "minReps": 5, "maxReps": 8, "rir": 2, "kind": "standard"],
-                "cycleTargets": [String: Any](), "expandRepRange": false, "weightMatch": true]]]]]
-        if let activated { payload["activatedAt"] = activated }
-        _ = try await request("PUT", "/v1/documents/program/\(id)", body: ["base_revision": 0, "payload": payload], token: token)
-        return (id, payload)
-    }
 
     private func seedProgramProposal(program: [String: Any], token: String) async throws -> String {
         let id = try XCTUnwrap(program["id"] as? String)
@@ -1523,25 +1481,6 @@ final class ProductionUITests: XCTestCase {
         capture(app, "observations-unverifiable-evidence")
     }
 
-    private func seedTrainingWorkout(name: String, loads: [Double], finished: Bool = true, daysAgo: Int = 0,
-                                     exercises: [String] = ["deadlift"], token: String) async throws -> String {
-        let id = UUID().uuidString
-        let date = Date().addingTimeInterval(Double(-daysAgo * 86400) - 3600)
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var payload: [String: Any] = [
-            "id": id, "name": name, "notes": "", "startedAt": formatter.string(from: date), "timeZoneID": "America/New_York",
-            "exercises": exercises.map { exercise -> [String: Any] in
-                ["id": UUID().uuidString, "exerciseID": exercise, "notes": "", "sets": loads.enumerated().map { index, load -> [String: Any] in
-                    ["id": UUID().uuidString, "kind": "standard", "completedAt": formatter.string(from: date.addingTimeInterval(Double(60 + index * 120))),
-                     "efforts": [["reps": 5, "load": ["unit": "kg", "value": load]]]]
-                }]
-            }
-        ]
-        if finished { payload["endedAt"] = formatter.string(from: date.addingTimeInterval(1800)) }
-        _ = try await request("PUT", "/v1/documents/workout_session/\(id)", body: ["base_revision": 0, "payload": payload], token: token)
-        return id
-    }
 
     func testAgentSuggestionReviewOfflineAcceptanceUndoRejectionAndAudit() async throws {
         try await control([:])
@@ -1748,26 +1687,7 @@ final class ProductionUITests: XCTestCase {
         XCTAssertEqual(load, expected)
     }
 
-    private func createAccount(prefix: String, units: String = "metric") async throws -> (email: String, token: String) {
-        let email = "\(prefix)-\(UUID().uuidString.prefix(8).lowercased())@exerly.test"
-        let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
-        let token = try XCTUnwrap(signup["token"] as? String)
-        _ = try await request("POST", "/api/onboarding/complete", body: [
-            "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
-            "goal": "maintain", "activityLevel": "light", "unitSystem": units, "timezone": "America/New_York"
-        ], token: token)
-        return (email, token)
-    }
 
-    private func signIn(_ app: XCUIApplication, email: String) {
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 20))
-        dismissPasswordPrompt(in: app)
-    }
 
     func testExerciseGuideOpensFromLibraryAndKeepsOfflineWorkoutSetsAndRest() async throws {
         continueAfterFailure = false
@@ -3857,210 +3777,6 @@ final class ProductionUITests: XCTestCase {
         waitForExpectations(timeout: 15)
     }
 
-    private func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil) -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launchArguments = resetSession ? ["--ui-testing"] : []
-        if let appearance = ProcessInfo.processInfo.environment["EXERLY_TEST_APPEARANCE"],
-           ["light", "dark", "system"].contains(appearance) {
-            app.launchArguments += ["-exerlyAppearance", appearance]
-        }
-        if ProcessInfo.processInfo.environment["EXERLY_TEST_LARGEST_TYPE"] == "1" {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
-        }
-        app.launchEnvironment["EXERLY_API_BASE_URL"] = fixtureURL
-        app.launchEnvironment["EXERLY_TEST_STORE_ID"] = UUID().uuidString
-        app.launchEnvironment["EXERLY_TEST_LEGACY_TOKEN"] = legacyToken
-        app.launchEnvironment["EXERLY_TEST_ACCOUNT_CONTROLS"] = accountControls
-        app.launch()
-        return app
-    }
-    @discardableResult
-    private func dismissPasswordPrompt(in app: XCUIApplication) -> Bool {
-        // Fresh iOS 26 simulators offer to save the synthetic account password.
-        // The app's elements still exist behind that system sheet, but none are
-        // hittable. Handle only this prompt, leaving permission dialogs testable.
-        let passwordSheet = app.sheets["Save Password?"]
-        if passwordSheet.exists && passwordSheet.buttons["Not Now"].exists {
-            passwordSheet.buttons["Not Now"].tap()
-            return true
-        } else {
-            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-            let passwordPrompt = springboard.alerts.matching(NSPredicate(format: "label CONTAINS %@", "Save Password")).firstMatch
-            if passwordPrompt.exists && passwordPrompt.buttons["Not Now"].exists {
-                passwordPrompt.buttons["Not Now"].tap()
-                return true
-            }
-        }
-        return false
-    }
-    private func revealAbove(_ element: XCUIElement, in app: XCUIApplication) {
-        // A full-app swipe starts inside the saved-account banner at large
-        // text sizes on SE. Keep upward-list navigation in the visible list too.
-        for _ in 0..<24 where !element.exists {
-            let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
-            let home = app.buttons["Home"]
-            let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
-            let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
-            let height = max(80, bottom - top)
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.84) / app.frame.height))
-            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
-        }
-        reveal(element, in: app)
-    }
-    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
-        dismissPasswordPrompt(in: app)
-        if !element.exists { _ = element.waitForExistence(timeout: 5) }
-        func visibleFrame(_ item: XCUIElement) -> Bool {
-            guard item.exists else { return false }
-            let frame = item.frame
-            return !frame.isEmpty && !frame.isNull && !frame.isInfinite && app.frame.intersects(frame)
-        }
-        // Virtualized rows and dismissing sheets can expose an accessibility
-        // element before it has a usable frame. Asking isHittable then causes
-        // XCTest to abort all subsequent event delivery for this test.
-        if (app.keyboards.firstMatch.exists || app.buttons["exerly.keypadDone"].exists) &&
-            (!visibleFrame(element) || !element.isHittable) &&
-            (app.buttons["Done"].firstMatch.exists || app.buttons["Hide keyboard"].firstMatch.exists || app.buttons["exerly.keypadDone"].exists) {
-            dismissKeyboard(app)
-        }
-        for _ in 0..<48 {
-            // The system can present the sheet after the diary first appears.
-            dismissPasswordPrompt(in: app)
-            let home = app.buttons["Home"]
-            // Identify native tab controls by their container. iOS can expose
-            // the tab's symbol as its element label, which made the old label
-            // allowlist drag the content 48 times before tapping a visible tab.
-            if visibleFrame(element) && element.isHittable,
-               app.tabBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
-            // Persistent meal actions are outside the scrolling viewport.
-            // Tap them directly when visible, while keeping other drags above them.
-            if visibleFrame(element) && element.isHittable,
-               persistentActionIDs.contains(element.identifier) { return }
-            // Stacked sheets expose the diary's navigation bar as well as
-            // their own. Find the control in any bar instead of assuming
-            // the last accessibility node is the frontmost navigation bar.
-            if visibleFrame(element) && element.isHittable,
-               app.navigationBars.buttons.allElementsBoundByAccessibilityElement.contains(where: { $0.exists && $0.frame == element.frame }) { return }
-            // Native search fields can belong to the navigation bar itself.
-            // They are already visible above the scrolling content's top edge.
-            if visibleFrame(element), element.elementType == .searchField, element.isHittable { return }
-            let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30, fixedFooterTop(in: app))
-            let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
-            // The saved-account notice is outside the navigation stack. Its
-            // Retry button is already visible above the bar; scrolling the
-            // diary cannot move it into the list's bounds.
-            if visibleFrame(element), element.isHittable, element.label == "Retry", bar.exists,
-               element.frame.maxY < bar.frame.minY { return }
-            if visibleFrame(element) && element.isHittable && bar.exists,
-               element.frame.minY >= bar.frame.minY, element.frame.maxY <= bar.frame.maxY { return }
-            // The compact date controls sit just below the navigation bar.
-            // A 56-point exclusion zone made the helper scroll a fully visible
-            // control repeatedly. Check its center below the actual bar.
-            let upperEdge = bar.exists ? bar.frame.maxY + 12 : 40
-            if visibleFrame(element) && element.frame.midY > upperEdge && element.frame.midY < lowerEdge && element.isHittable { return }
-            // A full-screen swipe can jump from below the SE's tab bar to
-            // above its navigation bar. Short drags avoid that oscillation.
-            // Keep the gesture inside the scrolling area. A large-type account
-            // notice or the fixed Progress choices can occupy its upper half.
-            let viewport = scrollViewport(in: app)
-            let top = max(upperEdge, viewport?.minY ?? upperEdge) + 8
-            let bottom = min(lowerEdge, viewport?.maxY ?? lowerEdge) - 8
-            let down = element.exists && element.frame.height > 0 && element.frame.midY < top
-            let height = max(80, bottom - top)
-            let distance = element.exists ? 0.16 : 0.34
-            let low = top + height * (0.5 - distance)
-            let high = top + height * (0.5 + distance)
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? low : high) / app.frame.height))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
-            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
-        }
-    }
-    private func fixedFooterTop(in app: XCUIApplication) -> CGFloat {
-        // Stacked sheets can expose the scroll view underneath. Never start a
-        // content drag inside the current sheet's persistent action buttons.
-        persistentActionIDs.compactMap { identifier in
-            let button = app.buttons[identifier]
-            return button.exists && button.isHittable ? button.frame.minY - 12 : nil
-        }.min() ?? app.frame.height
-    }
-    private var persistentActionIDs: [String] {
-        ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
-         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save"]
-    }
-    private func scrollViewport(in app: XCUIApplication) -> CGRect? {
-        app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in
-            guard scroll.exists, !scroll.frame.isEmpty, !scroll.frame.isNull,
-                  app.frame.intersects(scroll.frame), scroll.isHittable else { return nil }
-            return scroll.frame.intersection(app.frame)
-        }.max { $0.width * $0.height < $1.width * $1.height }
-    }
-    private func tap(_ element: XCUIElement, in app: XCUIApplication) {
-        reveal(element, in: app)
-        XCTAssertTrue(element.exists || element.waitForExistence(timeout: 10), app.debugDescription)
-        XCTAssertTrue(element.isHittable, app.debugDescription)
-        element.tap()
-        // A fresh simulator may show the password sheet between the hittability
-        // check and event delivery, swallowing a tab tap. Retry only that known
-        // interruption, and only if the original control is still available.
-        if dismissPasswordPrompt(in: app), element.exists, element.isHittable {
-            element.tap()
-        }
-    }
-    private func replace(_ field: XCUIElement, with text: String, in app: XCUIApplication) {
-        // XCTest can call a partly obscured SwiftUI field hittable while its
-        // tap point falls in the keyboard toolbar. Reveal the whole field
-        // before switching focus, as a person scrolling the editor would.
-        if field.exists, app.keyboards.firstMatch.exists,
-           field.frame.maxY > app.keyboards.firstMatch.frame.minY - 50 {
-            dismissKeyboard(app)
-        }
-        tap(field, in: app)
-        let existing = field.value as? String ?? ""
-        // Tapping a populated field can put the caret at its start, including
-        // UIKit numeric fields. Select the paragraph before deleting so a
-        // replacement cannot silently prepend digits to the old value.
-        if !existing.isEmpty && existing != field.placeholderValue {
-            field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
-        }
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 3) + text)
-        if field.elementType == .textField {
-            func matchesExpectedValue() -> Bool {
-                guard let actual = field.value as? String else { return false }
-                return actual == text || (text.isEmpty && actual == field.placeholderValue)
-            }
-            // Busy CI simulators can drop keystrokes or miss the selection.
-            // Retry through the real editing menu and verify the final value.
-            for _ in 0..<2 where !matchesExpectedValue() {
-                field.press(forDuration: 1.1)
-                let selectAll = app.menuItems["Select All"].firstMatch
-                let selectAllButton = app.buttons["Select All"].firstMatch
-                if selectAll.exists { selectAll.tap() }
-                else if selectAllButton.exists { selectAllButton.tap() }
-                else { field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
-                let count = (field.value as? String ?? "").count
-                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: count + 3))
-                for character in text { field.typeText(String(character)) }
-            }
-            XCTAssertTrue(matchesExpectedValue(), "Expected '\(text)', found '\(field.value as? String ?? "unavailable")'")
-        }
-    }
-    private func dismissKeyboard(_ app: XCUIApplication) {
-        if app.buttons["exerly.keypadDone"].firstMatch.exists { app.buttons["exerly.keypadDone"].firstMatch.tap() }
-        else if app.buttons["Hide keyboard"].firstMatch.exists { app.buttons["Hide keyboard"].firstMatch.tap() }
-        else if app.buttons["Done"].firstMatch.exists { app.buttons["Done"].firstMatch.tap() }
-        else { app.swipeUp() }
-    }
-    private func capture(_ app: XCUIApplication, _ name: String) {
-        if name.hasPrefix("design") || name.hasPrefix("setup") || name.hasPrefix("guided-plan") || name.hasPrefix("gym") {
-            Thread.sleep(forTimeInterval: 0.5)
-        }
-        if dismissPasswordPrompt(in: app) { Thread.sleep(forTimeInterval: 0.8) }
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
     private func selectProgress(_ title: String, in app: XCUIApplication) {
         if app.buttons["progress.section"].exists { tap(app.buttons["progress.section"], in: app) }
         tap(app.buttons[title], in: app)
@@ -4071,30 +3787,5 @@ final class ProductionUITests: XCTestCase {
             let close = introduction.buttons["Close"]
             if close.exists { close.tap() }
         }
-    }
-    private func control(_ body: [String: Any]) async throws {
-        _ = try await request("POST", "/__test/control", body: body)
-    }
-    private func request(_ method: String, _ path: String, body: [String: Any]? = nil, token: String? = nil) async throws -> [String: Any] {
-        let result = try await responseJSON(method, path, body: body, token: token)
-        return try XCTUnwrap(result as? [String: Any])
-    }
-    private func requestArray(_ method: String, _ path: String, token: String) async throws -> [[String: Any]] {
-        let result = try await responseJSON(method, path, token: token)
-        return try XCTUnwrap(result as? [[String: Any]])
-    }
-    private func responseJSON(_ method: String, _ path: String, body: [String: Any]? = nil, token: String? = nil) async throws -> Any {
-        var request = URLRequest(url: URL(string: fixtureURL + path)!)
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if path == "/mcp" { request.setValue("application/json, text/event-stream", forHTTPHeaderField: "Accept") }
-        request.setValue("isolated-simulator", forHTTPHeaderField: "X-Test-Fixture")
-        request.setValue(TimeZone.current.identifier, forHTTPHeaderField: "X-Timezone")
-        if method != "GET" { request.setValue(UUID().uuidString, forHTTPHeaderField: "Idempotency-Key") }
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        XCTAssertTrue((200..<300).contains((response as! HTTPURLResponse).statusCode), String(data: data, encoding: .utf8) ?? "")
-        return try JSONSerialization.jsonObject(with: data)
     }
 }
