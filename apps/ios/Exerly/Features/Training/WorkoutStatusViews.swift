@@ -51,16 +51,18 @@ struct RestTimerBar: View {
                 .accessibilityLabel(finished ? "Rest over" : "Rest, \(Int(timer.remaining(at: context.date).rounded())) seconds left")
                 .accessibilityIdentifier("training.restStatus")
                 if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                HStack(spacing: ExSpacing.small) {
+                HStack(spacing: 6) {
                     control("−15", label: "Remove 15 seconds of rest") { adjust(-15) }
                     control("+15", label: "Add 15 seconds of rest") { adjust(15) }
                     control(finished ? "Done" : "Skip", label: "Skip rest", prominent: true, action: skip)
                 }
             }
-            .padding(.leading, ExSpacing.content).padding(.trailing, ExSpacing.small).padding(.vertical, ExSpacing.small)
+            .padding(.leading, ExSpacing.item).padding(.trailing, ExSpacing.small).padding(.vertical, ExSpacing.small)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: typeSize.isAccessibilitySize ? 24 : 30, style: .continuous))
-            .padding(.horizontal, ExSpacing.item).padding(.bottom, ExSpacing.small)
+            .padding(.horizontal, ExSpacing.small).padding(.bottom, ExSpacing.small)
         }
+        // A floating bar stays readable without covering the sets it's over.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task(id: timer.endsAt) {
             let wait = timer.endsAt.timeIntervalSinceNow
             guard wait > 0 else { return }
@@ -74,8 +76,9 @@ struct RestTimerBar: View {
     private func control(_ title: String, label: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.system(.subheadline, design: .rounded, weight: .semibold)).monospacedDigit()
+                .lineLimit(1).fixedSize()
                 .foregroundStyle(prominent ? Color.white : Color.exPrimaryText)
-                .padding(.horizontal, 12).frame(minWidth: 52, minHeight: 44)
+                .padding(.horizontal, 10).frame(minWidth: 48, minHeight: 44)
                 .background(prominent ? Color.exActionFill : Color.exPrimary.opacity(0.16), in: Capsule())
                 .contentShape(Capsule())
         }
@@ -127,14 +130,17 @@ struct WorkoutStatusStrip: View {
             .accessibilityHidden(true)
         }
         .padding(.horizontal, ExSpacing.page).padding(.top, ExSpacing.tight).padding(.bottom, ExSpacing.small)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 
     private func stat<Value: View>(_ title: String, @ViewBuilder value: () -> Value) -> some View {
-        VStack(alignment: typeSize.isAccessibilitySize ? .leading : .center, spacing: 2) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
+            : AnyLayout(VStackLayout(spacing: 2))
+        return layout {
             Text(title.uppercased()).font(.caption2.weight(.semibold)).tracking(0.8).foregroundStyle(Color.exTextMuted)
             value().font(.system(.headline, design: .rounded, weight: .semibold)).foregroundStyle(Color.exTextPrimary)
                 .contentTransition(.numericText())
         }
-        .frame(maxWidth: typeSize.isAccessibilitySize ? nil : .infinity, alignment: typeSize.isAccessibilitySize ? .leading : .center)
+        .frame(maxWidth: .infinity, alignment: typeSize.isAccessibilitySize ? .leading : .center)
     }
 }

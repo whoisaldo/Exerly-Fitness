@@ -248,6 +248,15 @@ enum TrainingFormat {
         return total < 60 ? "\(total) min" : "\(total / 60) h\(total % 60 == 0 ? "" : " \(total % 60) min")"
     }
 
+    /// A planned session's name, "Program: Day", as the day with the program
+    /// beneath it, so the title fits a narrow bar. Other names stay whole.
+    static func title(of session: WorkoutSession) -> (name: String, program: String?) {
+        guard session.program != nil, let range = session.name.range(of: ": ") else { return (session.name, nil) }
+        let program = String(session.name[..<range.lowerBound])
+        let day = String(session.name[range.upperBound...])
+        return day.isEmpty ? (session.name, nil) : (day, program)
+    }
+
     /// A name for a workout started without a plan, from the time of day.
     static func emptyWorkoutName(at date: Date, timeZone: TimeZone) -> String {
         var calendar = Calendar(identifier: .gregorian)

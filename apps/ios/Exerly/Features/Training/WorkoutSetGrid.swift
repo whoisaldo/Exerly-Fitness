@@ -150,10 +150,7 @@ struct TrainingSetRow: View {
 
     private var stacked: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
-            HStack(spacing: ExSpacing.small) {
-                badge
-                Text("Set \(number) · \(TrainingFormat.kind(set.kind))").font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            }
+            badge
             previousButton
             ForEach(fields, id: \.self) { field in
                 VStack(alignment: .leading, spacing: ExSpacing.tight) {
@@ -184,11 +181,18 @@ struct TrainingSetRow: View {
             Button("More options", systemImage: "slider.horizontal.3", action: actions.moreOptions)
             Button("Delete set", systemImage: "trash", role: .destructive, action: actions.delete)
         } label: {
-            VStack(spacing: 0) {
-                Text(TrainingFormat.badge(set.kind) ?? "\(number)")
-                    .font(.system(.subheadline, design: .rounded, weight: .bold))
-                if let side = set.side {
-                    Text(side == .left ? "L" : "R").font(.system(.caption2, design: .rounded, weight: .semibold))
+            Group {
+                if typeSize.isAccessibilitySize {
+                    Text("Set \(number) · \(TrainingFormat.kind(set.kind))\(set.side.map { " · " + $0.rawValue.capitalized } ?? "")")
+                        .font(.exLabel.weight(.semibold)).padding(.horizontal, ExSpacing.small)
+                } else {
+                    VStack(spacing: 0) {
+                        Text(TrainingFormat.badge(set.kind) ?? "\(number)")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                        if let side = set.side {
+                            Text(side == .left ? "L" : "R").font(.system(.caption2, design: .rounded, weight: .semibold))
+                        }
+                    }
                 }
             }
             .foregroundStyle(kindColor)

@@ -97,4 +97,14 @@ final class TrainingLoggingPresentationTests: XCTestCase {
         XCTAssertEqual(TrainingFormat.minutes(65 * 60), "1 h 5 min")
         XCTAssertEqual(TrainingFormat.minutes(120 * 60), "2 h")
     }
+
+    func testPlannedWorkoutTitlesPutTheDayFirst() {
+        let reference = ProgramRef(programID: UUID(), dayID: UUID(), cycle: 0)
+        let planned = TrainingFormat.title(of: WorkoutSession(name: "Strength foundations: Upper A", program: reference))
+        XCTAssertEqual(planned.name, "Upper A")
+        XCTAssertEqual(planned.program, "Strength foundations")
+        let adHoc = TrainingFormat.title(of: WorkoutSession(name: "Legs: heavy"))
+        XCTAssertEqual(adHoc.name, "Legs: heavy", "Only planned sessions are split")
+        XCTAssertNil(adHoc.program)
+    }
 }

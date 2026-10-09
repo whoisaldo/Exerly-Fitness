@@ -110,9 +110,22 @@ struct ActiveWorkoutView: View {
                 .accessibilityLabel("Workout options")
                 .accessibilityIdentifier("training.menu")
             }
+            ToolbarItem(placement: .principal) {
+                let title = TrainingFormat.title(of: session)
+                VStack(spacing: 0) {
+                    Text(title.name).font(.headline).foregroundStyle(Color.exTextPrimary)
+                    if let program = title.program {
+                        Text(program).font(.caption).foregroundStyle(Color.exTextSecondary)
+                    }
+                }
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Finish") { focus = nil; finishing = true }
-                    .fontWeight(.semibold)
+                Button { focus = nil; finishing = true } label: {
+                    Text("Finish").fontWeight(.semibold).foregroundStyle(.white)
+                }
                     .buttonStyle(.glassProminent).tint(Color.exActionFill)
                     .accessibilityIdentifier("training.finish")
             }

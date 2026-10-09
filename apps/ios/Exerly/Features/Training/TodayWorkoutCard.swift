@@ -18,9 +18,11 @@ struct TodayWorkoutCard: View {
 
     var body: some View {
         TrainingHeroSurface {
-            HStack(alignment: .firstTextBaseline) {
+            let header = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+            header {
                 ExEyebrow(position.isDeload ? "Today · Deload" : "Today's workout", color: .exPrimaryText)
-                Spacer(minLength: ExSpacing.small)
+                if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
                 Text("Cycle \(position.cycle + 1) of \(program.cycles)")
                     .font(.exCaption.weight(.medium)).foregroundStyle(Color.exTextSecondary)
                     .padding(.horizontal, 8).padding(.vertical, 3)
@@ -70,7 +72,7 @@ struct TodayWorkoutCard: View {
         return layout {
             Text(exercise?.name ?? TrainingFormat.words(planned.exerciseID.rawValue))
                 .font(.exBody).foregroundStyle(Color.exTextPrimary)
-                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
             if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
             HStack(spacing: ExSpacing.small) {
                 Text(setsAndReps(planned, exercise: exercise)).foregroundStyle(Color.exTextSecondary)
