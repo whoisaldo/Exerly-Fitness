@@ -5,14 +5,14 @@ enum ExSpacing {
     static let small: CGFloat = 8
     static let item: CGFloat = 12
     static let content: CGFloat = 16
-    static let page: CGFloat = 20
+    static let page: CGFloat = 16
     static let section: CGFloat = 24
     static let major: CGFloat = 32
 }
 
 enum ExRadius {
     static let control: CGFloat = 12
-    static let card: CGFloat = 24
+    static let card: CGFloat = 22
 }
 
 /// One reading column, with room for both the tab bar and accessibility text.
@@ -21,7 +21,7 @@ struct ExScreen<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: ExSpacing.section) { content }
+            VStack(alignment: .leading, spacing: ExSpacing.page) { content }
                 .frame(maxWidth: 700, alignment: .leading)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, ExSpacing.page)
@@ -68,10 +68,10 @@ struct ExCard<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ExSpacing.content) { content }
+        VStack(alignment: .leading, spacing: ExSpacing.item) { content }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(ExSpacing.page)
+            .padding(ExSpacing.content)
             .background(accent ? Color.exPrimary.opacity(0.07) : Color.exSurface1)
             .clipShape(RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
             .overlay {
@@ -154,7 +154,7 @@ struct ExActionStyle: ButtonStyle {
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, minHeight: 24)
-            .padding(.horizontal, ExSpacing.content).padding(.vertical, 14)
+            .padding(.horizontal, ExSpacing.content).padding(.vertical, 13)
             .foregroundStyle(secondary ? Color.exPrimaryText : Color.white)
             .background(secondary ? Color.exPrimary.opacity(0.1) : destructive ? Color.exDestructiveFill : Color.exActionFill)
             .clipShape(RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
