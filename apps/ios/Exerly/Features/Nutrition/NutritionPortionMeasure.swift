@@ -78,43 +78,48 @@ enum NutritionPortionMeasure: Hashable {
     }
 }
 
-struct NutritionMeasureSelection: View {
+/// Grams, ounces, volumes and the food's own servings as chips. A serving
+/// chip sets one of that serving; a unit chip converts the current amount.
+struct NutritionMeasureChips: View {
     @ObservedObject var draft: NutritionEntryDraft
-    @Environment(\.dismiss) private var dismiss
+    let unit: MassUnit
+    var onChoose: () -> Void = {}
 
     var body: some View {
-        NavigationStack {
-            ExScreen {
-                Text("Switch measures without changing the portion's nutrition.")
-                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                ExCard {
-                    ForEach(draft.availableMeasures, id: \.self) { measure in
-                        Button {
-                            draft.selectMeasure(measure)
-                            dismiss()
-                        } label: {
-                            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.item) {
-                                VStack(alignment: .leading, spacing: ExSpacing.small) {
-                                    Text(measure.title).font(.exBodyMedium)
-                                    if case .serving(let serving) = measure {
-                                        Text("\(TrainingFormat.number(serving.grams)) g each").font(.exCaption)
-                                            .foregroundStyle(Color.exTextSecondary)
-                                    }
-                                }.fixedSize(horizontal: false, vertical: true)
-                                Spacer(minLength: 0)
-                                if measure == draft.measure { Image(systemName: "checkmark").accessibilityHidden(true) }
-                            }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                        }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
-                            .accessibilityIdentifier("nutrition.measure.\(measure.identifier)")
-                            .accessibilityAddTraits(measure == draft.measure ? .isSelected : [])
-                        if measure != draft.availableMeasures.last { Divider().overlay(Color.exBorder.opacity(0.3)) }
-                    }
+        ScrollView(.horizontal) {
+            HStack(spacing: ExSpacing.small) {
+                ForEach(draft.availableMeasures, id: \.self) { measure in
+                    let selected = measure == draft.measure
+                    Button {
+                        onChoose()
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        guard !selected else { return }
+                        if case .serving(let serving) = measure, draft.publishedServings.contains(serving) {
+                            draft.selectPortion(serving)
+                        } else { draft.selectMeasure(measure) }
+                    } label: {
+                        Text(title(measure)).font(.exLabel.weight(selected ? .semibold : .medium))
+                            .padding(.horizontal, 14).frame(minHeight: 34)
+                            .foregroundStyle(selected ? Color.white : Color.exTextSecondary)
+                            .background(selected ? Color.exActionFill : Color.exSurface2, in: Capsule())
+                            .frame(minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                        .accessibilityLabel(label(measure))
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                        .accessibilityIdentifier("nutrition.measure.\(measure.identifier)")
                 }
             }
-            .navigationTitle("Portion measure").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-            }
-        }
+        }.scrollIndicators(.hidden).scrollClipDisabled()
+            .sensoryFeedback(.selection, trigger: draft.measure)
+    }
+
+    private func title(_ measure: NutritionPortionMeasure) -> String {
+        guard case .serving(let serving) = measure else { return measure.symbol }
+        return FoodFormat.statesWeight(serving.name) ? serving.name : "\(serving.name) · \(FoodFormat.weight(serving.grams, unit: unit))"
+    }
+
+    private func label(_ measure: NutritionPortionMeasure) -> String {
+        guard case .serving(let serving) = measure else { return measure.title }
+        return "\(serving.name), \(FoodFormat.weight(serving.grams, unit: unit)) each"
     }
 }

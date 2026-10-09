@@ -194,13 +194,22 @@ final class NutritionEntryDraft: ObservableObject {
         }
         snapshot = entrySnapshot
         initialSnapshot = entrySnapshot
-        let measure = previous.map { NutritionPortionMeasure.saved($0.serving, food: loggingFood) }
-            ?? NutritionPortionMeasure.preferred(for: loggingFood, unit: preferredUnit)
+        // A new food starts where one tap on its row would: Core's default portion.
+        let fallback = previous == nil ? NutritionStore.defaultPortion(loggingFood, unit: preferredUnit) : nil
+        let measure: NutritionPortionMeasure
+        let entered: Double
+        if let previous {
+            measure = NutritionPortionMeasure.saved(previous.serving, food: loggingFood)
+            entered = previous.serving.map { previous.quantity ?? $0.quantity(grams: previous.grams) } ?? previous.grams
+        } else if let fallback {
+            measure = NutritionPortionMeasure.saved(fallback.serving, food: loggingFood)
+            entered = fallback.quantity
+        } else {
+            measure = NutritionPortionMeasure.preferred(for: loggingFood, unit: preferredUnit)
+            entered = measure.initialAmount
+        }
         self.measure = measure
         initialMeasure = measure
-        let entered = previous.map { entry in
-            entry.serving.map { entry.quantity ?? $0.quantity(grams: entry.grams) } ?? entry.grams
-        } ?? measure.initialAmount
         let field = NutritionNumberField(entered)
         amount = field
         initialAmount = field

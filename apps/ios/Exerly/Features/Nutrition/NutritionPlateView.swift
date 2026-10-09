@@ -7,6 +7,7 @@ struct NutritionPlateView: View {
     let timeZone: TimeZone
     @ObservedObject var actions: NutritionDiaryActions
     let onLogged: () -> Void
+    let onLoggedEntries: (([FoodEntry]) -> Void)?
     @StateObject private var draft: NutritionPlateDraft
     @State private var choosingFood = false
     @State private var editing: NutritionPlateDraft.Row?
@@ -16,12 +17,14 @@ struct NutritionPlateView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
-         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void) {
+         timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
+         onLoggedEntries: (([FoodEntry]) -> Void)? = nil) {
         self.workspace = workspace
         self.api = api
         self.timeZone = timeZone
         self.actions = actions
         self.onLogged = onLogged
+        self.onLoggedEntries = onLoggedEntries
         _draft = StateObject(wrappedValue: NutritionPlateDraft(store: workspace.nutrition, date: date, meal: meal, unit: unit))
     }
 
@@ -94,9 +97,10 @@ struct NutritionPlateView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Log meal") {
-                        if draft.save() != nil {
+                        if let entries = draft.save() {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                             onLogged()
+                            onLoggedEntries?(entries)
                             Task { await workspace.synchronize() }
                             dismiss()
                         }
@@ -152,7 +156,6 @@ private struct NutritionPlatePortionEditor: View {
     @ObservedObject var plate: NutritionPlateDraft
     let row: NutritionPlateDraft.Row
     @StateObject private var draft: NutritionEntryDraft
-    @State private var choosingMeasure = false
     @State private var discarding = false
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -171,9 +174,7 @@ private struct NutritionPlatePortionEditor: View {
                     ExEyebrow("Meal portion", color: .exPrimaryText)
                     Text(row.food.name).font(.exH2)
                     ExCard {
-                        Button { hideKeyboard(); choosingMeasure = true } label: {
-                            ExNavigationLabel(title: draft.measure.title, icon: "scalemass", detail: "Portion measure")
-                        }.accessibilityIdentifier("nutrition.measure")
+                        NutritionMeasureChips(draft: draft, unit: plate.unit)
                         ExQuantityControl(title: draft.measure.amountTitle, text: $draft.amount.text, step: draft.measure.step,
                                           presets: draft.measure.presets, unit: draft.measure.symbol)
                             .accessibilityIdentifier("nutrition.plateAmount")
@@ -215,7 +216,6 @@ private struct NutritionPlatePortionEditor: View {
                 }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { hideKeyboard() } }
             }
-            .sheet(isPresented: $choosingMeasure) { NutritionMeasureSelection(draft: draft) }
             .sheet(isPresented: $discarding) {
                 NutritionConfirmation(title: "Discard portion changes?", message: "Your meal will keep the previous portion.",
                                       confirm: "Discard changes", cancelLabel: "Keep editing", destructive: true) { dismiss() }

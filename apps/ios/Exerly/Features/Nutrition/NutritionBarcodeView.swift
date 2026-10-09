@@ -9,7 +9,7 @@ struct NutritionBarcodeView: View {
     let timeZone: TimeZone
     let unit: MassUnit
     @ObservedObject var actions: NutritionDiaryActions
-    let onLogged: () -> Void
+    let onLogged: (FoodEntry) -> Void
     let onPicked: ((ExerlyCore.Food) -> Void)?
     @StateObject private var search: NutritionSearchModel
     @StateObject private var camera = CameraCaptureController()
@@ -22,15 +22,16 @@ struct NutritionBarcodeView: View {
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
     @State private var scanningLabel = false
-    @State private var didLog = false
+    @State private var logged: FoodEntry?
     @State private var lookupTask: Task<Void, Never>?
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
          timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions,
-         onPicked: ((ExerlyCore.Food) -> Void)? = nil, onLogged: @escaping () -> Void) {
+         onPicked: ((ExerlyCore.Food) -> Void)? = nil, onLogged: @escaping (FoodEntry) -> Void) {
         self.workspace = workspace
         self.date = date
         self.meal = meal
@@ -45,34 +46,36 @@ struct NutritionBarcodeView: View {
     var body: some View {
         ExScreen {
             cameraSection
-            lookupResult
-            if !barcodeMissing { searchAction }
-            if search.request != nil {
-                Button("Scan again", systemImage: "barcode.viewfinder") {
-                    lookupTask?.cancel(); search.clear(); cameraMessage = nil
-                    if cameraAllowed { enteringDigits = false; camera.resumeScanning() }
-                }.buttonStyle(ExActionStyle(secondary: true))
-            }
-            VStack(alignment: .leading, spacing: ExSpacing.item) {
-                Button { enteringDigits.toggle() } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                // Without a camera the digits are the only way in, so they stay open.
+                if cameraAllowed {
+                Button { withAnimation(.snappy) { enteringDigits.toggle() } } label: {
                     HStack {
-                        Text("Enter barcode digits")
+                        Label("Enter barcode digits", systemImage: "keyboard")
                         Spacer()
-                        Image(systemName: enteringDigits ? "chevron.up" : "chevron.down").accessibilityHidden(true)
+                        Image(systemName: "chevron.down").rotationEffect(.degrees(enteringDigits ? 180 : 0))
+                            .accessibilityHidden(true)
                     }.frame(minHeight: 44).contentShape(Rectangle())
                 }.font(.exLabel).buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
                     .accessibilityIdentifier("nutrition.enterBarcodeDigits")
                     .accessibilityValue(enteringDigits ? "Expanded" : "Collapsed")
-                if enteringDigits { barcodeInput }
+                }
+                if enteringDigits || !cameraAllowed { barcodeInput }
+            }
+            lookupResult
+            if search.request != nil && cameraAllowed {
+                Button("Scan again", systemImage: "barcode.viewfinder") {
+                    lookupTask?.cancel(); search.clear(); cameraMessage = nil
+                    enteringDigits = false; camera.resumeScanning()
+                }.buttonStyle(ExActionStyle(secondary: true))
             }
             if !barcodeMissing {
-                Menu {
-                    Button("Scan nutrition label", systemImage: "text.viewfinder") { camera.stop(); scanningLabel = true }
+                HStack(spacing: ExSpacing.small) {
+                    searchAction
+                    Button { camera.stop(); scanningLabel = true } label: { Label("Label", systemImage: "text.viewfinder") }
+                        .buttonStyle(ExActionStyle(secondary: true)).accessibilityLabel("Scan nutrition label")
                         .accessibilityIdentifier("nutrition.scanLabel")
-                    Button("Enter food manually", systemImage: "square.and.pencil") { camera.stop(); creating = true }
-                } label: {
-                    Label("More food options", systemImage: "ellipsis").frame(minHeight: 44)
-                }.font(.exLabel).accessibilityIdentifier("nutrition.barcodeMoreOptions")
+                }
             }
         }
         .navigationTitle("Scan barcode").navigationBarTitleDisplayMode(.inline)
@@ -99,48 +102,51 @@ struct NutritionBarcodeView: View {
             NutritionLabelCaptureView(workspace: workspace) { createdFood = $0 }
         })
         .sheet(item: $selectedFood, onDismiss: {
-            if didLog { didLog = false; onLogged() }
+            if let logged { self.logged = nil; onLogged(logged) }
         }, content: { food in
             NutritionEntryEditor(workspace: workspace, food: food, date: date, meal: meal,
-                                 timeZone: timeZone, unit: unit, actions: actions) { _ in didLog = true }
+                                 timeZone: timeZone, unit: unit, actions: actions) { logged = $0 }
         })
     }
 
     @ViewBuilder private var cameraSection: some View {
         if cameraAllowed && camera.error == nil {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
-                CameraPreview(controller: camera).frame(height: 250)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: ExRadius.control)
-                            .strokeBorder(Color.white.opacity(0.8), lineWidth: 2)
-                            .padding(.horizontal, 24).padding(.vertical, 52)
-                            .allowsHitTesting(false).accessibilityHidden(true)
+                CameraPreview(controller: camera).frame(height: 300)
+                    .overlay { ScanFrame().padding(.horizontal, 36).padding(.vertical, 70).allowsHitTesting(false).accessibilityHidden(true) }
+                    .clipShape(RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
+                    .overlay(alignment: .topTrailing) {
+                        Button(camera.torchOn ? "Turn flashlight off" : "Turn flashlight on",
+                               systemImage: camera.torchOn ? "flashlight.on.fill" : "flashlight.off.fill") { camera.toggleTorch() }
+                            .labelStyle(.iconOnly).font(.body.weight(.semibold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: Circle()).padding(ExSpacing.item)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: ExRadius.card))
+                    .accessibilityElement(children: .contain)
                     .accessibilityLabel("Camera barcode viewfinder")
-                HStack(spacing: ExSpacing.item) {
-                    Text("Point at the barcode. We'll find the food automatically.")
-                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    Spacer(minLength: 0)
-                    Button(camera.torchOn ? "Turn flashlight off" : "Turn flashlight on", systemImage: camera.torchOn ? "flashlight.on.fill" : "flashlight.off.fill") { camera.toggleTorch() }
-                        .labelStyle(.iconOnly).frame(width: 44, height: 44)
-                }
+                Text("Point at the barcode. The food opens as soon as it's read.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
         } else {
-            VStack(alignment: .leading, spacing: ExSpacing.item) {
-                Image(systemName: "barcode.viewfinder").font(.system(size: 36, weight: .medium))
-                    .foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
-                Text(cameraDenied ? "Allow camera to scan" : "Search without a camera").font(.exH2)
-                Text(cameraDenied
-                     ? "Enable camera access to scan packages. You can still search for any food by name."
-                     : "A camera isn't available here. Search for the food, or enter the digits printed under its barcode.")
-                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                if cameraDenied {
-                    Button("Open camera settings") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-                    }.buttonStyle(ExActionStyle())
+            HStack(alignment: .top, spacing: ExSpacing.item) {
+                if !typeSize.isAccessibilitySize {
+                    Image(systemName: cameraDenied ? "camera.badge.ellipsis" : "barcode.viewfinder")
+                        .font(.system(size: 22, weight: .semibold)).foregroundStyle(Color.exPrimaryText)
+                        .frame(width: 48, height: 48).background(Color.exPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: ExRadius.control))
+                        .accessibilityHidden(true)
                 }
-                if let error = camera.error { Text(error).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
+                VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                    Text(cameraDenied ? "Allow the camera to scan" : "No camera here").font(.exH3).foregroundStyle(Color.exTextPrimary)
+                    Text(cameraDenied
+                         ? "Turn on camera access to scan packages. You can also type the digits under the barcode."
+                         : "Type the digits printed under the barcode instead.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                    if cameraDenied {
+                        Button("Open camera settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                        }.font(.exLabel).frame(minHeight: 44)
+                    }
+                    if let error = camera.error { Text(error).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
+                }
             }
         }
     }
@@ -148,11 +154,12 @@ struct NutritionBarcodeView: View {
     @ViewBuilder private var lookupResult: some View {
         if search.isLoading {
             ProgressView("Finding your food…").frame(maxWidth: .infinity, minHeight: 60)
+                .accessibilityIdentifier("nutrition.barcodeLoading")
         } else if let error = search.error {
             ExCard {
                 Text("Couldn't look up this barcode").font(.exH3)
                 Text(error).font(.exBody).foregroundStyle(Color.exError)
-                Button("Try barcode again") { lookup() }.frame(minHeight: 44)
+                Button("Try barcode again") { lookup(openMatch: true) }.frame(minHeight: 44)
             }
         } else if let result = search.result, !result.foods.isEmpty {
             ExCard {
@@ -170,23 +177,26 @@ struct NutritionBarcodeView: View {
                 Text(result.attribution).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
         } else if barcodeMissing {
-            ExCard {
-                Text("Barcode not found").font(.exH2)
-                Text("Try the food's name below. If you have its Nutrition Facts label, we can read a photo of it.")
+            ExCard(accent: true) {
+                Label("Not in the database yet", systemImage: "barcode").font(.exH3).foregroundStyle(Color.exTextPrimary)
+                Text("Photograph the Nutrition Facts label and we'll read it, then this barcode is one scan away next time.")
                     .font(.exBody).foregroundStyle(Color.exTextSecondary)
                     .accessibilityIdentifier("nutrition.barcodeNotFound")
-                searchAction
                 Button("Scan nutrition label", systemImage: "text.viewfinder") { camera.stop(); scanningLabel = true }
-                    .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.scanLabel")
-                Button("Enter food manually") { camera.stop(); creating = true }
-                    .font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("nutrition.barcodeManualFood")
+                    .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.scanLabel")
+                HStack(spacing: ExSpacing.small) {
+                    Button("Type it in", systemImage: "square.and.pencil") { camera.stop(); creating = true }
+                        .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.barcodeManualFood")
+                    Button { dismiss() } label: { Label("Search", systemImage: "magnifyingglass") }
+                        .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.barcodeSearch")
+                }
             }
         }
     }
 
     private var searchAction: some View {
-        Button { dismiss() } label: { Label("Search by name", systemImage: "magnifyingglass") }
-            .buttonStyle(ExActionStyle(secondary: (cameraAllowed && !barcodeMissing) || !(search.result?.foods.isEmpty ?? true)))
+        Button { dismiss() } label: { Label("Search", systemImage: "magnifyingglass") }
+            .buttonStyle(ExActionStyle(secondary: true)).accessibilityLabel("Search by name")
             .accessibilityIdentifier("nutrition.barcodeSearch")
     }
 
@@ -203,7 +213,7 @@ struct NutritionBarcodeView: View {
                 Text("Eight-digit barcodes need their format. Scan with the camera if you're unsure.")
                     .font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
-            Button("Look up barcode") { lookup() }.buttonStyle(ExActionStyle(secondary: true))
+            Button("Look up barcode") { lookup(openMatch: true) }.buttonStyle(ExActionStyle())
                 .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || search.isLoading)
                 .accessibilityIdentifier("nutrition.lookupBarcode")
             if let cameraMessage { Text(cameraMessage).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
@@ -233,11 +243,34 @@ struct NutritionBarcodeView: View {
     }
 
     private func checkCameraPermission() async {
-        guard AVCaptureDevice.default(for: .video) != nil else { cameraAllowed = false; return }
+        guard AVCaptureDevice.default(for: .video) != nil else {
+            // Without a camera, the digits are the only way in: show them ready.
+            cameraAllowed = false
+            if search.request == nil { enteringDigits = true }
+            return
+        }
         let status = AVCaptureDevice.authorizationStatus(for: .video)
         let allowed = status == .authorized ? true : status == .notDetermined ? await AVCaptureDevice.requestAccess(for: .video) : false
         guard !Task.isCancelled else { return }
         cameraAllowed = allowed
         if allowed && scenePhase == .active && search.request == nil && selectedFood == nil && !creating && !scanningLabel { camera.start() }
+    }
+}
+
+/// Corner brackets for the barcode viewfinder.
+private struct ScanFrame: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let length: CGFloat = 26
+            Path { path in
+                let rect = CGRect(origin: .zero, size: geometry.size)
+                for (corner, dx, dy) in [(CGPoint(x: rect.minX, y: rect.minY), 1.0, 1.0), (CGPoint(x: rect.maxX, y: rect.minY), -1.0, 1.0),
+                                         (CGPoint(x: rect.minX, y: rect.maxY), 1.0, -1.0), (CGPoint(x: rect.maxX, y: rect.maxY), -1.0, -1.0)] {
+                    path.move(to: CGPoint(x: corner.x + dx * length, y: corner.y))
+                    path.addLine(to: corner)
+                    path.addLine(to: CGPoint(x: corner.x, y: corner.y + dy * length))
+                }
+            }.stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+        }
     }
 }

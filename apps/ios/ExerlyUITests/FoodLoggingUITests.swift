@@ -1,0 +1,252 @@
+import XCTest
+
+/// Finding and logging food, measured in taps from the home screen. Opening
+/// food search counts as one tap: the search tab or the home screen's search
+/// button. The simulator has no camera, so typing a barcode's digits stands
+/// in for the scan and counts as one action.
+@MainActor
+final class FoodLoggingUITests: ExerlyUITestCase {
+    private var capturing: Bool { ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" }
+
+    func testFoodEatenBeforeLogsInTwoTapsAndCanBeUndone() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "food-repeat")
+        let seeded = try await seedNutritionEntry(token: person.token, nutrients: ["energy": 57, "protein": 0.4, "carbohydrate": 15.2, "fat": 0.1],
+                                                  grams: 150)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        openSearch(app)
+        let add = app.buttons["nutrition.quickLog.\(seeded.foodID)"]
+        tap(add, in: app)
+        let confirmation = app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        XCTAssertEqual(tapCount, 2, "A food eaten before: open search, then its +")
+        tap(app.buttons["nutrition.undoLog"], in: app)
+        XCTAssertTrue(confirmation.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Add food"].exists, "Logging with + keeps the search open for the next food")
+
+        tap(add, in: app)
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirmation.label.contains("Synthetic pear"), confirmation.label)
+        XCTAssertTrue(confirmation.label.contains("86 kcal"), "The row's last amount, 150 g, is what one tap logs: \(confirmation.label)")
+        tap(app.buttons["nutrition.closePicker"], in: app)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        let pears = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Synthetic pear"))
+        XCTAssertEqual(pears.count, 2, "The undone entry is gone and the second one stays")
+    }
+
+    func testBarcodeToLoggedInThreeTaps() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "food-barcode")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tapCount = 0
+        tap(app.buttons["nutrition.scanBarcodeDirect"], in: app)
+        scanSyntheticBarcode("0012345678905", in: app)
+        let log = app.buttons["nutrition.saveEntry"]
+        XCTAssertTrue(log.waitForExistence(timeout: 10), "A matched barcode opens its portion directly")
+        XCTAssertTrue(app.staticTexts["Synthetic oat bar"].exists)
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "The default is one of the label's servings")
+        if capturing { capture(app, "food-barcode-portion") }
+        tap(log, in: app)
+        XCTAssertEqual(tapCount, 3, "Scan button, scan, Log")
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        let bar = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Synthetic oat bar"))
+        XCTAssertEqual(bar.count, 1)
+
+        // Through food search it is one more tap: search, Barcode, scan, Log.
+        openSearch(app)
+        tap(app.buttons["nutrition.barcode"], in: app)
+        scanSyntheticBarcode("0012345678905", in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        XCTAssertEqual(tapCount, 4)
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        XCTAssertEqual(bar.count, 2)
+    }
+
+    func testUnknownBarcodeOffersTheLabelAndManualEntry() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "food-barcode-missing")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.scanBarcodeDirect"], in: app)
+        scanSyntheticBarcode("0000000000000", in: app)
+        XCTAssertTrue(app.staticTexts["nutrition.barcodeNotFound"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["nutrition.scanLabel"].exists)
+        XCTAssertTrue(app.buttons["nutrition.barcodeManualFood"].exists)
+        if capturing { capture(app, "food-barcode-not-found") }
+        tap(app.buttons["nutrition.barcodeManualFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Food label"].waitForExistence(timeout: 5))
+    }
+
+    func testQuickCaloriesFromSearch() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "food-quick")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        openSearch(app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        // Calories is ready to type the moment quick add opens.
+        XCTAssertTrue(app.buttons["exerly.keypadDone"].waitForExistence(timeout: 5))
+        let calories = app.textFields["nutrition.quick.energy"]
+        calories.typeText("450")
+        XCTAssertEqual(calories.value as? String, "450")
+        if capturing { capture(app, "food-quick-add-typed") }
+        tap(app.buttons["nutrition.quick.save"], in: app)
+        XCTAssertEqual(tapCount, 3, "Open search, Quick add, Log; the Calories are typed")
+        XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "nutrition.entry.", "Quick add"))
+        XCTAssertEqual(entry.count, 1)
+    }
+
+    func testTypingSearchesTheDatabaseOnceAndSavedFoodsStayAvailableOffline() async throws {
+        try await control(["resetFoodDatabaseRequests": true])
+        let person = try await createAccount(prefix: "food-type-ahead")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        openSearch(app)
+        let field = app.searchFields.firstMatch
+        tap(field, in: app)
+        field.typeText("Synthetic oat")
+        let add = app.buttons["nutrition.quickLog.off:0012345678905"]
+        XCTAssertTrue(add.waitForExistence(timeout: 10), "Results arrive while typing, without submitting")
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Open Database License")).firstMatch.exists,
+                      "Open Food Facts attribution stays with its results")
+        if capturing { capture(app, "food-search-typing") }
+        let requests = try await request("GET", "/__test/food-database-requests")
+        let searches = try XCTUnwrap(requests["requests"] as? [[String: Any]]).filter { $0["type"] as? String == "search" }
+        XCTAssertEqual(searches.count, 1, "A paused word costs one request, not one per keystroke: \(searches)")
+        XCTAssertEqual(searches.first?["query"] as? String, "Synthetic oat")
+        tap(add, in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch.waitForExistence(timeout: 5))
+
+        try await control(["offline": true])
+        replace(field, with: "oat b", in: app)
+        let saved = app.buttons["nutrition.quickLog.off:0012345678905"]
+        XCTAssertTrue(saved.waitForExistence(timeout: 5), "Foods already logged are found offline")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.group.local").firstMatch.exists)
+        tap(saved, in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch.waitForExistence(timeout: 5))
+        try await control([:])
+    }
+
+    func testFoodLoggingCapture() async throws {
+        guard capturing else { throw XCTSkip("Opt-in visual review of food logging") }
+        try await control(["resetFoodDatabaseRequests": true])
+        let person = try await createAccount(prefix: "design-food", units: "imperial")
+        try await seedHistory(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.quickLog.\(Self.yogurt)"].waitForExistence(timeout: 10))
+        capture(app, "food-01-search-recent")
+        tap(app.buttons["nutrition.quickLog.\(Self.yogurt)"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "nutrition.loggedConfirmation").firstMatch.waitForExistence(timeout: 5))
+        capture(app, "food-02-logged-undo")
+        tap(app.buttons["Favorites"], in: app)
+        capture(app, "food-03-favorites")
+        tap(app.buttons["My foods"], in: app)
+        capture(app, "food-04-my-foods")
+        tap(app.buttons["Recent"], in: app)
+        tap(app.buttons["nutrition.food.\(Self.oats)"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.saveEntry"].waitForExistence(timeout: 5))
+        capture(app, "food-05-portion-sheet")
+        tap(app.buttons["nutrition.measure.grams"], in: app)
+        capture(app, "food-06-portion-grams")
+        tap(app.buttons["nutrition.cancelEntry"], in: app)
+        if app.buttons["Discard changes"].waitForExistence(timeout: 2) { tap(app.buttons["Discard changes"], in: app) }
+        let field = app.searchFields.firstMatch
+        tap(field, in: app)
+        field.typeText("Synthetic oat")
+        XCTAssertTrue(app.buttons["nutrition.quickLog.off:0012345678905"].waitForExistence(timeout: 10))
+        capture(app, "food-07-search-results")
+        tap(app.buttons["nutrition.barcode"], in: app)
+        XCTAssertTrue(app.textFields["nutrition.barcodeDigits"].waitForExistence(timeout: 5))
+        capture(app, "food-08-barcode")
+        tap(app.navigationBars.buttons.element(boundBy: 0), in: app)
+        tap(app.buttons["nutrition.quickAdd"], in: app)
+        XCTAssertTrue(app.navigationBars["Quick add"].waitForExistence(timeout: 5))
+        capture(app, "food-09-quick-add")
+    }
+
+    // MARK: Helpers
+
+    /// Opens food search from the home screen and counts it as one tap.
+    private func openSearch(_ app: XCUIApplication) {
+        tap(app.buttons["nutrition.addFood"], in: app)
+        XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 10))
+        tapCount = 1
+    }
+
+    /// Types the digits under a barcode, as the camera would read them, and
+    /// counts the scan as one action.
+    private func scanSyntheticBarcode(_ digits: String, in app: XCUIApplication) {
+        let field = app.textFields["nutrition.barcodeDigits"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Without a camera the digits are ready to type")
+        let before = tapCount
+        replace(field, with: digits, in: app)
+        tap(app.buttons["nutrition.lookupBarcode"], in: app)
+        tapCount = before + 1
+    }
+
+    static let yogurt = "5E1F0000-0000-4000-8000-000000000001"
+    static let oats = "5E1F0000-0000-4000-8000-000000000002"
+    static let banana = "5E1F0000-0000-4000-8000-000000000003"
+    static let coffee = "5E1F0000-0000-4000-8000-000000000004"
+    static let chicken = "5E1F0000-0000-4000-8000-000000000005"
+    static let almonds = "5E1F0000-0000-4000-8000-000000000006"
+
+    /// Synthetic history: a breakfast eaten around this time on recent days,
+    /// a dinner yesterday, and a favorite.
+    private func seedHistory(token: String) async throws {
+        struct Seed { let id, name: String; let brand: String?; let source: String; let per100g: [String: Double]; let serving: (String, Double)?; let favorite: Bool }
+        let foods = [
+            Seed(id: Self.yogurt, name: "Greek yogurt, plain", brand: "Synthetic Dairy Co.", source: "custom",
+                 per100g: ["energy": 97, "protein": 9, "carbohydrate": 3.9, "fat": 5], serving: ("1 cup", 227), favorite: false),
+            Seed(id: Self.oats, name: "Rolled oats", brand: nil, source: "custom",
+                 per100g: ["energy": 379, "protein": 13.2, "carbohydrate": 67.7, "fat": 6.5, "fiber": 10.1], serving: ("1/2 cup", 40), favorite: false),
+            Seed(id: Self.banana, name: "Banana, raw", brand: nil, source: "usda",
+                 per100g: ["energy": 89, "protein": 1.1, "carbohydrate": 22.8, "fat": 0.3], serving: ("1 medium", 118), favorite: true),
+            Seed(id: Self.coffee, name: "Cold brew coffee", brand: "Synthetic Roasters", source: "custom",
+                 per100g: ["energy": 2, "protein": 0.1, "carbohydrate": 0, "fat": 0], serving: ("1 bottle (325 ml)", 325), favorite: false),
+            Seed(id: Self.chicken, name: "Chicken breast, grilled", brand: nil, source: "custom",
+                 per100g: ["energy": 165, "protein": 31, "carbohydrate": 0, "fat": 3.6], serving: nil, favorite: true),
+            Seed(id: Self.almonds, name: "Almonds", brand: "Synthetic Orchards", source: "custom",
+                 per100g: ["energy": 579, "protein": 21.2, "carbohydrate": 21.6, "fat": 49.9], serving: ("1 oz (28 g)", 28), favorite: true)
+        ]
+        for food in foods {
+            var payload: [String: Any] = ["id": food.id, "name": food.name, "source": food.source, "per100g": food.per100g,
+                                          "servings": food.serving.map { [["name": $0.0, "grams": $0.1]] } ?? [],
+                                          "favorite": food.favorite, "createdAt": "2026-10-01T12:00:00.000Z"]
+            if let brand = food.brand { payload["brand"] = brand }
+            _ = try await request("PUT", "/v1/documents/saved_food/\(food.id)", body: ["base_revision": 0, "payload": payload], token: token)
+        }
+        let newYork = TimeZone(identifier: "America/New_York")!
+        let day = DateFormatter()
+        day.calendar = Calendar(identifier: .gregorian)
+        day.timeZone = newYork
+        day.dateFormat = "yyyy-MM-dd"
+        let instant = ISO8601DateFormatter()
+        instant.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        func entry(_ food: Seed, daysAgo: Double, minutes: Double = 0, meal: String, grams: Double, quantity: Double?) async throws {
+            let at = Date().addingTimeInterval(-daysAgo * 86_400 + minutes * 60)
+            var snapshot: [String: Any] = ["foodID": food.id, "name": food.name, "source": food.source, "per100g": food.per100g]
+            if let brand = food.brand { snapshot["brand"] = brand }
+            var payload: [String: Any] = ["id": UUID().uuidString, "date": day.string(from: at), "meal": meal,
+                                          "loggedAt": instant.string(from: at), "food": snapshot, "grams": grams]
+            if let quantity, let serving = food.serving {
+                payload["serving"] = ["name": serving.0, "grams": serving.1]
+                payload["quantity"] = quantity
+            }
+            _ = try await request("PUT", "/v1/documents/food_entry/\(payload["id"]!)", body: ["base_revision": 0, "payload": payload], token: token)
+        }
+        for daysAgo in 1...4 {
+            try await entry(foods[0], daysAgo: Double(daysAgo), meal: "Breakfast", grams: 227, quantity: 1)
+            try await entry(foods[1], daysAgo: Double(daysAgo), minutes: 2, meal: "Breakfast", grams: 60, quantity: 1.5)
+            try await entry(foods[3], daysAgo: Double(daysAgo), minutes: 5, meal: "Breakfast", grams: 325, quantity: 1)
+        }
+        try await entry(foods[2], daysAgo: 2, minutes: 4, meal: "Breakfast", grams: 118, quantity: 1)
+        try await entry(foods[4], daysAgo: 1, minutes: 600, meal: "Dinner", grams: 170, quantity: nil)
+        try await entry(foods[5], daysAgo: 1, minutes: 420, meal: "Snacks", grams: 28, quantity: 1)
+    }
+}

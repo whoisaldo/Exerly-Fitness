@@ -36,9 +36,11 @@ extension NutritionStore {
     /// logged for it; a saved food uses its current label, and a repeated
     /// corrected snapshot keeps its mark, as the portion editor does.
     /// Without history, one of its first named serving (a recipe's serving
-    /// when it has none), else 100 g. Nil for a food whose label can't be
-    /// logged, or one only ever logged as a whole portion.
-    public func quickPortion(for food: Food) -> QuickPortion? {
+    /// when it has none). Failing that, a plain amount in the person's units:
+    /// 100 g or 4 oz, or for a food labelled by volume 100 ml or 8 fl oz.
+    /// Nil for a food whose label can't be logged, or one only ever logged as
+    /// a whole portion.
+    public func quickPortion(for food: Food, unit: MassUnit = .kilograms) -> QuickPortion? {
         let label = self.food(food.id) ?? food
         if let last = lastWeighedEntry(food.id) {
             var snapshot = label.snapshot
@@ -47,11 +49,25 @@ extension NutritionStore {
                                 repeated: true)
         }
         guard !entries.contains(where: { $0.food.foodID == food.id }) else { return nil }
-        let serving = label.servings.first ?? label.recipeServing
-        guard let amount = try? Self.preview(label, grams: serving == nil ? 100 : nil, serving: serving,
-                                             quantity: serving == nil ? nil : 1) else { return nil }
+        let (serving, quantity) = Self.defaultPortion(label, unit: unit)
+        guard let amount = try? Self.preview(label, grams: serving == nil ? quantity : nil, serving: serving,
+                                             quantity: serving == nil ? nil : quantity) else { return nil }
         return QuickPortion(food: label.snapshot, grams: amount.grams, serving: amount.serving,
                             quantity: amount.quantity, repeated: false)
+    }
+
+    /// The amount to start a food never logged at: one of its first named
+    /// serving (a recipe's serving when it has none), else 100 g or 4 oz, or
+    /// for a food labelled by volume 100 ml or 8 fl oz. A serving and how
+    /// many of it, or, without a serving, grams.
+    public nonisolated static func defaultPortion(_ food: Food, unit: MassUnit) -> (serving: Serving?, quantity: Double) {
+        if let serving = food.servings.first ?? food.recipeServing { return (serving, 1) }
+        if let volume = food.volume {
+            return unit == .pounds
+                ? (Serving("fl oz", grams: volume.grams(milliliters: USUnits.milliliters(fluidOunces: 1))), 8)
+                : (Serving("ml", grams: volume.grams(milliliters: 1)), 100)
+        }
+        return unit == .pounds ? (Serving("oz", grams: USUnits.grams(ounces: 1)), 4) : (nil, 100)
     }
 
     /// Foods to log again, most recently logged first, each with the portion

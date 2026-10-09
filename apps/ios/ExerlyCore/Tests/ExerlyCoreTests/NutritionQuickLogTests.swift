@@ -20,6 +20,17 @@ import Testing
         #expect(chicken.grams == 100 && chicken.serving == nil && chicken.quantity == nil)
         // A food that omits a nutrient keeps it unknown, not zero.
         #expect(chicken.nutrients[.carbohydrate] == nil)
+        // In U.S. units, four ounces; a food labelled by volume, 100 ml or 8 fl oz.
+        let usChicken = try #require(nutrition.quickPortion(for: Foods.chicken, unit: .pounds))
+        #expect(usChicken.serving == Serving("oz", grams: USUnits.grams(ounces: 1)) && usChicken.quantity == 4)
+        #expect(close(usChicken.grams, USUnits.grams(ounces: 4)))
+        var juice = Foods.chicken
+        juice.volume = VolumeBasis(density: 1.04, assumed: false)
+        let metricJuice = try #require(nutrition.quickPortion(for: juice))
+        #expect(metricJuice.serving?.name == "ml" && metricJuice.quantity == 100 && close(metricJuice.grams, 104))
+        let usJuice = try #require(nutrition.quickPortion(for: juice, unit: .pounds))
+        #expect(usJuice.serving?.name == "fl oz" && usJuice.quantity == 8)
+        #expect(close(usJuice.grams, 1.04 * USUnits.milliliters(fluidOunces: 8), tolerance: 1e-9))
     }
 
     @Test func aRecipeWithoutNamedServingsUsesOneOfItsServings() throws {

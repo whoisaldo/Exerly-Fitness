@@ -50,6 +50,7 @@ struct NutritionQuickAddView: View {
     let workspace: TrainingWorkspace
     let timeZone: TimeZone
     let onLogged: () -> Void
+    let onLoggedEntry: ((FoodEntry) -> Void)?
     @StateObject private var draft: NutritionQuickAddDraft
     @State private var discarding = false
     @State private var openedSession: UUID?
@@ -59,10 +60,12 @@ struct NutritionQuickAddView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(workspace: TrainingWorkspace, date: LocalDate, meal: String, timeZone: TimeZone, onLogged: @escaping () -> Void) {
+    init(workspace: TrainingWorkspace, date: LocalDate, meal: String, timeZone: TimeZone, onLogged: @escaping () -> Void,
+         onLoggedEntry: ((FoodEntry) -> Void)? = nil) {
         self.workspace = workspace
         self.timeZone = timeZone
         self.onLogged = onLogged
+        self.onLoggedEntry = onLoggedEntry
         _draft = StateObject(wrappedValue: NutritionQuickAddDraft(store: workspace.nutrition, date: date, meal: meal))
     }
 
@@ -70,37 +73,34 @@ struct NutritionQuickAddView: View {
         NavigationStack {
             ExScreen {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
-                    ExEyebrow("\(draft.meal) · \(NutritionFormat.day(draft.date, timeZone: timeZone))", color: .exPrimaryText)
-                    Text("Log the totals").font(.exH1)
-                    Text("Enter totals for your meal or snack.")
-                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                }
-                ExCard(accent: true) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
-                              alignment: .leading, spacing: ExSpacing.content) {
-                        ForEach(NutritionQuickAddDraft.nutrients, id: \.self) { nutrient in
-                            NutritionNumberInput(title: "\(nutrient == .energy ? "Calories" : nutrient.name) (\(nutrient.unit.rawValue))",
-                                                 text: Binding(get: { draft.fields[nutrient]?.text ?? "" },
-                                                               set: { draft.fields[nutrient]?.text = $0 }),
-                                                 identifier: "nutrition.quick.\(nutrient.rawValue)")
-                        }
+                    if draft.date != LocalDate(.now, in: timeZone) {
+                        Label("Logging to \(NutritionFormat.day(draft.date, timeZone: timeZone))", systemImage: "calendar")
+                            .font(.exCaption.weight(.medium)).foregroundStyle(Color.exPrimaryText)
                     }
-                    Text("Enter Calories, macros, or both. Leave unknown values blank; use 0 only for a known zero.")
-                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                }
-                VStack(alignment: .leading, spacing: ExSpacing.item) {
-                    ExSectionHeading("Log to")
                     ExChoiceChips(values: meals, selection: $draft.meal) { $0 }
                 }
-                ExCard {
-                    Text("Name (optional)").font(.exLabel)
-                    TextField("e.g. Restaurant lunch", text: $draft.name)
-                        .font(.exBody).focused($naming).submitLabel(.done).onSubmit { naming = false }
-                        .padding(ExSpacing.content).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
-                        .accessibilityLabel("Entry name, optional").accessibilityIdentifier("nutrition.quick.name")
-                    Text("You can edit these totals later from your diary.")
+                ExCard(accent: true) {
+                    HStack(alignment: .lastTextBaseline, spacing: ExSpacing.small) {
+                        ExNumericTextField(title: "Calories (kcal)", text: field(.energy), placeholder: "–", centered: true,
+                                           identifier: "nutrition.quick.energy")
+                            .frame(minHeight: 56)
+                            .background(FirstResponderOnAppear(identifier: "nutrition.quick.energy"))
+                        Text("kcal").font(.exBodyMedium).foregroundStyle(Color.exTextSecondary).accessibilityHidden(true)
+                    }
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.item))
+                        : AnyLayout(HStackLayout(alignment: .top, spacing: ExSpacing.small))
+                    layout {
+                        NutritionNumberInput(title: "Protein (g)", text: field(.protein), identifier: "nutrition.quick.protein", placeholder: "–")
+                        NutritionNumberInput(title: "Carbs (g)", text: field(.carbohydrate), identifier: "nutrition.quick.carbohydrate", placeholder: "–")
+                        NutritionNumberInput(title: "Fat (g)", text: field(.fat), identifier: "nutrition.quick.fat", placeholder: "–")
+                    }
+                    Text("Calories, macros, or both. Leave a value blank if you don't know it; 0 means none.")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }
+                TextField("Name (optional)", text: $draft.name, prompt: Text("Name, e.g. Restaurant lunch").foregroundColor(.exTextSecondary))
+                    .font(.exBody).focused($naming).submitLabel(.done).onSubmit { naming = false }
+                    .padding(ExSpacing.content).background(Color.exSurface2, in: RoundedRectangle(cornerRadius: ExRadius.control))
+                    .accessibilityLabel("Entry name, optional").accessibilityIdentifier("nutrition.quick.name")
             }
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
@@ -112,9 +112,10 @@ struct NutritionQuickAddView: View {
                     Button("Log to \(draft.meal)") {
                         hideKeyboard()
                         let ownerIsActive = auth.currentUser?.id == workspace.accountID && auth.sessionID == openedSession
-                        if draft.save(ownerIsActive: ownerIsActive) != nil {
+                        if let entry = draft.save(ownerIsActive: ownerIsActive) {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                             onLogged()
+                            onLoggedEntry?(entry)
                             Task { await workspace.synchronize() }
                             dismiss()
                         } else { errorFocused = true }
@@ -142,6 +143,10 @@ struct NutritionQuickAddView: View {
                 dismiss()
             } cancel: { discarding = false }
         }
+    }
+
+    private func field(_ nutrient: Nutrient) -> Binding<String> {
+        Binding(get: { draft.fields[nutrient]?.text ?? "" }, set: { draft.fields[nutrient]?.text = $0 })
     }
 
     private var meals: [String] {

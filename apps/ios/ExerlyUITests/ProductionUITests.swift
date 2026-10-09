@@ -377,13 +377,14 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.libraryFood.\(foodID)"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
         capture(app, "nutrition-label-portion-summary")
-        reveal(app.textFields["Amount (oz)"], in: app)
-        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
-        capture(app, "nutrition-label-portion-choices")
-        let portion = app.buttons["nutrition.usePortion.1/2 cup.37.123456789"]
-        tap(portion, in: app)
-        reveal(app.textFields["Number of servings"], in: app)
+        // A food with a label portion opens on one of it.
+        let portion = app.buttons["nutrition.measure.serving.1/2 cup.37.123456789"]
+        XCTAssertTrue(portion.waitForExistence(timeout: 5))
+        XCTAssertTrue(portion.isSelected)
         XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1")
+        capture(app, "nutrition-label-portion-choices")
+        replace(app.textFields["Number of servings"], with: "2", in: app)
+        dismissKeyboard(app)
         capture(app, "nutrition-label-portion-selected")
         tap(app.buttons["nutrition.cancelEntry"], in: app)
         tap(app.buttons["Discard changes"], in: app)
@@ -391,7 +392,10 @@ final class ProductionUITests: ExerlyUITestCase {
         let before = try XCTUnwrap(cancelled["documents"] as? [[String: Any]])
         XCTAssertFalse(before.contains { $0["kind"] as? String == "food_entry" })
         tap(app.buttons["nutrition.libraryLog"], in: app)
+        chooseFoodMeasure("ounces", in: app)
+        XCTAssertTrue(app.textFields["Amount (oz)"].exists)
         tap(portion, in: app)
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "Choosing the label portion sets one of it")
         try await control(["offline": true, "disconnect": true])
         tap(app.buttons["nutrition.saveEntry"], in: app)
         tap(app.buttons["Home"], in: app)
@@ -433,14 +437,15 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.addFood"], in: app)
         let searchField = app.searchFields.firstMatch
         replace(searchField, with: "Synthetic oat", in: app)
-        let before = try await request("GET", "/__test/food-database-requests")
-        XCTAssertEqual((before["requests"] as? [[String: Any]])?.count, 0, "Typing must not query the food database")
+        let food = app.buttons["nutrition.food.off:0012345678905"]
+        XCTAssertTrue(food.waitForExistence(timeout: 10), "Results arrive as you type")
+        let typed = try await request("GET", "/__test/food-database-requests")
+        XCTAssertEqual((typed["requests"] as? [[String: Any]])?.count, 1, "Typing a word queries the food database once")
         XCTAssertTrue(app.keyboards.buttons["Search"].waitForExistence(timeout: 5))
         app.keyboards.buttons["Search"].tap()
-        let food = app.buttons["nutrition.food.off:0012345678905"]
-        XCTAssertTrue(food.waitForExistence(timeout: 10))
         capture(app, "nutrition-search-results")
         tap(food, in: app)
+        chooseFoodMeasure("grams", in: app)
         replace(app.textFields["Amount (g)"], with: "35.5", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveEntry"], in: app)
@@ -454,13 +459,12 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertTrue(app.navigationBars["Diary"].waitForExistence(timeout: 10))
         tap(app.buttons["nutrition.scanBarcodeDirect"], in: app)
         XCTAssertTrue(app.navigationBars["Scan barcode"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.textFields["nutrition.barcodeDigits"].exists, "Scanning must open before manual digits")
+        XCTAssertTrue(app.textFields["nutrition.barcodeDigits"].waitForExistence(timeout: 5), "Without a camera the digits are ready to type")
         capture(app, "nutrition-barcode-first")
         tap(app.buttons["nutrition.barcodeSearch"], in: app)
         XCTAssertTrue(app.navigationBars["Add food"].waitForExistence(timeout: 5))
         capture(app, "nutrition-search-after-scan")
         tap(app.buttons["nutrition.barcode"], in: app)
-        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0000000000000", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
@@ -469,9 +473,8 @@ final class ProductionUITests: ExerlyUITestCase {
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
-        XCTAssertTrue(app.buttons["nutrition.barcodeFood"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["Amount (g)"].waitForExistence(timeout: 10), "A found barcode opens its portion, at the amount last eaten")
         capture(app, "nutrition-barcode-found")
-        tap(app.buttons["nutrition.barcodeFood"], in: app)
         replace(app.textFields["Amount (g)"], with: "20", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveEntry"], in: app)
@@ -1928,13 +1931,8 @@ final class ProductionUITests: ExerlyUITestCase {
     }
 
     private func openFoodOption(_ identifier: String, in app: XCUIApplication) {
-        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
-        let option = app.buttons[identifier]
-        XCTAssertTrue(option.waitForExistence(timeout: 5))
-        // A native menu overlays the navigation bar. Scrolling the content to
-        // reveal its already-visible row would dismiss the menu.
-        XCTAssertTrue(option.isHittable)
-        option.tap()
+        // Barcode, Label, Quick add and New food sit at the top of food search.
+        tap(app.buttons[identifier], in: app)
     }
 
     private func chooseSyntheticLabelPhoto(in app: XCUIApplication) throws {
@@ -1974,9 +1972,9 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["Library"], in: app)
         tap(app.buttons["nutrition.libraryFood.\(foodID)"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
-        reveal(app.textFields["Amount (oz)"], in: app)
-        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "A food with a serving opens on one of it")
         capture(app, "nutrition-unit-ounces-default")
+        chooseFoodMeasure("ounces", in: app)
         replace(app.textFields["Amount (oz)"], with: "2.5", in: app)
         dismissKeyboard(app)
         chooseFoodMeasure("grams", in: app)
@@ -2033,9 +2031,9 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["Library"], in: app)
         tap(app.buttons["nutrition.libraryFood.\(foodID)"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
-        reveal(app.textFields["Amount (fl oz)"], in: app)
-        XCTAssertEqual(app.textFields["Amount (fl oz)"].value as? String, "1")
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "A food with a serving opens on one of it")
         capture(app, "nutrition-unit-fluid-ounces-default")
+        chooseFoodMeasure("fluidOunces", in: app)
         replace(app.textFields["Amount (fl oz)"], with: "2.5", in: app)
         dismissKeyboard(app)
         chooseFoodMeasure("milliliters", in: app)
@@ -2081,10 +2079,10 @@ final class ProductionUITests: ExerlyUITestCase {
     }
 
     private func chooseFoodMeasure(_ identifier: String, in app: XCUIApplication) {
-        tap(app.buttons["nutrition.measure"], in: app)
-        capture(app, "nutrition-unit-measure-choices")
-        tap(app.buttons["nutrition.measure.\(identifier)"], in: app)
-        XCTAssertTrue(app.navigationBars["Portion measure"].waitForNonExistence(timeout: 10))
+        // Units and the food's servings are chips above the amount.
+        let chip = app.buttons["nutrition.measure.\(identifier)"]
+        tap(chip, in: app)
+        XCTAssertTrue(chip.isSelected)
     }
 
     func testMealDraftSelectionPortionsAndCancellationDoNotWriteDiaryEntries() async throws {
@@ -2103,7 +2101,8 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "nutrition-plate-selection")
         tap(app.buttons["nutrition.reviewPlate"], in: app)
         tap(plateRow(powder, in: app), in: app)
-        XCTAssertEqual(app.textFields["Amount (oz)"].value as? String, "1")
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "A food with a serving is added as one of it")
+        chooseFoodMeasure("ounces", in: app)
         replace(app.textFields["Amount (oz)"], with: "0", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.applyPlatePortion"], in: app)
@@ -2128,12 +2127,10 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "nutrition-plate-after-removal")
         tap(app.buttons["nutrition.plateAddFoods"], in: app)
         tap(app.buttons["nutrition.plateBarcode"], in: app)
-        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
-        tap(app.buttons["nutrition.barcodeFood"], in: app)
-        XCTAssertTrue(app.navigationBars["Choose foods"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Choose foods"].waitForExistence(timeout: 10), "A found barcode goes straight onto the meal")
         tap(app.buttons["nutrition.reviewPlate"], in: app)
         XCTAssertTrue(plateRow("off:0012345678905", in: app).exists)
         capture(app, "nutrition-plate-barcode-added")
@@ -2158,8 +2155,9 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
         tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
         tap(app.buttons["nutrition.reviewPlate"], in: app)
-        for (id, title) in [(powder, "Amount (oz)"), (liquid, "Amount (fl oz)")] {
+        for (id, title, measure) in [(powder, "Amount (oz)", "ounces"), (liquid, "Amount (fl oz)", "fluidOunces")] {
             tap(plateRow(id, in: app), in: app)
+            chooseFoodMeasure(measure, in: app)
             replace(app.textFields[title], with: "2.5", in: app)
             dismissKeyboard(app)
             capture(app, id == powder ? "nutrition-plate-ounces" : "nutrition-plate-fluid-ounces")
@@ -2256,7 +2254,6 @@ final class ProductionUITests: ExerlyUITestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
-        tap(app.buttons["nutrition.moreFoodOptions"], in: app)
         tap(app.buttons["nutrition.quickAdd"], in: app)
         XCTAssertTrue(app.navigationBars["Quick add"].waitForExistence(timeout: 5))
         capture(app, "nutrition-quick-empty")
@@ -3348,11 +3345,10 @@ final class ProductionUITests: ExerlyUITestCase {
         signIn(app, email: person.email)
         tap(app.buttons["nutrition.addFood"], in: app)
         tap(app.buttons["nutrition.barcode"], in: app)
-        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
-        tap(app.buttons["nutrition.barcodeFood"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.saveEntry"].waitForExistence(timeout: 10))
         tap(app.buttons["Dinner"], in: app)
         XCTAssertTrue(app.buttons["Dinner"].isSelected)
         capture(app, "meal-choice-initial-dinner")
@@ -3439,11 +3435,10 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["Previous day"], in: app)
         tap(app.buttons["nutrition.addFood"], in: app)
         tap(app.buttons["nutrition.barcode"], in: app)
-        tap(app.buttons["nutrition.enterBarcodeDigits"], in: app)
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["Look up barcode"], in: app)
-        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Synthetic oat bar")).firstMatch, in: app)
+        chooseFoodMeasure("grams", in: app)
         replace(app.textFields["Amount (g)"], with: "60", in: app)
         dismissKeyboard(app)
         tap(app.buttons["Dinner"], in: app)
