@@ -109,7 +109,9 @@ struct TodayWeekStrip: View {
 /// The day's calories as a ring, with the three macros beside it.
 struct TodayNutritionCard: View {
     let progress: DayProgress
-    let onSetTargets: () -> Void
+    /// Opens targets for a day without them; nil for a past day, which
+    /// only shows what was eaten.
+    let onSetTargets: (() -> Void)?
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .title) private var ringSize: CGFloat = 116
 
@@ -137,9 +139,14 @@ struct TodayNutritionCard: View {
                         .contentTransition(.numericText())
                     Text("kcal eaten").font(.exBody).foregroundStyle(Color.exTextSecondary)
                 }
-                Button("Set calorie and macro targets", systemImage: "target", action: onSetTargets)
-                    .font(.exLabel).foregroundStyle(Color.exPrimaryText).frame(minHeight: 44)
-                    .accessibilityIdentifier("today.setTargets")
+                if let onSetTargets {
+                    Button("Set calorie and macro targets", systemImage: "target", action: onSetTargets)
+                        .font(.exLabel).foregroundStyle(Color.exPrimaryText).frame(minHeight: 44)
+                        .accessibilityIdentifier("today.setTargets")
+                } else {
+                    Text("No targets on this day").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        .accessibilityIdentifier("today.noTargets")
+                }
             }
         }
         .accessibilityElement(children: .contain)
@@ -236,9 +243,12 @@ struct TodayPressStyle: ButtonStyle {
     }
 }
 
-/// A food logged around this time on other days. The plus logs it again.
+/// A food logged around this time on other days. The plus logs it again;
+/// once logged it shows a check, and tapping that removes it.
 struct TodaySuggestionChip: View {
     let suggestion: FoodSuggestion
+    let unit: MassUnit
+    var logged = false
     let open: () -> Void
     let log: () -> Void
 
@@ -256,12 +266,15 @@ struct TodaySuggestionChip: View {
             .accessibilityLabel("\(suggestion.food.name), \(portion), \(energy) calories")
             .accessibilityHint("Opens the portion before logging")
             Button(action: log) {
-                Image(systemName: "plus").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
-                    .frame(width: 32, height: 32).background(Color.exActionFill, in: Circle())
+                Image(systemName: logged ? "checkmark" : "plus").font(.system(size: 15, weight: .bold))
+                    .contentTransition(.symbolEffect(.replace))
+                    .foregroundStyle(logged ? Color.exSuccess : .white)
+                    .frame(width: 32, height: 32)
+                    .background(logged ? Color.exSuccess.opacity(0.16) : Color.exActionFill, in: Circle())
                     .frame(width: 44, height: 44).contentShape(Circle())
             }
             .buttonStyle(TodayPressStyle())
-            .accessibilityLabel("Log \(suggestion.food.name), \(portion)")
+            .accessibilityLabel(logged ? "Logged \(suggestion.food.name). Undo" : "Log \(suggestion.food.name), \(portion)")
             .accessibilityIdentifier("today.suggestion.log.\(suggestion.food.foodID)")
         }
         .padding(.leading, ExSpacing.item).padding(.trailing, 2).padding(.vertical, 2)
@@ -273,12 +286,10 @@ struct TodaySuggestionChip: View {
         TodayNutritionCard.number(suggestion.food.per100g.energy * suggestion.grams / 100)
     }
 
+    /// The amount, written as food search and the diary write it.
     private var portion: String {
-        if let serving = suggestion.serving {
-            let quantity = suggestion.quantity ?? 1
-            return quantity == 1 ? serving.name : "\(quantity.formatted(.number.precision(.fractionLength(0...2)))) × \(serving.name)"
-        }
-        return "\(suggestion.grams.formatted(.number.precision(.fractionLength(0)))) g"
+        FoodFormat.amount(grams: suggestion.grams, serving: suggestion.serving, quantity: suggestion.quantity,
+                          food: suggestion.food.foodForLogging(), unit: unit)
     }
 }
 

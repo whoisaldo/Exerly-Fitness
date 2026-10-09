@@ -122,7 +122,7 @@ struct NutritionEntryEditor: View {
             }
         }
         .sheet(item: $nutritionEditing) { reviewed in
-            NutritionEntryNutrientsEditor(entry: reviewed) { corrected in
+            NutritionEntryNutrientsEditor(entry: reviewed, unit: unit) { corrected in
                 try draft.applyNutrition(corrected, reviewed: reviewed)
             }
         }

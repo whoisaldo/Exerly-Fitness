@@ -24,6 +24,22 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(reopened.save(), entry)
     }
 
+    func testDiaryPortionMatchesTheSearchRowInTheAccountUnit() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-07"))
+        let banana = Serving("1 banana", grams: 126)
+        let food = ExerlyCore.Food(name: "Banana, raw", per100g: NutrientAmounts([.energy: 97]), servings: [banana])
+        let one = try store.log(food, serving: banana, quantity: 1, on: date, meal: "Snacks")
+        XCTAssertEqual(NutritionFormat.portion(one, unit: .pounds), "1 banana · 4.4 oz")
+        XCTAssertEqual(NutritionFormat.portion(one, unit: .kilograms), "1 banana · 126 g")
+        let portion = QuickPortion(food: one.food, grams: one.grams, serving: one.serving, quantity: one.quantity, repeated: true)
+        XCTAssertEqual(NutritionFormat.portion(one, unit: .pounds), FoodFormat.portion(portion, unit: .pounds))
+        let two = try store.log(food, serving: banana, quantity: 2, on: date, meal: "Snacks")
+        XCTAssertEqual(NutritionFormat.portion(two, unit: .kilograms), "2 × 1 banana · 252 g")
+        let weighed = try store.log(food, grams: 150, on: date, meal: "Snacks")
+        XCTAssertEqual(NutritionFormat.portion(weighed, unit: .pounds), "150 g")
+    }
+
     func testExplicitLabelPortionReplacesInvalidInputAndPersistsWithoutChangingTheDefault() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -102,7 +118,7 @@ final class NutritionPresentationTests: XCTestCase {
         let date = try XCTUnwrap(LocalDate("2026-10-07"))
         let original = try store.quickAdd(NutrientAmounts([.energy: 351.25, .protein: 12.3456789, .sodium: 0]),
                                           name: "Unweighed meal", on: date, meal: "Lunch")
-        XCTAssertEqual(NutritionFormat.portion(original), "Whole portion")
+        XCTAssertEqual(NutritionFormat.portion(original, unit: .kilograms), "Whole portion")
         let draft = NutritionEntryDraft(store: store, food: original.food.foodForLogging(), date: date, meal: "Lunch", editing: original)
         let reviewed = try XCTUnwrap(draft.reviewNutrition())
         let correction = reviewed.editingNutrients(NutrientAmounts([.energy: 352.5, .fat: 0, .sodium: 0]))
@@ -113,7 +129,7 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(saved.nutrients[.energy], 352.5)
         XCTAssertEqual(saved.nutrients[.fat], 0)
         XCTAssertNil(saved.nutrients[.protein])
-        XCTAssertEqual(NutritionFormat.portion(saved), "Whole portion")
+        XCTAssertEqual(NutritionFormat.portion(saved, unit: .kilograms), "Whole portion")
         XCTAssertTrue(store.foods.isEmpty)
     }
 
@@ -197,7 +213,7 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(try reopened.preview().grams, saved.grams)
         XCTAssertTrue(reopened.selectMeasure(.fluidOunces))
         XCTAssertEqual(reopened.save(), saved)
-        XCTAssertTrue(NutritionFormat.portion(saved).hasPrefix("2.5 fl oz"))
+        XCTAssertEqual(NutritionFormat.portion(saved, unit: .kilograms), "2.5 fl oz")
     }
 
     func testUnitSwitchingPreservesMissingQuantityAndRejectsInvalidDraftsWithoutLosingInput() throws {

@@ -197,17 +197,12 @@ enum NutritionFormat {
         }
     }
 
-    static func portion(_ entry: FoodEntry, roundedGrams: Bool = false) -> String {
+    /// What an entry logged, written the way food search writes the portion
+    /// it logs: "1 banana · 4.4 oz" (or "· 126 g" in metric), "2.5 fl oz", "150 g".
+    static func portion(_ entry: FoodEntry, unit: MassUnit) -> String {
         if entry.food.unweighed == true { return "Whole portion" }
-        let grams = roundedGrams ? entry.grams.formatted(.number.precision(.fractionLength(0))) : TrainingFormat.number(entry.grams)
-        if let serving = entry.serving, let quantity = entry.quantity {
-            let measure = NutritionPortionMeasure.saved(serving, food: entry.food.foodForLogging())
-            if !measure.symbol.isEmpty {
-                return "\(TrainingFormat.number(quantity)) \(measure.symbol) · \(grams) g"
-            }
-            return "\(TrainingFormat.number(quantity)) × \(serving.name) · \(grams) g"
-        }
-        return "\(grams) g"
+        return FoodFormat.amount(grams: entry.grams, serving: entry.serving, quantity: entry.quantity,
+                                 food: entry.food.foodForLogging(), unit: unit)
     }
 
     static func day(_ date: LocalDate, timeZone: TimeZone) -> String {

@@ -212,7 +212,6 @@ struct FoodMealSelector: View {
 struct FoodToolButton: View {
     let title: String
     let icon: String
-    var prominent = false
     var identifier = ""
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -230,9 +229,8 @@ struct FoodToolButton: View {
                     }.frame(maxWidth: .infinity, minHeight: 62)
                 }
             }
-            .foregroundStyle(prominent ? Color.white : Color.exPrimaryText)
-            .background(prominent ? Color.exActionFill : Color.exPrimary.opacity(0.1),
-                        in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
+            .foregroundStyle(Color.exPrimaryText)
+            .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
             .contentShape(Rectangle())
         }.buttonStyle(FoodPressStyle()).accessibilityIdentifier(identifier)
     }
@@ -249,6 +247,10 @@ struct FoodPressStyle: ButtonStyle {
 /// The floating "Logged · Undo" confirmation. Liquid Glass, since it floats
 /// over the list rather than being part of it.
 struct FoodLoggedToast: View {
+    /// How far above the keyboard the search tab's floating search field
+    /// reaches, plus a gap.
+    static let searchFieldClearance: CGFloat = 64
+
     let title: String
     let detail: String
     let undo: () -> Void

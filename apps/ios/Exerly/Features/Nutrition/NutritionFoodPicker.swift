@@ -33,10 +33,14 @@ struct NutritionFoodPicker: View {
     @State private var selectionError: String?
     @State private var sheetLogged: [FoodEntry]?
     @State private var confirmation: LoggedConfirmation?
-    @State private var justLogged: Set<String> = []
+    /// Entries logged from this screen, by the row that logged them. Their
+    /// rows keep a check while the screen is open; tapping it removes them.
+    @State private var justLogged: [String: [FoodEntry]] = [:]
     @State private var logError: String?
     @State private var loggedCount = 0
     @State private var openedOnce = false
+    @FocusState private var searchFocused: Bool
+    private let focusesSearch: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -54,6 +58,8 @@ struct NutritionFoodPicker: View {
         self.onPick = onPick
         self.pickError = pickError
         self.presentation = presentation
+        // A sheet opened to search starts typing; one opened to scan doesn't.
+        focusesSearch = presentation == .sheet && !startsWithBarcode
         _meal = State(initialValue: presentation == .tab ? workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone) : meal)
         _showingBarcode = State(initialValue: startsWithBarcode)
         _pickedCount = State(initialValue: pickedCount)
@@ -78,6 +84,7 @@ struct NutritionFoodPicker: View {
             }
             .navigationTitle(picking ? "Choose foods" : "Add food").navigationBarTitleDisplayMode(.inline)
             .modifier(FoodSearchField(text: $query, presentation: presentation))
+            .searchFocused($searchFocused)
             .onSubmit(of: .search) { Task { await search.search(query) } }
             .onChange(of: query) { _, text in search.type(text) }
             .toolbar { toolbar }
@@ -111,6 +118,12 @@ struct NutritionFoodPicker: View {
             }
         }
         .onAppear(perform: refresh)
+        .task {
+            guard focusesSearch else { return }
+            // Once the sheet has settled, so the field accepts focus.
+            try? await Task.sleep(for: .milliseconds(350))
+            searchFocused = true
+        }
         .onDisappear { search.clear() }
     }
 
@@ -145,10 +158,10 @@ struct NutritionFoodPicker: View {
         if typeSize.isAccessibilitySize {
             // At the largest sizes the foods come first: Barcode and a compact
             // list choice above them, the other tools below.
-            barcodeButton(prominent: true)
+            barcodeButton
             scopeMenu
         } else {
-            HStack(spacing: ExSpacing.small) { toolButtons(compact: false) }
+            HStack(spacing: ExSpacing.small) { toolButtons }
             ExSegmentedControl(values: FoodListScope.allCases, selection: $scope) { $0.title }
                 .accessibilityElement(children: .contain).accessibilityIdentifier("nutrition.listScope")
         }
@@ -208,21 +221,21 @@ struct NutritionFoodPicker: View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
             ExEyebrow("Can't find it?")
             if typeSize.isAccessibilitySize {
-                barcodeButton(prominent: false)
+                barcodeButton
                 otherTools
             } else {
-                HStack(spacing: ExSpacing.small) { toolButtons(compact: true) }
+                HStack(spacing: ExSpacing.small) { toolButtons }
             }
         }.padding(.top, ExSpacing.small)
     }
 
-    @ViewBuilder private func toolButtons(compact: Bool) -> some View {
-        barcodeButton(prominent: !compact)
+    @ViewBuilder private var toolButtons: some View {
+        barcodeButton
         otherTools
     }
 
-    private func barcodeButton(prominent: Bool) -> some View {
-        FoodToolButton(title: typeSize.isAccessibilitySize ? "Scan barcode" : "Barcode", icon: "barcode.viewfinder", prominent: prominent,
+    private var barcodeButton: some View {
+        FoodToolButton(title: typeSize.isAccessibilitySize ? "Scan barcode" : "Barcode", icon: "barcode.viewfinder",
                        identifier: picking ? "nutrition.plateBarcode" : "nutrition.barcode") {
             hideKeyboard(); showingBarcode = true
         }.accessibilityLabel("Scan barcode")
@@ -309,15 +322,16 @@ struct NutritionFoodPicker: View {
     private func row(_ item: FoodPickerItem) -> some View {
         let portion = FoodFormat.portion(item.portion, unit: unit)
         let detail = [portion, FoodFormat.origin(of: item.portion.food)].compactMap { $0 }.joined(separator: " · ")
-        let done = picking ? addedIDs.contains(item.id) : justLogged.contains(item.id)
-        return FoodQuickRow(name: item.portion.food.name, detail: detail, amounts: item.portion.nutrients,
+        let logged = !picking && justLogged[item.id] != nil
+        let name = item.portion.food.name
+        return FoodQuickRow(name: name, detail: detail, amounts: item.portion.nutrients,
                             openHint: picking ? "Adds a portion. You can adjust it in the meal review." : "Opens the portion to adjust it",
                             openIdentifier: "nutrition.\(picking ? "platePick" : "food").\(item.id)",
                             open: { hideKeyboard(); if picking { select(item.food) } else { selectedFood = item.food } },
-                            add: FoodAddButton(done: done,
-                                               label: picking ? "Add \(item.portion.food.name) to the meal" : "Log \(portion) of \(item.portion.food.name) to \(meal)",
+                            add: FoodAddButton(done: picking ? addedIDs.contains(item.id) : logged,
+                                               label: picking ? "Add \(name) to the meal" : logged ? "Logged \(name). Undo" : "Log \(portion) of \(name) to \(meal)",
                                                identifier: "nutrition.\(picking ? "plateAdd" : "quickLog").\(item.id)") {
-                                if picking { select(item.food) } else { quickLog(item) }
+                                if picking { select(item.food) } else if logged { unlog(item) } else { quickLog(item) }
                             })
     }
 
@@ -331,13 +345,14 @@ struct NutritionFoodPicker: View {
     @ViewBuilder private var toast: some View {
         if let confirmation {
             FoodLoggedToast(title: confirmation.title, detail: confirmation.detail) { undo(confirmation) }
-                .padding(.bottom, ExSpacing.small)
+                // In the search tab the field floats above the keyboard,
+                // outside the safe area; the confirmation sits above it.
+                .padding(.bottom, presentation == .tab && searchFocused ? FoodLoggedToast.searchFieldClearance : ExSpacing.small)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .id(confirmation.id)
                 .task(id: confirmation.id) {
-                    // VoiceOver users get the confirmation until they move on.
-                    guard !UIAccessibility.isVoiceOverRunning else { return }
-                    try? await Task.sleep(for: .seconds(8))
+                    // Long enough to reach Undo, longer still with VoiceOver.
+                    try? await Task.sleep(for: .seconds(UIAccessibility.isVoiceOverRunning ? 12 : 6))
                     guard !Task.isCancelled else { return }
                     withAnimation(.snappy) { if self.confirmation?.id == confirmation.id { self.confirmation = nil } }
                 }
@@ -367,6 +382,11 @@ struct NutritionFoodPicker: View {
         let suggestedIDs = Set(suggested.map(\.id))
         let recent = store.recentPortions(limit: 30).filter { !suggestedIDs.contains($0.id) }.map(item)
         shelf = FoodShelf(suggested: suggested, recent: recent)
+        // Checks stay only for entries still logged on this day.
+        justLogged = justLogged.compactMapValues { entries in
+            let kept = entries.filter { entry in entry.date == date && store.entries.contains { $0.id == entry.id } }
+            return kept.isEmpty ? nil : kept
+        }
         // With nothing logged yet, open on the foods already saved.
         if !openedOnce {
             openedOnce = true
@@ -406,11 +426,6 @@ struct NutritionFoodPicker: View {
         logError = nil
         do {
             let entry = try store.log(item.portion, on: date, meal: meal)
-            withAnimation(.snappy) { _ = justLogged.insert(item.id) }
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                withAnimation(.snappy) { _ = justLogged.remove(item.id) }
-            }
             confirm([entry])
             onLogged()
             Task { await workspace.synchronize() }
@@ -429,21 +444,64 @@ struct NutritionFoodPicker: View {
         if let left = store.progress(on: first.date).energy.remaining { detail += " · \(FoodFormat.kcal(left)) left" }
         let title = entries.count == 1 ? "Logged \(first.food.name)" : "Logged \(entries.count) foods"
         if haptic { loggedCount += 1 }
-        withAnimation(.snappy) { confirmation = LoggedConfirmation(entries: entries, title: title, detail: detail) }
+        withAnimation(.snappy) {
+            confirmation = LoggedConfirmation(entries: entries, title: title, detail: detail)
+            for entry in entries { justLogged[entry.food.foodID, default: []].append(entry) }
+        }
+        showInRecent(entries)
+        UIAccessibility.post(notification: .announcement, argument: "\(title). \(detail)")
+    }
+
+    /// A food logged from search joins Recent at once. Foods already listed
+    /// keep their place, so rows don't move under a finger.
+    private func showInRecent(_ entries: [FoodEntry]) {
+        let listed = Set((shelf.suggested + shelf.recent).map(\.id))
+        let logged = Set(entries.map(\.food.foodID))
+        let added = store.recentPortions(limit: 30).filter { logged.contains($0.id) && !listed.contains($0.id) }.map(item)
+        shelf.recent.insert(contentsOf: added, at: 0)
+    }
+
+    /// A second tap on a logged row removes what it logged.
+    private func unlog(_ item: FoodPickerItem) {
+        guard let entries = justLogged[item.id] else { return }
+        logError = nil
+        let removed = remove(entries)
+        withAnimation(.snappy) {
+            justLogged[item.id] = nil
+            if let confirmation, confirmation.entries.allSatisfy({ entries.contains($0) }) { self.confirmation = nil }
+        }
+        if removed {
+            UISelectionFeedbackGenerator().selectionChanged()
+            UIAccessibility.post(notification: .announcement, argument: "Removed \(item.portion.food.name)")
+        }
+        Task { await workspace.synchronize() }
+    }
+
+    /// Deletes entries as they were logged; one changed since is left alone.
+    @discardableResult private func remove(_ entries: [FoodEntry]) -> Bool {
+        let current = entries.filter { entry in store.entries.first { $0.id == entry.id } == entry }
+        do {
+            for entry in current { try store.deleteEntry(entry.id) }
+            if current.count < entries.count {
+                logError = "Some of these entries changed after logging. Review them in today's log."
+            }
+            return !current.isEmpty
+        } catch {
+            logError = "Couldn't undo. The food is still logged; remove it from today's log."
+            return false
+        }
     }
 
     private func undo(_ logged: LoggedConfirmation) {
         logError = nil
-        let current = logged.entries.filter { entry in store.entries.first { $0.id == entry.id } == entry }
-        do {
-            for entry in current { try store.deleteEntry(entry.id) }
-            if current.count < logged.entries.count {
-                logError = "Some of these entries changed after logging. Review them in today's log."
+        remove(logged.entries)
+        withAnimation(.snappy) {
+            confirmation = nil
+            for entry in logged.entries {
+                justLogged[entry.food.foodID]?.removeAll { $0.id == entry.id }
+                if justLogged[entry.food.foodID]?.isEmpty == true { justLogged[entry.food.foodID] = nil }
             }
-        } catch {
-            logError = "Couldn't undo. The food is still logged; remove it from today's log."
         }
-        withAnimation(.snappy) { confirmation = nil; justLogged.subtract(logged.entries.map(\.food.foodID)) }
         Task { await workspace.synchronize() }
     }
 

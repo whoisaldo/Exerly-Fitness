@@ -177,7 +177,7 @@ private struct NutritionLibraryDetail: View {
                     Text(error).foregroundStyle(Color.exError).accessibilityFocused($errorFocused)
                 }
                 if let logged {
-                    Label("Logged \(NutritionFormat.portion(logged)) to \(logged.meal), \(NutritionFormat.day(logged.date, timeZone: timeZone)).", systemImage: "checkmark.circle")
+                    Label("Logged \(NutritionFormat.portion(logged, unit: unit)) to \(logged.meal), \(NutritionFormat.day(logged.date, timeZone: timeZone)).", systemImage: "checkmark.circle")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         .accessibilityIdentifier("nutrition.libraryLogged")
                 }

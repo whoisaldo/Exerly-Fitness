@@ -140,7 +140,7 @@ struct NutritionPlateView: View {
             Button { editing = row } label: {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
                     Text(row.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                    Text(NutritionFormat.portion(row.entry(on: draft.date, meal: draft.meal, at: draft.loggedAt), roundedGrams: true))
+                    Text(NutritionFormat.portion(row.entry(on: draft.date, meal: draft.meal, at: draft.loggedAt), unit: draft.unit))
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                     Text("Edit portion").font(.exCaption).foregroundStyle(Color.exPrimaryText)
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())

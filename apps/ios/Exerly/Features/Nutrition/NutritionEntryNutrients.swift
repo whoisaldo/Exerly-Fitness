@@ -31,6 +31,7 @@ final class NutritionEntryNutrientsDraft: ObservableObject {
 }
 
 struct NutritionEntryNutrientsEditor: View {
+    let unit: MassUnit
     let onApply: (FoodEntry) throws -> Void
     @StateObject private var draft: NutritionEntryNutrientsDraft
     @State private var discarding = false
@@ -38,7 +39,8 @@ struct NutritionEntryNutrientsEditor: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(entry: FoodEntry, onApply: @escaping (FoodEntry) throws -> Void) {
+    init(entry: FoodEntry, unit: MassUnit, onApply: @escaping (FoodEntry) throws -> Void) {
+        self.unit = unit
         self.onApply = onApply
         _draft = StateObject(wrappedValue: NutritionEntryNutrientsDraft(entry: entry))
     }
@@ -51,7 +53,7 @@ struct NutritionEntryNutrientsEditor: View {
                         ExEyebrow("This entry only", color: .exPrimaryText)
                         Text(draft.original.food.name).font(.exH2)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text(NutritionFormat.portion(draft.original)).font(.exBody)
+                        Text(NutritionFormat.portion(draft.original, unit: unit)).font(.exBody)
                         Text(draft.original.food.unweighed == true
                              ? "Enter nutrients for this whole portion. Other entries stay unchanged."
                              : "Enter nutrients for this whole portion. Your saved food and other entries stay unchanged.")
