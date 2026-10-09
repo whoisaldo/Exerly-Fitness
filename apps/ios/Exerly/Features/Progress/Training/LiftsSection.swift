@@ -97,17 +97,20 @@ private struct LiftRow: View {
         .accessibilityHint("Opens the lift's history")
     }
 
+    /// One flowing line, so it wraps cleanly at large text sizes.
     private var detail: some View {
-        HStack(spacing: 4) {
-            if let change = lift.change {
-                Image(systemName: LiftTone.symbol(change, unit: unit)).font(.caption2.weight(.bold)).accessibilityHidden(true)
-                Text(InsightFormat.change(change, unit))
-                    .monospacedDigit()
-            }
-            Text((lift.change == nil ? "" : "· ") + InsightFormat.sessions(lift.sessions) + (includesBodyweight ? " · incl. bodyweight" : ""))
-                .foregroundStyle(Color.exTextSecondary)
+        let rest = Text(verbatim: (lift.change == nil ? "" : "· ") + InsightFormat.sessions(lift.sessions)
+            + (includesBodyweight ? " · incl. bodyweight" : "")).foregroundStyle(Color.exTextSecondary)
+        let line: Text
+        if let change = lift.change {
+            let tone = LiftTone.color(change, unit: unit)
+            let arrow = Text(Image(systemName: LiftTone.symbol(change, unit: unit))).foregroundStyle(tone)
+            let gain = Text(verbatim: InsightFormat.change(change, unit)).foregroundStyle(tone)
+            line = Text("\(arrow) \(gain) \(rest)")
+        } else {
+            line = rest
         }
-        .font(.exCaption).foregroundStyle(lift.change.map { LiftTone.color($0, unit: unit) } ?? Color.exTextSecondary)
+        return line.font(.exCaption).monospacedDigit().fixedSize(horizontal: false, vertical: true)
     }
 
     private var spoken: String {

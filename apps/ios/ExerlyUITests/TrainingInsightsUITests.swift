@@ -30,8 +30,9 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
         tap(lift, in: app)
         let estimate = app.descendants(matching: .any)["liftDetail.estimate"]
         XCTAssertTrue(estimate.waitForExistence(timeout: 10), app.debugDescription)
-        // 205 lb × 5 at 1 RIR is about 239 lb.
-        XCTAssertTrue(estimate.label.contains("239"), estimate.label)
+        // Each session's best is its 5 reps at 2 RIR (7 to failure): 185, 195 and 205 lb a week
+        // apart fit a straight trend ending at 205 × 36/30, 246 lb.
+        XCTAssertTrue(estimate.label.contains("246 pounds"), estimate.label)
         XCTAssertTrue(app.descendants(matching: .any)["liftDetail.stats"].exists)
     }
 

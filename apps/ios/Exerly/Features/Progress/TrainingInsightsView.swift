@@ -103,8 +103,8 @@ private struct TrainingInsightsScreen: View {
     private func footnote(_ report: TrainingInsights.Report) -> some View {
         Text("Hard sets exclude warm-ups. Weeks start on \(Calendar.current.weekdaySymbols[report.firstWeekdayIndex]) "
             + "and dates are in \(timeZone.localizedName(for: .generic, locale: .current) ?? timeZone.identifier). "
-            + "Exerly's ranges are the beginner-to-advanced weekly targets its programs use for muscle growth; "
-            + "a strength block can sit lower on purpose.")
+            + "A muscle's range runs from the fewest to the most weekly sets any Exerly program plans for it, "
+            + "across strength, muscle-building and general goals.")
             .font(.exCaption).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
     }
 }

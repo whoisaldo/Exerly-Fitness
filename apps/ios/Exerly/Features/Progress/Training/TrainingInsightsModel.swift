@@ -7,7 +7,6 @@ import Foundation
 @MainActor
 final class TrainingInsightsModel: ObservableObject {
     @Published private(set) var report: TrainingInsights.Report?
-    @Published private(set) var history: TrainingHistory?
     private var generation = 0
 
     struct Input: Hashable {
@@ -25,7 +24,6 @@ final class TrainingInsightsModel: ObservableObject {
         }
         let result = await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
         guard current == generation, !Task.isCancelled else { return }
-        self.history = history
         report = result
     }
 

@@ -29,6 +29,7 @@ struct TrainingConsistencyCard: View {
                     .accessibilityLabel("\(metric.rawValue) per week, \(InsightFormat.spokenSpan(span))")
                     .accessibilityValue(chartSummary)
                     .accessibilityIdentifier("training.weeklyChart")
+                chartLegend
             } else {
                 Text("The weekly chart starts once you've trained in two different weeks.")
                     .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
@@ -47,8 +48,10 @@ struct TrainingConsistencyCard: View {
     @ViewBuilder
     private var readout: some View {
         let week = selected.flatMap { day in report.weeks.first { $0.start == day } }
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 6))
         VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            layout {
                 Text(week.map { formatted(value($0)) } ?? average.map(formatted) ?? "–")
                     .font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
                     .contentTransition(.numericText())
@@ -121,6 +124,24 @@ struct TrainingConsistencyCard: View {
         let values = report.weeks.map(value)
         guard let low = values.min(), let high = values.max() else { return "" }
         return "\(report.weeks.count) weeks, from \(spoken(low)) to \(spoken(high)). Average \(average.map(spoken) ?? "unavailable")."
+    }
+
+    private var chartLegend: some View {
+        HStack(spacing: ExSpacing.item) {
+            HStack(spacing: 5) {
+                Rectangle().fill(Color.exTextSecondary.opacity(0.7)).frame(width: 14, height: 1)
+                    .overlay(Rectangle().fill(Color.exSurface1).frame(width: 3, height: 1))
+                Text("Average")
+            }
+            if report.weeks.last?.isPartial == true {
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2).fill(Color.exPrimary.opacity(0.4)).frame(width: 8, height: 10)
+                    Text("This week so far")
+                }
+            }
+        }
+        .font(.exSmall).foregroundStyle(Color.exTextMuted)
+        .accessibilityHidden(true)
     }
 
     // MARK: Totals

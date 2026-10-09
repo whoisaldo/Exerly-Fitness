@@ -36,7 +36,7 @@ struct LiftDetailView: View {
         let history = store.history
         ExScreen {
             InsightSpanPicker(span: $span, identifier: "liftDetail.span")
-            if let report, report.from <= today {
+            if let report {
                 if report.sessions.isEmpty {
                     ExCard {
                         Text("No \(exercise?.name ?? "sets") in \(InsightFormat.spanPhrase(span))").font(.exH3)
@@ -140,15 +140,15 @@ struct LiftDetailView: View {
     @ViewBuilder
     private func trendLine(_ summary: TrainingInsights.LiftSummary?) -> some View {
         if let summary, let trend = summary.trend, let change = summary.change {
-            HStack(spacing: 6) {
-                Image(systemName: LiftTone.symbol(change, unit: unit)).font(.caption.weight(.bold)).accessibilityHidden(true)
-                Text("\(InsightFormat.change(change, unit)) over \(InsightFormat.sessions(trend.sessions))")
-                    .monospacedDigit()
-                Text("· \(InsightFormat.rate(trend.slopePerWeek, unit)) a week").foregroundStyle(Color.exTextSecondary).monospacedDigit()
-            }
-            .font(.exLabel).foregroundStyle(LiftTone.color(change, unit: unit))
+            let tone = LiftTone.color(change, unit: unit)
+            let arrow = Text(Image(systemName: LiftTone.symbol(change, unit: unit))).foregroundStyle(tone)
+            let gain = Text(verbatim: "\(InsightFormat.change(change, unit)) over \(InsightFormat.sessions(trend.sessions))").foregroundStyle(tone)
+            let rate = Text(verbatim: "· \(InsightFormat.rate(trend.slopePerWeek, unit)) a week").foregroundStyle(Color.exTextSecondary)
+            Text("\(arrow) \(gain) \(rate)")
+            .font(.exLabel).monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(LiftTone.color(change, unit: unit).opacity(0.12), in: Capsule())
+            .background(tone.opacity(0.12), in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Trend \(InsightFormat.spokenChange(change, unit)) over \(InsightFormat.sessions(trend.sessions)), "
                 + InsightFormat.spokenRate(trend.slopePerWeek, unit))
