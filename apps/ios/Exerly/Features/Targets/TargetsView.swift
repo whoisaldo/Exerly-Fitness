@@ -58,13 +58,11 @@ struct TargetsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: ExSpacing.content) {
                 if let plan {
+                    let state = checkInState(plan, today: today)
+                    // A check-in waiting for a decision leads; otherwise today's targets do.
+                    if state.needsDecision { checkIn(state, plan: plan, today: today, summary: summary) }
                     todayCard(plan, today: today)
-                    TargetsCheckInCard(state: checkInState(plan, today: today), plan: plan, unit: unit, today: today,
-                                       summary: summary, actions: checkInActions)
-                    if let error {
-                        Label(error, systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exError)
-                            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("targets.error")
-                    }
+                    if !state.needsDecision { checkIn(state, plan: plan, today: today, summary: summary) }
                     weekCard(plan, today: today)
                     goalCard(plan, today: today, summary: summary)
                     basisCard(plan, summary: summary)
@@ -114,15 +112,29 @@ struct TargetsView: View {
         .task { await workspace.synchronize() }
     }
 
+    @ViewBuilder
+    private func checkIn(_ state: TargetsCheckInCard.State, plan: NutritionPlan, today: LocalDate,
+                         summary: WeightTrend.Summary?) -> some View {
+        TargetsCheckInCard(state: state, plan: plan, unit: unit, today: today, summary: summary, actions: checkInActions)
+        if let error {
+            Label(error, systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exError)
+                .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("targets.error")
+        }
+    }
+
     // MARK: Today
 
     private func todayCard(_ plan: NutritionPlan, today: LocalDate) -> some View {
         let day = plan.targets(on: today) ?? DailyTargets(energy: 0, protein: 0, fat: 0, carbohydrate: 0)
         return ExCard {
-            HStack(alignment: .center, spacing: ExSpacing.small) {
+            let header = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: ExSpacing.small))
+            header {
                 ExEyebrow("Today · \(TargetsFormat.weekday(today.weekday))", color: .exPrimaryText)
-                Spacer(minLength: ExSpacing.small)
+                if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
                 Text(TargetsFormat.mode(plan.mode)).font(.exCaption.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
+                    .lineLimit(1).fixedSize()
                     .padding(.horizontal, 10).padding(.vertical, 4)
                     .background(Color.exPrimary.opacity(0.12), in: Capsule())
                     .accessibilityLabel("\(TargetsFormat.mode(plan.mode)) plan")
@@ -370,18 +382,46 @@ struct TargetsView: View {
                 }
                 Text("Set your calorie and macro targets").font(.exH2).foregroundStyle(Color.exTextPrimary)
                     .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                if typeSize.isAccessibilitySize { setupButton }
                 Text("Exerly starts from your profile, then checks in each week and adjusts your targets from what you log and weigh.")
-                    .font(.exBody).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                    .font(typeSize.isAccessibilitySize ? .exCaption : .exBody).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let choice {
                     Text("Starting estimate: \(BodyFormat.kcal(choice.basis.expenditure)) ±\(BodyFormat.kcal(choice.basis.expenditureError)) kcal a day")
                         .font(.exCaption.weight(.medium)).foregroundStyle(Color.exTextSecondary)
                 }
-                Button("Set up targets") { open(.setup) }.buttonStyle(ExActionStyle()).accessibilityIdentifier("targets.setup")
+                if !typeSize.isAccessibilitySize { setupButton }
             }
             if let message = workspace.nutritionSetupError {
                 Label(message, systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exWarning)
             }
+            ExCard {
+                ExEyebrow("How it works")
+                setupStep(1, "Start from an estimate",
+                          "Your age, height, weight and activity give a first expenditure, deliberately wide at ±15 %.")
+                setupStep(2, "Log and weigh in",
+                          "Fully logged days and weigh-ins measure what you burn, in the calories you log, so steady under-counting is built in.")
+                setupStep(3, "Check in weekly",
+                          "Exerly proposes new targets with its evidence. You accept them, adjust them or keep yours, and can undo.")
+            }
         }
+    }
+
+    private var setupButton: some View {
+        Button("Set up targets") { open(.setup) }.buttonStyle(ExActionStyle()).accessibilityIdentifier("targets.setup")
+    }
+
+    private func setupStep(_ number: Int, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: ExSpacing.item) {
+            Text("\(number)").font(.system(.subheadline, design: .rounded, weight: .bold)).foregroundStyle(Color.exPrimaryText)
+                .frame(width: 28, height: 28).background(Color.exPrimary.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: Check-in

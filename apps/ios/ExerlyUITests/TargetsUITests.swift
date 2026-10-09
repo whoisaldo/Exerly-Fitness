@@ -42,6 +42,37 @@ final class TargetsUITests: ExerlyUITestCase {
         XCTAssertEqual((plan["targets"] as? [[String: Any]])?.first?["energy"] as? Double, 1581)
     }
 
+    /// Targets set up offline are saved on the device, survive a relaunch and
+    /// reach the server once it's back.
+    func testAPlanSavedOfflineSurvivesARelaunchAndSyncs() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "targets-offline", units: "metric")
+        try await withoutLegacyTargets(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        try await control(["offline": true])
+        openTargets(app)
+        tap(app.buttons["targets.setup"], in: app)
+        tap(app.buttons["planEditor.save"], in: app)
+        let energy = app.descendants(matching: .any)["targets.today.energy"]
+        XCTAssertTrue(energy.waitForExistence(timeout: 10))
+        let saved = energy.value as? String
+        XCTAssertEqual(saved, "1,978 kilocalories", "Maintaining at the formula's expenditure")
+
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 20))
+        openTargets(app)
+        XCTAssertTrue(energy.waitForExistence(timeout: 10))
+        XCTAssertEqual(energy.value as? String, saved, "The plan is still on the device")
+
+        try await control([:])
+        app.scrollViews["targets.screen"].swipeDown()
+        let plans = try await waitForDocuments("nutrition_plan", token: person.token) { !$0.isEmpty }
+        XCTAssertEqual((plans.first?["targets"] as? [[String: Any]])?.first?["energy"] as? Double, 1978)
+    }
+
     /// Changing the plan adds a version from today and leaves the old one.
     func testEditingAPlanStartsANewVersionToday() async throws {
         try await control([:])
@@ -122,7 +153,7 @@ final class TargetsUITests: ExerlyUITestCase {
         tap(app.buttons["targets.edit"], in: app)
         XCTAssertTrue(app.buttons["planEditor.save"].waitForExistence(timeout: 5))
         capture(app, "targets-07-editor-goal")
-        let editor = app.scrollViews.allElementsBoundByIndex.last ?? app.scrollViews.firstMatch
+        let editor = app.scrollViews["planEditor.screen"]
         editor.swipeUp()
         capture(app, "targets-08-editor-coaching")
         editor.swipeUp()
@@ -131,7 +162,7 @@ final class TargetsUITests: ExerlyUITestCase {
         capture(app, "targets-10-editor-weekdays")
         editor.swipeDown(); editor.swipeDown(); editor.swipeDown()
         tap(app.buttons["planEditor.mode.manual"], in: app)
-        reveal(app.textFields["planEditor.manual.energy"], in: app)
+        editor.swipeUp()
         capture(app, "targets-11-editor-manual")
         tap(app.buttons["planEditor.cancel"], in: app)
     }

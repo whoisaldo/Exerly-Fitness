@@ -683,7 +683,21 @@ dieters reach their goal.
     floor.
 
   The proposal's ID comes from the plan and the date, so two devices propose
-  one check-in.
+  one check-in. Reviewed late, its version still starts today.
+- For the targets screen (`NutritionPlanning.swift`):
+  - `NutritionRate` gives presets, the weekly amount in the person's unit and
+    `nudged(_:by:direction:trend:unit:)`, which steps 0.1 lb or 0.05 kg a week;
+  - `WeekdayBudget` says whether days are even and steps one day's share;
+  - `NutritionTargets.manual(_:weekdayWeights:)` shares a typed day over the week;
+  - `PlanBasisChoice.current(summary:plans:profile:)` picks what a new version
+    rests on: measured expenditure, else the last plan's, else the formula;
+  - `NutritionPlanDraft(plan).preview(startingOn:basis:)` returns the version
+    the editor would save, or its problems in words;
+  - `NutritionGoal.projection(from:on:)` gives the goal weight's date in weeks;
+  - `NutritionCheckIn.nextDate(plan:review:)`, `proposalID(plan:date:)`,
+    `latest(in:)`, `proposedPlan(_:)` and `adjusted(_:to:from:)` for a
+    collaborative plan's changed proposal; `store.plan(before:)` is the version
+    a check-in replaced.
 
 ## Analytics: custom metrics, tags, correlations and experiments
 

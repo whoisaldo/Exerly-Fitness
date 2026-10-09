@@ -106,6 +106,7 @@ struct TargetsPlanEditor: View {
                 problems(preview)
             }
             .scrollDismissesKeyboard(.interactively)
+            .accessibilityIdentifier("planEditor.screen")
             .safeAreaInset(edge: .bottom, spacing: 0) { saveBar(preview) }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -560,7 +561,13 @@ struct TargetsPlanEditor: View {
 
     private func saveBar(_ preview: NutritionPlanDraft.Preview) -> some View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
-            if let plan = preview.plan, let day = plan.averageDay {
+            if let plan = preview.plan, let day = plan.averageDay, typeSize.isAccessibilitySize {
+                Text("\(TargetsFormat.kcal(day.energy)) kcal a day").font(.exH3).monospacedDigit()
+                    .foregroundStyle(Color.exTextPrimary).lineLimit(1).minimumScaleFactor(0.6)
+                    .accessibilityLabel("New targets")
+                    .accessibilityValue("\(TargetsFormat.kcal(day.energy)) kilocalories a day")
+                    .accessibilityIdentifier("planEditor.preview")
+            } else if let plan = preview.plan, let day = plan.averageDay {
                 let even = WeekdayBudget.isEven(plan.weekdayWeights)
                 HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
                     VStack(alignment: .leading, spacing: 1) {
@@ -597,8 +604,11 @@ struct TargetsPlanEditor: View {
             }
             Button(saveTitle) { save(preview) }
                 .buttonStyle(ExActionStyle()).disabled(preview.plan == nil)
+                .lineLimit(1).minimumScaleFactor(0.7)
                 .accessibilityIdentifier("planEditor.save")
         }
+        // A bar that stays on screen; the editor above carries the full text sizes.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .padding(.horizontal, ExSpacing.page).padding(.top, ExSpacing.item).padding(.bottom, ExSpacing.small)
         .frame(maxWidth: 700).frame(maxWidth: .infinity)
         .background(alignment: .top) {

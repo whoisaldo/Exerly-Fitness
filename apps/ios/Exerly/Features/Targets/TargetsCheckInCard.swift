@@ -16,6 +16,14 @@ struct TargetsCheckInCard: View {
         case cannotKeepGoal(NutritionCheckIn.Review)
         case scheduled(LocalDate)
         case manual
+
+        /// A proposal to accept, or a goal that no longer fits.
+        var needsDecision: Bool {
+            switch self {
+            case .due, .cannotKeepGoal: true
+            default: false
+            }
+        }
     }
 
     struct Actions {
@@ -61,7 +69,7 @@ struct TargetsCheckInCard: View {
         let even = WeekdayBudget.isEven(proposed.weekdayWeights)
         return ExCard(accent: true) {
             HStack(alignment: .center, spacing: ExSpacing.small) {
-                ExEyebrow("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exPrimaryText)
+                ExEyebrow("Check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exPrimaryText)
                 Spacer(minLength: ExSpacing.small)
                 if !typeSize.isAccessibilitySize { confidence(proposal.confidence) }
             }
@@ -95,19 +103,23 @@ struct TargetsCheckInCard: View {
         let layout = typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
             : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
-        return layout {
-            Text(TargetsFormat.kcal(before)).font(.exStatMedium).monospacedDigit().foregroundStyle(Color.exTextMuted)
-                .strikethrough(true, color: Color.exTextMuted.opacity(0.6))
-            Image(systemName: typeSize.isAccessibilitySize ? "arrow.down" : "arrow.right").font(.exLabel.weight(.semibold))
-                .foregroundStyle(Color.exTextSecondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(TargetsFormat.kcal(after)).font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
-                Text(even ? "kcal a day" : "kcal a day, on average").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+        return VStack(alignment: .leading, spacing: 2) {
+            layout {
+                Text(TargetsFormat.kcal(before)).font(.exStatMedium).monospacedDigit().foregroundStyle(Color.exTextMuted)
+                    .strikethrough(true, color: Color.exTextMuted.opacity(0.6))
+                Image(systemName: typeSize.isAccessibilitySize ? "arrow.down" : "arrow.right").font(.exLabel.weight(.semibold))
+                    .foregroundStyle(Color.exTextSecondary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(TargetsFormat.kcal(after)).font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+                    Text("kcal").font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
+                }
+                if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                Text(TargetsFormat.signedKcal(after - before)).font(.exLabel.weight(.semibold)).monospacedDigit()
+                    .foregroundStyle(Color.exPrimaryText)
+                    .padding(.horizontal, 8).padding(.vertical, 3).background(Color.exPrimary.opacity(0.14), in: Capsule())
             }
-            if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-            Text(TargetsFormat.signedKcal(after - before)).font(.exLabel.weight(.semibold)).monospacedDigit()
-                .foregroundStyle(Color.exPrimaryText)
-                .padding(.horizontal, 8).padding(.vertical, 3).background(Color.exPrimary.opacity(0.14), in: Capsule())
+            Text(even ? "A day, every day of the week" : "A day on average. Your weekdays keep their shape.")
+                .font(.exCaption).foregroundStyle(Color.exTextSecondary)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Calories")
@@ -125,15 +137,23 @@ struct TargetsCheckInCard: View {
     }
 
     private func macroChange(_ title: String, _ before: Double, _ after: Double, color: Color) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
-            Circle().fill(color).frame(width: 7, height: 7).accessibilityHidden(true)
-            Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-            Spacer(minLength: ExSpacing.small)
-            if before.rounded() != after.rounded() {
-                Text(TargetsFormat.grams(before)).font(.exLabel).monospacedDigit().foregroundStyle(Color.exTextMuted)
-                Image(systemName: "arrow.right").font(.exSmall).foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: ExSpacing.small))
+        return layout {
+            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+                Circle().fill(color).frame(width: 7, height: 7).accessibilityHidden(true)
+                Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
             }
-            Text(TargetsFormat.grams(after)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
+            HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+                if before.rounded() != after.rounded() {
+                    Text(TargetsFormat.grams(before)).font(.exLabel).monospacedDigit().foregroundStyle(Color.exTextMuted)
+                    Image(systemName: "arrow.right").font(.exSmall).foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
+                }
+                Text(TargetsFormat.grams(after)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+            }
+            .lineLimit(1).minimumScaleFactor(0.7)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
@@ -250,7 +270,7 @@ struct TargetsCheckInCard: View {
 
     private func waiting(_ review: NutritionCheckIn.Review) -> some View {
         ExCard {
-            ExEyebrow("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exWarning)
+            ExEyebrow("Check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exWarning)
             Text("Waiting for more data").font(.exH3).foregroundStyle(Color.exTextPrimary)
                 .accessibilityIdentifier("targets.checkIn.title")
             Group {
@@ -289,7 +309,7 @@ struct TargetsCheckInCard: View {
 
     private func unchanged(_ review: NutritionCheckIn.Review, next: LocalDate) -> some View {
         ExCard {
-            ExEyebrow("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))")
+            ExEyebrow("Check-in · \(TargetsFormat.shortDate(review.date, today: today))")
             Text("Your targets stay").font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityIdentifier("targets.checkIn.title")
             Group {
                 if let estimate = review.estimate {
@@ -307,7 +327,7 @@ struct TargetsCheckInCard: View {
 
     private func cannotKeepGoal(_ review: NutritionCheckIn.Review) -> some View {
         ExCard {
-            ExEyebrow("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exWarning)
+            ExEyebrow("Check-in · \(TargetsFormat.shortDate(review.date, today: today))", color: .exWarning)
             Text("Your goal no longer fits").font(.exH3).foregroundStyle(Color.exTextPrimary)
                 .accessibilityIdentifier("targets.checkIn.title")
             Text("At your measured expenditure, this goal would break a floor:").font(.exCaption)

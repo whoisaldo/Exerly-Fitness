@@ -235,9 +235,8 @@ struct TargetsWeekChart: View {
         if typeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
                 ForEach(Weekday.allCases, id: \.self) { day in
-                    HStack {
+                    VStack(alignment: .leading, spacing: 0) {
                         Text(TargetsFormat.weekday(day)).font(day == today ? .exBodyMedium : .exBody)
-                        Spacer(minLength: ExSpacing.small)
                         Text("\(TargetsFormat.kcal(energy(day))) kcal").font(.exStatSmall).monospacedDigit()
                     }
                     .foregroundStyle(day == today ? Color.exPrimaryText : Color.exTextPrimary)
@@ -254,7 +253,8 @@ struct TargetsWeekChart: View {
                             : AnyShapeStyle(Color.exPrimary.opacity(0.32)))
                         .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
                         .annotation(position: .top, spacing: 3) {
-                            Text(compact(energy(day))).font(.system(size: 10, weight: .semibold, design: .rounded))
+                            Text(TargetsFormat.kcal(energy(day))).font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .monospacedDigit().lineLimit(1).fixedSize()
                                 .foregroundStyle(day == today ? Color.exTextPrimary : Color.exTextMuted)
                         }
                 }
@@ -280,11 +280,6 @@ struct TargetsWeekChart: View {
     }
 
     private func energy(_ day: Weekday) -> Double { targets.indices.contains(day.rawValue - 1) ? targets[day.rawValue - 1].energy : 0 }
-
-    /// "2,350" as "2.35k", so seven labels fit a small phone.
-    private func compact(_ value: Double) -> String {
-        value >= 1000 ? "\((value / 1000).formatted(.number.precision(.fractionLength(0...2))))k" : TargetsFormat.kcal(value)
-    }
 }
 
 /// The trend weight's path to the goal weight at the planned rate.
