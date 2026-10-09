@@ -66,7 +66,8 @@ struct WeightTrendCard: View {
             Button(action: onWeighIn) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.exSuccess).accessibilityHidden(true)
-                    Text("\(BodyFormat.reading(last.weight, unit)) today").font(.exLabel).foregroundStyle(Color.exTextPrimary)
+                    Text(BodyFormat.reading(last.weight, unit)).font(.exLabel).foregroundStyle(Color.exTextPrimary)
+                        .lineLimit(1).fixedSize()
                 }
                 .padding(.horizontal, ExSpacing.item).frame(minHeight: 36)
                 .background(Color.exSurface2, in: Capsule())

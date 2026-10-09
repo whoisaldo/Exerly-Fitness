@@ -381,7 +381,7 @@ private extension String {
 }
 
 private struct WeighInDetent: CustomPresentationDetent {
-    static func height(in context: Context) -> CGFloat? { min(context.maxDetentValue, 480) }
+    static func height(in context: Context) -> CGFloat? { min(context.maxDetentValue, 440) }
 }
 
 extension PresentationDetent {

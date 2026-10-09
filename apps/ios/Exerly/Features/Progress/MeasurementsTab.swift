@@ -27,6 +27,8 @@ final class MeasurementsViewModel: ObservableObject {
             let values = try await SyncEngine.shared.measurements(from: from, to: to)
             guard self.generation == generation else { return }
             measurements = values
+        } catch is CancellationError {
+            // A newer load replaced this one.
         } catch {
             if self.generation == generation { self.error = error.localizedDescription }
         }

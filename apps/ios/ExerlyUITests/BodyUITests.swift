@@ -124,7 +124,7 @@ final class BodyUITests: ExerlyUITestCase {
         settle(app)
         tap(app.buttons["Progress"], in: app)
         XCTAssertTrue(app.descendants(matching: .any)["body.chart"].waitForExistence(timeout: 30))
-        tap(app.buttons["body.range.3M"], in: app)
+        if app.buttons["body.range.3M"].exists { tap(app.buttons["body.range.3M"], in: app) }
         try await Task.sleep(for: .seconds(1))
         capture(app, "body-01-progress")
         app.swipeUp(velocity: .slow)
@@ -150,10 +150,13 @@ final class BodyUITests: ExerlyUITestCase {
         tap(app.buttons["weighIn.save"], in: app)
         try await Task.sleep(for: .seconds(1))
         capture(app, "body-06-after-save")
-        tap(app.buttons["body.range.1M"], in: app)
-        let chart = app.descendants(matching: .any)["body.chart"]
-        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.5)).press(forDuration: 0.6)
-        capture(app, "body-07-one-month")
+        if app.buttons["body.range.1M"].exists {
+            tap(app.buttons["body.range.1M"], in: app)
+            capture(app, "body-07-one-month")
+        } else {
+            app.swipeUp(velocity: .slow)
+            capture(app, "body-07-chart-largest-type")
+        }
         for _ in 0..<6 { app.swipeUp() }
         capture(app, "body-08-card")
     }

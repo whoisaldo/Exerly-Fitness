@@ -195,21 +195,24 @@ struct ExpenditureChart: View {
 
     var body: some View {
         let values = points.flatMap { [$0.expenditure - $0.expenditureError, $0.expenditure + $0.expenditureError] }
-        let low = ((values.min() ?? 0) / 50).rounded(.down) * 50
-        let high = ((values.max() ?? 1) / 50).rounded(.up) * 50
+        // At least 500 kcal tall, so a drift of a few dozen calories doesn't look like a cliff.
+        let middle = ((values.min() ?? 0) + (values.max() ?? 1)) / 2
+        let half = max(((values.max() ?? 1) - (values.min() ?? 0)) / 2, 250)
+        let low = ((middle - half) / 50).rounded(.down) * 50
+        let high = ((middle + half) / 50).rounded(.up) * 50
         Chart {
             ForEach(WeightTrend.thinned(points, limit: 200)) { point in
                 AreaMark(x: .value("Day", BodyDates.anchor(point.date)),
                          yStart: .value("Low", point.expenditure - point.expenditureError),
                          yEnd: .value("High", point.expenditure + point.expenditureError))
-                    .foregroundStyle(Color.exAccent.opacity(0.2)).interpolationMethod(.monotone)
+                    .foregroundStyle(Color.exAccent.opacity(0.15)).interpolationMethod(.monotone)
                 LineMark(x: .value("Day", BodyDates.anchor(point.date)), y: .value("Expenditure", point.expenditure),
                          series: .value("Series", "Expenditure"))
                     .foregroundStyle(Color.exAccent).lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
                     .interpolationMethod(.monotone)
             }
         }
-        .chartYScale(domain: low...max(high, low + 100))
+        .chartYScale(domain: low...high)
         .chartXAxis {
             AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
                 AxisValueLabel(format: range.axisFormat, centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)
