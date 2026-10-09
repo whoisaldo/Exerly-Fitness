@@ -12,6 +12,7 @@ final class NutritionPresentationTests: XCTestCase {
         food.volume = VolumeBasis(density: 0.92, assumed: true)
         try store.saveFood(food)
         let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
+        XCTAssertTrue(draft.selectMeasure(.fluidOunces))
         draft.amount.text = "2.5"
         let entry = try XCTUnwrap(draft.save())
         let reopened = NutritionEntryDraft(store: store, food: entry.food.foodForLogging(serving: entry.serving),
@@ -32,7 +33,9 @@ final class NutritionPresentationTests: XCTestCase {
         let food = ExerlyCore.Food(name: "Label cereal", per100g: NutrientAmounts([.energy: 380, .fat: 0]), servings: [serving])
         let date = try XCTUnwrap(LocalDate("2026-10-07"))
         let draft = NutritionEntryDraft(store: workspace.nutrition, food: food, date: date, meal: "Breakfast")
-        XCTAssertEqual(draft.measure, .ounces)
+        XCTAssertEqual(draft.measure, .serving(serving), "A food with a label portion starts on one of it")
+        XCTAssertEqual(draft.amount.text, "1")
+        XCTAssertTrue(draft.selectMeasure(.ounces))
         draft.amount.text = "not a number"
         XCTAssertTrue(draft.selectPortion(serving))
         XCTAssertEqual(draft.amount.text, "1", "One published half-cup serving is not half of that serving")
@@ -118,13 +121,15 @@ final class NutritionPresentationTests: XCTestCase {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-07"))
         let food = ExerlyCore.Food(name: "Synthetic food", per100g: NutrientAmounts([.energy: 100, .sodium: 0]))
+        // A new food opens on what one tap on its row logs: 4 oz in U.S. units.
         let us = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch")
         XCTAssertEqual(us.measure, .ounces)
-        XCTAssertEqual(us.amount.text, "1")
+        XCTAssertEqual(us.amount.text, "4")
+        XCTAssertEqual(try us.preview().grams, try XCTUnwrap(store.quickPortion(for: food, unit: .pounds)).grams)
         let entry = try XCTUnwrap(us.save())
-        XCTAssertEqual(entry.grams, USUnits.grams(ounces: 1))
+        XCTAssertEqual(entry.grams, USUnits.grams(ounces: 4), accuracy: 1e-9)
         XCTAssertEqual(entry.serving?.name, "oz")
-        XCTAssertEqual(entry.quantity, 1)
+        XCTAssertEqual(entry.quantity, 4)
         XCTAssertFalse(us.availableMeasures.contains(.fluidOunces), "No density means no volume conversion")
         let metric = NutritionEntryDraft(store: store, food: food, date: date, meal: "Lunch", preferredUnit: .kilograms)
         XCTAssertEqual(metric.measure, .grams)
@@ -133,10 +138,20 @@ final class NutritionPresentationTests: XCTestCase {
         liquid.volume = VolumeBasis(density: 0.92, assumed: false)
         let usLiquid = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", preferredUnit: .pounds)
         XCTAssertEqual(usLiquid.measure, .fluidOunces)
-        XCTAssertEqual(try usLiquid.preview().grams, liquid.grams(milliliters: USUnits.milliliters(fluidOunces: 1)))
+        XCTAssertEqual(usLiquid.amount.text, "8")
+        XCTAssertEqual(try usLiquid.preview().grams, try XCTUnwrap(liquid.grams(milliliters: USUnits.milliliters(fluidOunces: 8))), accuracy: 1e-9)
         let metricLiquid = NutritionEntryDraft(store: store, food: liquid, date: date, meal: "Lunch", preferredUnit: .kilograms)
         XCTAssertEqual(metricLiquid.measure, .milliliters)
         XCTAssertEqual(metricLiquid.amount.text, "100")
+        // A food with a label serving opens on one of it, in either unit system.
+        var bar = food
+        bar.servings = [Serving("1 bar (40 g)", grams: 40)]
+        for unit in [MassUnit.pounds, .kilograms] {
+            let draft = NutritionEntryDraft(store: store, food: bar, date: date, meal: "Lunch", preferredUnit: unit)
+            XCTAssertEqual(draft.measure, .serving(Serving("1 bar (40 g)", grams: 40)))
+            XCTAssertEqual(draft.amount.text, "1")
+            XCTAssertEqual(try draft.preview().grams, 40)
+        }
     }
 
     func testRepeatedMeasureSwitchingRetainsExactWeightAndOriginalNutrition() throws {
@@ -804,6 +819,46 @@ final class NutritionSearchTests: XCTestCase {
         await model.search("new")
         let requests = await transport.requests()
         XCTAssertEqual(requests.count, 1)
+    }
+
+    func testTypingSearchesOnceAfterAPauseAndReusesEarlierAnswers() async throws {
+        let transport = NutritionSearchTransport()
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport), pause: .milliseconds(40))
+        for text in ["p", "pe", "pea", "pear", "pear "] { model.type(text) }
+        try await Task.sleep(for: .milliseconds(300))
+        var paths = await transport.requests().map(\.path)
+        XCTAssertEqual(paths, ["/v1/foods/search?q=pear&limit=20"], "One request for a word, after typing pauses")
+        XCTAssertEqual(model.shownQuery, "pear")
+        model.type("pears")
+        try await Task.sleep(for: .milliseconds(300))
+        model.type("pear")
+        XCTAssertEqual(model.shownQuery, "pear", "An answer already fetched shows at once")
+        await model.search("pear")
+        paths = await transport.requests().map(\.path)
+        XCTAssertEqual(paths.count, 2, "Going back to, or submitting, a shown search costs no request")
+        model.type("pe")
+        XCTAssertNil(model.result)
+        XCTAssertNil(model.request)
+        try await Task.sleep(for: .milliseconds(300))
+        let finalCount = await transport.requests().count
+        XCTAssertEqual(finalCount, 2, "Two letters don't search the database")
+    }
+
+    func testANewerKeystrokeDropsAStaleTypedSearch() async throws {
+        let began = expectation(description: "First search began")
+        let transport = NutritionSearchTransport(onFirstRequest: { began.fulfill() }, holdFirst: true)
+        let model = NutritionSearchModel(api: AccountAPI(accountID: "food-account", transport: transport), pause: .milliseconds(20))
+        model.type("old")
+        await fulfillment(of: [began], timeout: 3)
+        XCTAssertTrue(model.isLoading)
+        model.type("newer")
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(model.result?.foods.first?.name, "Synthetic new food")
+        XCTAssertEqual(model.shownQuery, "newer")
+        await transport.finishFirst()
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(model.result?.foods.first?.name, "Synthetic new food", "The stale answer never replaces the newer one")
+        XCTAssertFalse(model.isLoading)
     }
 
     func testCompactBarcodeKeepsTheCameraFormatAndDoesNotGuessManualDigits() async throws {

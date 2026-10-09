@@ -352,3 +352,53 @@ its unused achievement service are removed: badges for activity are the
 motivational filler the brief rules out, and the space goes to analytics that
 explain why numbers move. The SwiftData `Achievement` model stays in the stored
 schema until a schema migration removes it.
+## 2026-10-09: Food search logs in one tap
+
+Each food in search has a "+" that logs it at once and keeps the search open,
+with "Logged · Undo" and the kilocalories left for the day. What the row shows
+is exactly what the tap records: the amount last eaten, or for a new food one
+of its first label serving, else 100 g or 4 oz (100 ml or 8 fl oz for a food
+labelled by volume). `NutritionStore.quickPortion(for:unit:)` in ExerlyCore
+decides it, and the portion sheet opens on the same amount, so a new food no
+longer starts at 1 oz. A food eaten before is two taps from the home screen:
+open search, then "+". Recent and suggested rows are fixed while search is
+open, so rows don't move under a finger as foods are logged.
+
+## 2026-10-09: Food search queries the database as you type
+
+Search now asks the food database 400 ms after typing pauses, from three
+characters, cancelling a request a newer keystroke has made stale, and reuses
+answers already fetched. Saved and previously logged foods match on the
+device with no wait and work offline. This replaces submit-only search. The
+server still guards Open Food Facts' shared budget of 10 searches a minute
+and caches each query for five minutes; when the budget is spent, typed
+searches return the bundled generic foods only. If that happens in
+production, the server should add a per-account limit or move to a search
+API meant for type-ahead.
+
+## 2026-10-09: The portion sheet is compact, with unit chips
+
+The portion editor is a sheet sized to show the energy, macros, unit chips,
+amount, meal and a pinned Log button without scrolling; dates, nutrient
+corrections and the source are below. Switching unit or serving chips
+converts the amount and keeps its weight; the presets under the amount set
+whole servings. The separate "Portion
+measure" sheet (`NutritionMeasureSelection`) is removed, and the meal
+builder's portion editor uses the same chips. A barcode that matches one food,
+typed or scanned, opens its portion directly.
+
+## 2026-10-09: Old food library screen removed
+
+`Features/FoodLibrary/FoodLibraryView.swift` was not reachable from any
+screen; the Nutrition library replaced it. It is deleted. `LogFoodView`,
+`FoodDetailView`, `CreateFoodView` and `BarcodeScannerView` are reachable
+only from `HomeView`'s non-health diary mode, which nothing opens; they can go
+once that mode is removed. The barcode camera they shared now lives in
+`Features/Nutrition/NutritionBarcodeCamera.swift`.
+
+## 2026-10-09: The food library manages foods; search logs them
+
+The food library's "Usual around now" and "Recently logged" lists repeated
+what food search now shows with one-tap logging, so they are removed. The
+library is for finding, editing, starring and archiving saved foods; its food
+page still logs, at the meal usual for the time of day.

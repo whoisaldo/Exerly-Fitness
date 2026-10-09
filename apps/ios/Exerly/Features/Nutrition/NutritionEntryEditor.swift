@@ -1,6 +1,9 @@
 import ExerlyCore
 import SwiftUI
 
+/// The portion sheet: one food's amount, meal and nutrition, logged in one
+/// tap with its defaults. Dates, nutrient corrections and the food's source
+/// sit below the fold.
 struct NutritionEntryEditor: View {
     @ObservedObject var workspace: TrainingWorkspace
     let timeZone: TimeZone
@@ -12,7 +15,6 @@ struct NutritionEntryEditor: View {
     @StateObject private var libraryActions: NutritionLibraryActions
     @State private var confirmation: Confirmation?
     @State private var nutritionEditing: FoodEntry?
-    @State private var choosingMeasure = false
     @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -42,134 +44,34 @@ struct NutritionEntryEditor: View {
         NavigationStack {
             ScrollViewReader { scroll in
                 ExScreen {
-                    VStack(alignment: .leading, spacing: ExSpacing.small) {
-                        ExEyebrow("\(draft.meal) · \(NutritionFormat.day(draft.date, timeZone: timeZone))", color: .exPrimaryText)
-                        Text(draft.food.name).font(.exH2)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if let brand = draft.food.brand { Text(brand).foregroundStyle(.secondary) }
-                    }
-                    ExCard(accent: true) {
-                        ExEyebrow("This portion", color: .exPrimaryText)
-                        if draft.snapshot.edited == true {
-                            Text("Edited nutrition").font(.exCaption).foregroundStyle(Color.exPrimaryText)
-                        }
-                        portion
+                    header
+                    FoodPortionSummary(amounts: preview?.nutrients)
+                    if draft.snapshot.edited == true {
+                        Label("Edited nutrition", systemImage: "pencil").font(.exCaption).foregroundStyle(Color.exPrimaryText)
                     }
                     if draft.snapshot.unweighed == true {
                         ExCard {
                             ExEyebrow("Whole portion", color: .exPrimaryText)
-                            Text("This entry was logged without a weight. Edit its Calories and nutrients below.")
+                            Text("Logged as totals, without a weight. Change its Calories and nutrients directly.")
                                 .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                        }.accessibilityIdentifier("nutrition.unweighedEntry")
+                            editNutritionButton
+                        }.accessibilityElement(children: .contain).accessibilityIdentifier("nutrition.unweighedEntry")
                     } else {
-                        ExCard {
-                            if !draft.publishedServings.isEmpty {
-                                Text(draft.food.source == .recipe ? "Recipe portions" : "Label portions").font(.exLabel)
-                                ForEach(draft.publishedServings, id: \.self) { serving in
-                                    Button("Use \(serving.name)") {
-                                        typing = false
-                                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                                        draft.selectPortion(serving)
-                                    }.buttonStyle(ExActionStyle(secondary: true))
-                                        .accessibilityIdentifier("nutrition.usePortion.\(serving.name).\(serving.grams)")
-                                        .accessibilityHint("Sets the amount to one of this portion. Review it before logging.")
-                                }
-                                Divider().overlay(Color.exBorder.opacity(0.3))
-                            }
-                            Button { typing = false; choosingMeasure = true } label: {
-                                ExNavigationLabel(title: draft.measure.title, icon: "scalemass", detail: "Portion measure")
-                            }.accessibilityIdentifier("nutrition.measure")
-                            ExQuantityControl(title: draft.measure.amountTitle,
-                                              text: $draft.amount.text, step: draft.measure.step,
-                                              presets: draft.measure.presets, unit: draft.measure.symbol)
-                                .focused($typing).accessibilityIdentifier("nutrition.amount")
-                            if case .serving(let serving) = draft.measure {
-                                Text("Each portion · \(portionWeight(serving))")
-                                    .foregroundStyle(.secondary)
-                            }
-                            if draft.measure == .milliliters || draft.measure == .fluidOunces, draft.food.volume?.assumed == true {
-                                Label("Estimated weight from volume", systemImage: "info.circle")
-                                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                            }
-                        }
+                        amount
                     }
-                    VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        ExSectionHeading("Meal")
-                        ExChoiceChips(values: meals, selection: $draft.meal) { $0 }
-                            .accessibilityIdentifier("nutrition.meal")
-                    }
-                    ExCard {
-                        if let amount = try? draft.preview() {
-                            DisclosureGroup("All portion nutrients") { NutritionAmountsView(amounts: amount.nutrients) }
-                                .font(.exLabel)
-                        }
-                        Button("Edit entry nutrition", systemImage: "pencil") {
-                            typing = false
-                            nutritionEditing = draft.reviewNutrition()
-                        }.accessibilityIdentifier("nutrition.editEntryNutrients")
-                    }
-                    ExCard {
-                        if typeSize.isAccessibilitySize {
-                            Text("Diary date").font(.exLabel).foregroundStyle(Color.exTextSecondary)
-                            DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
-                                .labelsHidden().accessibilityIdentifier("nutrition.entryDate")
-                            Text("Eaten at").font(.exLabel).foregroundStyle(Color.exTextSecondary)
-                            DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
-                                .labelsHidden().accessibilityIdentifier("nutrition.eatenAt")
-                        } else {
-                        DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
-                            .accessibilityIdentifier("nutrition.entryDate")
-                        DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
-                            .accessibilityIdentifier("nutrition.eatenAt")
-                        }
-                        Text("Dates and times use \(timeZone.identifier). The diary date controls which day's totals include this food.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                    ExCard {
-                        DisclosureGroup("About this food") {
-                        Text(NutritionFormat.source(draft.food.source))
-                        if let volume = draft.food.volume {
-                            if volume.assumed {
-                                Text("Gram amounts use an estimated density of \(TrainingFormat.number(volume.density)) g/ml.")
-                            }
-                            if let note = volume.note { Text(note).foregroundStyle(.secondary) }
-                        }
-                        if draft.food.source == .openFoodFacts {
-                            Link("Open Food Facts · Open Database License", destination: URL(string: "https://world.openfoodfacts.org/data")!)
-                        } else if draft.food.source == .usda {
-                            Link("USDA FoodData Central · Public domain", destination: URL(string: "https://fdc.nal.usda.gov/")!)
-                        }
-                        if editing != nil {
-                            Text("This entry keeps the food name and nutrition saved when you logged it.")
-                                .foregroundStyle(.secondary)
-                        }
-                        let saved = workspace.nutrition.food(draft.food.id)
-                        if draft.snapshot.unweighed != true {
-                            if saved?.favorite == true {
-                                Label("Saved in favorites", systemImage: "star.fill")
-                                    .accessibilityIdentifier("nutrition.entryFavoriteSaved")
-                            } else if saved?.archivedAt == nil {
-                                Button("Add to favorites", systemImage: "star") {
-                                    if libraryActions.keepFavorite(draft.food, reviewed: saved) {
-                                        Task { await workspace.synchronize() }
-                                    }
-                                }.accessibilityIdentifier("nutrition.entryFavorite")
-                            }
-                        }
-                        if let error = libraryActions.error { Text(error).foregroundStyle(Color.exError) }
-                    }
-                    }
-                    if !draft.errors.isEmpty || actions.error != nil {
+                    ExChoiceChips(values: meals, selection: $draft.meal) { $0 }
+                        .accessibilityIdentifier("nutrition.meal")
+                    details
+                    if !draft.errors.isEmpty || actions.error != nil || libraryActions.error != nil {
                         ExCard {
                             ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
                             if let error = actions.error { Text(error).foregroundStyle(Color.exError) }
+                            if let error = libraryActions.error { Text(error).foregroundStyle(Color.exError) }
                         }.id("errors").accessibilityFocused($errorsFocused)
                     }
                     if editing != nil {
-                        ExCard {
-                            Button("Delete entry", role: .destructive) { typing = false; confirmation = .delete }
-                                .accessibilityIdentifier("nutrition.deleteEntry")
-                        }
+                        Button("Delete entry", role: .destructive) { typing = false; confirmation = .delete }
+                            .font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("nutrition.deleteEntry")
                     }
                 }
                 .onChange(of: draft.errors) { _, errors in
@@ -183,28 +85,22 @@ struct NutritionEntryEditor: View {
                     errorsFocused = true
                 }
             }
-            .scrollContentBackground(.hidden).background(Color.exBackground)
+            .safeAreaInset(edge: .bottom) { logButton }
             .navigationTitle(editing == nil ? "Log food" : "Food entry").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { typing = false; if draft.hasChanges { confirmation = .discard } else { dismiss() } }
-                        .accessibilityIdentifier("nutrition.cancelEntry")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(editing == nil ? "Log" : "Save") {
+                    Button("Cancel", systemImage: "xmark") {
                         typing = false
-                        if let entry = draft.save() {
-                            UINotificationFeedbackGenerator().notificationOccurred(.success)
-                            onSaved(entry)
-                            Task { await workspace.synchronize() }
-                            dismiss()
-                        }
-                    }.fontWeight(.semibold).accessibilityIdentifier("nutrition.saveEntry")
+                        if draft.hasChanges { confirmation = .discard } else { dismiss() }
+                    }.accessibilityIdentifier("nutrition.cancelEntry")
                 }
+                ToolbarItem(placement: .primaryAction) { favoriteButton }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { typing = false } }
             }
         }
         .environment(\.timeZone, timeZone)
+        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.custom(FoodSheetDetent.self), .large])
+        .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(draft.hasChanges)
         .sheet(item: $confirmation) { kind in
             if kind == .delete, let editing {
@@ -230,7 +126,118 @@ struct NutritionEntryEditor: View {
                 try draft.applyNutrition(corrected, reviewed: reviewed)
             }
         }
-        .sheet(isPresented: $choosingMeasure) { NutritionMeasureSelection(draft: draft) }
+    }
+
+    private var preview: LoggedAmount? { try? draft.preview() }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(draft.food.name).font(.exH3).foregroundStyle(Color.exTextPrimary)
+                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+            if let origin = FoodFormat.origin(of: draft.snapshot) {
+                Text(origin).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+        }
+    }
+
+    @ViewBuilder private var amount: some View {
+        VStack(alignment: .leading, spacing: ExSpacing.item) {
+            NutritionMeasureChips(draft: draft, unit: unit) { typing = false }
+            ExQuantityControl(title: draft.measure.amountTitle, text: $draft.amount.text, step: draft.measure.step,
+                              presets: draft.measure.presets, unit: draft.measure.symbol)
+                .focused($typing).accessibilityIdentifier("nutrition.amount")
+            if draft.measure == .milliliters || draft.measure == .fluidOunces, draft.food.volume?.assumed == true {
+                Label("Estimated weight from volume", systemImage: "info.circle")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+        }
+    }
+
+    private var details: some View {
+        ExCard {
+            if typeSize.isAccessibilitySize {
+                Text("Diary date").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
+                    .labelsHidden().accessibilityIdentifier("nutrition.entryDate")
+                Text("Eaten at").font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
+                    .labelsHidden().accessibilityIdentifier("nutrition.eatenAt")
+            } else {
+                DatePicker("Diary date", selection: diaryDate, displayedComponents: .date)
+                    .font(.exLabel).accessibilityIdentifier("nutrition.entryDate")
+                DatePicker("Eaten at", selection: $draft.loggedAt, displayedComponents: [.date, .hourAndMinute])
+                    .font(.exLabel).accessibilityIdentifier("nutrition.eatenAt")
+            }
+            Divider().overlay(Color.exBorder.opacity(0.3))
+            if let amount = preview {
+                DisclosureGroup("All portion nutrients") { NutritionAmountsView(amounts: amount.nutrients) }
+                    .font(.exLabel)
+            }
+            if draft.snapshot.unweighed != true { editNutritionButton }
+            DisclosureGroup("About this food") {
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    Text(NutritionFormat.source(draft.food.source))
+                    if let volume = draft.food.volume {
+                        if volume.assumed {
+                            Text("Gram amounts use an estimated density of \(TrainingFormat.number(volume.density)) g/ml.")
+                        }
+                        if let note = volume.note { Text(note).foregroundStyle(Color.exTextSecondary) }
+                    }
+                    if draft.food.source == .openFoodFacts {
+                        Link("Open Food Facts · Open Database License", destination: URL(string: "https://world.openfoodfacts.org/data")!)
+                    } else if draft.food.source == .usda {
+                        Link("USDA FoodData Central · Public domain", destination: URL(string: "https://fdc.nal.usda.gov/")!)
+                    }
+                    if editing != nil {
+                        Text("This entry keeps the food name and nutrition saved when you logged it.")
+                            .foregroundStyle(Color.exTextSecondary)
+                    }
+                    Text("Dates and times use \(timeZone.identifier). The diary date decides which day's totals include this food.")
+                        .foregroundStyle(Color.exTextSecondary)
+                }.font(.exCaption).frame(maxWidth: .infinity, alignment: .leading)
+            }.font(.exLabel)
+        }
+    }
+
+    private var editNutritionButton: some View {
+        Button("Edit entry nutrition", systemImage: "pencil") {
+            typing = false
+            nutritionEditing = draft.reviewNutrition()
+        }.font(.exLabel).frame(minHeight: 44).contentShape(Rectangle())
+            .accessibilityIdentifier("nutrition.editEntryNutrients")
+    }
+
+    @ViewBuilder private var favoriteButton: some View {
+        let saved = workspace.nutrition.food(draft.food.id)
+        if draft.snapshot.unweighed != true, saved?.archivedAt == nil {
+            let favorite = saved?.favorite == true
+            Button(favorite ? "Remove from favorites" : "Add to favorites", systemImage: favorite ? "star.fill" : "star") {
+                let changed = favorite ? saved.map { libraryActions.setFavorite(false, reviewed: $0) } ?? false
+                    : libraryActions.keepFavorite(draft.food, reviewed: saved)
+                if changed { Task { await workspace.synchronize() } }
+            }.tint(favorite ? Color.exAccent : Color.exPrimaryText)
+                .sensoryFeedback(.selection, trigger: favorite)
+                .accessibilityIdentifier(favorite ? "nutrition.entryFavoriteSaved" : "nutrition.entryFavorite")
+        }
+    }
+
+    private var logButton: some View {
+        Button {
+            typing = false
+            hideKeyboard()
+            if let entry = draft.save() {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                onSaved(entry)
+                Task { await workspace.synchronize() }
+                dismiss()
+            }
+        } label: {
+            Text(editing == nil ? "Log to \(draft.meal)" : "Save changes")
+        }
+        .buttonStyle(ExActionStyle())
+        .accessibilityIdentifier("nutrition.saveEntry")
+        .padding(.horizontal, ExSpacing.page).padding(.top, ExSpacing.small).padding(.bottom, ExSpacing.small)
+        .background(Color.exBackground)
     }
 
     private var meals: [String] {
@@ -243,18 +250,7 @@ struct NutritionEntryEditor: View {
                 set: { draft.date = LocalDate($0, in: timeZone) })
     }
 
-    @ViewBuilder private var portion: some View {
-        if let amount = try? draft.preview() {
-            NutritionDailySummary(amounts: amount.nutrients, targets: nil, showHeading: false, showTargetNote: false)
-        } else {
-            Text("Enter a positive amount to preview its nutrition.").foregroundStyle(.secondary)
-        }
-    }
-
-    private func portionWeight(_ serving: Serving) -> String {
-        if unit == .pounds {
-            return "\(USUnits.ounces(grams: serving.grams).formatted(.number.precision(.fractionLength(0...2)))) oz"
-        }
-        return "\(serving.grams.formatted(.number.precision(.fractionLength(0...1)))) g"
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }

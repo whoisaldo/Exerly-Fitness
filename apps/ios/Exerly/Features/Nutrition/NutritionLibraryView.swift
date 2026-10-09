@@ -32,14 +32,11 @@ struct NutritionLibraryView: View {
     @State private var query = ""
     @State private var creating = false
     @State private var showArchived = false
-    @State private var loggingFood: ExerlyCore.Food?
-    @StateObject private var diaryActions: NutritionDiaryActions
 
     init(workspace: TrainingWorkspace, timeZone: TimeZone, unit: MassUnit) {
         self.workspace = workspace
         self.timeZone = timeZone
         self.unit = unit
-        _diaryActions = StateObject(wrappedValue: NutritionDiaryActions(store: workspace.nutrition))
     }
 
     var body: some View {
@@ -67,35 +64,6 @@ struct NutritionLibraryView: View {
                     }
                 }
             }
-            if !showArchived && query.isEmpty {
-                let suggestions = workspace.nutrition.suggestions(at: .now, timeZone: timeZone)
-                    .filter { $0.food.unweighed != true && workspace.nutrition.food($0.food.foodID)?.archivedAt == nil }
-                if !suggestions.isEmpty {
-                    VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        ExSectionHeading("Usual around now")
-                        ExCard {
-                            ForEach(suggestions.prefix(3), id: \.food.foodID) { suggestion in
-                                quickLogRow(suggestion.food.foodForLogging(serving: suggestion.serving))
-                            }
-                        }
-                    }
-                }
-                let recent = workspace.nutrition.recentFoods(limit: 5).filter { snapshot in
-                    snapshot.unweighed != true && workspace.nutrition.food(snapshot.foodID)?.archivedAt == nil &&
-                        !suggestions.contains { $0.food.foodID == snapshot.foodID }
-                }
-                if !recent.isEmpty {
-                    VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        ExSectionHeading("Recently logged")
-                        ExCard {
-                            ForEach(recent, id: \.foodID) { snapshot in
-                                let last = workspace.nutrition.entries.last { $0.food.foodID == snapshot.foodID }
-                                quickLogRow(workspace.nutrition.food(snapshot.foodID) ?? snapshot.foodForLogging(serving: last?.serving))
-                            }
-                        }
-                    }
-                }
-            }
             Label("Available offline", systemImage: "checkmark.icloud").font(.exCaption).foregroundStyle(Color.exTextSecondary)
         }
         .navigationTitle("Food library").navigationBarTitleDisplayMode(.inline)
@@ -106,29 +74,6 @@ struct NutritionLibraryView: View {
             }
         }
         .sheet(isPresented: $creating) { NutritionFoodEditor(workspace: workspace) { _ in } }
-        .sheet(item: $loggingFood) { food in
-            NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(.now, in: timeZone),
-                                 meal: workspace.nutrition.entries.last { $0.food.foodID == food.id }?.meal ?? "Snacks",
-                                 timeZone: timeZone, unit: unit, actions: diaryActions) { _ in }
-        }
-    }
-
-    private func quickLogRow(_ food: ExerlyCore.Food) -> some View {
-        Button { loggingFood = food } label: {
-            HStack(spacing: ExSpacing.item) {
-                VStack(alignment: .leading, spacing: ExSpacing.tight) {
-                    Text(food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                    if let last = workspace.nutrition.entries.last(where: { $0.food.foodID == food.id }) {
-                        Text("Log again · \(NutritionFormat.portion(last))").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    }
-                }.fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(Color.exPrimaryText)
-                    .frame(width: 44, height: 44).accessibilityHidden(true)
-            }.frame(minHeight: 52)
-        }
-            .buttonStyle(.plain).accessibilityLabel("Log \(food.name)")
-            .accessibilityIdentifier("nutrition.libraryRepeat.\(food.id)")
     }
 
     private var visibleFoods: [ExerlyCore.Food] {
@@ -289,7 +234,7 @@ private struct NutritionLibraryDetail: View {
             case .edit(let food): NutritionFoodEditor(workspace: workspace, editing: food) { _ in }
             case .log(let food):
                 NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(Date(), in: timeZone),
-                                     meal: workspace.nutrition.entries.last?.meal ?? "Snacks", timeZone: timeZone, unit: unit,
+                                     meal: workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone), timeZone: timeZone, unit: unit,
                                      actions: diaryActions) { logged = $0 }
             case .archive(let food):
                 let restoring = food.archivedAt != nil
