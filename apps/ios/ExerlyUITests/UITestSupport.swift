@@ -338,14 +338,7 @@ class ExerlyUITestCase: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd"
         guard let current = shownDay(app).flatMap(formatter.date(from:)) else { return XCTFail("No day shown") }
         let target = formatter.string(from: current.addingTimeInterval(Double(days) * 86_400))
-        let button = app.buttons["today.day.\(target)"]
-        let strip = app.descendants(matching: .any)["diary.selected-day"]
-        for _ in 0..<8 where !button.exists {
-            if strip.exists, strip.isHittable { days < 0 ? strip.swipeRight() : strip.swipeLeft() }
-            else { app.swipeDown() }
-        }
-        tap(button, in: app)
-        XCTAssertEqual(shownDay(app), target)
+        showDay(target, earlier: days < 0, in: app)
     }
 
     func showToday(in app: XCUIApplication) {
@@ -353,9 +346,22 @@ class ExerlyUITestCase: XCTestCase {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "America/New_York")
         formatter.dateFormat = "yyyy-MM-dd"
-        let today = app.buttons["today.day.\(formatter.string(from: Date()))"]
-        for _ in 0..<8 where !today.exists { app.descendants(matching: .any)["diary.selected-day"].swipeLeft() }
-        tap(today, in: app)
+        let today = formatter.string(from: Date())
+        // Dates as YYYY-MM-DD order the same as strings.
+        showDay(today, earlier: today < (shownDay(app) ?? today), in: app)
+    }
+
+    /// Swipes the week strip, scrolled into view first, until the day shows,
+    /// then taps it.
+    private func showDay(_ day: String, earlier: Bool, in app: XCUIApplication) {
+        let button = app.buttons["today.day.\(day)"]
+        let strip = app.descendants(matching: .any)["diary.selected-day"]
+        for _ in 0..<8 where !button.exists {
+            reveal(strip, in: app)
+            earlier ? strip.swipeRight() : strip.swipeLeft()
+        }
+        tap(button, in: app)
+        XCTAssertEqual(shownDay(app), day)
     }
 
     /// Chooses a logging status from the day's status menu. A tap toggles

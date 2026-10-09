@@ -285,16 +285,19 @@ struct TodaySuggestionChip: View {
 /// A short confirmation above the tab bar, with an undo.
 struct TodayToast: View {
     let message: String
+    var failed = false
     let undo: (() -> Void)?
+    var undoIdentifier = "today.undo"
 
     var body: some View {
         HStack(spacing: ExSpacing.item) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.exSuccess).accessibilityHidden(true)
+            Image(systemName: failed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(failed ? Color.exWarning : Color.exSuccess).accessibilityHidden(true)
             Text(message).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(2)
             Spacer(minLength: 0)
             if let undo {
                 Button("Undo", action: undo).font(.exLabel.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
-                    .frame(minWidth: 44, minHeight: 44).accessibilityIdentifier("today.undo")
+                    .frame(minWidth: 44, minHeight: 44).accessibilityIdentifier(undoIdentifier)
             }
         }
         .padding(.leading, ExSpacing.content).padding(.trailing, ExSpacing.small)

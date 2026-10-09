@@ -48,9 +48,16 @@ struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     struct Toast: Equatable {
+        enum Undo: Equatable {
+            /// Removes entries just logged.
+            case remove([UUID])
+            /// Restores the entry the editor just deleted.
+            case restoreDeleted
+        }
         let id = UUID()
         let message: String
-        let undo: [UUID]
+        let undo: Undo?
+        var failed = false
     }
 
     enum Destination: Identifiable {
@@ -142,7 +149,8 @@ struct TodayView: View {
         }
         .overlay(alignment: .bottom) {
             if let toast {
-                TodayToast(message: toast.message, undo: toast.undo.isEmpty ? nil : { undo(toast) })
+                TodayToast(message: toast.message, failed: toast.failed, undo: toast.undo == nil ? nil : { undo(toast) },
+                           undoIdentifier: toast.undo == .restoreDeleted ? "nutrition.undoDelete" : "today.undo")
                     .padding(.bottom, ExSpacing.small)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .task(id: toast.id) {
@@ -151,6 +159,9 @@ struct TodayView: View {
                         withAnimation(.snappy) { if self.toast == toast { self.toast = nil } }
                     }
             }
+        }
+        .onChange(of: actions.deleted) { _, deleted in
+            if let deleted { show("Removed \(deleted.food.name)", undo: .restoreDeleted) }
         }
         .refreshable { await workspace.synchronize() }
         .sheet(item: $destination) { sheet($0) }
@@ -233,22 +244,29 @@ struct TodayView: View {
             let meal = currentMeal
             let entry = try store.log(suggestion, on: date, meal: meal)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            show("Logged \(suggestion.food.name) to \(meal)", undo: [entry.id])
+            show("Logged \(suggestion.food.name) to \(meal)", undo: .remove([entry.id]))
             Task { await workspace.synchronize() }
-        } catch { show("Could not log \(suggestion.food.name). Try again.", undo: []) }
+        } catch { show("Could not log \(suggestion.food.name). Try again.", failed: true) }
     }
 
-    private func show(_ message: String, undo: [UUID]) {
-        withAnimation(.snappy) { toast = Toast(message: message, undo: undo) }
+    private func show(_ message: String, undo: Toast.Undo? = nil, failed: Bool = false) {
+        withAnimation(.snappy) { toast = Toast(message: message, undo: undo, failed: failed) }
         UIAccessibility.post(notification: .announcement, argument: message)
     }
 
     private func undo(_ toast: Toast) {
-        do {
-            for id in toast.undo where store.entries.contains(where: { $0.id == id }) { try store.deleteEntry(id) }
+        switch toast.undo {
+        case .remove(let ids):
+            do {
+                for id in ids where store.entries.contains(where: { $0.id == id }) { try store.deleteEntry(id) }
+                withAnimation(.snappy) { self.toast = nil }
+                Task { await workspace.synchronize() }
+            } catch { show("Could not undo. The entries are still logged.", failed: true) }
+        case .restoreDeleted:
             withAnimation(.snappy) { self.toast = nil }
-            Task { await workspace.synchronize() }
-        } catch { show("Could not undo. The entries are still logged.", undo: []) }
+            if actions.undoDeletion() { Task { await workspace.synchronize() } }
+        case nil: break
+        }
     }
 
     // MARK: Training
@@ -335,7 +353,7 @@ struct TodayView: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             Task { await workspace.synchronize() }
             showTraining()
-        } catch { show("The workout could not start. Your program is unchanged. Try again.", undo: []) }
+        } catch { show("The workout could not start. Your program is unchanged. Try again.", failed: true) }
     }
 
     private func startEmpty() {
@@ -343,7 +361,7 @@ struct TodayView: View {
             try workspace.store.startSession(name: "Workout", bodyweight: bodyweight, timeZone: timeZone)
             Task { await workspace.synchronize() }
             showTraining()
-        } catch { show("The workout could not start. Try again.", undo: []) }
+        } catch { show("The workout could not start. Try again.", failed: true) }
     }
 
     // MARK: Meals
@@ -390,9 +408,9 @@ struct TodayView: View {
             let copied = try store.apply(repeated, to: date)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             let what = repeated.meal.map { "\($0.lowercased())" } ?? "the day"
-            show("Repeated \(dayName(repeated.source))'s \(what)", undo: copied.map(\.id))
+            show("Repeated \(dayName(repeated.source))'s \(what)", undo: .remove(copied.map(\.id)))
             Task { await workspace.synchronize() }
-        } catch { show("Could not repeat those foods. Nothing was logged.", undo: []) }
+        } catch { show("Could not repeat those foods. Nothing was logged.", failed: true) }
     }
 
     private func dayName(_ day: LocalDate) -> String {

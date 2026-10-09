@@ -67,6 +67,19 @@ final class TodayUITests: ExerlyUITestCase {
         XCTAssertTrue(app.navigationBars["Today"].exists)
     }
 
+    func testTheWeekStripReachesFutureDaysForPlanning() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "today-future", units: "imperial")
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        let today = try XCTUnwrap(shownDay(app))
+        shiftDay(1, in: app)
+        XCTAssertNotEqual(shownDay(app), today)
+        XCTAssertTrue(app.navigationBars.matching(NSPredicate(format: "identifier != %@", "Today")).firstMatch.exists)
+        showToday(in: app)
+        XCTAssertEqual(shownDay(app), today)
+    }
+
     func testStartingTodaysWorkoutTakesOneTapFromToday() async throws {
         let app = try await signedInWithWeek(prefix: "today-start")
         let start = app.buttons["today.startWorkout"]
