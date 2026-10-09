@@ -38,158 +38,234 @@ struct TrainingView: View {
     let timeZone: TimeZone
     let unreadableCount: Int
     var workspace: TrainingWorkspace?
-    @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var starting = false
     @State private var browsing = false
-    @State private var reviewingPlan = false
+    @State private var previewing = false
     @State private var buildingPlan = false
-
-    var body: some View {
-        Group {
-            if let session = store.activeSession {
-                ActiveWorkoutView(store: store, session: session, unit: unit, gym: workspace?.gyms.active)
-            } else {
-                ExScreen {
-                    if let workspace, workspace.programs.active != nil {
-                        NextTrainingWorkoutSection(workspace: workspace) { reviewingPlan = true }
-                        Button("Start a different workout", systemImage: "plus") { starting = true }
-                            .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
-                    } else if workspace != nil {
-                        ExEmptyState(icon: "dumbbell", title: "Your first workout starts here",
-                                     message: "Tell us your goal, time and equipment. Review a plan built around your answers.",
-                                     action: "Build my workout plan", actionID: "planSetup.open") { buildingPlan = true }
-                        Button("Start a workout yourself", systemImage: "plus") { starting = true }
-                            .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("training.start")
-                    } else {
-                        ExEmptyState(icon: "dumbbell", title: "No workout planned",
-                                     message: "Choose your exercises. Your last sets will be ready to log again.", action: "Start workout", actionID: "training.start") {
-                            starting = true
-                        }
-                    }
-                    if let session = store.history.sessions.last {
-                        VStack(alignment: .leading, spacing: ExSpacing.item) {
-                            ExSectionHeading("Last session")
-                            NavigationLink {
-                                WorkoutDetailView(store: store, sessionID: session.id, unit: unit)
-                            } label: {
-                                ExCard {
-                                    WorkoutHistoryRow(session: session, library: store.library)
-                                        .foregroundStyle(Color.exTextPrimary)
-                                    let summary = store.summary(of: session)
-                                    Text("\(summary.workingSets) \(summary.workingSets == 1 ? "working set" : "working sets") · \(summary.tonnage.total(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unit == .kilograms ? "kg" : "lb")·reps")
-                                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                                    if !summary.tonnage.isComplete {
-                                        Text("Volume excludes unrecorded bodyweight").font(.exSmall).foregroundStyle(Color.exTextMuted)
-                                    }
-                                }
-                            }.buttonStyle(.plain)
-                        }
-                    }
-                    if let workspace {
-                        VStack(alignment: .leading, spacing: ExSpacing.item) {
-                            ExSectionHeading("Your training")
-                            ExCard {
-                                NavigationLink {
-                                    TrainingProgramsView(workspace: workspace, unit: unit, timeZone: timeZone)
-                                } label: { ExNavigationLabel(title: "Programs", icon: "square.stack.3d.up", detail: "Plan the next session") }
-                                    .accessibilityIdentifier("programs.open")
-                                Divider().overlay(Color.exBorder.opacity(0.3))
-                                NavigationLink {
-                                    TrainingGymsView(workspace: workspace, unit: unit)
-                                } label: { ExNavigationLabel(title: "Gyms & equipment", icon: "building.2", detail: workspace.gyms.active?.name ?? "Use the weights you have") }
-                                    .accessibilityIdentifier("gyms.open")
-                                NavigationLink {
-                                    AgentReviewView(workspace: workspace, unit: unit)
-                                } label: { ExNavigationLabel(title: "Suggestions", icon: "tray", detail: "Review changes from your agents") }
-                                    .accessibilityIdentifier("suggestions.open")
-                                NavigationLink {
-                                    TrainingObservationsView(workspace: workspace, unit: unit, timeZone: timeZone)
-                                } label: { ExNavigationLabel(title: "Observations", icon: "chart.xyaxis.line", detail: "Patterns in your completed sets") }
-                                    .accessibilityIdentifier("observations.open")
-                            }
-                        }
-                    }
-                    ExCard {
-                        Button { browsing = true } label: { ExNavigationLabel(title: "Exercise library", icon: "dumbbell") }
-                            .accessibilityLabel("Exercise library")
-                        NavigationLink {
-                            WorkoutHistoryView(store: store, unit: unit)
-                        } label: { ExNavigationLabel(title: "Workout history", icon: "clock.arrow.circlepath") }
-                    }
-                    if unreadableCount > 0 {
-                        Label("Some saved entries could not be read. They have been kept for recovery. Contact support before reinstalling.",
-                              systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exWarning)
-                    }
-                }
-                .navigationTitle("Training").navigationBarTitleDisplayMode(.inline)
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .background(Color.exBackground)
-        .sheet(isPresented: $starting) {
-            NewWorkoutView(store: store, unit: unit, timeZone: timeZone)
-        }
-        .sheet(isPresented: $browsing) {
-            ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active)
-        }
-        .sheet(isPresented: $reviewingPlan) {
-            if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
-        }
-        .sheet(isPresented: $buildingPlan) {
-            if let workspace { TrainingPlanSetupView(workspace: workspace, unit: unit) }
-        }
-    }
-}
-
-private struct NewWorkoutView: View {
-    let store: TrainingStore
-    let unit: MassUnit
-    let timeZone: TimeZone
-    @Environment(\.dismiss) private var dismiss
-    @State private var name = "Workout"
-    @State private var bodyweight = ""
+    @State private var finished: FinishedWorkout?
     @State private var error: String?
 
     var body: some View {
-        NavigationStack {
-            ExScreen {
-                ExCard(accent: true) {
-                    ExEyebrow("Session name", color: .exPrimaryText)
-                    TextField("Workout name", text: $name).font(.exH2).accessibilityIdentifier("training.name")
-                    Text("Add exercises after you start. Each set saves as you go.")
-                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                }
-                ExCard {
-                    NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)", text: $bodyweight)
-                    Text("Used for bodyweight exercise volume. You can leave this blank.")
-                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                }
-                if let error { Text(error).foregroundStyle(Color.exError) }
-                Button("Start workout") { start() }.buttonStyle(ExActionStyle())
-                    .accessibilityIdentifier("training.confirmStart")
+        content
+            .animation(.snappy, value: store.activeSession?.id)
+            .sensoryFeedback(.impact(weight: .medium), trigger: store.activeSession?.id) { old, new in old == nil && new != nil }
+            .scrollContentBackground(.hidden)
+            .background(Color.exBackground)
+            .sheet(isPresented: $browsing) {
+                ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active)
             }
-            .navigationTitle("New workout").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItemGroup(placement: .keyboard) {
+            .sheet(isPresented: $previewing) {
+                if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
+            }
+            .sheet(isPresented: $buildingPlan) {
+                if let workspace { TrainingPlanSetupView(workspace: workspace, unit: unit) }
+            }
+            .sheet(item: $finished) { done in
+                WorkoutFinishSummary(result: done.result, library: store.library, unit: unit)
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let session = store.activeSession {
+            ActiveWorkoutView(store: store, session: session, unit: unit, gym: workspace?.gyms.active,
+                              targets: workspace?.slotTargets(for: session) ?? [:],
+                              onFinish: { finished = FinishedWorkout(result: $0) })
+                .transition(.opacity)
+        } else {
+            home.transition(.opacity)
+        }
+    }
+
+    private var home: some View {
+        ExScreen {
+            hero
+            if let error {
+                Label(error, systemImage: "exclamationmark.triangle").font(.exLabel).foregroundStyle(Color.exError)
+                    .accessibilityIdentifier("training.startError")
+            }
+            recent
+            tools
+            if unreadableCount > 0 {
+                Label("Some saved entries could not be read. They have been kept for recovery. Contact support before reinstalling.",
+                      systemImage: "exclamationmark.triangle").font(.exCaption).foregroundStyle(Color.exWarning)
+            }
+        }
+        .navigationTitle("Training").navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: Today
+
+    @ViewBuilder
+    private var hero: some View {
+        if let workspace, let program = workspace.programs.active {
+            if let position = ProgramSchedule.next(for: program, in: store.history),
+               let plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight, unit: unit) {
+                TodayWorkoutCard(plan: plan, position: position, program: program, library: store.library,
+                                 restPolicy: store.restPolicy, unit: unit, start: startToday,
+                                 preview: { previewing = true }, empty: startEmpty)
+            } else {
+                TrainingPromptCard(eyebrow: program.name, title: "Program complete",
+                                   message: "Every cycle is done. Duplicate it in Programs to run it again with separate progress, or choose another.") {
+                    NavigationLink {
+                        TrainingProgramsView(workspace: workspace, unit: unit, timeZone: timeZone)
+                    } label: { Text("Choose what's next") }
+                        .buttonStyle(ExActionStyle())
+                } empty: { startEmpty() }
+            }
+        } else if workspace != nil {
+            TrainingPromptCard(eyebrow: "Your training", title: "Train with a plan",
+                               message: "Tell us your goal, time and equipment. Get a program that picks your weights and progresses them for you.") {
+                Button("Build my plan") { buildingPlan = true }
+                    .buttonStyle(ExActionStyle()).accessibilityIdentifier("planSetup.open")
+            } empty: { startEmpty() }
+        } else {
+            TrainingPromptCard(eyebrow: "Your training", title: "Ready when you are",
+                               message: "Add exercises as you go. Your last sets are ready to log again.") {
+                EmptyView()
+            } empty: { startEmpty() }
+        }
+    }
+
+    private func startToday() {
+        guard let workspace else { return }
+        do {
+            if try !workspace.startNextWorkout(timeZone: timeZone, unit: unit) {
+                error = "Your program has no workout left. Choose another in Programs."
+            } else { error = nil }
+        } catch { self.error = "The workout could not start. Your saved program is still here. Try again." }
+    }
+
+    private func startEmpty() {
+        do {
+            try store.startSession(name: TrainingFormat.emptyWorkoutName(at: Date(), timeZone: timeZone),
+                                   bodyweight: workspace?.latestBodyweight, timeZone: timeZone)
+            error = nil
+        } catch { self.error = TrainingFormat.error(error) }
+    }
+
+    // MARK: Recent
+
+    @ViewBuilder
+    private var recent: some View {
+        let sessions = Array(store.history.sessions.suffix(3).reversed())
+        if !sessions.isEmpty {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Recent").font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
                     Spacer()
-                    Button("Done") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    NavigationLink("All workouts") { WorkoutHistoryView(store: store, unit: unit) }
+                        .font(.exLabel.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("training.history")
+                }
+                TrainingGroupedRows {
+                    ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
+                        if index > 0 { Divider().overlay(Color.exBorder.opacity(0.4)).padding(.leading, ExSpacing.content) }
+                        NavigationLink {
+                            WorkoutDetailView(store: store, sessionID: session.id, unit: unit)
+                        } label: { RecentWorkoutRow(session: session, summary: store.summary(of: session), unit: unit) }
+                            .buttonStyle(.plain)
                     }
                 }
             }
         }
     }
 
-    private func start() {
-        let weight: Mass?
-        if bodyweight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { weight = nil } else if let value = TrainingInput.number(bodyweight), value > 0 { weight = Mass(value, unit) } else { error = "Enter a bodyweight greater than zero, or leave it empty."; return }
-        do {
-            let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            try store.startSession(name: title.isEmpty ? "Workout" : title, bodyweight: weight, timeZone: timeZone)
-            dismiss()
-        } catch { self.error = TrainingFormat.error(error) }
+    // MARK: Tools
+
+    private var tools: some View {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            Text("Plan and tools").font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
+            TrainingGroupedRows {
+                if let workspace {
+                    NavigationLink {
+                        TrainingProgramsView(workspace: workspace, unit: unit, timeZone: timeZone)
+                    } label: { TrainingToolLabel(title: "Programs", icon: "square.stack.3d.up", detail: workspace.programs.active?.name ?? "None yet") }
+                        .accessibilityIdentifier("programs.open")
+                    divider
+                    NavigationLink {
+                        TrainingGymsView(workspace: workspace, unit: unit)
+                    } label: { TrainingToolLabel(title: "Gyms & equipment", icon: "building.2", detail: workspace.gyms.active?.name ?? "Any gym") }
+                        .accessibilityIdentifier("gyms.open")
+                    divider
+                }
+                Button { browsing = true } label: { TrainingToolLabel(title: "Exercise library", icon: "dumbbell") }
+                    .accessibilityLabel("Exercise library")
+                if let workspace {
+                    divider
+                    NavigationLink {
+                        TrainingObservationsView(workspace: workspace, unit: unit, timeZone: timeZone)
+                    } label: { TrainingToolLabel(title: "Insights", icon: "chart.xyaxis.line", detail: "Stalls and trends") }
+                        .accessibilityIdentifier("observations.open")
+                    divider
+                    let pending = workspace.agent.proposals.filter { $0.status == .pending }.count
+                    NavigationLink {
+                        AgentReviewView(workspace: workspace, unit: unit)
+                    } label: { TrainingToolLabel(title: "Suggestions", icon: "tray", detail: pending == 0 ? "Up to date" : "\(pending) to review") }
+                        .accessibilityIdentifier("suggestions.open")
+                }
+            }
+            .buttonStyle(.plain)
+        }
     }
+
+    private var divider: some View {
+        Divider().overlay(Color.exBorder.opacity(0.4)).padding(.leading, 56)
+    }
+}
+
+/// Rows grouped on one surface, like a compact settings list.
+struct TrainingGroupedRows<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous)
+                    .strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5)
+            }
+    }
+}
+
+private struct RecentWorkoutRow: View {
+    let session: WorkoutSession
+    let summary: WorkoutSummary
+    let unit: MassUnit
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.tight))
+            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
+        HStack(spacing: ExSpacing.item) {
+            layout {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    Text("\(session.startedAt.formatted(.relative(presentation: .named))) · \(TrainingFormat.minutes(summary.duration))")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
+                VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
+                    Text(summary.workingSets == 1 ? "1 set" : "\(summary.workingSets) sets")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold)).foregroundStyle(Color.exTextPrimary)
+                    Text(TrainingFormat.volume(summary.tonnage, unit: unit))
+                        .font(.system(.caption, design: .rounded)).foregroundStyle(Color.exTextSecondary)
+                }
+            }
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, ExSpacing.content).padding(.vertical, 10)
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct FinishedWorkout: Identifiable {
+    let result: TrainingStore.FinishedSession
+    var id: UUID { result.session.id }
 }
 
 struct ExercisePickerView: View {

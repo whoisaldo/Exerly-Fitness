@@ -301,3 +301,26 @@ Profile → Foods & recipes. The status menu ("In progress") became a single
 "Mark this day complete" control, because complete days are what the
 expenditure estimate uses. The week strip is the last seven days, so yesterday
 is always one tap away.
+## 2026-10-09: Today's workout starts from the Train tab without questions
+
+Train → Start begins the active program's next workout in two taps from the
+home screen. Removed along the way:
+
+- The planned-workout review sheet's bodyweight field, and the "New workout"
+  sheet that asked for a name and bodyweight. Bodyweight now comes from the
+  latest weigh-in (or stays empty) and can be changed in the workout's
+  details. An empty workout starts at once, named for the time of day, and is
+  renamed from the workout menu. The review sheet stays as Preview.
+- The set editor sheet for routine edits. Weight, reps and RIR are edited in
+  place in each exercise's set grid with the training keypad, whose steppers
+  follow the gym's plates. A change carries to later incomplete sets that
+  still held the old value. The sheet remains under a set's "More options"
+  for drops, myo continuations and sides.
+- The red "Discard workout" row, now in the workout's overflow menu.
+- The four large rows on the Train home (Programs, Gyms, Suggestions,
+  Observations) and the Exercise library and history card, merged into one
+  compact "Plan and tools" list. Observations is renamed Insights.
+- Rest "+30 s", replaced by −15 and +15 on a floating rest bar.
+
+Finishing a workout now shows a summary with time, working sets, volume and
+any personal records.
