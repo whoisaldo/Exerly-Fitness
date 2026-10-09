@@ -42,7 +42,31 @@ struct MainTabView: View {
                 }
             }
         }
+        .modifier(LiveWorkoutAccessory(store: account.training?.store, hidden: selectedTab == .training) {
+            selectedTab = .training
+        })
         .tint(Color.exPrimaryText)
+    }
+}
+
+/// The workout in progress above the tab bar on every other tab, like a
+/// now-playing bar. Tapping it returns to the workout.
+private struct LiveWorkoutAccessory: ViewModifier {
+    let store: TrainingStore?
+    let hidden: Bool
+    let open: () -> Void
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content.tabViewBottomAccessory(isEnabled: store?.activeSession != nil && !hidden) {
+                if let store {
+                    Button(action: open) { ActiveWorkoutAccessory(store: store) }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Returns to the workout")
+                        .accessibilityIdentifier("workout.accessory")
+                }
+            }
+        } else { content }
     }
 }
 

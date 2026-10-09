@@ -86,7 +86,26 @@ class ExerlyUITestCase: XCTestCase {
         dismissKeyboard(app)
         tap(app.buttons["Log In"], in: app)
         XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 20))
-        dismissPasswordPrompt(in: app)
+        settleAfterSignIn(app)
+    }
+
+    /// iOS 26 simulators offer to save the synthetic password a few seconds
+    /// after sign-in, in a sheet that swallows taps on the tab bar. Wait for
+    /// it and decline it, then return once the tabs take taps.
+    func settleAfterSignIn(_ app: XCUIApplication) {
+        let deadline = Date().addingTimeInterval(8)
+        while Date() < deadline {
+            let sheet = app.sheets["Save Password?"]
+            if sheet.exists {
+                let notNow = sheet.buttons["Not Now"]
+                if notNow.exists { notNow.tap() } else { sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.9)).tap() }
+                Thread.sleep(forTimeInterval: 0.6)
+                continue
+            }
+            if dismissPasswordPrompt(in: app) { continue }
+            if app.tabBars.buttons["Today"].isHittable, Date() > deadline.addingTimeInterval(-5) { return }
+            Thread.sleep(forTimeInterval: 0.4)
+        }
     }
     func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()

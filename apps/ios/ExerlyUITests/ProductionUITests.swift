@@ -2396,8 +2396,9 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.applyEntryNutrients"], in: app)
         tap(app.buttons["nutrition.saveEntry"], in: app)
         XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 10))
-        reveal(app.staticTexts["Edited nutrition"].firstMatch, in: app)
-        XCTAssertTrue(app.staticTexts["Edited nutrition"].firstMatch.exists)
+        let edited = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "edited nutrition")).firstMatch
+        reveal(edited, in: app)
+        XCTAssertTrue(edited.exists)
         capture(app, "nutrition-entry-corrected-offline")
 
         app.terminate()

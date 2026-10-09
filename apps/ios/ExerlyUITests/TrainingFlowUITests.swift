@@ -245,20 +245,6 @@ extension ExerlyUITestCase {
     /// A fresh iOS 26 simulator offers to save the password a few seconds
     /// after sign-in, sometimes as a sheet that is never drawn but still
     /// blocks hit testing. Wait for it and dismiss it before counting taps.
-    func settleAfterSignIn(_ app: XCUIApplication) {
-        let deadline = Date().addingTimeInterval(8)
-        while Date() < deadline {
-            let sheet = app.sheets["Save Password?"]
-            if sheet.exists {
-                let notNow = sheet.buttons["Not Now"]
-                if notNow.exists { notNow.tap() } else { sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.9)).tap() }
-                Thread.sleep(forTimeInterval: 0.6)
-                continue
-            }
-            if app.tabBars.buttons["Train"].isHittable, Date() > deadline.addingTimeInterval(-5) { return }
-            Thread.sleep(forTimeInterval: 0.4)
-        }
-    }
 
     /// Starts an empty workout from the Train tab and names it in its details.
     func startNamedWorkout(_ name: String, in app: XCUIApplication) {

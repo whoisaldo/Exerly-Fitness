@@ -155,7 +155,7 @@ struct TodayView: View {
         .refreshable { await workspace.synchronize() }
         .sheet(item: $destination) { sheet($0) }
         .task { await workspace.synchronize() }
-        .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight) : nil }
+        .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight, unit: unit) : nil }
         .onChange(of: scenePhase) { _, phase in
             // After midnight, a screen left on the old today moves to the new one.
             guard phase == .active, openedOn != today else { return }
@@ -330,9 +330,8 @@ struct TodayView: View {
     }
 
     private func start() {
-        guard let plan = workspace.nextWorkout(bodyweight: bodyweight) else { return }
         do {
-            try workspace.store.startSession(from: plan, bodyweight: bodyweight, timeZone: timeZone)
+            guard try workspace.startNextWorkout(timeZone: timeZone, unit: unit) else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             Task { await workspace.synchronize() }
             showTraining()
@@ -615,6 +614,9 @@ struct TodayMealCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.food.name).font(.exBody).foregroundStyle(Color.exTextPrimary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 Text(NutritionFormat.portion(entry)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                if entry.food.edited == true {
+                    Text("Edited nutrition").font(.exSmall).foregroundStyle(Color.exPrimaryText)
+                }
             }
             if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
             Text("\(TodayNutritionCard.number(entry.nutrients.energy))").font(.exStatSmall).monospacedDigit()
@@ -624,7 +626,7 @@ struct TodayMealCard: View {
         .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(entry.food.name), \(NutritionFormat.portion(entry)), \(TodayNutritionCard.number(entry.nutrients.energy)) calories")
+        .accessibilityLabel("\(entry.food.name), \(NutritionFormat.portion(entry)), \(TodayNutritionCard.number(entry.nutrients.energy)) calories\(entry.food.edited == true ? ", edited nutrition" : "")")
         .accessibilityHint("Opens the entry to change or delete it")
     }
 
