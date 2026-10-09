@@ -16,6 +16,8 @@ import Testing
         var logBias = 1.0
         var weighInChance = 0.9
         var completeChance = 0.85
+        /// The first day food is logged; days before it are weighed but not logged.
+        var loggingStarts = 0
         /// (days, change from starting expenditure).
         var phases: [(Int, Double)] = [(14, 0), (70, -500), (56, 0)]
     }
@@ -53,7 +55,7 @@ import Testing
             let scale = weight + water + 0.1 * random.normal()
             let roll = random.unit()
             let logged: Double? = roll < person.completeChance ? max(0, intake * person.logBias + 120 * random.normal()) : nil
-            days.append(EnergyBalance.Day(date: start.adding(days: day), intake: logged,
+            days.append(EnergyBalance.Day(date: start.adding(days: day), intake: day < person.loggingStarts ? nil : logged,
                                           weights: random.unit() < person.weighInChance ? [scale] : []))
             truthE.append(expenditure * person.logBias)
             truthW.append(weight)
@@ -142,6 +144,124 @@ import Testing
             #expect(Double(score.covered) / Double(score.expenditure.count) >= 0.88, "The band is honest")
             #expect(Score.mean(score.trend) < Score.mean(score.legacyTrend))
             #expect(Score.mean(score.expenditure) <= Score.mean(score.legacyExpenditure))
+        }
+    }
+
+    // MARK: Logging that starts late
+
+    /// One estimate's error against the truth on a simulated day.
+    struct Sample {
+        var day: Int
+        var trend: Double
+        var expenditure: Double
+        /// The ±2 SD expenditure band holds the truth.
+        var covered: Bool
+    }
+
+    /// Errors for every day: real-time, as the trend card sees each day, and in
+    /// the smoothed history the chart draws once the whole series is known.
+    static func run(_ people: [Person], parameters: EnergyBalance.Parameters = .init()) -> (realTime: [Sample], history: [Sample]) {
+        var realTime: [Sample] = [], history: [Sample] = []
+        for person in people {
+            let truth = simulate(person)
+            func sample(_ day: Int, _ estimate: EnergyBalance.Estimate) -> Sample {
+                let error = estimate.expenditure - truth.expenditure[day]
+                return Sample(day: day, trend: estimate.trend - truth.weight[day], expenditure: error,
+                              covered: abs(error) <= 2 * estimate.expenditureError)
+            }
+            for day in 0..<person.days {
+                if let latest = EnergyBalance.estimate(Array(truth.days[...day]), parameters: parameters).last {
+                    realTime.append(sample(day, latest))
+                }
+            }
+            let all = EnergyBalance.estimate(truth.days, parameters: parameters)
+            for (index, estimate) in all.enumerated() { history.append(sample(person.days - all.count + index, estimate)) }
+        }
+        return (realTime, history)
+    }
+
+    struct Window: CustomStringConvertible {
+        /// Mean absolute errors, the worst day's mean trend error, and band coverage.
+        var trend: Double, worstDayTrend: Double, expenditure: Double, covered: Double
+
+        init(_ samples: [Sample], days: ClosedRange<Int>) {
+            let inside = samples.filter { days.contains($0.day) }
+            trend = Score.mean(inside.map(\.trend))
+            expenditure = Score.mean(inside.map(\.expenditure))
+            covered = Double(inside.filter(\.covered).count) / Double(max(1, inside.count))
+            worstDayTrend = days.map { day in Score.mean(inside.filter { $0.day == day }.map(\.trend)) }.max() ?? 0
+        }
+
+        var description: String {
+            String(format: "trend |%.2f| kg (worst day %.2f), expenditure |%.0f| kcal, band covers %.0f%%",
+                   trend, worstDayTrend, expenditure, covered * 100)
+        }
+    }
+
+    /// The M5b people through nine weeks of a steady 500 kcal deficit, weighed
+    /// most days, with food logged from `loggingStarts` on.
+    static func lateLoggers(from loggingStarts: Int, phases: [(Int, Double)] = [(63, -500)]) -> [Person] {
+        people(weighIns: 0.9).map { person in
+            var person = person
+            person.days = 63
+            person.phases = phases
+            person.loggingStarts = loggingStarts
+            return person
+        }
+    }
+
+    /// Weeks of weigh-ins before any food is logged, a common history. The
+    /// weight change before logging must move the trend, not expenditure, and
+    /// expenditure must stay uncertain until logged days pin it down. Bounds
+    /// are the rates recorded in docs/design/007-nutrition.md, with room.
+    @Test func logsThatStartWeeksAfterTheWeighInsKeepTheTrendAndAnHonestExpenditure() {
+        // Real-time trend error over all days, smoothed trend error on days 14 to
+        // 34 and its worst day, and real-time expenditure error in the last week.
+        let scenarios: [(name: String, people: [Person], realTime: Double, history: Double, worstDay: Double, lastWeek: Double?)] = [
+            ("always logged", Self.lateLoggers(from: 0), 0.29, 0.17, 0.20, 110),
+            ("logged from day 21", Self.lateLoggers(from: 21), 0.31, 0.23, 0.27, 130),
+            ("never logged", Self.lateLoggers(from: 63), 0.29, 0.18, 0.22, nil),
+            ("diet and logging start on day 21", Self.lateLoggers(from: 21, phases: [(21, 0), (42, -500)]), 0.31, 0.23, 0.27, 140),
+        ]
+        for scenario in scenarios {
+            let (realTime, history) = Self.run(scenario.people)
+            let all = Window(realTime, days: 0...62), around = Window(history, days: 14...34)
+            let lastWeek = Window(realTime, days: 56...62)
+            print("Late logging, \(scenario.name): real-time \(all); last week \(lastWeek); smoothed days 14-34 \(around)")
+            #expect(all.trend <= scenario.realTime, "\(scenario.name)")
+            #expect(around.trend <= scenario.history && around.worstDayTrend <= scenario.worstDay, "\(scenario.name)")
+            #expect(all.covered >= 0.9 && Window(history, days: 0...62).covered >= 0.9, "\(scenario.name): the band is honest")
+            if let bound = scenario.lastWeek { #expect(lastWeek.expenditure <= bound, "\(scenario.name)") }
+        }
+    }
+
+    /// From a usability test: four weeks of daily weigh-ins through a steady
+    /// cut with partial logs only, where expenditure read 3,540 kcal. Intake is
+    /// unknown, so expenditure stays at the starting guess, wide and unmeasured.
+    @Test func weighInsWithoutACompleteDayLeaveExpenditureAtTheGuess() throws {
+        for (index, expenditure) in [2300.0, 2700, 3100].enumerated() {
+            var person = Person(seed: UInt64(40 + index))
+            person.days = 28
+            person.weight = 84
+            person.expenditure = expenditure
+            person.weighInChance = 1
+            person.loggingStarts = 28
+            person.phases = [(28, -500)]
+            let truth = Self.simulate(person)
+            let guess = 31 * truth.days[0].weights[0]
+            let estimates = EnergyBalance.estimate(truth.days)
+            let last = try #require(estimates.last)
+            print(String(format: "No complete days, true expenditure %.0f: estimate %.0f ±%.0f from a guess of %.0f; trend %.2f kg against %.2f",
+                         truth.expenditure[27], last.expenditure, last.expenditureError, guess, last.trend, truth.weight[27]))
+            // Expenditure falls 22 kcal per kilogram lost and otherwise stays at the guess.
+            #expect(abs(last.expenditure - guess) < 150)
+            #expect(last.expenditureError > 550)
+            #expect(abs(last.trend - truth.weight[27]) < 0.4)
+            let summary = try #require(WeightTrend.summary(estimates, through: last.date))
+            #expect(!summary.expenditure.isMeasured && summary.expenditure.loggedDays == 0)
+            // A plan's narrower guess holds the same way.
+            let planned = try #require(EnergyBalance.estimate(truth.days, prior: (2500, 375)).last)
+            #expect(abs(planned.expenditure - 2500) < 150 && planned.expenditureError > 330)
         }
     }
 
