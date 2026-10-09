@@ -26,6 +26,10 @@ import Testing
         #expect(NutritionRate.nudged(0.0099, by: 5, direction: .lose, trend: 80, unit: .pounds) == 0.01)
         #expect(NutritionRate.nudged(0.0049, by: 5, direction: .gain, trend: 80, unit: .kilograms) == 0.005)
         #expect(NutritionRate.nudged(0, by: 1, direction: .maintain, trend: 80, unit: .pounds) == 0)
+        // Without a trend weight it steps by 0.05 % of bodyweight.
+        #expect(NutritionRate.nudged(0.005, by: 1, direction: .lose, trend: nil, unit: .pounds) == 0.0055)
+        #expect(NutritionRate.nudged(0.0052, by: -1, direction: .lose, trend: nil, unit: .pounds) == 0.005)
+        #expect(NutritionRate.nudged(0.0005, by: -2, direction: .gain, trend: nil, unit: .kilograms) == 0.0005)
         #expect(NutritionRate.presets(for: .lose).allSatisfy { $0 <= NutritionTargets.maximumLoss })
         #expect(NutritionRate.presets(for: .gain).allSatisfy { $0 <= NutritionTargets.maximumGain })
         #expect(NutritionRate.presets(for: .maintain).isEmpty)
@@ -49,6 +53,9 @@ import Testing
         let day = DailyTargets(energy: 2000, protein: 150, fat: 60, carbohydrate: 215)
         let supplied: Double = 600 + 860 + 540
         #expect(day.macroEnergy == supplied, "4 kcal a gram of protein and carbohydrate, 9 of fat")
+        let shares = day.macroShares
+        #expect(shares.protein == 600 / supplied && shares.carbohydrate == 860 / supplied && shares.fat == 540 / supplied)
+        #expect(DailyTargets(energy: 0, protein: 0, fat: 0, carbohydrate: 0).macroShares == (0, 0, 0))
         #expect(try NutritionTargets.manual(day, weekdayWeights: WeekdayBudget.even) == Array(repeating: day, count: 7))
         let weekends = try NutritionTargets.manual(day, weekdayWeights: [1.2, 1, 1, 1, 1, 1, 1.2])
         #expect(weekends.reduce(0) { $0 + $1.energy } == 14000, "The week is seven typed days")
@@ -101,8 +108,9 @@ import Testing
         #expect(plan.startDate == monday && plan.basis == basis)
         #expect(plan.targets == (try NutritionPlan(startDate: monday, goal: draft.goal).computed(from: basis).targets))
 
-        // Maintaining saves no rate; without a basis, coached targets can't be worked out.
+        // Maintaining saves no rate or goal weight; without a basis, coached targets can't be worked out.
         draft.goal.direction = .maintain
+        draft.goal.goalWeight = .kg(75)
         #expect(draft.preview(startingOn: monday, basis: basis).plan?.goal == NutritionGoal(.maintain))
         #expect(draft.preview(startingOn: monday, basis: nil).problems
             == ["Exerly needs your expenditure or your profile to work out targets"])

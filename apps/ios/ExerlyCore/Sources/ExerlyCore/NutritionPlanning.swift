@@ -45,18 +45,27 @@ public enum NutritionRate {
     /// The fine control's step a week: 0.1 lb or 0.05 kg.
     public static func step(for unit: MassUnit) -> Double { unit == .pounds ? 0.1 : 0.05 }
 
+    /// The step without a trend weight: 0.05 % of bodyweight a week.
+    public static let shareStep = 0.0005
+
     /// `share` moved by `steps` steps of the weekly amount in `unit`, landing
     /// on a whole step, and kept between one step and the direction's
-    /// maximum. Returned as a share of `trend`.
-    public static func nudged(_ share: Double, by steps: Int, direction: NutritionGoal.Direction, trend: Double,
+    /// maximum. Returned as a share of `trend`. Without a trend weight it
+    /// moves by `shareStep`.
+    public static func nudged(_ share: Double, by steps: Int, direction: NutritionGoal.Direction, trend: Double?,
                               unit: MassUnit) -> Double {
         let maximum = maximum(for: direction)
-        guard maximum > 0, trend > 0, steps != 0 else { return share }
-        let step = step(for: unit)
+        guard maximum > 0, steps != 0 else { return share }
         // In steps, with a little tolerance so a rate already on a step stays there.
-        let position = (weekly(share, trend: trend, in: unit) / step * 1000).rounded() / 1000
-        let moved = steps > 0 ? position.rounded(.down) + Double(steps) : position.rounded(.up) + Double(steps)
-        let next = min(Mass(max(1, moved) * step, unit).kilograms / trend, maximum)
+        func moved(_ position: Double) -> Double {
+            let position = (position * 1000).rounded() / 1000
+            return max(1, steps > 0 ? position.rounded(.down) + Double(steps) : position.rounded(.up) + Double(steps))
+        }
+        guard let trend, trend > 0 else {
+            return min((moved(share / shareStep) * shareStep * 100_000).rounded() / 100_000, maximum)
+        }
+        let step = step(for: unit)
+        let next = min(Mass(moved(weekly(share, trend: trend, in: unit) / step) * step, unit).kilograms / trend, maximum)
         return (next * 10_000_000).rounded() / 10_000_000
     }
 }
@@ -96,6 +105,13 @@ extension DailyTargets {
     /// The energy the macros supply: 4 kcal a gram of protein and of
     /// carbohydrate, 9 of fat.
     public var macroEnergy: Double { 4 * protein + 4 * carbohydrate + 9 * fat }
+
+    /// Each macro's share of `macroEnergy`; all zero without any.
+    public var macroShares: (protein: Double, carbohydrate: Double, fat: Double) {
+        let total = macroEnergy
+        guard total > 0 else { return (0, 0, 0) }
+        return (4 * protein / total, 4 * carbohydrate / total, 9 * fat / total)
+    }
 
     /// Each target's mean over `days`; nil without any.
     public static func average(_ days: [DailyTargets]) -> DailyTargets? {
@@ -220,10 +236,11 @@ public struct NutritionPlanDraft: Sendable, Hashable {
     }
 
     /// The version this draft makes from `date` on: computed from `basis`
-    /// when coached or collaborative, the typed day when manual.
+    /// when coached or collaborative, the typed day when manual. Maintaining
+    /// keeps no rate or goal weight.
     public func preview(startingOn date: LocalDate, basis: PlanBasis?, id: UUID = UUID(), now: Date = Date()) -> Preview {
         var goal = goal
-        if goal.direction == .maintain { goal.weeklyRate = 0 }
+        if goal.direction == .maintain { goal = NutritionGoal(.maintain) }
         var plan = NutritionPlan(id: id, startDate: date, createdAt: now.roundedToMilliseconds, goal: goal, mode: mode, diet: diet,
                                  protein: protein, weekdayWeights: weekdayWeights, checkInDay: checkInDay,
                                  allowBelowFloor: allowBelowFloor, nutrientGoals: nutrientGoals)

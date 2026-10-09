@@ -78,9 +78,14 @@ struct ProfileView: View {
     private var settingsSections: some View {
         VStack(spacing: 16) {
             settingsGroup("Nutrition") {
-                NavigationLink(destination: ProgramView()) {
-                    settingsRowContent(icon: "target", title: "Nutrition Program")
+                NavigationLink {
+                    TargetsHostView(accountID: authVM.currentUser?.id ?? "",
+                                    unit: authVM.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
+                                    timeZone: TimeZone(identifier: authVM.currentUser?.timezone ?? "UTC") ?? .gmt)
+                } label: {
+                    settingsRowContent(icon: "target", title: "Targets")
                 }
+                .accessibilityIdentifier("profile.targets")
                 NavigationLink {
                     NutritionLibraryHostView(accountID: authVM.currentUser?.id ?? "",
                                              timeZone: TimeZone(identifier: authVM.currentUser?.timezone ?? "UTC") ?? .gmt,
