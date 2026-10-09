@@ -24,11 +24,7 @@ struct WeightTrendCard: View {
         let estimates = BodyEstimates.shared.estimates(store, through: today)
         let summary = WeightTrend.summary(estimates, through: today)
         ExCard {
-            HStack(alignment: .center, spacing: ExSpacing.small) {
-                ExEyebrow("Trend weight", color: .exPrimaryText)
-                Spacer(minLength: ExSpacing.small)
-                weighInButton(today: store.weights(on: today))
-            }
+            BodyCardHeader(title: "Trend weight") { weighInButton(today: store.weights(on: today)) }
             if let summary {
                 let month = WeightTrend.series(estimates, from: today.adding(days: -29), through: today)
                 if typeSize.isAccessibilitySize {
@@ -78,13 +74,7 @@ struct WeightTrendCard: View {
             .accessibilityHint("Double-tap to weigh in again")
             .accessibilityIdentifier("weightCard.weighIn")
         } else {
-            Button(action: onWeighIn) {
-                Label("Weigh in", systemImage: "plus").font(.exLabel.weight(.semibold)).foregroundStyle(Color.white)
-                    .padding(.horizontal, 14).frame(minHeight: 36)
-                    .background(Color.exActionFill, in: Capsule())
-                    .frame(minHeight: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityIdentifier("weightCard.weighIn")
+            WeighInButton(identifier: "weightCard.weighIn", action: onWeighIn)
         }
     }
 
@@ -147,6 +137,50 @@ struct WeightTrendCard: View {
             + "\(BodyFormat.number(Mass.kg(summary.trendError).value(in: unit)))"]
         if let week = summary.weekChange { parts.append("\(BodyFormat.spokenChange(week.kilograms, unit)) this week") }
         return parts.joined(separator: ". ")
+    }
+}
+
+/// A card's eyebrow with its action beside it, or above a full-width action at accessibility sizes.
+struct BodyCardHeader<Action: View>: View {
+    let title: String
+    @ViewBuilder var action: Action
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: ExSpacing.small) {
+                ExEyebrow(title, color: .exPrimaryText)
+                action
+            }
+        } else {
+            HStack(alignment: .center, spacing: ExSpacing.small) {
+                ExEyebrow(title, color: .exPrimaryText)
+                Spacer(minLength: ExSpacing.small)
+                action
+            }
+        }
+    }
+}
+
+/// "+ Weigh in": a compact capsule, or a full-width button at accessibility sizes.
+struct WeighInButton: View {
+    let identifier: String
+    let action: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            Button(action: action) { Label("Weigh in", systemImage: "plus") }
+                .buttonStyle(ExActionStyle()).accessibilityIdentifier(identifier)
+        } else {
+            Button(action: action) {
+                Label("Weigh in", systemImage: "plus").font(.exLabel.weight(.semibold)).foregroundStyle(Color.white)
+                    .padding(.horizontal, 14).frame(minHeight: 36)
+                    .background(Color.exActionFill, in: Capsule())
+                    .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityIdentifier(identifier)
+        }
     }
 }
 

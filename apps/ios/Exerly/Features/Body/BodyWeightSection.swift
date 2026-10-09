@@ -42,15 +42,7 @@ struct BodyWeightSection: View {
     private func trendCard(_ summary: WeightTrend.Summary, estimates: [EnergyBalance.Estimate], points: [WeightTrend.Point],
                            readings: [WeightEntry], start: LocalDate, today: LocalDate) -> some View {
         ExCard {
-            HStack(alignment: .center) {
-                ExEyebrow("Trend weight", color: .exPrimaryText)
-                Spacer(minLength: ExSpacing.small)
-                Button(action: onWeighIn) {
-                    Label("Weigh in", systemImage: "plus").font(.exLabel.weight(.semibold)).foregroundStyle(Color.white)
-                        .padding(.horizontal, 14).frame(minHeight: 36).background(Color.exActionFill, in: Capsule())
-                        .frame(minHeight: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityIdentifier("body.weighIn")
-            }
+            BodyCardHeader(title: "Trend weight") { WeighInButton(identifier: "body.weighIn", action: onWeighIn) }
             readout(summary, points: points, today: today)
             rangePicker
             if summary.weighInDays >= 2, points.count >= 2 {
@@ -132,7 +124,9 @@ struct BodyWeightSection: View {
     }
 
     private var legend: some View {
-        HStack(spacing: ExSpacing.item) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.tight))
+            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
+        return layout {
             legendItem { Circle().fill(Color.exTextSecondary.opacity(0.6)).frame(width: 6, height: 6) } label: { Text("Scale") }
             legendItem {
                 Capsule().fill(LinearGradient(colors: [.exPrimary, .exAccent], startPoint: .leading, endPoint: .trailing))
@@ -148,7 +142,7 @@ struct BodyWeightSection: View {
     }
 
     private func legendItem(@ViewBuilder symbol: () -> some View, @ViewBuilder label: () -> Text) -> some View {
-        HStack(spacing: 5) { symbol(); label().lineLimit(1) }
+        HStack(spacing: 5) { symbol(); label().lineLimit(typeSize.isAccessibilitySize ? nil : 1) }
     }
 
     private func rangeStats(_ estimates: [EnergyBalance.Estimate], points: [WeightTrend.Point], readings: [WeightEntry],
@@ -290,15 +284,28 @@ struct BodyWeightSection: View {
         if entry.source == .appleHealth { detail += " · Apple Health" }
         let day = BodyFormat.day(entry.date, today: today)
         return Button { onEdit(entry) } label: {
-            HStack(spacing: ExSpacing.item) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(day).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
-                    Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            Group {
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(day).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                        Text(BodyFormat.reading(entry.weight, unit)).font(.exStatSmall).monospacedDigit()
+                            .foregroundStyle(Color.exTextPrimary)
+                        Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, ExSpacing.small)
+                } else {
+                    HStack(spacing: ExSpacing.item) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(day).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                            Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                        }
+                        Spacer(minLength: ExSpacing.small)
+                        Text(BodyFormat.reading(entry.weight, unit)).font(.exStatSmall).monospacedDigit()
+                            .foregroundStyle(Color.exTextPrimary)
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
+                            .accessibilityHidden(true)
+                    }
                 }
-                Spacer(minLength: ExSpacing.small)
-                Text(BodyFormat.reading(entry.weight, unit)).font(.exStatSmall).monospacedDigit().foregroundStyle(Color.exTextPrimary)
-                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
-                    .accessibilityHidden(true)
             }
             .padding(.horizontal, ExSpacing.content).frame(minHeight: 56).contentShape(Rectangle())
         }

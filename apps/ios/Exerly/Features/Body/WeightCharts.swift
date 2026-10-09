@@ -153,6 +153,8 @@ struct WeightTrendChart: View {
                 }
             }
         }
+        // Axis labels stay readable without overlapping; VoiceOver reads the descriptor.
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .chartXSelection(value: $scrub)
         .onChange(of: scrub) { _, date in
             selection = date.map { nearest(BodyDates.date($0)) } ?? nil
@@ -213,6 +215,7 @@ struct ExpenditureChart: View {
             }
         }
         .chartYScale(domain: low...high)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .chartXAxis {
             AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
                 AxisValueLabel(format: range.axisFormat, centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)

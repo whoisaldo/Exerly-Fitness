@@ -87,15 +87,27 @@ struct WeighInSheet: View {
     // MARK: Parts
 
     private var header: some View {
-        HStack(spacing: ExSpacing.small) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.body.weight(.semibold)).foregroundStyle(Color.exTextSecondary)
-                    .frame(width: 44, height: 44).background(Color.exSurface2, in: Circle())
-            }.buttonStyle(.plain).accessibilityLabel("Cancel").accessibilityIdentifier("weighIn.cancel")
-            Text(editing == nil ? "Weigh-in" : "Edit weigh-in").font(.exH3).foregroundStyle(Color.exTextPrimary)
-                .accessibilityAddTraits(.isHeader).lineLimit(2).minimumScaleFactor(0.8)
-            Spacer(minLength: ExSpacing.small)
-            dateChip
+        let close = Button { dismiss() } label: {
+            Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Color.exTextSecondary)
+                .frame(width: 44, height: 44).background(Color.exSurface2, in: Circle())
+        }.buttonStyle(.plain).accessibilityLabel("Cancel").accessibilityIdentifier("weighIn.cancel")
+        let title = Text(editing == nil ? "Weigh-in" : "Edit weigh-in").font(.exH3).foregroundStyle(Color.exTextPrimary)
+            .accessibilityAddTraits(.isHeader)
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: ExSpacing.small) {
+                    HStack(spacing: ExSpacing.small) { close; title }
+                    dateChip
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(spacing: ExSpacing.small) {
+                    close
+                    title.lineLimit(1).minimumScaleFactor(0.8)
+                    Spacer(minLength: ExSpacing.small)
+                    dateChip
+                }
+            }
         }
         .padding(.horizontal, ExSpacing.page).padding(.top, 18).padding(.bottom, ExSpacing.small)
     }
@@ -163,7 +175,7 @@ struct WeighInSheet: View {
 
     private func stepButton(_ symbol: String, ticks: Int, label: String) -> some View {
         Button { value = WeightRuler.nudged(value, by: ticks, unit: unit, range: range) } label: {
-            Image(systemName: symbol).font(.title3.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
+            Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(Color.exPrimaryText)
                 .frame(width: 48, height: 48).background(Color.exSurface2, in: Circle())
         }
         .buttonStyle(.plain).buttonRepeatBehavior(.enabled)
