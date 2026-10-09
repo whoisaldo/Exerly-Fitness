@@ -85,6 +85,29 @@ final class TrainingWorkspace: ObservableObject {
         programs.nextWorkout(bodyweight: bodyweight, increments: gyms.increments(for:))
     }
 
+    /// The latest weigh-in, used for bodyweight exercises without asking.
+    var latestBodyweight: Mass? { nutrition.weights.last?.weight }
+
+    /// Starts the next workout of the active program, with the latest
+    /// weigh-in. Returns false when the program has nothing left to do.
+    @discardableResult
+    func startNextWorkout(timeZone: TimeZone) throws -> Bool {
+        guard let plan = nextWorkout(bodyweight: latestBodyweight) else { return false }
+        try store.startSession(from: plan, bodyweight: latestBodyweight, timeZone: timeZone)
+        return true
+    }
+
+    /// Each program slot's target for the cycle a session was planned from,
+    /// by slot ID. Empty for a workout started without a program.
+    func slotTargets(for session: WorkoutSession) -> [UUID: SlotTarget] {
+        guard let reference = session.program, let program = programs.program(reference.programID) else { return [:] }
+        var targets: [UUID: SlotTarget] = [:]
+        for day in program.days {
+            for slot in day.slots { targets[slot.id] = program.target(for: slot, cycle: reference.cycle) }
+        }
+        return targets
+    }
+
     func close() async {
         accountAPI = nil
         entryChecks.stop()
@@ -169,6 +192,66 @@ enum TrainingFormat {
         case .drop: "Drop"
         case .myo: "Myo"
         case .failure: "To failure"
+        }
+    }
+
+    /// The letter shown in place of the set number, for sets that aren't working sets.
+    static func badge(_ kind: SetKind) -> String? {
+        switch kind {
+        case .standard: nil
+        case .warmUp: "W"
+        case .drop: "D"
+        case .myo: "M"
+        case .failure: "F"
+        }
+    }
+
+    static func unitSymbol(_ unit: MassUnit) -> String { unit == .kilograms ? "kg" : "lb" }
+
+    /// "3 × 5–8 · 2 RIR", or "3 sets" when the exercise doesn't count reps.
+    static func compactTarget(_ target: SlotTarget, exercise: ExerlyCore.Exercise?) -> String {
+        guard exercise?.metric.tracksReps == true else { return target.sets == 1 ? "1 set" : "\(target.sets) sets" }
+        let reps = target.minReps == target.maxReps ? "\(target.minReps)" : "\(target.minReps)–\(target.maxReps)"
+        return "\(target.sets) × \(reps) · \(number(target.rir)) RIR"
+    }
+
+    /// A set's values in a few characters, for the Previous column: "155 × 8",
+    /// "BW × 9", "+10 × 8", "45 s", "400 m".
+    static func compact(_ set: PerformedSet, metric: TrackingMetric, unit: MassUnit) -> String {
+        let effort = set.primary
+        let load = effort.load.map { number($0.value(in: unit)) }
+        let text: String
+        switch metric {
+        case .weightReps: text = "\(load ?? "–") × \(effort.reps.map(String.init) ?? "–")"
+        case .bodyweightReps: text = "\(load.map { "+" + $0 } ?? "BW") × \(effort.reps.map(String.init) ?? "–")"
+        case .assistedReps: text = "\(load.map { "−" + $0 } ?? "BW") × \(effort.reps.map(String.init) ?? "–")"
+        case .duration: text = effort.duration.map { "\(number($0)) s" } ?? "–"
+        case .weightDuration: text = "\(load ?? "–") · \(effort.duration.map { "\(number($0)) s" } ?? "–")"
+        case .distanceDuration: text = effort.distance.map { "\(number($0)) m" } ?? effort.duration.map { "\(number($0)) s" } ?? "–"
+        case .weightDistance: text = "\(load ?? "–") · \(effort.distance.map { "\(number($0)) m" } ?? "–")"
+        }
+        return set.efforts.count > 1 ? text + " +\(set.efforts.count - 1)" : text
+    }
+
+    /// "4,520 lb" of volume.
+    static func volume(_ tonnage: Tonnage, unit: MassUnit) -> String {
+        "\(tonnage.total(in: unit).formatted(.number.precision(.fractionLength(0)))) \(unitSymbol(unit))"
+    }
+
+    /// "52 min" or "1 h 5 min".
+    static func minutes(_ seconds: Double) -> String {
+        let total = max(1, Int((seconds / 60).rounded()))
+        return total < 60 ? "\(total) min" : "\(total / 60) h\(total % 60 == 0 ? "" : " \(total % 60) min")"
+    }
+
+    /// A name for a workout started without a plan, from the time of day.
+    static func emptyWorkoutName(at date: Date, timeZone: TimeZone) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        switch calendar.component(.hour, from: date) {
+        case 4..<12: return "Morning workout"
+        case 12..<17: return "Afternoon workout"
+        default: return "Evening workout"
         }
     }
 

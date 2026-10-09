@@ -1,41 +1,10 @@
 import ExerlyCore
 import SwiftUI
 
-struct NextTrainingWorkoutSection: View {
-    let workspace: TrainingWorkspace
-    let review: () -> Void
-
-    var body: some View {
-        if let program = workspace.programs.active {
-            ExCard(accent: true) {
-                ExEyebrow("Next up", color: .exPrimaryText)
-                if let next = ProgramSchedule.next(for: program, in: workspace.store.history) {
-                    VStack(alignment: .leading, spacing: ExSpacing.small) {
-                        Text(next.day.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
-                        Text(program.name).font(.exBody).foregroundStyle(Color.exTextSecondary)
-                    }
-                    HStack {
-                        Label("Cycle \(next.cycle + 1) of \(program.cycles)", systemImage: "circle.lefthalf.filled")
-                        if next.isDeload { Label("Deload", systemImage: "arrow.down.right") }
-                    }.font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    Button("Review workout", action: review).buttonStyle(ExActionStyle())
-                        .accessibilityIdentifier("program.nextWorkout")
-                } else {
-                    Text(program.name).font(.exH2)
-                    Text("Program complete").font(.exBodyMedium).foregroundStyle(Color.exPrimaryText)
-                    Text("Duplicate it in Programs to begin again with separate progress.")
-                        .font(.exBody).foregroundStyle(Color.exTextSecondary)
-                }
-            }
-        }
-    }
-}
-
 struct PlannedWorkoutView: View {
     let workspace: TrainingWorkspace
     let unit: MassUnit
     let timeZone: TimeZone
-    @State private var bodyweight = ""
     @State private var plan: WorkoutPlan?
     @State private var error: String?
     @Environment(\.dismiss) private var dismiss
@@ -67,12 +36,6 @@ struct PlannedWorkoutView: View {
                                 .buttonStyle(ExActionStyle()).accessibilityIdentifier("program.startPlanned")
                         }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                     }
-                    Section {
-                        NutritionNumberInput(title: "Bodyweight (\(unit == .kilograms ? "kg" : "lb"), optional)",
-                                             text: $bodyweight, identifier: "program.bodyweight")
-                        Text("Used for bodyweight exercise estimates. Leave empty to skip.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
                     ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, planned in
                         PlannedExerciseSection(planned: planned, store: workspace.store, unit: unit, gym: workspace.gyms.active)
                     }
@@ -87,32 +50,21 @@ struct PlannedWorkoutView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
             }
             .task { refresh() }
-            .onChange(of: bodyweight) { _, _ in refresh() }
             .onChange(of: workspace.programs.active) { _, _ in refresh() }
             .onChange(of: workspace.gyms.active) { _, _ in refresh() }
             .onChange(of: TrainingAnalysisInput(workspace.store.history)) { _, _ in refresh() }
         }
     }
 
-    private func weight() throws -> Mass? {
-        guard !bodyweight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        guard let value = TrainingInput.number(bodyweight), value > 0 else { throw WeightInputError.invalid }
-        return Mass(value, unit)
-    }
-
     private func refresh() {
-        do {
-            plan = workspace.nextWorkout(bodyweight: try weight())
-            error = nil
-        } catch {
-            plan = nil
-            self.error = "Enter a bodyweight greater than zero, or leave it empty."
-        }
+        plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight)
+        error = nil
     }
 
     private func start(_ reviewed: WorkoutPlan) {
         do {
-            let bodyweight = try weight()
+            // The latest weigh-in stands in for bodyweight; change it in the workout's details.
+            let bodyweight = workspace.latestBodyweight
             let latest = workspace.nextWorkout(bodyweight: bodyweight)
             guard latest == reviewed else {
                 plan = latest
@@ -124,8 +76,6 @@ struct PlannedWorkoutView: View {
             dismiss()
         } catch { self.error = "The workout could not start. Your saved program is still here. Try again." }
     }
-
-    private enum WeightInputError: Error { case invalid }
 }
 
 private struct PlannedExerciseSection: View {
