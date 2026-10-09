@@ -71,7 +71,9 @@ public enum NutritionCheckIn {
         }
         var next = plan
         next.id = UUID(named: "\(plan.id.uuidString)/\(date)/plan", in: namespace)
-        next.startDate = date
+        // Reviewed after the check-in day, the new targets still start today:
+        // days already eaten keep the targets they had.
+        next.startDate = max(date, today)
         next.createdAt = now.roundedToMilliseconds
         do {
             next = try next.computed(from: PlanBasis(expenditure: estimate.expenditure.rounded(),
