@@ -105,6 +105,6 @@ private struct FoodSearchTabContent: View {
     var body: some View {
         NutritionFoodPicker(workspace: workspace, api: api, date: LocalDate(Date(), in: timeZone),
                             meal: workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone),
-                            timeZone: timeZone, unit: unit, actions: actions) {}
+                            timeZone: timeZone, unit: unit, actions: actions, onLogged: {}, presentation: .tab)
     }
 }

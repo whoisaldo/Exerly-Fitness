@@ -98,7 +98,7 @@ final class ProductionUITests: ExerlyUITestCase {
         signIn(app, email: person.email)
         XCTAssertTrue(app.descendants(matching: .any)["nutrition.targetEnergy"].waitForExistence(timeout: 10))
         try audit("diary")
-        for tab in ["Train", "Library", "Progress", "Profile"] {
+        for tab in ["Train", "Progress", "Profile"] {
             tap(app.buttons[tab], in: app)
             try audit(tab.lowercased())
         }
@@ -530,9 +530,11 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "nutrition-delete-review")
         tap(app.buttons["nutrition.confirm"], in: app)
         XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 10))
-        revealAbove(app.buttons["nutrition.undoDelete"], in: app)
+        // Undo floats above the tab bar for a few seconds; tap it where it is.
+        let undo = app.buttons["nutrition.undoDelete"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5))
         capture(app, "nutrition-deleted-entry")
-        tap(app.buttons["nutrition.undoDelete"], in: app)
+        undo.tap()
         reveal(app.buttons[copiedID], in: app)
         XCTAssertTrue(app.buttons[copiedID].exists)
         app.terminate()

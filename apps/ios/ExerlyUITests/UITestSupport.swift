@@ -129,17 +129,12 @@ class ExerlyUITestCase: XCTestCase {
         // Fresh iOS 26 simulators offer to save the synthetic account password.
         // The app's elements still exist behind that system sheet, but none are
         // hittable. Handle only this prompt, leaving permission dialogs testable.
+        // On iOS 26 it is a sheet in the app, so SpringBoard isn't queried: that
+        // cross-process query ran on every reveal step and slowed every test.
         let passwordSheet = app.sheets["Save Password?"]
         if passwordSheet.exists && passwordSheet.buttons["Not Now"].exists {
             passwordSheet.buttons["Not Now"].tap()
             return true
-        } else {
-            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-            let passwordPrompt = springboard.alerts.matching(NSPredicate(format: "label CONTAINS %@", "Save Password")).firstMatch
-            if passwordPrompt.exists && passwordPrompt.buttons["Not Now"].exists {
-                passwordPrompt.buttons["Not Now"].tap()
-                return true
-            }
         }
         return false
     }
@@ -174,7 +169,11 @@ class ExerlyUITestCase: XCTestCase {
             (app.buttons["Done"].firstMatch.exists || app.buttons["Hide keyboard"].firstMatch.exists || app.buttons["exerly.keypadDone"].exists) {
             dismissKeyboard(app)
         }
-        for _ in 0..<48 {
+        let missing = !element.exists
+        for attempt in 0..<48 {
+            // An element that never appeared after ten drags won't: let the
+            // caller's assertion fail now instead of dragging for minutes.
+            if missing, attempt >= 10, !element.exists { return }
             // The system can present the sheet after the diary first appears.
             dismissPasswordPrompt(in: app)
             let home = app.tabBars.firstMatch
