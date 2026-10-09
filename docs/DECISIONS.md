@@ -344,3 +344,11 @@ never finished green. CI now runs the unit tests and the Today tap-budget tests
 within an hour. The full UI suite runs locally before each landing, sharded
 across simulators with one fixture each. The browser round-trip step went with
 it, since the web dashboard is out of scope.
+
+## 2026-10-09: Milestones removed; Progress gains Nutrition and Training
+
+Progress is now Body, Nutrition, Training and Photos. The Milestones tab and
+its unused achievement service are removed: badges for activity are the
+motivational filler the brief rules out, and the space goes to analytics that
+explain why numbers move. The SwiftData `Achievement` model stays in the stored
+schema until a schema migration removes it.

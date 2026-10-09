@@ -3,14 +3,16 @@ import SwiftUI
 
 enum ProgressTab: String, CaseIterable {
     case measurements = "Measurements"
+    case nutrition = "Nutrition"
+    case training = "Training"
     case photos = "Photos"
-    case achievements = "Achievements"
 
     var title: String {
         switch self {
         case .measurements: "Body"
+        case .nutrition: "Nutrition"
+        case .training: "Training"
         case .photos: "Photos"
-        case .achievements: "Milestones"
         }
     }
 }
@@ -67,8 +69,9 @@ struct ProgressView_: View {
         case .measurements:
             MeasurementsTab(initialDate: initialDate, workspace: workspace, unit: unit, timeZone: timeZone,
                             openingError: account.openingError)
+        case .nutrition: NutritionInsightsView(workspace: workspace, unit: unit, timeZone: timeZone)
+        case .training: TrainingInsightsView(workspace: workspace, unit: unit, timeZone: timeZone)
         case .photos: PhotosTab()
-        case .achievements: AchievementsTab { selectedTab = .measurements }
         }
     }
 }

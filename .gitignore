@@ -41,7 +41,7 @@ coverage/
 DocumentLayout.json
 
 # Local native build outputs
-.deriveddata/
+.deriveddata*/
 artifacts/
 apps/ios/build/
 
