@@ -84,4 +84,37 @@ import Testing
         #expect(plan.estimatedDuration(library: library) == expected)
         #expect(WorkoutPlan(name: "Empty", program: nil, isDeload: false, exercises: []).estimatedDuration(library: library) == 0)
     }
+
+    @Test func nearestLoadRoundsOntoWhatTheEquipmentAllows() {
+        let bodyweight = LoadIncrements(kilograms: 1.25, pounds: 2.5)
+        #expect(bodyweight.nearest(11.023, in: .pounds) == 10)
+        #expect(bodyweight.nearest(11.3, in: .pounds) == 12.5)
+        #expect(bodyweight.nearest(11.25, in: .pounds) == 10, "halfway rounds down")
+        #expect(bodyweight.nearest(10, in: .pounds) == 10)
+        let barbell = LoadIncrements(kilograms: 2.5, pounds: 5, minimum: .kg(20))
+        #expect(barbell.nearest(30, in: .pounds) == 45, "never below the bar")
+        #expect(barbell.nearest(100, in: .kilograms) == 100)
+        let dumbbells = LoadIncrements(kilograms: 2, pounds: 5, available: [.lb(20), .lb(25), .lb(30)])
+        #expect(dumbbells.nearest(23.5, in: .pounds) == 25)
+        #expect(dumbbells.nearest(50, in: .pounds) == 30)
+    }
+
+    @Test func plansSpeakThePersonsUnitWithoutTouchingTheirOwnLoads() throws {
+        let pullUp = try #require(library.exercise("pull-up"))
+        let bench = try #require(library.exercise("barbell-bench-press"))
+        let target = SlotTarget(sets: 2, minReps: 6, maxReps: 10, rir: 1)
+        func planned(_ exercise: ExerlyCore.Exercise, _ load: Mass) -> PlannedExercise {
+            PlannedExercise(slotID: nil, exerciseID: exercise.id, notes: "", supersetID: nil, target: target,
+                            recommendation: Recommendation(sets: Array(repeating: PlannedSet(kind: .standard, effort: Effort(reps: 8, load: load), rir: 1), count: 2),
+                                                           reason: .progress, oneRepMax: nil, basisSetID: nil, outsideRange: false))
+        }
+        let plan = WorkoutPlan(name: "Upper", program: nil, isDeload: false,
+                               exercises: [planned(pullUp, .kg(5)), planned(bench, .lb(162.5))])
+        let pounds = plan.expressed(in: .pounds, library: library)
+        #expect(pounds.exercises[0].recommendation.sets.map(\.effort.load) == [.lb(10), .lb(10)])
+        #expect(pounds.exercises[1].recommendation.sets[0].effort.load == .lb(162.5), "loads already in pounds stay exact")
+        let kilograms = plan.expressed(in: .kilograms, library: library)
+        #expect(kilograms.exercises[0].recommendation.sets[0].effort.load == .kg(5))
+        #expect(kilograms.exercises[1].recommendation.sets[0].effort.load == .kg(72.5), "73.7 kg on a 2.5 kg grid from the bar")
+    }
 }

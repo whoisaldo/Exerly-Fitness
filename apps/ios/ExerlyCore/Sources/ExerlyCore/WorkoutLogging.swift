@@ -19,7 +19,7 @@ extension LoadIncrements {
         }
         let step = self.step(in: unit)
         guard step > 0 else { return current }
-        let anchor = minimum.map { $0.unit == unit ? $0.value : ($0.value(in: unit) / step).rounded() * step } ?? 0
+        let anchor = anchor(step: step, in: unit)
         if current < anchor - tolerance {
             // Below the minimum: up goes to it, down steps toward zero.
             return Self.clean(up ? anchor : max(0, ((current / step - tolerance).rounded(.up) - 1) * step))
@@ -27,6 +27,29 @@ extension LoadIncrements {
         let position = (current - anchor) / step
         let index = up ? (position + tolerance).rounded(.down) + 1 : max(0, (position - tolerance).rounded(.up) - 1)
         return Self.clean(anchor + index * step)
+    }
+
+    /// The loadable weight nearest `value` in `unit`: one of the available
+    /// weights, or a point on the step grid, never below the minimum. Halfway
+    /// rounds down.
+    public func nearest(_ value: Double, in unit: MassUnit) -> Double {
+        let current = value.isFinite ? max(0, value) : 0
+        if let available, !available.isEmpty {
+            let weights = available.map { Self.clean($0.value(in: unit)) }.sorted()
+            return weights.min { abs($0 - current) < abs($1 - current) } ?? current
+        }
+        let step = self.step(in: unit)
+        guard step > 0 else { return current }
+        let anchor = anchor(step: step, in: unit)
+        guard current > anchor else { return Self.clean(anchor) }
+        let lower = anchor + ((current - anchor) / step + 1e-6).rounded(.down) * step
+        return Self.clean(lower + step - current < current - lower - 1e-9 ? lower + step : lower)
+    }
+
+    /// Where the step grid starts: the minimum, rounded to a step when it is
+    /// in the other unit, or zero.
+    private func anchor(step: Double, in unit: MassUnit) -> Double {
+        minimum.map { $0.unit == unit ? $0.value : ($0.value(in: unit) / step).rounded() * step } ?? 0
     }
 
     private static func clean(_ value: Double) -> Double { (value * 1_000_000).rounded() / 1_000_000 }
@@ -52,5 +75,26 @@ extension WorkoutPlan {
             let rest = index < order.count - 1 ? policy.rest(after: position.setID, in: session, library: library) : 0
             return total + work + rest
         }
+    }
+}
+
+extension WorkoutPlan {
+    /// The plan with every recommended load in `unit`. A load in the other
+    /// unit, such as the first added weight for a pull-up, which progression
+    /// plans in kilograms when nothing was loaded before, becomes the nearest
+    /// weight the equipment allows in `unit`. Loads already in `unit` are kept
+    /// exactly.
+    public func expressed(in unit: MassUnit, library: ExerciseLibrary,
+                          increments: (Exercise) -> LoadIncrements = LoadIncrements.defaults(for:)) -> WorkoutPlan {
+        var plan = self
+        for e in plan.exercises.indices {
+            guard let exercise = library.exercise(plan.exercises[e].exerciseID) else { continue }
+            let steps = increments(exercise)
+            for s in plan.exercises[e].recommendation.sets.indices {
+                guard let load = plan.exercises[e].recommendation.sets[s].effort.load, load.unit != unit else { continue }
+                plan.exercises[e].recommendation.sets[s].effort.load = Mass(steps.nearest(load.value(in: unit), in: unit), unit)
+            }
+        }
+        return plan
     }
 }
