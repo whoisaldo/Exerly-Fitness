@@ -1,0 +1,122 @@
+# Source of truth for Exerly.xcodeproj. Regenerate with `xcodegen generate` in apps/ios.
+# Source folders are synchronized, so adding or removing a file needs no project change.
+name: Exerly
+options:
+  settingPresets: none
+  xcodeVersion: "26.2"
+  generateEmptyDirectories: true
+packages:
+  ExerlyCore:
+    path: ExerlyCore
+settings:
+  base:
+    ALWAYS_SEARCH_USER_PATHS: NO
+    CLANG_ANALYZER_NONNULL: YES
+    CLANG_CXX_LANGUAGE_STANDARD: gnu++20
+    CLANG_ENABLE_MODULES: YES
+    CLANG_ENABLE_OBJC_ARC: YES
+    COPY_PHASE_STRIP: NO
+    ENABLE_STRICT_OBJC_MSGSEND: YES
+    GCC_C_LANGUAGE_STANDARD: gnu17
+    GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+    GCC_WARN_UNINITIALIZED_AUTOS: YES_AGGRESSIVE
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    SDKROOT: iphoneos
+  configs:
+    Debug:
+      DEBUG_INFORMATION_FORMAT: dwarf
+      ENABLE_TESTABILITY: YES
+      GCC_DYNAMIC_NO_PIC: NO
+      GCC_OPTIMIZATION_LEVEL: 0
+      MTL_ENABLE_DEBUG_INFO: INCLUDE_SOURCE
+      ONLY_ACTIVE_ARCH: YES
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG $(inherited)
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+    Release:
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      ENABLE_NS_ASSERTIONS: NO
+      MTL_ENABLE_DEBUG_INFO: NO
+      SWIFT_COMPILATION_MODE: wholemodule
+      VALIDATE_PRODUCT: YES
+targets:
+  Exerly:
+    type: application
+    platform: iOS
+    sources:
+      - path: Exerly
+        type: syncedFolder
+        excludes:
+          - Info.plist
+    dependencies:
+      - package: ExerlyCore
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: Exerly/Exerly.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: 9X79V37Q89
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Exerly/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Exerly
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/Frameworks
+        MARKETING_VERSION: 1.0
+        PRODUCT_BUNDLE_IDENTIFIER: com.exerly.fitness
+        PRODUCT_NAME: $(TARGET_NAME)
+        SWIFT_EMIT_LOC_STRINGS: YES
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Debug:
+          EXERLY_API_BASE_URL: http://100.80.149.7:39110
+          EXERLY_BUILD_ENVIRONMENT: staging
+        Release:
+          EXERLY_API_BASE_URL: https://exerly-fitness-93dyl.ondigitalocean.app
+          EXERLY_BUILD_ENVIRONMENT: production
+          PROVISIONING_PROFILE_SPECIFIER: $(EXERLY_PROVISIONING_PROFILE)
+    scheme:
+      testTargets:
+        - ExerlyTests
+        - ExerlyUITests
+  ExerlyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ExerlyTests
+        type: syncedFolder
+    dependencies:
+      - target: Exerly
+      - package: ExerlyCore
+    settings:
+      base:
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.exerly.fitness.ExerlyTests
+        PRODUCT_NAME: $(TARGET_NAME)
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Exerly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Exerly
+  ExerlyUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ExerlyUITests
+        type: syncedFolder
+    dependencies:
+      - target: Exerly
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.exerly.fitness.ExerlyUITests
+        PRODUCT_NAME: $(TARGET_NAME)
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+        TEST_TARGET_NAME: Exerly

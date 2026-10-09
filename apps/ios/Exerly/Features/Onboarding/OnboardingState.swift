@@ -102,7 +102,6 @@ final class OnboardingState: ObservableObject {
     @Published var serverPreview: SetupPreview?
     @Published var previewError: String?
     @Published var validationError: String?
-    @Published var showConfetti = false
     @Published var isSubmitting = false
     @Published private(set) var cloudConflict: SetupCloudDraft?
     @Published private(set) var cloudMessage: String?

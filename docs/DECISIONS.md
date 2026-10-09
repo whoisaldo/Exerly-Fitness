@@ -263,3 +263,25 @@ that adds a version, with the expenditure band, the week's trend and logging
 coverage as evidence. A check-in whose new targets would break the 1,200 kcal
 floor or the protein and fat minimums proposes nothing and says why, instead
 of silently slowing the goal.
+
+## 2026-10-09: The Xcode project is generated, with synchronized folders
+
+`apps/ios/project.yml` is now the source of truth for `Exerly.xcodeproj`;
+regenerate with `xcodegen generate` in `apps/ios`. The app and both test
+targets use synchronized folders, so adding, moving or deleting a Swift file
+needs no project change. Several agents can now build screens in parallel
+without serialising on `project.pbxproj`. The generated project stays committed
+so CI and the release script need no extra tool. Build settings were diffed
+before and after: only the deployment target changed.
+
+## 2026-10-09: iOS 26 is the minimum
+
+Exerly now requires iOS 26. Nobody uses it yet, and the redesign builds on iOS
+26 directly: the Liquid Glass tab bar, a search-role tab for logging from
+anywhere, and a tab bar accessory for the live workout. Supporting older
+systems would mean a second, plainer version of every primary screen.
+
+## 2026-10-09: Confetti removed
+
+`ConfettiView` was only reachable through an onboarding flag that nothing set.
+It is deleted, consistent with the no-confetti principle.

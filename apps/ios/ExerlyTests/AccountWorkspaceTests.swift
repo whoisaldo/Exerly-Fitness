@@ -133,11 +133,11 @@ final class AccountWorkspaceTests: XCTestCase {
 
     func testConfirmedDeleteCleansOnlyThatAccountAndRetriesFailedLocalCleanupAfterRelaunch() async throws {
         var attempts = 0
-        let owner = workspace { id in
+        let owner = workspace(purge: { id in
             XCTAssertEqual(id, "account-a")
             attempts += 1
             if attempts == 1 { throw CocoaError(.fileWriteNoPermission) }
-        }
+        })
         await owner.configure(auth.accountAPI)
         let original = try XCTUnwrap(owner.training)
         try original.store.startSession(name: "Delete me", bodyweight: nil)
@@ -154,7 +154,7 @@ final class AccountWorkspaceTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: original.url.path))
         XCTAssertEqual(auth.accountsAwaitingLocalCleanup, ["account-a"])
         XCTAssertNotNil(owner.cleanupError)
-        let relaunched = workspace { id in XCTAssertEqual(id, "account-a") }
+        let relaunched = workspace(purge: { id in XCTAssertEqual(id, "account-a") })
         let relaunchedAuth = AuthViewModel(api: api, keychain: credentials, defaults: defaults,
                                            automaticallyCheck: false, onSessionInvalidated: {})
         XCTAssertEqual(relaunchedAuth.accountsAwaitingLocalCleanup, ["account-a"])

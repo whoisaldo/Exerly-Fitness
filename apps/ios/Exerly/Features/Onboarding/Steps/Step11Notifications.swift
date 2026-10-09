@@ -31,11 +31,6 @@ struct Step11Notifications: View {
                 .padding(24)
                 .padding(.top, 16)
             }
-
-            if state.showConfetti {
-                flashOverlay
-                ConfettiView()
-            }
         }
     }
 
@@ -86,11 +81,4 @@ struct Step11Notifications: View {
         }
     }
 
-    private var flashOverlay: some View {
-        Color.white
-            .ignoresSafeArea()
-            .opacity(state.showConfetti ? 0 : 0.8)
-            .animation(.easeOut(duration: 0.3), value: state.showConfetti)
-            .allowsHitTesting(false)
-    }
 }
