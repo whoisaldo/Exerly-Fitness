@@ -4,15 +4,22 @@ import Foundation
 /// docs/design/007-nutrition.md, which records the error measured against
 /// simulated people.
 ///
-/// A Kalman filter and Rauch–Tung–Striebel smoother over three hidden states:
+/// A Kalman filter and Rauch–Tung–Striebel smoother over four hidden states:
 /// - `W`: weight without the day's water and gut contents, in kilograms;
 /// - `E`: expenditure in logged kilocalories a day;
-/// - `A`: the water and gut deviation, which the scale adds to `W`.
+/// - `A`: the water and gut deviation, which the scale adds to `W`;
+/// - `D`: how far the intake of a stretch of unlogged days sits from its
+///   reference, in kcal a day.
 ///
 /// Each day `W` changes by intake minus `E`, divided by the energy density;
-/// `E` drifts slowly; `A` decays toward zero. Days without complete logging
-/// add uncertainty instead of intake. Expenditure is in the units the person
-/// logs, so a steady under-logger still gets targets that work.
+/// `E` drifts slowly; `A` decays toward zero. Expenditure is in the units the
+/// person logs, so a steady under-logger still gets targets that work.
+///
+/// An unlogged day's intake is unknown: its stretch's reference plus `D`, plus
+/// the day's own spread. The reference is the recent logged average; before
+/// anything is logged it is `E` itself, so weight change in those weeks moves
+/// the trend through `D` and says nothing about expenditure. Each stretch
+/// starts its own `D`, and logged days never inform it.
 public enum EnergyBalance {
     public struct Parameters: Sendable, Hashable {
         /// Kilocalories per kilogram of tissue change.
@@ -29,8 +36,13 @@ public enum EnergyBalance {
         public var waterPersistence = 0.8
         /// Scale error of one reading, in kg.
         public var scale = 0.15
-        /// How far an unlogged day's intake may be from the recent average, in kcal.
+        /// How far one unlogged day's intake may be from its stretch's level, in kcal.
         public var unloggedIntake = 600.0
+        /// How far a stretch of unlogged days may sit from the recent logged
+        /// average or, before any logging, from expenditure, in kcal a day.
+        public var unloggedBalance = 500.0
+        /// How much that offset drifts a day within a stretch, in kcal.
+        public var unloggedDrift = 30.0
 
         public init() {}
     }
@@ -84,45 +96,65 @@ public enum EnergyBalance {
         }
         let firstWeight = mean(series[0].weights)!
         let start = prior ?? (31 * firstWeight, 600)
-        var x = Vector(firstWeight, start.mean, 0)
-        var P = Matrix.diagonal(p.water * p.water, start.error * start.error, p.water * p.water)
+        let balance = p.unloggedBalance * p.unloggedBalance
+        var x = Vector([firstWeight, start.mean, 0, 0])
+        var P = Matrix.diagonal([p.water * p.water, start.error * start.error, p.water * p.water, balance])
         // Expenditure follows weight: each day it moves by `expenditurePerKilogram`
         // times the day's tissue change, (intake − E) / density.
         let coupling = p.expenditurePerKilogram / p.energyDensity
-        let F = Matrix([[1, -1 / p.energyDensity, 0], [0, 1 - coupling, 0], [0, 0, p.waterPersistence]])
-        let intakeEffect = Vector(1 / p.energyDensity, coupling, 0)
+        let intakeEffect = Vector([1 / p.energyDensity, coupling, 0, 0])
         let waterNoise = p.water * p.water * (1 - p.waterPersistence * p.waterPersistence)
 
         var filtered: [(x: Vector, P: Matrix)] = []
-        var predicted: [(x: Vector, P: Matrix)] = []
+        var predicted: [(x: Vector, P: Matrix, F: Matrix)] = []
         var recentIntake: [Double] = []
         for (index, day) in series.enumerated() {
+            var F = Matrix.identity
             if index > 0 {
                 // Predict across the previous day's intake.
                 let previous = series[index - 1]
-                let intake: Double
+                F[0, 1] = -1 / p.energyDensity
+                F[1, 1] = 1 - coupling
+                F[2, 2] = p.waterPersistence
+                var intake = 0.0
                 var intakeVariance = 0.0
                 if let logged = previous.intake {
                     intake = logged
                     recentIntake = Array((recentIntake + [logged]).suffix(7))
                 } else {
-                    intake = mean(recentIntake) ?? x.e
+                    // The stretch's reference plus D, give or take the day's spread.
+                    if let recent = mean(recentIntake) {
+                        intake = recent
+                    } else {
+                        // Before any logging the reference is E, so intake − E is D alone.
+                        F[0, 1] = 0
+                        F[1, 1] = 1
+                    }
+                    F[0, 3] = 1 / p.energyDensity
+                    F[1, 3] = coupling
                     intakeVariance = p.unloggedIntake * p.unloggedIntake
+                }
+                var offsetNoise = p.unloggedDrift * p.unloggedDrift
+                if day.intake == nil, previous.intake != nil {
+                    // A new stretch of unlogged days starts with its own D.
+                    F[3, 3] = 0
+                    offsetNoise = balance
                 }
                 x = F * x + intakeEffect * intake
                 P = F * P * F.transposed
-                    + Matrix.diagonal(p.weightDrift * p.weightDrift, p.expenditureDrift * p.expenditureDrift, waterNoise)
+                    + Matrix.diagonal([p.weightDrift * p.weightDrift, p.expenditureDrift * p.expenditureDrift, waterNoise,
+                                       offsetNoise])
                     + intakeEffect.outer(intakeEffect) * intakeVariance
             }
-            predicted.append((x, P))
+            predicted.append((x, P, F))
             if let reading = mean(day.weights) {
                 // y = W + A, with the scale's error shrinking over several readings.
                 let r = p.scale * p.scale / Double(day.weights.count)
                 let innovation = reading - (x.w + x.a)
                 let s = P[0, 0] + 2 * P[0, 2] + P[2, 2] + r
-                let gain = Vector(P[0, 0] + P[0, 2], P[1, 0] + P[1, 2], P[2, 0] + P[2, 2]) / s
+                let gain = Vector((0..<Matrix.size).map { P[$0, 0] + P[$0, 2] }) / s
                 x += gain * innovation
-                let h = Vector(1, 0, 1)
+                let h = Vector([1, 0, 1, 0])
                 P = (Matrix.identity - gain.outer(h)) * P
                 P = (P + P.transposed) * 0.5
             }
@@ -134,7 +166,7 @@ public enum EnergyBalance {
         if series.count > 1 {
             for index in stride(from: series.count - 2, through: 0, by: -1) {
                 let (xf, Pf) = filtered[index]
-                let (xp, Pp) = predicted[index + 1]
+                let (xp, Pp, F) = predicted[index + 1]
                 let gain = Pf * F.transposed * Pp.inverse
                 let x = xf + gain * (smoothed[index + 1].x - xp)
                 let P = Pf + gain * (smoothed[index + 1].P - Pp) * gain.transposed
@@ -181,47 +213,87 @@ extension NutritionStore {
 }
 
 // MARK: Small fixed-size linear algebra
+// Loops run in a fixed order so the API's JavaScript port gets the same numbers.
 
 struct Vector: Sendable {
     var values: [Double]
-    init(_ w: Double, _ e: Double, _ a: Double) { values = [w, e, a] }
-    init(values: [Double]) { self.values = values }
+    init(_ values: [Double]) { self.values = values }
     var w: Double { values[0] }
     var e: Double { values[1] }
     var a: Double { values[2] }
-    static func + (l: Vector, r: Vector) -> Vector { Vector(values: zip(l.values, r.values).map(+)) }
+    static func + (l: Vector, r: Vector) -> Vector { Vector(zip(l.values, r.values).map(+)) }
     static func += (l: inout Vector, r: Vector) { l = l + r }
-    static func - (l: Vector, r: Vector) -> Vector { Vector(values: zip(l.values, r.values).map(-)) }
-    static func * (l: Vector, s: Double) -> Vector { Vector(values: l.values.map { $0 * s }) }
-    static func / (l: Vector, s: Double) -> Vector { Vector(values: l.values.map { $0 / s }) }
-    func outer(_ other: Vector) -> Matrix { Matrix(values.map { a in other.values.map { a * $0 } }) }
+    static func - (l: Vector, r: Vector) -> Vector { Vector(zip(l.values, r.values).map(-)) }
+    static func * (l: Vector, s: Double) -> Vector { Vector(l.values.map { $0 * s }) }
+    static func / (l: Vector, s: Double) -> Vector { Vector(l.values.map { $0 / s }) }
+    func outer(_ other: Vector) -> Matrix {
+        var m = Matrix.zero
+        for i in 0..<Matrix.size { for j in 0..<Matrix.size { m[i, j] = values[i] * other.values[j] } }
+        return m
+    }
 }
 
+/// A square matrix of the state's size, stored by rows.
 struct Matrix: Sendable {
-    var rows: [[Double]]
-    init(_ rows: [[Double]]) { self.rows = rows }
-    static let identity = Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    static func diagonal(_ a: Double, _ b: Double, _ c: Double) -> Matrix { Matrix([[a, 0, 0], [0, b, 0], [0, 0, c]]) }
-    subscript(_ i: Int, _ j: Int) -> Double { rows[i][j] }
-    var transposed: Matrix { Matrix((0..<3).map { j in (0..<3).map { rows[$0][j] } }) }
-    static func + (l: Matrix, r: Matrix) -> Matrix { Matrix(zip(l.rows, r.rows).map { zip($0, $1).map(+) }) }
-    static func - (l: Matrix, r: Matrix) -> Matrix { Matrix(zip(l.rows, r.rows).map { zip($0, $1).map(-) }) }
-    static func * (l: Matrix, s: Double) -> Matrix { Matrix(l.rows.map { $0.map { $0 * s } }) }
+    static let size = 4
+    var values: [Double]
+    static var zero: Matrix { Matrix(values: Array(repeating: 0, count: size * size)) }
+    static var identity: Matrix { diagonal(Array(repeating: 1, count: size)) }
+    static func diagonal(_ entries: [Double]) -> Matrix {
+        var m = zero
+        for i in 0..<size { m[i, i] = entries[i] }
+        return m
+    }
+    subscript(_ i: Int, _ j: Int) -> Double {
+        get { values[i * Self.size + j] }
+        set { values[i * Self.size + j] = newValue }
+    }
+    var transposed: Matrix {
+        var m = Matrix.zero
+        for i in 0..<Self.size { for j in 0..<Self.size { m[i, j] = self[j, i] } }
+        return m
+    }
+    static func + (l: Matrix, r: Matrix) -> Matrix { Matrix(values: zip(l.values, r.values).map(+)) }
+    static func - (l: Matrix, r: Matrix) -> Matrix { Matrix(values: zip(l.values, r.values).map(-)) }
+    static func * (l: Matrix, s: Double) -> Matrix { Matrix(values: l.values.map { $0 * s }) }
     static func * (l: Matrix, r: Matrix) -> Matrix {
-        Matrix((0..<3).map { i in (0..<3).map { j in (0..<3).reduce(0) { $0 + l.rows[i][$1] * r.rows[$1][j] } } })
+        var m = Matrix.zero
+        for i in 0..<size {
+            for j in 0..<size {
+                var sum = 0.0
+                for k in 0..<size { sum += l[i, k] * r[k, j] }
+                m[i, j] = sum
+            }
+        }
+        return m
     }
     static func * (l: Matrix, v: Vector) -> Vector {
-        Vector(values: (0..<3).map { i in (0..<3).reduce(0) { $0 + l.rows[i][$1] * v.values[$1] } })
+        Vector((0..<size).map { i in
+            var sum = 0.0
+            for k in 0..<size { sum += l[i, k] * v.values[k] }
+            return sum
+        })
     }
+    /// Gauss–Jordan elimination. Only covariances are inverted, and those are
+    /// symmetric positive definite, so no pivoting is needed.
     var inverse: Matrix {
-        let m = rows
-        let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
-        let c: [[Double]] = [
-            [m[1][1] * m[2][2] - m[1][2] * m[2][1], m[0][2] * m[2][1] - m[0][1] * m[2][2], m[0][1] * m[1][2] - m[0][2] * m[1][1]],
-            [m[1][2] * m[2][0] - m[1][0] * m[2][2], m[0][0] * m[2][2] - m[0][2] * m[2][0], m[0][2] * m[1][0] - m[0][0] * m[1][2]],
-            [m[1][0] * m[2][1] - m[1][1] * m[2][0], m[0][1] * m[2][0] - m[0][0] * m[2][1], m[0][0] * m[1][1] - m[0][1] * m[1][0]],
-        ]
-        return Matrix(c) * (1 / det)
+        var a = self
+        var b = Matrix.identity
+        let n = Self.size
+        for c in 0..<n {
+            let pivot = a[c, c]
+            for j in 0..<n {
+                a[c, j] /= pivot
+                b[c, j] /= pivot
+            }
+            for r in 0..<n where r != c {
+                let factor = a[r, c]
+                for j in 0..<n {
+                    a[r, j] -= factor * a[c, j]
+                    b[r, j] -= factor * b[c, j]
+                }
+            }
+        }
+        return b
     }
 }

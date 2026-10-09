@@ -1,7 +1,8 @@
 // A port of ExerlyCore's EnergyBalance: trend weight and expenditure from
 // weigh-ins and logged intake, by a Kalman filter and Rauch–Tung–Striebel
-// smoother over weight without water (W), expenditure in logged kcal (E) and
-// the water deviation (A). It follows the Swift code step for step, and
+// smoother over weight without water (W), expenditure in logged kcal (E), the
+// water deviation (A) and how far a stretch of unlogged days' intake sits from
+// its reference (D). It follows the Swift code step for step, and
 // tests/nutrition.golden.test.js holds it to docs/api/golden/nutrition-v1.json,
 // which ExerlyCore writes. See docs/design/007-nutrition.md.
 
@@ -14,49 +15,46 @@ const PARAMETERS = {
   waterPersistence: 0.8,
   scale: 0.15,
   unloggedIntake: 600,
+  unloggedBalance: 500,
+  unloggedDrift: 30,
 };
 
+const SIZE = 4;
+
 // Small fixed-size linear algebra, in the Swift code's order of operations.
+const indices = [0, 1, 2, 3];
 const add = (l, r) => l.map((row, i) => row.map((value, j) => value + r[i][j]));
 const subtract = (l, r) => l.map((row, i) => row.map((value, j) => value - r[i][j]));
 const scale = (m, s) => m.map((row) => row.map((value) => value * s));
 const multiply = (l, r) =>
-  [0, 1, 2].map((i) =>
-    [0, 1, 2].map((j) => [0, 1, 2].reduce((sum, k) => sum + l[i][k] * r[k][j], 0))
-  );
-const apply = (m, v) => [0, 1, 2].map((i) => [0, 1, 2].reduce((sum, k) => sum + m[i][k] * v[k], 0));
-const transpose = (m) => [0, 1, 2].map((j) => [0, 1, 2].map((i) => m[i][j]));
-const diagonal = (a, b, c) => [
-  [a, 0, 0],
-  [0, b, 0],
-  [0, 0, c],
-];
+  indices.map((i) => indices.map((j) => indices.reduce((sum, k) => sum + l[i][k] * r[k][j], 0)));
+const apply = (m, v) => indices.map((i) => indices.reduce((sum, k) => sum + m[i][k] * v[k], 0));
+const transpose = (m) => indices.map((j) => indices.map((i) => m[i][j]));
+const diagonal = (entries) => indices.map((i) => indices.map((j) => (i === j ? entries[i] : 0)));
 const outer = (a, b) => a.map((x) => b.map((y) => x * y));
-const IDENTITY = diagonal(1, 1, 1);
+const identity = () => diagonal([1, 1, 1, 1]);
 
+// Gauss–Jordan elimination. Only covariances are inverted, and those are
+// symmetric positive definite, so no pivoting is needed.
 function inverse(m) {
-  const det =
-    m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
-    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-  const c = [
-    [
-      m[1][1] * m[2][2] - m[1][2] * m[2][1],
-      m[0][2] * m[2][1] - m[0][1] * m[2][2],
-      m[0][1] * m[1][2] - m[0][2] * m[1][1],
-    ],
-    [
-      m[1][2] * m[2][0] - m[1][0] * m[2][2],
-      m[0][0] * m[2][2] - m[0][2] * m[2][0],
-      m[0][2] * m[1][0] - m[0][0] * m[1][2],
-    ],
-    [
-      m[1][0] * m[2][1] - m[1][1] * m[2][0],
-      m[0][1] * m[2][0] - m[0][0] * m[2][1],
-      m[0][0] * m[1][1] - m[0][1] * m[1][0],
-    ],
-  ];
-  return scale(c, 1 / det);
+  const a = m.map((row) => [...row]);
+  const b = identity();
+  for (let c = 0; c < SIZE; c++) {
+    const pivot = a[c][c];
+    for (let j = 0; j < SIZE; j++) {
+      a[c][j] /= pivot;
+      b[c][j] /= pivot;
+    }
+    for (let r = 0; r < SIZE; r++) {
+      if (r === c) continue;
+      const factor = a[r][c];
+      for (let j = 0; j < SIZE; j++) {
+        a[r][j] -= factor * a[c][j];
+        b[r][j] -= factor * b[c][j];
+      }
+    }
+  }
+  return b;
 }
 
 const mean = (values) =>
@@ -95,56 +93,73 @@ function estimate(days, { prior = null, parameters = {} } = {}) {
   }
   const firstWeight = mean(series[0].weights);
   const start = prior ?? { mean: 31 * firstWeight, error: 600 };
-  let x = [firstWeight, start.mean, 0];
-  let P = diagonal(p.water * p.water, start.error * start.error, p.water * p.water);
+  const balance = p.unloggedBalance * p.unloggedBalance;
+  let x = [firstWeight, start.mean, 0, 0];
+  let P = diagonal([p.water * p.water, start.error * start.error, p.water * p.water, balance]);
   const coupling = p.expenditurePerKilogram / p.energyDensity;
-  const F = [
-    [1, -1 / p.energyDensity, 0],
-    [0, 1 - coupling, 0],
-    [0, 0, p.waterPersistence],
-  ];
-  const intakeEffect = [1 / p.energyDensity, coupling, 0];
+  const intakeEffect = [1 / p.energyDensity, coupling, 0, 0];
   const waterNoise = p.water * p.water * (1 - p.waterPersistence * p.waterPersistence);
 
   const filtered = [];
   const predicted = [];
   let recentIntake = [];
   series.forEach((day, index) => {
+    const F = identity();
     if (index > 0) {
       const previous = series[index - 1];
-      let intake;
+      F[0][1] = -1 / p.energyDensity;
+      F[1][1] = 1 - coupling;
+      F[2][2] = p.waterPersistence;
+      let intake = 0;
       let intakeVariance = 0;
       if (previous.intake != null) {
         intake = previous.intake;
         recentIntake = [...recentIntake, previous.intake].slice(-7);
       } else {
-        intake = mean(recentIntake) ?? x[1];
+        // The stretch's reference plus D, give or take the day's spread.
+        const recent = mean(recentIntake);
+        if (recent != null) {
+          intake = recent;
+        } else {
+          // Before any logging the reference is E, so intake − E is D alone.
+          F[0][1] = 0;
+          F[1][1] = 1;
+        }
+        F[0][3] = 1 / p.energyDensity;
+        F[1][3] = coupling;
         intakeVariance = p.unloggedIntake * p.unloggedIntake;
+      }
+      let offsetNoise = p.unloggedDrift * p.unloggedDrift;
+      if (day.intake == null && previous.intake != null) {
+        // A new stretch of unlogged days starts with its own D.
+        F[3][3] = 0;
+        offsetNoise = balance;
       }
       const moved = apply(F, x);
       x = moved.map((value, i) => value + intakeEffect[i] * intake);
       P = add(
         add(
           multiply(multiply(F, P), transpose(F)),
-          diagonal(
+          diagonal([
             p.weightDrift * p.weightDrift,
             p.expenditureDrift * p.expenditureDrift,
-            waterNoise
-          )
+            waterNoise,
+            offsetNoise,
+          ])
         ),
         scale(outer(intakeEffect, intakeEffect), intakeVariance)
       );
     }
-    predicted.push({ x, P });
+    predicted.push({ x, P, F });
     const reading = mean(day.weights);
     if (reading != null) {
       // y = W + A, with the scale's error shrinking over several readings.
       const r = (p.scale * p.scale) / day.weights.length;
       const innovation = reading - (x[0] + x[2]);
       const s = P[0][0] + 2 * P[0][2] + P[2][2] + r;
-      const gain = [P[0][0] + P[0][2], P[1][0] + P[1][2], P[2][0] + P[2][2]].map((g) => g / s);
+      const gain = indices.map((i) => P[i][0] + P[i][2]).map((g) => g / s);
       x = x.map((value, i) => value + gain[i] * innovation);
-      P = multiply(subtract(IDENTITY, outer(gain, [1, 0, 1])), P);
+      P = multiply(subtract(identity(), outer(gain, [1, 0, 1, 0])), P);
       P = scale(add(P, transpose(P)), 0.5);
     }
     filtered.push({ x, P });
@@ -154,7 +169,7 @@ function estimate(days, { prior = null, parameters = {} } = {}) {
   const smoothed = [...filtered];
   for (let index = series.length - 2; index >= 0; index--) {
     const { x: xf, P: Pf } = filtered[index];
-    const { x: xp, P: Pp } = predicted[index + 1];
+    const { x: xp, P: Pp, F } = predicted[index + 1];
     const gain = multiply(multiply(Pf, transpose(F)), inverse(Pp));
     const difference = smoothed[index + 1].x.map((value, i) => value - xp[i]);
     const correction = apply(gain, difference);

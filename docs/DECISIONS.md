@@ -402,3 +402,23 @@ The food library's "Usual around now" and "Recently logged" lists repeated
 what food search now shows with one-tap logging, so they are removed. The
 library is for finding, editing, starring and archiving saved foods; its food
 page still logs, at the meal usual for the time of day.
+
+## 2026-10-09: Unlogged weeks no longer move expenditure
+
+`EnergyBalance` assumed an unlogged day's intake was the recent logged average
+or, before any logging, its own expenditure estimate. With weigh-ins but no
+logging, each day's real weight change then raised expenditure, the assumed
+intake followed, and the estimate climbed with a shrinking band: 3,354 ±192
+kcal after four weeks for someone burning 2,590, and 1,456 kcal off after nine
+weeks in simulation. A fourth state, `D`, is now how far a stretch of unlogged
+days' intake sits from the recent logged average or, before any logging, from
+expenditure. Each stretch starts its own `D` and logged days never inform it,
+so weight change before logging moves the trend and leaves expenditure at its
+starting guess with its full band; Exerly doesn't assume someone ate before
+logging the way they log. For logging that starts on day 21, the smoothed
+trend around the switch went from 0.70 kg off to 0.18 and the expenditure band
+from covering the truth 29 % of the time to 97 %. M5b's rates and the coaching
+simulation are unchanged within 2 kcal and 0.001 % a week. The public API is
+unchanged; `Parameters` gains `unloggedBalance` (500) and `unloggedDrift` (30),
+and the API's JavaScript port and golden file follow. See
+docs/design/007-nutrition.md.

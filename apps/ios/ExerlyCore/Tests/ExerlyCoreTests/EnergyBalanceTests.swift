@@ -160,7 +160,7 @@ import Testing
 
     /// Errors for every day: real-time, as the trend card sees each day, and in
     /// the smoothed history the chart draws once the whole series is known.
-    static func run(_ people: [Person]) -> (realTime: [Sample], history: [Sample]) {
+    static func run(_ people: [Person], parameters: EnergyBalance.Parameters = .init()) -> (realTime: [Sample], history: [Sample]) {
         var realTime: [Sample] = [], history: [Sample] = []
         for person in people {
             let truth = simulate(person)
@@ -170,9 +170,11 @@ import Testing
                               covered: abs(error) <= 2 * estimate.expenditureError)
             }
             for day in 0..<person.days {
-                if let latest = EnergyBalance.estimate(Array(truth.days[...day])).last { realTime.append(sample(day, latest)) }
+                if let latest = EnergyBalance.estimate(Array(truth.days[...day]), parameters: parameters).last {
+                    realTime.append(sample(day, latest))
+                }
             }
-            let all = EnergyBalance.estimate(truth.days)
+            let all = EnergyBalance.estimate(truth.days, parameters: parameters)
             for (index, estimate) in all.enumerated() { history.append(sample(person.days - all.count + index, estimate)) }
         }
         return (realTime, history)
@@ -210,27 +212,56 @@ import Testing
 
     /// Weeks of weigh-ins before any food is logged, a common history. The
     /// weight change before logging must move the trend, not expenditure, and
-    /// expenditure must stay uncertain until logged days pin it down.
+    /// expenditure must stay uncertain until logged days pin it down. Bounds
+    /// are the rates recorded in docs/design/007-nutrition.md, with room.
     @Test func logsThatStartWeeksAfterTheWeighInsKeepTheTrendAndAnHonestExpenditure() {
-        let scenarios: [(String, [Person])] = [
-            ("always logged", Self.lateLoggers(from: 0)),
-            ("logged from day 21", Self.lateLoggers(from: 21)),
-            ("never logged", Self.lateLoggers(from: 63)),
-            ("diet and logging start on day 21", Self.lateLoggers(from: 21, phases: [(21, 0), (42, -500)])),
+        // Real-time trend error over all days, smoothed trend error on days 14 to
+        // 34 and its worst day, and real-time expenditure error in the last week.
+        let scenarios: [(name: String, people: [Person], realTime: Double, history: Double, worstDay: Double, lastWeek: Double?)] = [
+            ("always logged", Self.lateLoggers(from: 0), 0.29, 0.17, 0.20, 110),
+            ("logged from day 21", Self.lateLoggers(from: 21), 0.31, 0.23, 0.27, 130),
+            ("never logged", Self.lateLoggers(from: 63), 0.29, 0.18, 0.22, nil),
+            ("diet and logging start on day 21", Self.lateLoggers(from: 21, phases: [(21, 0), (42, -500)]), 0.31, 0.23, 0.27, 140),
         ]
-        for (name, people) in scenarios {
-            let (realTime, history) = Self.run(people)
-            for (label, samples) in [("real-time", realTime), ("history", history)] {
-                print("Late logging, \(name), \(label): all \(Window(samples, days: 0...62)); "
-                    + "days 14-34 \(Window(samples, days: 14...34)); before logging \(Window(samples, days: 0...20))")
-            }
-            for day in [7, 14, 18, 20, 21, 22, 24, 28, 35, 42, 56, 62] {
-                let r = realTime.filter { $0.day == day }, h = history.filter { $0.day == day }
-                print(String(format: "  %@ day %2d: real-time trend %.2f E %.0f cov %.0f%% | history trend %.2f E %.0f",
-                             name, day, Score.mean(r.map(\.trend)), Score.mean(r.map(\.expenditure)),
-                             Double(r.filter(\.covered).count) * 100 / Double(max(1, r.count)),
-                             Score.mean(h.map(\.trend)), Score.mean(h.map(\.expenditure))))
-            }
+        for scenario in scenarios {
+            let (realTime, history) = Self.run(scenario.people)
+            let all = Window(realTime, days: 0...62), around = Window(history, days: 14...34)
+            let lastWeek = Window(realTime, days: 56...62)
+            print("Late logging, \(scenario.name): real-time \(all); last week \(lastWeek); smoothed days 14-34 \(around)")
+            #expect(all.trend <= scenario.realTime, "\(scenario.name)")
+            #expect(around.trend <= scenario.history && around.worstDayTrend <= scenario.worstDay, "\(scenario.name)")
+            #expect(all.covered >= 0.9 && Window(history, days: 0...62).covered >= 0.9, "\(scenario.name): the band is honest")
+            if let bound = scenario.lastWeek { #expect(lastWeek.expenditure <= bound, "\(scenario.name)") }
+        }
+    }
+
+    /// From a usability test: four weeks of daily weigh-ins through a steady
+    /// cut with partial logs only, where expenditure read 3,540 kcal. Intake is
+    /// unknown, so expenditure stays at the starting guess, wide and unmeasured.
+    @Test func weighInsWithoutACompleteDayLeaveExpenditureAtTheGuess() throws {
+        for (index, expenditure) in [2300.0, 2700, 3100].enumerated() {
+            var person = Person(seed: UInt64(40 + index))
+            person.days = 28
+            person.weight = 84
+            person.expenditure = expenditure
+            person.weighInChance = 1
+            person.loggingStarts = 28
+            person.phases = [(28, -500)]
+            let truth = Self.simulate(person)
+            let guess = 31 * truth.days[0].weights[0]
+            let estimates = EnergyBalance.estimate(truth.days)
+            let last = try #require(estimates.last)
+            print(String(format: "No complete days, true expenditure %.0f: estimate %.0f ±%.0f from a guess of %.0f; trend %.2f kg against %.2f",
+                         truth.expenditure[27], last.expenditure, last.expenditureError, guess, last.trend, truth.weight[27]))
+            // Expenditure falls 22 kcal per kilogram lost and otherwise stays at the guess.
+            #expect(abs(last.expenditure - guess) < 150)
+            #expect(last.expenditureError > 550)
+            #expect(abs(last.trend - truth.weight[27]) < 0.4)
+            let summary = try #require(WeightTrend.summary(estimates, through: last.date))
+            #expect(!summary.expenditure.isMeasured && summary.expenditure.loggedDays == 0)
+            // A plan's narrower guess holds the same way.
+            let planned = try #require(EnergyBalance.estimate(truth.days, prior: (2500, 375)).last)
+            #expect(abs(planned.expenditure - 2500) < 150 && planned.expenditureError > 330)
         }
     }
 

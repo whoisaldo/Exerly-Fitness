@@ -61,10 +61,13 @@ synced documents and pure functions, and the app's screens use only ExerlyCore.
 
 ## Trend weight and expenditure (pure functions)
 
-The model is a Kalman filter and smoother over two hidden states:
+The model is a Kalman filter and smoother over these hidden states:
 
 - `W`: a "true" weight, without the day's water and gut contents;
-- `E`: expenditure, in logged kilocalories a day.
+- `E`: expenditure, in logged kilocalories a day;
+- `A`: the day's water and gut deviation, which persists for a few days;
+- `D`: how far the intake of a stretch of unlogged days sits from its
+  reference, in kcal a day.
 
 Each day:
 
@@ -77,8 +80,14 @@ Each day:
 
 Behaviour:
 
-- **Missing intake.** Days without complete logging add variance instead of
-  intake.
+- **Missing intake.** An unlogged day's intake is its stretch's reference plus
+  `D`, give or take 600 kcal for the day. The reference is the average of the
+  last seven logged days or, before anything is logged, expenditure itself.
+  Each stretch of unlogged days starts its own `D` (±500 kcal a day, drifting
+  30 a day), and logged days never inform it. So weight change in weeks of
+  weigh-ins without logging moves the trend through `D` and leaves `E` at its
+  starting guess, with its full band, until logged days pin it down. Exerly
+  doesn't assume that what someone ate before logging resembles what they log.
 - **Missing weigh-ins.** They simply aren't observations.
 - **Trend weight.** It is the smoothed `W`, with a band, and replaces the
   legacy exponential average.
@@ -103,7 +112,7 @@ Measured:
 
 The rates are recorded here and enforced by tests.
 
-### Measured (2026-10-06)
+### Measured (2026-10-06, rechecked 2026-10-09)
 
 The simulation runs 30 people per weigh-in frequency, each for 140 days:
 
@@ -121,11 +130,14 @@ from day 28. The truth is expenditure in logged units.
 
 | Weigh-ins              | Expenditure error, mean (90th %) | Trend error | ±2 SD band covers the truth | Legacy expenditure | Legacy trend |
 | ---------------------- | -------------------------------- | ----------- | --------------------------- | ------------------ | ------------ |
-| Daily (90 %)           | 74 kcal (153)                    | 0.21 kg     | 98 %                        | 94 kcal (196)      | 0.33 kg      |
-| Every other day (50 %) | 80 kcal (161)                    | 0.22 kg     | 98 %                        | 111 kcal (244)     | 0.54 kg      |
-| About weekly (20 %)    | 97 kcal (201)                    | 0.30 kg     | 96 %                        | 154 kcal (288)     | 1.03 kg      |
+| Daily (90 %)           | 74 kcal (152)                    | 0.21 kg     | 98 %                        | 94 kcal (196)      | 0.33 kg      |
+| Every other day (50 %) | 79 kcal (158)                    | 0.22 kg     | 98 %                        | 111 kcal (244)     | 0.54 kg      |
+| About weekly (20 %)    | 97 kcal (195)                    | 0.30 kg     | 96 %                        | 154 kcal (288)     | 1.03 kg      |
 
-These are with the weight coupling, added in M5c. Without it, the mean
+The offset `D` for unlogged days, added on 2026-10-09, moved these by at most
+2 kcal and 6 kcal at the 90th percentile (before: 74 (153), 80 (161) and 97
+(201)); trend errors and coverage didn't change. These are with the weight
+coupling, added in M5c. Without it, the mean
 expenditure error was 90, 96 and 114 kcal. In M5c's closed-loop simulation the
 random walk alone read 77 kcal high at check-ins for a 0.5 % weekly loss, and
 171 kcal high at 1 %, because it lagged the diet's falling expenditure.
@@ -136,6 +148,41 @@ random walk alone read 77 kcal high at check-ins for a 0.5 % weekly loss, and
   honest about the uncertainty.
 - Expenditure drift from 8 to 25 kcal a day and water persistence from 0.6 to
   0.9 changed the mean error by under 5 kcal, so the defaults (15 and 0.8) are
+  not fragile.
+
+### Weigh-ins before logging (2026-10-09)
+
+Many people weigh in for weeks before they log food. Until 2026-10-09 an
+unlogged day's intake was assumed to be the recent logged average or, with no
+logging yet, the current estimate of `E`. That made the net balance zero by
+construction, so each day's real weight change looked like a surprise that
+raised `E`; the next day's assumed intake followed it, and `E` kept climbing
+while its band shrank. A usability test showed 3,540 kcal after four weeks of
+weigh-ins with partial logs only.
+
+The same 30 people ran for 63 days through a steady 500 kcal deficit, weighed
+on 90 % of days, with no prior (31 kcal/kg ±600). Before → after the offset
+`D`:
+
+| Food logged                 | Real-time trend error | Smoothed trend, days 14–34 (worst day) | Real-time expenditure error, all days / last week | ±2 SD band covers the truth |
+| --------------------------- | --------------------- | -------------------------------------- | ------------------------------------------------- | --------------------------- |
+| From day 0                  | 0.25 → 0.25 kg        | 0.14 (0.15) → 0.13 (0.15) kg           | 179 / 76 → 180 / 77 kcal                          | 94 → 94 %                   |
+| From day 21                 | 0.46 → 0.27 kg        | 0.70 (1.02) → 0.18 (0.21) kg           | 702 / 358 → 375 / 90 kcal                         | 29 → 97 %                   |
+| Never                       | 0.31 → 0.25 kg        | 0.26 (0.30) → 0.14 (0.17) kg           | 1,139 / 1,456 → 619 / 633 kcal                    | 24 → 99 %                   |
+| From day 21, diet from then | 0.32 → 0.27 kg        | 0.38 (0.52) → 0.18 (0.22) kg           | 438 / 213 → 369 / 102 kcal                        | 52 → 98 %                   |
+
+- Without logging, expenditure's error is now the starting guess's, and the
+  band covers it.
+- Once logging starts, expenditure is learned as fast as for someone who has
+  just started: 489, 278 and 183 kcal after 7, 14 and 21 logged days, against
+  498, 294 and 195 for the same people with the earlier weeks removed.
+- Four weeks of daily weigh-ins at 84 kg through a 0.45 kg weekly cut, with no
+  complete day: expenditure read 3,193 to 3,565 ±192 kcal for three people
+  burning 2,187 to 2,968. It now reads 2,573 to 2,578 ±605, the guess of about
+  2,605 less 22 kcal per kilogram lost, and isn't shown as measured.
+- An unlogged offset of 300 to 800 kcal, drifting 10 to 60 a day, and a day's
+  spread of 400 to 600 kcal changed the scores of the last three rows, and
+  M5b's, by under 0.02 kg and 10 kcal, so the defaults (500, 30 and 600) are
   not fragile.
 
 ## Targets and coaching
