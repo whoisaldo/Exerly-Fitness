@@ -45,6 +45,19 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.exerly.fitness</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>exerly</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Exerly uses the camera to scan food barcodes and read nutrition labels on your device.</string>
 	<key>NSHealthShareUsageDescription</key>

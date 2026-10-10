@@ -9,9 +9,17 @@
 /* Begin PBXBuildFile section */
 		0C634C7BF9747ABC7B80E079 /* ExerlyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 38641AD43F56C9ABB48EE67E /* ExerlyCore */; };
 		194BD4905264646D3748BC8A /* ExerlyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1862A987A045475E313EB2B8 /* ExerlyCore */; };
+		A5B6D9A82CEF78C0AB5A20DB /* ExerlyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3C76F7256376B9461EEC2DB4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E80786D715DA9517FC0DA85E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 948FFB77E808CA3A2249C5BD;
+			remoteInfo = ExerlyWidgets;
+		};
 		559ABD86C2A034B57FE90816 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E80786D715DA9517FC0DA85E /* Project object */;
@@ -28,14 +36,36 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		87FC42A0C6CC4AF4BC6EBD0D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A5B6D9A82CEF78C0AB5A20DB /* ExerlyWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		3C7EB6F4B66E5B291E95E8A0 /* ExerlyCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ExerlyCore; path = ExerlyCore; sourceTree = SOURCE_ROOT; };
 		8FEBF97C08176A3AD93AD216 /* Exerly.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Exerly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C7931CCD189FA16E70E78133 /* ExerlyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ExerlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ExerlyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E13A2EF975046567F2E7A55A /* ExerlyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ExerlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		231A375A71C221241F35D857 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 948FFB77E808CA3A2249C5BD /* ExerlyWidgets */;
+		};
 		483BCCC681EB4AA88AA52384 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -53,6 +83,15 @@
 			explicitFolders = (
 			);
 			path = ExerlyUITests;
+			sourceTree = "<group>";
+		};
+		1D310287175D288F55363353 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		1DCB9C1E8086026BD7337639 /* Exerly */ = {
@@ -74,6 +113,18 @@
 			explicitFolders = (
 			);
 			path = ExerlyTests;
+			sourceTree = "<group>";
+		};
+		7298F8BDCC6B88642534AA42 /* ExerlyWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				231A375A71C221241F35D857 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ExerlyWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -104,7 +155,9 @@
 				1DCB9C1E8086026BD7337639 /* Exerly */,
 				679819554418BAB99555B264 /* ExerlyTests */,
 				0A6A09FA30A36DC3334DAE02 /* ExerlyUITests */,
+				7298F8BDCC6B88642534AA42 /* ExerlyWidgets */,
 				EC8A6C6A19AD3A7C469963A9 /* Packages */,
+				1D310287175D288F55363353 /* Shared */,
 				4883C599D3A85E726E44546C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,6 +168,7 @@
 				8FEBF97C08176A3AD93AD216 /* Exerly.app */,
 				C7931CCD189FA16E70E78133 /* ExerlyTests.xctest */,
 				E13A2EF975046567F2E7A55A /* ExerlyUITests.xctest */,
+				D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -137,13 +191,16 @@
 				BE14DD54E9213D814E4BE61C /* Sources */,
 				5AE5BA768B0F9956D498ABBB /* Resources */,
 				4A41909F4D4256FBD71703E2 /* Frameworks */,
+				87FC42A0C6CC4AF4BC6EBD0D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E0148436632F8FB4517F823D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1DCB9C1E8086026BD7337639 /* Exerly */,
+				1D310287175D288F55363353 /* Shared */,
 			);
 			name = Exerly;
 			packageProductDependencies = (
@@ -174,6 +231,28 @@
 			productName = ExerlyUITests;
 			productReference = E13A2EF975046567F2E7A55A /* ExerlyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		948FFB77E808CA3A2249C5BD /* ExerlyWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 434C7530E7FBEE73BA168534 /* Build configuration list for PBXNativeTarget "ExerlyWidgets" */;
+			buildPhases = (
+				81071617CC108C3B15301EC2 /* Sources */,
+				7A70777C4B585815A77907CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7298F8BDCC6B88642534AA42 /* ExerlyWidgets */,
+				1D310287175D288F55363353 /* Shared */,
+			);
+			name = ExerlyWidgets;
+			packageProductDependencies = (
+			);
+			productName = ExerlyWidgets;
+			productReference = D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		EFC544885E763AB0CBD64BFD /* ExerlyTests */ = {
 			isa = PBXNativeTarget;
@@ -216,6 +295,10 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = 478A8E71BFADC65BF6ED4E31;
 					};
+					948FFB77E808CA3A2249C5BD = {
+						DevelopmentTeam = 9X79V37Q89;
+						ProvisioningStyle = Automatic;
+					};
 					EFC544885E763AB0CBD64BFD = {
 						ProvisioningStyle = Automatic;
 					};
@@ -239,6 +322,7 @@
 			projectRoot = "";
 			targets = (
 				478A8E71BFADC65BF6ED4E31 /* Exerly */,
+				948FFB77E808CA3A2249C5BD /* ExerlyWidgets */,
 				EFC544885E763AB0CBD64BFD /* ExerlyTests */,
 				604065583976B290FB138C97 /* ExerlyUITests */,
 			);
@@ -260,6 +344,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A70777C4B585815A77907CF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8C61DB7F47C8B16C62FDA33C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -271,6 +362,13 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		2663F693401DB4EB04B46098 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81071617CC108C3B15301EC2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -303,6 +401,11 @@
 			isa = PBXTargetDependency;
 			target = 478A8E71BFADC65BF6ED4E31 /* Exerly */;
 			targetProxy = 559ABD86C2A034B57FE90816 /* PBXContainerItemProxy */;
+		};
+		E0148436632F8FB4517F823D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 948FFB77E808CA3A2249C5BD /* ExerlyWidgets */;
+			targetProxy = 3C76F7256376B9461EEC2DB4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -469,6 +572,51 @@
 			};
 			name = Debug;
 		};
+		EAC4B379813388685367E0DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ExerlyWidgets/ExerlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X79V37Q89;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExerlyWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Exerly;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(EXERLY_WIDGETS_PROVISIONING_PROFILE)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FFEC86321EBA3974B6DACE25 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ExerlyWidgets/ExerlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9X79V37Q89;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExerlyWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Exerly;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.exerly.fitness.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -486,6 +634,15 @@
 			buildConfigurations = (
 				5D7E60CA36B77ACF70817C51 /* Debug */,
 				2DB41EB8428ABB924D1F0B6E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		434C7530E7FBEE73BA168534 /* Build configuration list for PBXNativeTarget "ExerlyWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FFEC86321EBA3974B6DACE25 /* Debug */,
+				EAC4B379813388685367E0DA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

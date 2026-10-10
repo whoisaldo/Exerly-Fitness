@@ -256,10 +256,14 @@ enum TrainingFormat {
     /// A planned session's name, "Program: Day", as the day with the program
     /// beneath it, so the title fits a narrow bar. Other names stay whole.
     static func title(of session: WorkoutSession) -> (name: String, program: String?) {
-        guard session.program != nil, let range = session.name.range(of: ": ") else { return (session.name, nil) }
-        let program = String(session.name[..<range.lowerBound])
-        let day = String(session.name[range.upperBound...])
-        return day.isEmpty ? (session.name, nil) : (day, program)
+        title(session.name, planned: session.program != nil)
+    }
+
+    static func title(_ name: String, planned: Bool) -> (name: String, program: String?) {
+        guard planned, let range = name.range(of: ": ") else { return (name, nil) }
+        let program = String(name[..<range.lowerBound])
+        let day = String(name[range.upperBound...])
+        return day.isEmpty ? (name, nil) : (day, program)
     }
 
     /// A name for a workout started without a plan, from the time of day.
