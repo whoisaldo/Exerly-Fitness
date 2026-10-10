@@ -143,12 +143,7 @@ targets:
         excludes:
           - Info.plist
       # The watch's state and command types; the rest of Shared is iOS-only.
-      - path: Shared
-        type: syncedFolder
-        excludes:
-          - WidgetSnapshot.swift
-          - WorkoutActivityAttributes.swift
-          - WorkoutActivityIntents.swift
+      - path: Shared/WatchWorkout.swift
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

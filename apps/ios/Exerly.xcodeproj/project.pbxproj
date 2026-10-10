@@ -11,6 +11,7 @@
 		194BD4905264646D3748BC8A /* ExerlyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1862A987A045475E313EB2B8 /* ExerlyCore */; };
 		1B3D85872986333105B4732C /* ExerlyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 80D42003938B059FEF5CA61F /* ExerlyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A5B6D9A82CEF78C0AB5A20DB /* ExerlyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AAA6E8F45E86A5BE47832CFD /* WatchWorkout.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDE7B33AF8CF5F90258D04D /* WatchWorkout.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,18 +85,10 @@
 		C7931CCD189FA16E70E78133 /* ExerlyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ExerlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ExerlyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E13A2EF975046567F2E7A55A /* ExerlyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ExerlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FBDE7B33AF8CF5F90258D04D /* WatchWorkout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWorkout.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		04475369C57235FC9B679A32 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				WidgetSnapshot.swift,
-				WorkoutActivityAttributes.swift,
-				WorkoutActivityIntents.swift,
-			);
-			target = 3C023AE377C7D37E3B5FC9CE /* ExerlyWatch */;
-		};
 		231A375A71C221241F35D857 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -131,9 +124,6 @@
 		};
 		1D310287175D288F55363353 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				04475369C57235FC9B679A32 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
 			explicitFileTypes = {
 			};
 			explicitFolders = (
@@ -228,6 +218,7 @@
 				7298F8BDCC6B88642534AA42 /* ExerlyWidgets */,
 				EC8A6C6A19AD3A7C469963A9 /* Packages */,
 				1D310287175D288F55363353 /* Shared */,
+				8E42CBC9C569F2F2C746EC30 /* Shared */,
 				4883C599D3A85E726E44546C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -243,6 +234,14 @@
 				D02AB75CAFC2C69DFAA9A751 /* ExerlyWidgets.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8E42CBC9C569F2F2C746EC30 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				FBDE7B33AF8CF5F90258D04D /* WatchWorkout.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		EC8A6C6A19AD3A7C469963A9 /* Packages */ = {
@@ -269,7 +268,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				981E0D201B511C5454471C66 /* ExerlyWatch */,
-				1D310287175D288F55363353 /* Shared */,
 			);
 			name = ExerlyWatch;
 			packageProductDependencies = (
@@ -535,6 +533,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAA6E8F45E86A5BE47832CFD /* WatchWorkout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
