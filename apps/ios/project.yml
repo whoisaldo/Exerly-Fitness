@@ -47,8 +47,12 @@ targets:
         type: syncedFolder
         excludes:
           - Info.plist
+      # Small display types the widget extension compiles too.
+      - path: Shared
+        type: syncedFolder
     dependencies:
       - package: ExerlyCore
+      - target: ExerlyWidgets
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -84,6 +88,39 @@ targets:
       testTargets:
         - ExerlyTests
         - ExerlyUITests
+  # Widgets and the workout Live Activity. Reads only what the app writes to
+  # the App Group; never links ExerlyCore or opens the database.
+  ExerlyWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ExerlyWidgets
+        type: syncedFolder
+        excludes:
+          - Info.plist
+      - path: Shared
+        type: syncedFolder
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: ExerlyWidgets/ExerlyWidgets.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: 9X79V37Q89
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: ExerlyWidgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Exerly
+        LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
+        MARKETING_VERSION: 1.0
+        PRODUCT_BUNDLE_IDENTIFIER: com.exerly.fitness.widgets
+        PRODUCT_NAME: $(TARGET_NAME)
+        SKIP_INSTALL: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Release:
+          PROVISIONING_PROFILE_SPECIFIER: $(EXERLY_WIDGETS_PROVISIONING_PROFILE)
   ExerlyTests:
     type: bundle.unit-test
     platform: iOS

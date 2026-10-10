@@ -1,0 +1,215 @@
+import ActivityKit
+import AppIntents
+import SwiftUI
+import WidgetKit
+
+/// The workout in progress on the Lock Screen, in StandBy and in the Dynamic
+/// Island: its name, elapsed time and sets done, and while resting a
+/// countdown ring with the next set. Its buttons run in the app's process.
+struct WorkoutLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
+            WorkoutLockScreenView(workoutID: context.attributes.workoutID, state: context.state,
+                                  rest: context.state.activeRest(isStale: context.isStale))
+                .activityBackgroundTint(WidgetPalette.surface)
+                .activitySystemActionForegroundColor(WidgetPalette.textPrimary)
+                .widgetURL(ExerlyLinks.train)
+        } dynamicIsland: { context in
+            let state = context.state
+            let rest = state.activeRest(isStale: context.isStale)
+            return DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    HStack(spacing: 8) {
+                        PulseMark(size: 22)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(state.title).font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.textPrimary)
+                            Text(timerInterval: state.elapsed, countsDown: false)
+                                .font(.caption.monospacedDigit()).foregroundStyle(WidgetPalette.textSecondary)
+                        }
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    }
+                    .padding(.leading, 4)
+                    .accessibilityElement(children: .combine)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(state.setsLabel).font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
+                            .foregroundStyle(WidgetPalette.textPrimary)
+                        Text("sets").font(.caption).foregroundStyle(WidgetPalette.textSecondary)
+                    }
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.trailing, 4)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(state.spokenSets)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    WorkoutActivityDetail(workoutID: context.attributes.workoutID, state: state, rest: rest, ringSize: 40)
+                        .padding(.horizontal, 4).padding(.top, 4)
+                }
+            } compactLeading: {
+                Group {
+                    if let rest { RestRing(rest: rest).frame(width: 18, height: 18) } else { PulseMark(size: 20) }
+                }
+                .padding(.leading, 2)
+            } compactTrailing: {
+                Group {
+                    if let rest {
+                        Text(timerInterval: rest.startedAt...rest.endsAt, countsDown: true)
+                            .foregroundStyle(WidgetPalette.accent)
+                            .accessibilityLabel("Rest")
+                    } else {
+                        Text(state.setsLabel).foregroundStyle(WidgetPalette.primaryText)
+                            .accessibilityLabel(state.spokenSets)
+                    }
+                }
+                .font(.system(.subheadline, design: .rounded, weight: .semibold)).monospacedDigit()
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: 52, alignment: .trailing)
+            } minimal: {
+                if let rest { RestRing(rest: rest).frame(width: 20, height: 20) } else { PulseMark(size: 18) }
+            }
+            .widgetURL(ExerlyLinks.train)
+            .keylineTint(WidgetPalette.primary)
+        }
+    }
+}
+
+/// The Lock Screen presentation, which StandBy shows enlarged.
+struct WorkoutLockScreenView: View {
+    let workoutID: UUID
+    let state: WorkoutActivityAttributes.ContentState
+    let rest: WorkoutActivityAttributes.Rest?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
+                PulseMark(size: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(state.title).font(.headline).foregroundStyle(WidgetPalette.textPrimary)
+                    HStack(spacing: 4) {
+                        Text(timerInterval: state.elapsed, countsDown: false).monospacedDigit()
+                        if let program = state.program { Text("· \(program)") }
+                    }
+                    .font(.caption).foregroundStyle(WidgetPalette.textSecondary)
+                }
+                .lineLimit(1).minimumScaleFactor(0.75)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(state.setsLabel).font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(WidgetPalette.textPrimary)
+                    Text("sets").font(.caption).foregroundStyle(WidgetPalette.textSecondary)
+                }
+                .lineLimit(1)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(state.spokenSets)
+            }
+            .accessibilityElement(children: .combine)
+            WorkoutActivityDetail(workoutID: workoutID, state: state, rest: rest, ringSize: 46)
+        }
+        .padding(16)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+}
+
+/// Rest with the next set and its buttons, or the next set ready to log.
+struct WorkoutActivityDetail: View {
+    let workoutID: UUID
+    let state: WorkoutActivityAttributes.ContentState
+    let rest: WorkoutActivityAttributes.Rest?
+    let ringSize: CGFloat
+
+    var body: some View {
+        if let rest {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    RestRing(rest: rest).frame(width: ringSize, height: ringSize)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Rest").font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.textSecondary)
+                        Text(timerInterval: rest.startedAt...rest.endsAt, countsDown: true)
+                            .font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
+                            .foregroundStyle(WidgetPalette.textPrimary)
+                    }
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .accessibilityElement(children: .combine)
+                    Spacer(minLength: 4)
+                    Button(intent: ExtendWorkoutRestIntent(workoutID: workoutID)) {
+                        ActivityButtonLabel(text: "+30 s", prominent: false)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add 30 seconds of rest")
+                    Button(intent: SkipWorkoutRestIntent(workoutID: workoutID)) {
+                        ActivityButtonLabel(text: "Skip", prominent: true)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Skip rest")
+                }
+                if let next = state.next {
+                    NextSetLine(next: next, eyebrow: "Next")
+                }
+            }
+        } else if let next = state.next {
+            HStack(spacing: 12) {
+                NextSetLine(next: next, eyebrow: "Up next")
+                Spacer(minLength: 4)
+                if next.isLoggable {
+                    Button(intent: CompleteWorkoutSetIntent(workoutID: workoutID, setID: next.setID)) {
+                        ActivityButtonLabel(text: "Complete set", systemImage: "checkmark", prominent: true)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Complete set \(next.number), \(next.exercise), \(next.spokenValues)")
+                }
+            }
+        } else {
+            Label("All sets done. Finish in Exerly.", systemImage: "checkmark.circle.fill")
+                .font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.success)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+    }
+}
+
+private struct NextSetLine: View {
+    let next: WorkoutActivityAttributes.NextSet
+    let eyebrow: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(eyebrow).font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.primaryText)
+            Text(next.line).font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.textPrimary)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(next.spokenLine)
+    }
+}
+
+private struct ActivityButtonLabel: View {
+    let text: String
+    var systemImage: String?
+    let prominent: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if let systemImage { Image(systemName: systemImage).font(.caption.weight(.bold)) }
+            Text(text).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(prominent ? Color.white : WidgetPalette.primaryText)
+        .padding(.horizontal, 12).frame(minHeight: 36)
+        .background(prominent ? WidgetPalette.actionFill : WidgetPalette.primary.opacity(0.2), in: Capsule())
+    }
+}
+
+/// The rest countdown as a ring that drains on its own.
+struct RestRing: View {
+    let rest: WorkoutActivityAttributes.Rest
+
+    var body: some View {
+        ProgressView(timerInterval: rest.startedAt...rest.endsAt, countsDown: true) {
+            EmptyView()
+        } currentValueLabel: {
+            EmptyView()
+        }
+        .progressViewStyle(.circular)
+        .tint(WidgetPalette.accent)
+        .accessibilityHidden(true)
+    }
+}
