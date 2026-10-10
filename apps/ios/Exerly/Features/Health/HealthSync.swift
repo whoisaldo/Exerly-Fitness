@@ -77,6 +77,9 @@ final class HealthSync: ObservableObject {
     private var foodRecords: [UUID: (entry: FoodEntry, record: HealthFoodRecord?)] = [:]
     private var foodFingerprints: [UUID: String] = [:]
     private var scheduled: Task<Void, Never>?
+    private var scheduledGeneration = 0
+    /// A write is waiting for its delay or still running.
+    var hasPendingWrite: Bool { scheduled != nil }
     private var rerun: (reading: Bool, pending: Bool, asked: Bool) = (false, false, false)
 
     static let writeCategories: [HealthCategory] = [.writeFood, .writeWeights, .writeWorkouts]
@@ -375,11 +378,18 @@ final class HealthSync: ObservableObject {
     private func scheduleWrites() {
         guard Self.writeCategories.contains(where: preferences.isOn) else { return }
         scheduled?.cancel()
+        scheduledGeneration += 1
+        let generation = scheduledGeneration
         scheduled = Task { [weak self, writeDelay] in
             try? await Task.sleep(for: writeDelay)
             guard !Task.isCancelled else { return }
             await self?.sync(reading: false)
+            self?.finishScheduled(generation)
         }
+    }
+
+    private func finishScheduled(_ generation: Int) {
+        if generation == scheduledGeneration { scheduled = nil }
     }
 
     // MARK: Health changes

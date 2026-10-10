@@ -38,10 +38,15 @@ final class HealthSyncTests: XCTestCase {
         return workspace
     }
 
-    /// Waits for scheduled writes and any sync in flight to finish.
+    /// Waits for scheduled writes and any sync in flight to finish. A change
+    /// reaches the sync through an observation hop and the write delay, which
+    /// a busy machine can stretch, so wait on the sync's own state.
     private func settle() async throws {
-        try await Task.sleep(for: .milliseconds(80))
-        while sync.isSyncing { try await Task.sleep(for: .milliseconds(10)) }
+        try await Task.sleep(for: .milliseconds(200))
+        let deadline = Date().addingTimeInterval(5)
+        while (sync.isSyncing || sync.hasPendingWrite) && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
     }
 
     private func logFood(_ workspace: TrainingWorkspace, kcal: Double = 400, protein: Double = 30) throws -> FoodEntry {
@@ -49,9 +54,15 @@ final class HealthSyncTests: XCTestCase {
         return try workspace.nutrition.log(food, grams: 100, on: LocalDate(Date(), in: newYork), meal: "Lunch")
     }
 
+    /// A workout that ended now and started within today in New York: writes
+    /// cover records from the day a switch was turned on, so a test run just
+    /// after midnight mustn't start it the day before.
     private func finishWorkout(_ workspace: TrainingWorkspace) throws -> WorkoutSession {
-        let session = WorkoutSession(name: "Synthetic pull", startedAt: Date().addingTimeInterval(-3600), endedAt: Date(),
-                                     timeZone: newYork)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = newYork
+        let now = Date()
+        let start = max(now.addingTimeInterval(-3600), calendar.startOfDay(for: now).addingTimeInterval(1))
+        let session = WorkoutSession(name: "Synthetic pull", startedAt: start, endedAt: now, timeZone: newYork)
         try workspace.store.importSessions([session])
         return session
     }

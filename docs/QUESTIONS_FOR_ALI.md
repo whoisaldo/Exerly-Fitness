@@ -133,3 +133,17 @@ Choose one:
    goes.
 
 Until you choose, nothing changes. Production doesn't run the new API yet.
+
+## 2026-10-10 (Claude): one portal step for Home Screen widgets
+
+The Today and Next workout widgets need an App Group so they can read what the
+app writes. Apple's App Store Connect API can't create App Groups, so this one
+step needs you in the developer portal (Account Holder or Admin), about a minute:
+
+1. Certificates, Identifiers & Profiles → Identifiers → + → App Groups.
+2. Description "Exerly", identifier `group.com.exerly.fitness` → Register.
+
+That's all. I'll enable the capability on `com.exerly.fitness` and the widgets
+extension, and regenerate the App Store profiles, through the API. Nothing is
+blocked meanwhile: the workout Live Activity and Dynamic Island don't need it,
+and the widgets ship once the group exists.
