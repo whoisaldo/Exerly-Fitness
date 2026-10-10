@@ -197,7 +197,10 @@ class ExerlyUITestCase: XCTestCase {
             // A keyboard or Exerly's keypad covers the content under it, and a
             // drag that starts on the system keyboard swipe-types into the
             // focused field. Keypad keys are what a person taps there.
-            let keypadKey = element.identifier.hasPrefix("exerly.keypad") || element.identifier.hasPrefix("training.keypad")
+            // Reading a missing element's identifier is a test failure, and
+            // XCTest then stops delivering drags, so read it from a snapshot.
+            let identifier = element.exists ? (try? element.snapshot())?.identifier ?? "" : ""
+            let keypadKey = identifier.hasPrefix("exerly.keypad") || identifier.hasPrefix("training.keypad")
             let keyboardTop = keypadKey ? .infinity : self.keyboardTop(in: app)
             // Under a keyboard with a Done key, put the keyboard away, as a
             // person would, instead of scrolling content that can't move far enough.
