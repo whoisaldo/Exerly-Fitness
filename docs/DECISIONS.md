@@ -645,3 +645,14 @@ nutrients from Today is 6 (ring, Nutrient goals, two pins, back twice)
 against 7 or more (More, Dashboard, Add or Remove Nutrients, two toggles,
 Save, Save); from a nutrient's page a pin is one tap. Unpinning from Today is
 3 (the pinned nutrient, its pin, Done) against the same 7.
+
+## 2026-10-10: Today's macros read as what's left
+
+A code-blind run read "645 kcal left" on the ring but "75 / 132 g" for
+protein and had to work out the 57 g left. Protein, carbs and fat now lead
+with what's left, "57 g left", or "12 g over" in the ring's over colour once
+a whole gram past the target, with eaten and target under the bar. Pinned
+nutrients read the same way: "16 g to go" or "2,091 mg left" first (a limit
+passed is in the warning colour), then "8.9 / 25 g", counted to the bound the
+standing refers to, then the completeness line. VoiceOver hears the same
+order, "57 grams left, 75 of 132 grams eaten".

@@ -381,6 +381,14 @@ public struct NutrientProgress: Sendable, Hashable {
     /// Entries that don't report it, so the total may be low.
     public var unreported: Int
     public var target: Double?
+
+    public init(nutrient: Nutrient, consumed: Double, unreported: Int, target: Double?) {
+        self.nutrient = nutrient
+        self.consumed = consumed
+        self.unreported = unreported
+        self.target = target
+    }
+
     /// The target minus consumed, never below zero; nil without a target.
     public var remaining: Double? { target.map { max(0, $0 - consumed) } }
     /// Consumed minus the target when above it, else zero; nil without a target.

@@ -211,27 +211,40 @@ struct TodayNutritionCard: View {
     }
 
     static func number(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
+
+    /// What's left of a target, or how far past it, as the ring says it:
+    /// ("57", "left") until a whole unit over, then ("12", "over").
+    static func left(_ progress: NutrientProgress) -> (amount: String, words: String, over: Bool) {
+        let over = (progress.over ?? 0).rounded() > 0
+        return (number(over ? progress.over ?? 0 : progress.remaining ?? 0), over ? "over" : "left", over)
+    }
 }
 
+/// A macro as the ring reads calories: what's left first, or how far over,
+/// then what's eaten of the target.
 struct TodayMacroLine: View {
     let title: String
     let progress: NutrientProgress
     let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        let left = TodayNutritionCard.left(progress)
+        let eaten = TodayNutritionCard.number(progress.consumed), target = TodayNutritionCard.number(progress.target ?? 0)
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
                 Spacer(minLength: ExSpacing.small)
-                let consumed = Text(TodayNutritionCard.number(progress.consumed)).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
-                let target = Text(" / \(TodayNutritionCard.number(progress.target ?? 0)) g").font(.exCaption).foregroundStyle(Color.exTextMuted)
-                Text("\(consumed)\(target)")
+                let amount = Text(left.amount).font(.exStatSmall).foregroundStyle(left.over ? Color.exAccent : Color.exTextPrimary)
+                let words = Text(" g \(left.words)").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text("\(amount)\(words)").monospacedDigit()
             }
             ExProgressBar(value: progress.consumed, total: progress.target ?? 0, color: color)
+            Text("\(eaten) / \(target) g").font(.exSmall).monospacedDigit().foregroundStyle(Color.exTextMuted)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue("\(TodayNutritionCard.number(progress.consumed)) of \(TodayNutritionCard.number(progress.target ?? 0)) grams")
+        .accessibilityValue("\(left.amount) grams \(left.words), \(eaten) of \(target) grams eaten")
+        .accessibilityIdentifier("today.macro.\(title.lowercased())")
     }
 }
 

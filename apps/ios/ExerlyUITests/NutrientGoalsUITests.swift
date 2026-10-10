@@ -60,8 +60,11 @@ final class NutrientGoalsUITests: ExerlyUITestCase {
         XCTAssertTrue(fiber.waitForExistence(timeout: 10))
         XCTAssertTrue(sodium.exists)
         // Today: yogurt and chicken don't report fiber; berries and oats do.
-        XCTAssertTrue((fiber.value as? String ?? "").contains("to go, From 2 of 4 foods that report it"), fiber.value as? String ?? "")
-        XCTAssertTrue((sodium.value as? String ?? "").contains("left, From 3 of 4 foods that report it"), sodium.value as? String ?? "")
+        // Each reads like a macro: what's left first, then what's eaten of the goal.
+        XCTAssertEqual(fiber.value as? String, "19 grams to go, 8.9 of 28 grams eaten, From 2 of 4 foods that report it")
+        XCTAssertEqual(sodium.value as? String, "2,091 milligrams left, 209 of 2,300 milligrams eaten, From 3 of 4 foods that report it")
+        let protein = app.descendants(matching: .any)["today.macro.protein"]
+        XCTAssertEqual(protein.value as? String, "66 grams left, 84 of 150 grams eaten")
         let plan = try await waitForPlan(token: person.token) { ($0["pinnedNutrients"] as? [String])?.count == 2 }
         XCTAssertEqual(plan["pinnedNutrients"] as? [String], ["fiber", "sodium"])
     }
