@@ -22,7 +22,6 @@ private struct PreferencesEditor: View {
     @State private var showReplaceConfirmation = false
     @State private var foodExpanded = false
     @State private var trainingExpanded = false
-    @State private var sleepExpanded = false
     @State private var remindersExpanded = false
     @State private var editTask: Task<Void, Never>?
 
@@ -167,7 +166,8 @@ private struct PreferencesEditor: View {
         Section("About you") {
             field("name")
             field("age", keyboard: .numberPad)
-            field("gender")
+            picker("gender", choices: [("female", "Female"), ("male", "Male"), ("nonbinary", "Nonbinary"),
+                                        ("other", "Other or prefer not to say")])
             picker("unitSystem", choices: [("metric", "Metric, kg and cm"), ("imperial", "U.S., lb and inches")])
             field("height", label: "Height (\(fields["unitSystem"] == "imperial" ? "in" : "cm"))", keyboard: .decimalPad)
             picker("activityLevel", choices: [
@@ -176,7 +176,7 @@ private struct PreferencesEditor: View {
             ])
             field("timezone")
             Button("Use device time zone") { store.edit("timezone", value: TimeZone.current.identifier) }
-            Text("Log new weight readings in Progress. Review nutrition goals and accepted targets in Nutrition Program.")
+            Text("Weigh in from Today or Progress. Calorie and macro targets live in Profile, under Your plan.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
     }
@@ -185,7 +185,6 @@ private struct PreferencesEditor: View {
             DisclosureGroup("Food preferences", isExpanded: $foodExpanded) {
                 field("dietaryStyle")
                 field("allergies", multiline: true)
-                field("mealsPerDay", keyboard: .numberPad)
                 Text("Enter one allergy per line. Check food labels when choosing products.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
@@ -197,8 +196,7 @@ private struct PreferencesEditor: View {
                 picker("experienceLevel", choices: [("beginner", "Beginner"), ("intermediate", "Intermediate"), ("advanced", "Advanced")])
                 picker("equipmentAccess", choices: [("bodyweight", "Bodyweight"), ("home", "Home"), ("full_gym", "Gym")])
                 field("equipment", multiline: true)
-                field("activityTypes", multiline: true)
-                Text("Enter one item or activity per line.").font(.subheadline).foregroundStyle(.secondary)
+                Text("Enter one item per line.").font(.subheadline).foregroundStyle(.secondary)
                 field("workoutDaysPerWeek", keyboard: .numberPad)
                 ForEach(PreferenceFields.days, id: \.self) { day in
                     Toggle(day.capitalized, isOn: Binding(get: {
@@ -215,14 +213,8 @@ private struct PreferencesEditor: View {
         }
     }
     private var sleepSection: some View {
-        Section {
-            DisclosureGroup("Sleep preferences", isExpanded: $sleepExpanded) {
-                field("sleepGoalHours", keyboard: .decimalPad)
-                field("bedtime", keyboard: .numbersAndPunctuation)
-                field("wakeTime", keyboard: .numbersAndPunctuation)
-                Text("Use 24-hour times such as 22:30. Preferred times do not create sleep entries.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
+        Section("Sleep") {
+            field("sleepGoalHours", keyboard: .decimalPad)
         }
     }
     private var remindersSection: some View {

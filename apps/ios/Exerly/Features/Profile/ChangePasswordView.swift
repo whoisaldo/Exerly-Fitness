@@ -9,80 +9,63 @@ struct ChangePasswordView: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var showSuccess = false
+    @FocusState private var focus: Field?
+
+    enum Field { case current, new, confirm }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    ExCard(accent: true) {
-                        ExEyebrow("Security", color: .exPrimaryText)
-                        Text("Use a password you don't use for other accounts.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    }
-                    GlassCard {
-                        VStack(spacing: 16) {
-                            secureField("Current Password", text: $currentPassword)
-                            secureField("New Password", text: $newPassword)
-                            secureField("Confirm New Password", text: $confirmPassword)
-                        }
-                    }
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.exCaption)
-                            .foregroundStyle(.exError)
-                    }
-
-                    if showSuccess {
-                        Text("Password changed successfully!")
-                            .font(.exCaption)
-                            .foregroundStyle(.exSuccess)
-                    }
-
-                    ActionButton(title: isSaving ? "Changing..." : "Change Password", variant: .primary) {
-                        Task { await changePassword() }
-                    }
-                    .disabled(isSaving || !isValid)
+            ExScreen {
+                Text("Use at least 8 characters, and a password you don't use anywhere else.")
+                    .font(.exBody).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: ExSpacing.small) {
+                    AuthField(title: "Current password", kind: .password, text: $currentPassword, field: Field.current,
+                              focus: $focus) { focus = .new }
+                    AuthField(title: "New password", kind: .newPassword, text: $newPassword, field: Field.new,
+                              focus: $focus) { focus = .confirm }
+                    AuthField(title: "Confirm new password", kind: .newPassword, text: $confirmPassword, field: Field.confirm,
+                              focus: $focus, submitLabel: .done) { focus = nil }
                 }
-                .padding(20)
+                if !confirmPassword.isEmpty && confirmPassword != newPassword {
+                    Label("The new passwords don't match yet.", systemImage: "exclamationmark.circle")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                }
+                if let errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.circle.fill").font(.exLabel).foregroundStyle(Color.exError)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if showSuccess {
+                    Label("Password changed", systemImage: "checkmark.circle.fill").font(.exLabel).foregroundStyle(Color.exSuccess)
+                }
+                Button {
+                    Task { await changePassword() }
+                } label: {
+                    HStack(spacing: ExSpacing.small) {
+                        if isSaving { ProgressView().tint(.white) }
+                        Text("Change password")
+                    }
+                }
+                .buttonStyle(ExActionStyle())
+                .disabled(isSaving || !isValid)
             }
-            .background(Color.exBackground)
-            .navigationTitle("Change Password")
+            .navigationTitle("Change password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .foregroundStyle(.exTextSecondary)
                 }
             }
         }
     }
 
     private var isValid: Bool {
-        !currentPassword.isEmpty && newPassword.count >= 6 && newPassword == confirmPassword
-    }
-
-    private func secureField(_ label: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.exLabel)
-                .foregroundStyle(.exTextSecondary)
-            SecureField("", text: text).accessibilityLabel(label)
-                .font(.exBody)
-                .foregroundStyle(.exTextPrimary)
-                .padding(12)
-                .background(Color.exSurface2)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
+        !currentPassword.isEmpty && newPassword.count >= 8 && newPassword == confirmPassword
     }
 
     private func changePassword() async {
-        guard isValid else {
-            errorMessage = newPassword.count < 6
-                ? "New password must be at least 6 characters"
-                : "Passwords don't match"
-            return
-        }
-
+        guard isValid else { return }
+        focus = nil
         isSaving = true
         errorMessage = nil
         showSuccess = false
@@ -96,8 +79,9 @@ struct ChangePasswordView: View {
                 )
             )
             showSuccess = true
-            try? await Task.sleep(for: .seconds(1.5))
-            await MainActor.run { dismiss() }
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            try? await Task.sleep(for: .seconds(1.2))
+            dismiss()
         } catch let error as APIError {
             errorMessage = error.errorDescription
         } catch {
