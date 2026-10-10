@@ -12,6 +12,7 @@ struct MacroFactorImportView: View {
     let timeZone: TimeZone
     @EnvironmentObject private var sync: SyncEngine
     @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .subheadline) private var stepSize = 28.0
     @State private var phase: Phase = .start
     @State private var choosing = false
 
@@ -136,7 +137,7 @@ struct MacroFactorImportView: View {
     private func step(_ number: Int, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.item) {
             Text("\(number)").font(.system(.subheadline, design: .rounded, weight: .bold)).foregroundStyle(Color.exPrimaryText)
-                .frame(width: 28, height: 28).background(Color.exPrimary.opacity(0.12), in: Circle())
+                .frame(width: stepSize, height: stepSize).background(Color.exPrimary.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
@@ -295,7 +296,7 @@ struct MacroFactorImportView: View {
             Text(count.new.formatted()).font(.exStatSmall).monospacedDigit()
                 .foregroundStyle(count.new > 0 ? Color.exTextPrimary : Color.exTextMuted)
         }
-        .padding(.vertical, ExSpacing.small).frame(minHeight: 44, alignment: .leading)
+        .padding(.vertical, ExSpacing.small).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Self.title(kind))
         .accessibilityValue([count.new.formatted() + " to add", detail.isEmpty ? nil : detail].compactMap { $0 }.joined(separator: ", "))
@@ -382,7 +383,7 @@ struct MacroFactorImportView: View {
 
     private func line(text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
-            Circle().fill(Color.exTextMuted).frame(width: 4, height: 4).accessibilityHidden(true)
+            Text("•").font(.exCaption).foregroundStyle(Color.exTextMuted).accessibilityHidden(true)
             Text(text).font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
         }
     }

@@ -237,6 +237,8 @@ struct MFReader {
                 export.report.sheets.append(.init(name: sheet.name, detail: reason, imported: false))
             } else if let table {
                 tables.append((role, table))
+            } else {
+                export.report.sheets.append(.init(name: sheet.name, detail: "\(role.title), empty", imported: false))
             }
         }
         for role in order {

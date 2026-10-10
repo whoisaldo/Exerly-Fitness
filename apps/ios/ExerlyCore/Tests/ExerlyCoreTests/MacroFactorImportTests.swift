@@ -345,9 +345,10 @@ import Testing
     }
 
     @Test func anEmptyOrForeignWorkbookImportsNothingAndSaysWhy() throws {
-        let export = try read([("Sheet1", [[.s("Colour"), .s("Shape")], [.s("red"), .s("round")]])])
+        let export = try read([("Sheet1", [[.s("Colour"), .s("Shape")], [.s("red"), .s("round")]]), ("Food Log", [])])
         #expect(export.isEmpty && export.dateRange == nil)
-        #expect(export.report.sheets == [.init(name: "Sheet1", detail: "Not recognised as MacroFactor data.", imported: false)])
+        #expect(export.report.sheets == [.init(name: "Sheet1", detail: "Not recognised as MacroFactor data.", imported: false),
+                                         .init(name: "Food Log", detail: "Food log, empty", imported: false)])
     }
 }
 
