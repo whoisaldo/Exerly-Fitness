@@ -2,8 +2,8 @@ import ExerlyCore
 import SwiftUI
 
 extension View {
-    /// Keeps the workout's Live Activity and the widgets' snapshot in step
-    /// with the open account, and clears both at sign-out.
+    /// Keeps the workout's Live Activity, the widgets' snapshot and the watch
+    /// in step with the open account, and clears them at sign-out.
     func liveSurfaces(_ account: AppAccountWorkspace, signedOut: Bool, unit: MassUnit, timeZone: TimeZone) -> some View {
         modifier(LiveSurfacesMount(account: account, workspace: account.training, signedOut: signedOut,
                                    unit: unit, timeZone: timeZone))
@@ -25,6 +25,10 @@ private struct LiveSurfacesMount: ViewModifier {
                 guard let workspace else { return }
                 await WorkoutActivityCoordinator.shared.follow(workspace.store, unit: unit)
             }
+            .task(id: "\(workspace?.identity.uuidString ?? "")-\(unit)-\(timeZone.identifier)") {
+                guard let workspace else { return }
+                await WatchCoordinator.shared.follow(workspace, unit: unit, timeZone: timeZone)
+            }
             // Coming back to the app may be on a new day.
             .task(id: "\(workspace?.identity.uuidString ?? "")-\(unit)-\(timeZone.identifier)-\(scenePhase == .active)") {
                 guard let workspace else { return }
@@ -34,6 +38,7 @@ private struct LiveSurfacesMount: ViewModifier {
                 guard signedOut else { return }
                 await WorkoutActivityCoordinator.shared.endAll()
                 WidgetSnapshotWriter.clear()
+                WatchCoordinator.shared.signOut()
             }
             #if DEBUG
             .overlay(alignment: .topLeading) {

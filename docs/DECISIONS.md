@@ -555,3 +555,50 @@ Lock Screen controls.
 - The controls read nothing from the App Group, so they ship ungated.
 - The search intent is "Search foods" so it doesn't read like "Log a food" in
   Shortcuts; its control keeps the tab's name, "Log food".
+
+## 2026-10-10: The Watch app draws the phone's workout and sends commands
+
+The first Watch app (`ExerlyWatch`, `com.exerly.fitness.watchkitapp`, watchOS 26) starts today's workout, logs sets in one tap with the Digital Crown for
+reps and weight, runs rest with +30 s and Skip, and shows live heart rate. The
+phone stays the source of truth: `WatchCoordinator` publishes the watch's
+view of the workout as WatchConnectivity's application context and runs the
+watch's commands with the store calls the screens use, opening the account's
+workspace just for the command when the watch wakes the app in the
+background. The watch never links ExerlyCore or opens the database. Both
+sides share small versioned JSON types in `Shared/WatchWorkout.swift`. The
+phone sends each exercise's loadable weights from the gym's increments, so the
+Crown steps through the same weights the phone's steppers do.
+
+Commands keep their order: one message at a time while the phone is
+reachable, otherwise `transferUserInfo`, and once one goes as a transfer the
+rest follow it. Each carries an ID the phone remembers, so a message that
+timed out and was resent as a transfer runs once. The phone's state names the
+last command it handled, and the watch shows that state with its later
+commands applied the way the phone will apply them (a unit test checks the two
+agree), so a tap shows at once even with the phone out of reach.
+
+Health gets one workout. The watch records an `HKWorkoutSession` with
+`HKLiveWorkoutBuilder` (traditional strength training) for live heart rate and
+activity credit, and tells the phone once Health is collecting; the phone then
+marks that workout written instead of saving its own. I chose that over
+relying on the sync identifier alone: HealthKit documents that a save replaces
+an object with the same `HKMetadataKeySyncIdentifier` and a lower
+`HKMetadataKeySyncVersion`, but not whether that matching spans sources, and
+the watch app is its own source. Even if it does, the phone saves later with a
+higher version, so its bare workout would replace the watch's one with heart
+rate and energy. The watch's workout still carries the phone's record ID and
+sync identifier, so the phone can remove it when the session is deleted and a
+late duplicate can still collapse. It's saved only with the Workouts switch on
+and at least one set done; otherwise it's discarded. Finishing with no set
+done discards the workout on the phone too, instead of saving an empty one.
+Known gaps: if the watch's notice is still queued when the workout is
+finished on the phone, both may save; if the watch's save fails after it
+started recording, Health gets none.
+
+Not in this slice: complications, which need a watch-side App Group Ali hasn't
+registered (QUESTIONS_FOR_ALI.md), and a standalone mode
+(`WKRunsIndependentlyOfCompanionApp` is NO). Release builds sign the watch
+app with its own App Store profile (`asc.mjs provision watch`, HealthKit),
+which `release.sh` installs and `release_checks.py` verifies like the
+widgets'. `apps/ios/scripts/watch-uitest.sh` runs the watch's UI test beside a
+phone UI test on a paired pair of simulators.

@@ -12,10 +12,11 @@ import { execFileSync } from 'node:child_process';
 const origin = 'https://api.appstoreconnect.apple.com';
 const bundle = 'com.exerly.fitness';
 const teamID = '9X79V37Q89';
-/** What `provision` can sign for: the app, and its widgets and Live Activity extension. */
+/** What `provision` can sign for: the app, its widgets and Live Activity extension, and its watch app. */
 export const provisionTargets = {
   app: { bundle, name: 'Exerly', capabilities: ['HEALTHKIT', 'APPLE_ID_AUTH'] },
   widgets: { bundle: `${bundle}.widgets`, name: 'Exerly Widgets', capabilities: [] },
+  watch: { bundle: `${bundle}.watchkitapp`, name: 'Exerly Watch', capabilities: ['HEALTHKIT'] },
 };
 const groupName = 'Exerly Internal · Ali';
 const keyID = '4Z7KFJ8DWZ';
@@ -63,16 +64,17 @@ export function requiredCapabilityBodies(bundleID, types = provisionTargets.app.
   } }));
 }
 
-export function supportsRequiredCapabilities(entitlements) {
-  return entitlements?.['com.apple.developer.healthkit'] === true &&
-    Array.isArray(entitlements?.['com.apple.developer.applesignin']) &&
-    entitlements['com.apple.developer.applesignin'].includes('Default');
+export function supportsRequiredCapabilities(entitlements, types = provisionTargets.app.capabilities) {
+  return types.every(type => type === 'HEALTHKIT' ? entitlements?.['com.apple.developer.healthkit'] === true
+    : type === 'APPLE_ID_AUTH' ? Array.isArray(entitlements?.['com.apple.developer.applesignin']) &&
+      entitlements['com.apple.developer.applesignin'].includes('Default')
+    : false);
 }
 
 /** A profile fits a target when it signs that bundle and carries the target's capabilities. */
 export function profileFits(target, entitlements) {
   if (entitlements?.['application-identifier'] !== `${teamID}.${target.bundle}`) return false;
-  return target.capabilities.length === 0 || supportsRequiredCapabilities(entitlements);
+  return supportsRequiredCapabilities(entitlements, target.capabilities);
 }
 
 function profileEntitlements(profileContent) {
@@ -155,8 +157,7 @@ async function provision(request, target = provisionTargets.app) {
       certificates: { data: [{ type: 'certificates', id: certificateID }] } } } })).data;
   if (!profile.attributes.profileContent) profile = (await request(`/v1/profiles/${profile.id}`)).data;
   if (!profileFits(target, profileEntitlements(profile.attributes.profileContent))) {
-    throw new Error(target.capabilities.length ? 'The profile must include HealthKit and Sign in with Apple'
-      : `The profile must sign ${bundle}`);
+    throw new Error(`The profile must sign ${bundle}${target.capabilities.length ? ` with ${target.capabilities.join(' and ')}` : ''}`);
   }
   const output = join(homedir(), 'private_keys/exerly-distribution');
   await mkdir(output, { recursive: true, mode: 0o700 });
@@ -196,7 +197,7 @@ async function main() {
   const target = command === 'provision' ? provisionTargets[argument ?? 'app'] : undefined;
   if (!['status', 'provision', 'internal'].includes(command) || (buildNumber && !/^\d+$/.test(buildNumber))
       || (command === 'provision' && !target)) {
-    throw new Error('Usage: node asc.mjs [status|provision [app|widgets]|internal [build-number]]');
+    throw new Error('Usage: node asc.mjs [status|provision [app|widgets|watch]|internal [build-number]]');
   }
   const request = await client();
   if (command === 'provision') return provision(request, target);

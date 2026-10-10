@@ -125,6 +125,45 @@ class ReleaseChecksTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             checks.validate_profile(profile, checks.WIDGETS)
 
+    def test_watch_profile_needs_its_own_bundle_and_healthkit(self):
+        from datetime import datetime, timedelta, timezone
+        profile = {
+            "UUID": "test-watch", "TeamIdentifier": ["9X79V37Q89"],
+            "ExpirationDate": datetime.now(timezone.utc) + timedelta(days=30),
+            "Entitlements": {"application-identifier": "9X79V37Q89.com.exerly.fitness.watchkitapp",
+                             "get-task-allow": False, "com.apple.developer.healthkit": True},
+        }
+        checks.validate_profile(profile, checks.WATCH)
+        for bundle in [checks.BUNDLE, checks.WIDGETS]:
+            with self.subTest(bundle=bundle), self.assertRaises(ValueError):
+                checks.validate_profile(profile, bundle)
+        for key, value in [("com.apple.developer.healthkit", False), ("get-task-allow", True)]:
+            invalid = copy.deepcopy(profile)
+            invalid["Entitlements"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                checks.validate_profile(invalid, checks.WATCH)
+
+    def test_signed_watch_app_is_exerlys_with_healthkit_and_no_debugging(self):
+        signed = {"application-identifier": "9X79V37Q89.com.exerly.fitness.watchkitapp",
+                  "com.apple.developer.healthkit": True}
+        checks.validate_watch_signature(signed)
+        for key, value in [("application-identifier", "9X79V37Q89.com.exerly.fitness"),
+                           ("com.apple.developer.healthkit", None), ("get-task-allow", True)]:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                checks.validate_watch_signature({**signed, key: value})
+
+    def test_watch_app_matches_exerlys_version_and_runs_workouts(self):
+        info = {"CFBundleIdentifier": "com.exerly.fitness.watchkitapp", "WKCompanionAppBundleIdentifier": "com.exerly.fitness",
+                "CFBundleShortVersionString": "1.0", "CFBundleVersion": "2610061200",
+                "WKBackgroundModes": ["workout-processing"],
+                "NSHealthShareUsageDescription": "Read heart rate during workouts.",
+                "NSHealthUpdateUsageDescription": "Save workouts."}
+        checks.validate_watch(info, "1.0", "2610061200")
+        for key, value in [("CFBundleVersion", "1"), ("WKCompanionAppBundleIdentifier", "other.app"),
+                           ("WKBackgroundModes", []), ("NSHealthShareUsageDescription", "")]:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                checks.validate_watch({**info, key: value}, "1.0", "2610061200")
+
     def test_profile_decoding_is_isolated_and_cleans_up_on_rejection(self):
         for rejected in [False, True]:
             calls = []

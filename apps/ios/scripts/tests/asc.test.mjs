@@ -68,3 +68,14 @@ test('each provisioning target accepts only a profile for its own bundle and cap
   assert.equal(profileFits(provisionTargets.app, widgets), false);
   assert.deepEqual(requiredCapabilityBodies('X', provisionTargets.widgets.capabilities), []);
 });
+
+test('the watch app needs its own profile with HealthKit, and not Apple sign-in', () => {
+  const watch = { 'application-identifier': '9X79V37Q89.com.exerly.fitness.watchkitapp', 'com.apple.developer.healthkit': true };
+  assert.equal(provisionTargets.watch.bundle, 'com.exerly.fitness.watchkitapp');
+  assert.equal(profileFits(provisionTargets.watch, watch), true);
+  assert.equal(profileFits(provisionTargets.watch, { ...watch, 'com.apple.developer.healthkit': false }), false);
+  assert.equal(profileFits(provisionTargets.watch, { ...watch, 'application-identifier': '9X79V37Q89.com.exerly.fitness' }), false);
+  assert.equal(profileFits(provisionTargets.app, watch), false, 'The app still needs Apple sign-in');
+  assert.deepEqual(requiredCapabilityBodies('X', provisionTargets.watch.capabilities).map(r => r.data.attributes.capabilityType),
+    ['HEALTHKIT']);
+});

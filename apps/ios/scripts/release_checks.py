@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 BUNDLE = "com.exerly.fitness"
 WIDGETS = "com.exerly.fitness.widgets"
+WATCH = "com.exerly.fitness.watchkitapp"
 TEAM = "9X79V37Q89"
 
 
@@ -55,19 +56,36 @@ def validate_metadata(info, privacy, version, build, internal_staging=False):
 
 
 def validate_profile(profile, bundle=BUNDLE):
-    """An App Store profile for `bundle`; the app's must carry HealthKit and Sign in with Apple."""
+    """An App Store profile for `bundle`. The app's must carry HealthKit and Sign in with Apple, the watch app's HealthKit."""
     entitlements = profile.get("Entitlements", {})
     require(profile.get("TeamIdentifier") == [TEAM], "Profile team mismatch")
     require(entitlements.get("application-identifier") == f"{TEAM}.{bundle}", "Profile is for another app")
     require(entitlements.get("get-task-allow") is False, "Profile allows debugging")
-    if bundle == BUNDLE:
+    if bundle in (BUNDLE, WATCH):
         require(entitlements.get("com.apple.developer.healthkit") is True, "Profile lacks HealthKit")
+    if bundle == BUNDLE:
         require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Profile lacks Sign in with Apple")
     require(not profile.get("ProvisionedDevices") and not profile.get("ProvisionsAllDevices"),
             "Profile is not for App Store distribution")
     expiry = profile.get("ExpirationDate")
     require(isinstance(expiry, datetime), "Profile expiry missing")
     require(expiry.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc), "Expired profile")
+
+
+def validate_watch(info, version, build):
+    """The embedded watch app belongs to Exerly and matches its version, as App Store Connect requires."""
+    for key, expected in [("CFBundleIdentifier", WATCH), ("WKCompanionAppBundleIdentifier", BUNDLE),
+                          ("CFBundleShortVersionString", version), ("CFBundleVersion", build)]:
+        require(info.get(key) == expected, f"Unexpected watch {key}")
+    require("workout-processing" in info.get("WKBackgroundModes", []), "Watch app can't run workouts")
+    for key in ["NSHealthShareUsageDescription", "NSHealthUpdateUsageDescription"]:
+        require(bool(info.get(key, "").strip()), f"Missing watch {key}")
+
+
+def validate_watch_signature(entitlements):
+    require(entitlements.get("application-identifier") == f"{TEAM}.{WATCH}", "Watch signature identity mismatch")
+    require(entitlements.get("com.apple.developer.healthkit") is True, "Signed watch app lacks HealthKit")
+    require(not entitlements.get("get-task-allow", False), "Signed watch app allows debugging")
 
 
 def read_profile(path):
@@ -103,6 +121,9 @@ def main():
     binary = subprocess.run(["strings", str(app / "Exerly")], capture_output=True, text=True, check=True).stdout
     for marker in ["--ui-testing", "EXERLY_TEST_STORE_ID", "EXERLY_TEST_LEGACY_TOKEN", "EXERLY_TEST_ACCOUNT_CONTROLS"]:
         require(marker not in binary, f"Debug fixture marker in release binary: {marker}")
+    watch = app / "Watch/ExerlyWatch.app"
+    require(watch.is_dir(), "Watch app missing")
+    validate_watch(plistlib.loads((watch / "Info.plist").read_bytes()), args.version, args.build)
     if not args.unsigned:
         validate_profile(read_profile(app / "embedded.mobileprovision"))
         subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
@@ -121,6 +142,10 @@ def main():
         extension = plistlib.loads(raw) if raw.strip() else {}
         require(extension.get("application-identifier") == f"{TEAM}.{WIDGETS}", "Widgets signature identity mismatch")
         require(not extension.get("get-task-allow", False), "Signed widgets allow debugging")
+        validate_profile(read_profile(watch / "embedded.mobileprovision"), WATCH)
+        raw = subprocess.run(["codesign", "-d", "--entitlements", ":-", str(watch)],
+                             capture_output=True, check=True).stdout
+        validate_watch_signature(plistlib.loads(raw) if raw.strip() else {})
     print(f"Verified Exerly {args.version} ({args.build}); {'unsigned' if args.unsigned else 'signed'} archive")
 
 

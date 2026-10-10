@@ -96,6 +96,11 @@ final class HealthSync: ObservableObject {
     var isAvailable: Bool { client.isAvailable }
     var anyOn: Bool { !preferences.enabledAt.isEmpty }
 
+    /// Whether an account writes workouts to Health, open or not.
+    func writesWorkouts(accountID: String) -> Bool {
+        (accountID == self.accountID ? preferences : loadPreferences(accountID)).isOn(.writeWorkouts)
+    }
+
     // MARK: Account
 
     /// Follows the open account. Called on every launch and account change.
@@ -316,7 +321,16 @@ final class HealthSync: ObservableObject {
             }
         case .workout:
             let records = workspace.store.history.sessions.compactMap(HealthWorkoutRecord.init(session:))
-            return try await apply(state.ledger.changes(for: records, since: start), workspace: workspace, batch: 1) {
+            var changes = state.ledger.changes(for: records, since: start)
+            // The watch saved these itself, with heart rate and energy.
+            let watched = changes.write.filter { WatchHealthWorkouts.contains($0.id, defaults: defaults) }
+            if !watched.isEmpty {
+                changes.write.removeAll { WatchHealthWorkouts.contains($0.id, defaults: defaults) }
+                changes.remove.removeAll { id in watched.contains { $0.id == id } }
+                state.ledger.wrote(watched)
+                saveState(workspace)
+            }
+            return try await apply(changes, workspace: workspace, batch: 1) {
                 try await self.client.saveWorkout($0[0])
             }
         }
