@@ -173,6 +173,7 @@ enum MFColumns {
 
     /// "82.5", "82,5", "1,234.5", "1.234,5", "15 %" and "6+".
     static func number(_ text: String) -> Double? {
+        if let value = Double(text), value.isFinite { return value }
         var text = text.filter { !$0.isWhitespace }
         while let last = text.last, last == "%" || last == "+" { text.removeLast() }
         let commas = text.filter { $0 == "," }.count

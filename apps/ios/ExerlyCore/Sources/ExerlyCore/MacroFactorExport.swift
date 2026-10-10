@@ -118,8 +118,9 @@ public struct MacroFactorExport: Sendable {
     }
 
     /// Maps a spreadsheet's sheets. Times have no zone, so they are read in
-    /// `timeZone`; weights without a unit are read in `unit`; slashed dates
-    /// that don't say their order follow `locale`.
+    /// `timeZone`. Weights without a unit are read in kilograms, as MacroFactor
+    /// exports them; distances without one in `unit`'s system. Slashed dates
+    /// that don't show their order follow `locale`.
     public init(_ spreadsheet: Spreadsheet, timeZone: TimeZone, unit: MassUnit, library: ExerciseLibrary = .bundled,
                 locale: Locale = .current, now: Date = Date()) {
         var reader = MFReader(timeZone: timeZone, unit: unit, library: library, locale: locale, now: now.roundedToMilliseconds)
@@ -712,7 +713,7 @@ struct MFReader {
         var occurrences: [String: Int] = [:]
         var used = 0
         if columns.has(.weight), table.headers[columns.fields[.weight]!]?.unit == nil {
-            assume("Weights in \(table.sheet) have no unit, so they were read in \(unit == .kilograms ? "kg" : "lb").")
+            assume("Weights in \(table.sheet) have no unit, so they were read in kg, as MacroFactor exports them.")
         }
         for row in table.rows {
             guard let date = date(row, columns, table) else {
@@ -722,11 +723,7 @@ struct MFReader {
             var usedRow = false
             // A weigh-in.
             if let column = columns.fields[.weight], let value = MFColumns.number(row[column]), value > 0 {
-                let unit: MassUnit = switch table.headers[column]?.unit {
-                case .kg: .kilograms
-                case .lb: .pounds
-                default: self.unit
-                }
+                let unit: MassUnit = table.headers[column]?.unit == .lb ? .pounds : .kilograms
                 let seconds = seconds(row, columns)
                 var bodyFat = MFColumns.number(columns.value(.bodyFat, row)).flatMap { $0 > 0 ? $0 : nil }
                 if let fat = bodyFat, fat < 1 {
@@ -861,7 +858,8 @@ struct MFReader {
                 skip(table, row, "\(start): targets need calories, protein, carbs and fat")
                 continue
             }
-            let text = MFColumns.text(columns.value(.weekday, row)).map(MFColumns.key)
+            var text = MFColumns.text(columns.value(.weekday, row)).map(MFColumns.key)
+            if let day = text, ["all", "all days", "every day", "everyday", "daily"].contains(day) { text = nil }
             let weekday = text.flatMap { Self.weekdays[$0] }
             if text != nil, weekday == nil { skip(table, row, "\(start): an unknown weekday"); continue }
             if versions[start] == nil { order.append(start) }
@@ -953,8 +951,7 @@ struct MFReader {
                 var kind = Self.setKind(kindText)
                 if kind == nil { unknownKinds = true; kind = .standard; kindText = nil }
                 let load = columns.fields[.load].flatMap { column in
-                    MFColumns.number(row[column]).flatMap { $0 > 0 ? Mass($0, table.headers[column]?.unit == .lb ? .pounds
-                        : table.headers[column]?.unit == .kg ? .kilograms : unit) : nil }
+                    MFColumns.number(row[column]).flatMap { $0 > 0 ? Mass($0, table.headers[column]?.unit == .lb ? .pounds : .kilograms) : nil }
                 }
                 let reps = MFColumns.number(columns.value(.reps, row)).flatMap { $0 >= 1 && $0 < 10_000 ? Int($0.rounded()) : nil }
                 let duration = columns.fields[.duration].flatMap { MFColumns.duration(row[$0], unit: table.headers[$0]?.unit) }

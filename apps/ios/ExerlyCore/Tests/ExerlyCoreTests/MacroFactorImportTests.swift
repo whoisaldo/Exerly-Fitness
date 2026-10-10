@@ -317,6 +317,33 @@ import Testing
         #expect(nutrition.entries.count == 8 && nutrition.weights.count == 4, "The other kinds were")
     }
 
+    @Test func yearsOfHistoryImportInOnePass() throws {
+        // Three years: four foods a day, a weigh-in most days, totals for the rest.
+        let start = LocalDate("2023-10-01")!
+        var foodLog: [[TestCell]] = [MacroFactorFixture.header(["Date", "Time", "Food Name", "Serving Weight (g)", "Calories (kcal)",
+                                                                "Protein (g)", "Carbs (g)", "Fat (g)", "Sodium (mg)"])]
+        var weights: [[TestCell]] = [MacroFactorFixture.header(["Date", "Weight (kg)"])]
+        for offset in 0..<1095 {
+            let serial = MacroFactorFixture.serial(start.adding(days: offset))
+            for meal in 0..<4 {
+                foodLog.append([.date(serial), .time(Double(7 + meal * 4) / 24), .s("Synthetic food \(offset % 40)"), .n(150),
+                                .n(400), .n(30), .n(40), .n(12), .n(300)])
+            }
+            if offset % 5 != 0 { weights.append([.date(serial), .n(84 - Double(offset) * 0.004)]) }
+        }
+        let (_, nutrition, training) = try stores()
+        let clock = ContinuousClock()
+        let started = clock.now
+        let export = try read([("Food Log", foodLog), ("Scale Weight", weights)])
+        let plan = MacroFactorImport(export, nutrition: nutrition, training: training)
+        #expect(plan.save(nutrition: nutrition, training: training).failures.isEmpty)
+        let elapsed = clock.now - started
+        #expect(nutrition.entries.count == 4380 && nutrition.weights.count == 876 && nutrition.days.count == 1095)
+        #expect(elapsed < .seconds(30), "Took \(elapsed)")
+        #expect(MacroFactorImport(try read([("Food Log", foodLog), ("Scale Weight", weights)]), nutrition: nutrition, training: training)
+            .steps.isEmpty)
+    }
+
     @Test func anEmptyOrForeignWorkbookImportsNothingAndSaysWhy() throws {
         let export = try read([("Sheet1", [[.s("Colour"), .s("Shape")], [.s("red"), .s("round")]])])
         #expect(export.isEmpty && export.dateRange == nil)

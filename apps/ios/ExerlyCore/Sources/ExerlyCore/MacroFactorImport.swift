@@ -59,8 +59,9 @@ public struct MacroFactorImport {
             if new { summary.counts[kind, default: .init()].new += 1 } else { summary.counts[kind, default: .init()].existing += 1 }
         }
 
+        let foodIDs = Set(nutrition.foods.map(\.id))
         for food in export.foods {
-            let new = nutrition.food(food.id) == nil
+            let new = !foodIDs.contains(food.id)
             if new { foods.append(food) }
             count(.foods, new: new)
         }
@@ -75,8 +76,9 @@ public struct MacroFactorImport {
         summary.replacedDayTotals = removedTotals.count
 
         var covered = 0
+        let logged = Dictionary(grouping: nutrition.entries, by: \.date)
         for total in export.dayTotals {
-            let others = nutrition.entries(on: total.date).contains { $0.id != total.id }
+            let others = (logged[total.date] ?? []).contains { $0.id != total.id }
             let new = !entryIDs.contains(total.id) && !others
             if new { totals.append(total) }
             if others && !entryIDs.contains(total.id) { covered += 1 }
@@ -97,9 +99,10 @@ public struct MacroFactorImport {
         }
 
         let weightIDs = Set(nutrition.weights.map(\.id))
+        let weighed = Dictionary(grouping: nutrition.weights, by: \.date)
         for weight in export.weights {
             let new = !weightIDs.contains(weight.id)
-                && !nutrition.weights(on: weight.date).contains { abs($0.weight.kilograms - weight.weight.kilograms) < 0.1 }
+                && !(weighed[weight.date] ?? []).contains { abs($0.weight.kilograms - weight.weight.kilograms) < 0.1 }
             if new { weights.append(weight) }
             count(.weights, new: new)
         }
@@ -180,10 +183,6 @@ public struct MacroFactorImport {
         for document in documents {
             if let payload = document.payload { try nutrition.validate(kind: kind, id: document.id, payload: payload) }
         }
-        var publish: [() -> Void] = []
-        try nutrition.persistence.performAtomically {
-            publish = try documents.map { try nutrition.prepareWrite(kind: kind, id: $0.id, payload: $0.payload) }
-        }
-        publish.forEach { $0() }
+        try nutrition.writeAll(kind: kind, documents)
     }
 }
