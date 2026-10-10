@@ -55,6 +55,7 @@ struct RootView: View {
         .environmentObject(authVM)
         .environmentObject(sync)
         .environmentObject(account)
+        .healthSync(account.training, timeZone: authVM.currentUser?.timezone)
         .disabled(account.isChangingAccount)
         .overlay {
             if account.isChangingAccount {

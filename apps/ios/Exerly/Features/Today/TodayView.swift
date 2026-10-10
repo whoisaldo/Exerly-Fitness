@@ -467,6 +467,7 @@ struct TodayView: View {
                 HStack(spacing: ExSpacing.small) { footerLinks }
                 VStack(alignment: .leading, spacing: 0) { footerLinks }
             }
+            HealthActivityLine(accountID: workspace.accountID, date: date, timeZone: timeZone)
             if let engine = workspace.sync, case .offline = engine.state {
                 Label("Saved on this device · Offline", systemImage: "wifi.slash").font(.exCaption).foregroundStyle(Color.exTextSecondary)
             } else if let engine = workspace.sync, case .failed = engine.state {
