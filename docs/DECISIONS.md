@@ -301,6 +301,7 @@ Profile → Foods & recipes. The status menu ("In progress") became a single
 "Mark this day complete" control, because complete days are what the
 expenditure estimate uses. The week strip is the last seven days, so yesterday
 is always one tap away.
+
 ## 2026-10-09: Today's workout starts from the Train tab without questions
 
 Train → Start begins the active program's next workout in two taps from the
@@ -352,6 +353,7 @@ its unused achievement service are removed: badges for activity are the
 motivational filler the brief rules out, and the space goes to analytics that
 explain why numbers move. The SwiftData `Achievement` model stays in the stored
 schema until a schema migration removes it.
+
 ## 2026-10-09: Food search logs in one tap
 
 Each food in search has a "+" that logs it at once and keeps the search open,
@@ -422,6 +424,7 @@ simulation are unchanged within 2 kcal and 0.001 % a week. The public API is
 unchanged; `Parameters` gains `unloggedBalance` (500) and `unloggedDrift` (30),
 and the API's JavaScript port and golden file follow. See
 docs/design/007-nutrition.md.
+
 ## 2026-10-09: A logged row keeps its check, and a second tap takes it back
 
 From the usability run: food search's "+" turned back into "+" two seconds

@@ -5,6 +5,7 @@ Rewrite this file each iteration and keep it under 80 lines. See `docs/AGENT_BRI
 ## Since the last TestFlight build (2610091628, Today + weigh-ins + logger)
 
 Landing on integration now, then a TestFlight upload:
+
 - Food search redesign (2 taps for a usual food from anywhere, Undo, compact portion
   sheet, search tab) and 16 fixes from a code-blind usability run.
 - Progress: Body | Nutrition | Training | Photos, with nutrition analytics (counted
@@ -43,8 +44,8 @@ background work (`sleep 1200` with run_in_background).
 
 ## Merge status
 
-| Branch | Unlanded | Last landed |
-| --- | --- | --- |
+| Branch      | Unlanded                                | Last landed        |
+| ----------- | --------------------------------------- | ------------------ |
 | claude/next | ~90 commits, all helper branches merged | landing 2026-10-09 |
 
 ## Risks

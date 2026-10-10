@@ -204,6 +204,7 @@ Most fitness apps bolt a chatbot onto the home screen. Exerly does the opposite.
    - a weekly review.
 
    Chat exists but is never the home screen.
+
 5. **Honest evidence.** Label claims (human RCT, observational, mechanism, anecdote). Say
    when data is n=1, confounded or too short. Make no medical claims. No streak confetti and
    no motivational filler.
@@ -337,6 +338,7 @@ Exerly is a Sideband product: Ali's studio, https://sideband.studio, GitHub org
    - anything legal.
 
    Decide everything else yourself and log it in docs/DECISIONS.md.
+
 5. **Leave the rest of devbox1 alone.**
    - Don't touch other repos (health-dashboard/Ascension, Eternal Monitor).
    - Don't touch running services: 8741, 18789, 8646, 3773/3774, 11434.
