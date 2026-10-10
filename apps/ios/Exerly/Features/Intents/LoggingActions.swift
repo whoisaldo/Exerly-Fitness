@@ -159,10 +159,29 @@ enum LoggingActions {
         return store.food(foodID).flatMap { $0.archivedAt == nil ? store.quickPortion(for: $0, unit: account.unit) : nil }
     }
 
-    /// A usual food's one-tap log, into the meal for this time. Servings
-    /// count the food's serving when it was logged by one, else multiples
-    /// of the usual amount.
-    static func logFood(_ foodID: String, servings: Double?, in account: IntentAccess.Account, now: Date = .now) throws -> String {
+    /// The person's own foods, for Spotlight: recently logged, then saved
+    /// foods and recipes, each once with the portion one tap logs.
+    static func ownFoods(in account: IntentAccess.Account) -> [QuickPortion] {
+        let store = account.store
+        let saved = store.foods.filter { $0.archivedAt == nil }.compactMap { store.quickPortion(for: $0, unit: account.unit) }
+        var seen = Set<String>()
+        return (store.recentPortions(limit: 100) + saved).filter { seen.insert($0.id).inserted }
+    }
+
+    /// Today's first Log again chip for a time of day, logged into `meal`:
+    /// a meal reminder's Log usual button.
+    static func logUsual(_ meal: String, at time: Date, in account: IntentAccess.Account) throws -> String {
+        guard let usual = suggested(account, now: time).first else {
+            throw LoggingIntentError.invalid("There's no usual \(meal == "Snacks" ? "snack" : meal.lowercased()) to log. Search for it in Exerly.")
+        }
+        return try logFood(usual.food.foodID, servings: nil, meal: meal, in: account, now: time)
+    }
+
+    /// A usual food's one-tap log, into the meal given or the one for this
+    /// time. Servings count the food's serving when it was logged by one,
+    /// else multiples of the usual amount.
+    static func logFood(_ foodID: String, servings: Double?, meal: String? = nil, in account: IntentAccess.Account,
+                        now: Date = .now) throws -> String {
         guard var portion = portion(of: foodID, in: account, now: now) else {
             throw LoggingIntentError.invalid("That food isn't in your recent or saved foods. Search for it in Exerly.")
         }
@@ -176,23 +195,23 @@ enum LoggingActions {
             }
         }
         let store = account.store, today = LocalDate(now, in: account.timeZone)
-        let meal = store.suggestedMeal(at: now, timeZone: account.timeZone)
+        let meal = meal ?? store.suggestedMeal(at: now, timeZone: account.timeZone)
         let entry = try store.log(portion, on: today, meal: meal)
         return sentences("Logged \(entry.food.name), \(NutritionFormat.portion(entry, unit: account.unit)), to \(meal).",
                          left(store, today))
     }
 
-    /// Today's repeat button: the last time in the past week the meal was
-    /// logged, copied to today. Like Today, only into a meal still empty, so
-    /// running it twice doesn't log the meal twice.
-    static func repeatMeal(_ meal: String?, in account: IntentAccess.Account, now: Date = .now) throws -> String {
+    /// Today's repeat button: the last time in the past week (or `days`
+    /// days) the meal was logged, copied to today. Like Today, only into a
+    /// meal still empty, so running it twice doesn't log the meal twice.
+    static func repeatMeal(_ meal: String?, within days: Int = 7, in account: IntentAccess.Account, now: Date = .now) throws -> String {
         let store = account.store, zone = account.timeZone, today = LocalDate(now, in: zone)
         let meal = meal ?? store.suggestedMeal(at: now, timeZone: zone)
         guard !store.entries(on: today).contains(where: { $0.meal == meal }) else {
             return "\(meal) already has food today, so nothing was repeated."
         }
-        guard let repeated = store.repeatable(meal, for: today) else {
-            return "There's no \(meal.lowercased()) in the last week to repeat."
+        guard let repeated = store.repeatable(meal, for: today, within: days) else {
+            return "There's no \(meal.lowercased()) \(days == 1 ? "from yesterday" : "in the last week") to repeat."
         }
         let copied = try store.apply(repeated, to: today)
         var day = "yesterday"

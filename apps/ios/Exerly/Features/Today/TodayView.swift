@@ -242,6 +242,10 @@ struct TodayView: View {
             destination = .scan(currentMeal)
         } else if link == ExerlyLinks.weighIn {
             destination = .weighIn
+        } else if let id = ExerlyLinks.foodID(in: link),
+                  let portion = LoggingActions.portion(of: id, in: IntentAccess.Account(workspace: workspace, unit: unit, timeZone: timeZone)) {
+            date = today
+            destination = .log(FoodSuggestion(portion, meal: currentMeal))
         }
         self.link = nil
     }

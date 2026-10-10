@@ -767,3 +767,55 @@ order, "57 grams left, 75 of 132 grams eaten".
 - **Progress's section picker is a bar.** Each tab scrolls under it, with the
   system's edge effect and an inset that starts content below it, instead of
   being cut off at its edge.
+
+## 2026-10-10: Reminder buttons and a weigh-in reminder
+
+Meal reminders carry buttons for their meal: Log usual breakfast, Repeat
+yesterday's breakfast and Search. The meal is named when the reminder is
+scheduled, from its time, as `suggestedMeal(at:timeZone:)` names it: by the
+account's habit once its data is open (reminders are rescheduled when it
+opens), else by the clock (`NutritionStore.meal(atMinute:)`). The title can't
+change after delivery, so the button logs into the meal it names. Log usual
+logs Today's first Log again chip for the reminder's time of day; Repeat
+copies yesterday's meal only, because the button says yesterday (Today's
+repeat button still reaches back a week), and only into an empty meal. Search
+opens food search, and a workout reminder's Start workout follows the Start
+workout intent's link. A new weigh-in reminder (`reminders.weighIn`,
+`reminderTimes.weighIn`, set in Profile like the others and allowed by the
+API) takes the weight typed into the notification, in the person's unit,
+with either decimal mark and an optional "lb" or "kg"; the range check and
+its message are the weigh-in sheet's. Tapping it opens a weigh-in.
+
+Logging buttons run in the background through the intents' actions and ask
+for an unlocked phone, as the intents do. A silent notification then says
+what was saved in the intents' words ("Logged Blueberries, 80 g, to
+Breakfast. 1,934 kcal left today."), or, titled "Nothing was logged", why
+not: signed out, no usual food, a bad number, or a reminder left by another
+account (its ID's owner prefix doesn't match). Each replaces the last. It
+doesn't update the delivered reminder, because re-adding a request with a
+repeating reminder's ID would replace its schedule. Sign-out removes
+delivered notifications.
+
+Taps from a banner or the Lock Screen: a usual breakfast is 2 (hold, Log
+usual breakfast); a weigh-in is 2 (hold, which opens the weight field because
+it is the reminder's only button, type, Log).
+
+## 2026-10-10: The person's foods in Spotlight
+
+`FoodEntity` is an `IndexedEntity`, indexed with `indexAppEntities`, the
+iOS 18+ way that lets Spotlight hand a result back to an `OpenIntent`. Only
+the person's own foods are indexed: the 100 most recently logged and their
+saved foods and recipes, not archived ones and never the food database. The
+index follows the library through `Observations` while the app runs, is
+rebuilt each time the account's data opens, and is emptied at sign-out and
+account deletion.
+
+Spotlight decides what choosing a result does, and on iOS 26 it splits the
+way I'd choose anyway. A food the Log a food shortcut offers (usual now, or
+one of the 30 most recent) shows as that shortcut: a tap logs the remembered
+portion and Spotlight shows the sentence it logged ("Logged Greek yogurt,
+plain, 170 g, to Breakfast. 1,856 kcal left today."), 1 tap after typing.
+Other indexed foods, saved foods and recipes never logged or logged long ago,
+run `OpenFoodIntent`, which opens the portion sheet over Today (at the last
+portion, else the first serving): 2 taps after typing. A portion just logged
+is safe to repeat without looking; a first serving is a guess worth seeing.

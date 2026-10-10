@@ -79,7 +79,7 @@ function validate(changes) {
     else if (key === 'reminders') {
       if (
         !object(value) ||
-        Object.keys(value).some((name) => !['meals', 'workouts', 'sleep'].includes(name))
+        Object.keys(value).some((name) => !['meals', 'workouts', 'sleep', 'weighIn'].includes(name))
       )
         throw badRequest('Choose valid reminder preferences');
       result[key] = Object.fromEntries(
@@ -91,7 +91,7 @@ function validate(changes) {
     } else if (key === 'reminderTimes') {
       if (
         !object(value) ||
-        Object.keys(value).some((name) => !['meals', 'workout', 'sleep'].includes(name))
+        Object.keys(value).some((name) => !['meals', 'workout', 'sleep', 'weighIn'].includes(name))
       )
         throw badRequest('Choose valid reminder times');
       result[key] = {};

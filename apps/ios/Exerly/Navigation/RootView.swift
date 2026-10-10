@@ -78,6 +78,8 @@ struct RootView: View {
             // Phrases that name a usual food are built from the account's foods.
             ExerlyShortcuts.updateAppShortcutParameters()
             await SetupWeighIn.recordIfPending(workspace)
+            // Meal reminders name the meal the account usually logs at their time.
+            await NotificationService.shared.reschedule()
         }
         .task(id: authVM.accountsAwaitingLocalCleanup) {
             await account.retryCleanup(auth: authVM)

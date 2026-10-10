@@ -99,6 +99,9 @@ struct MainTabView: View {
                 Task { await workspace.synchronize() }
             }
             selectedTab = .training
+        case _ where ExerlyLinks.foodID(in: url) != nil:
+            selectedTab = .today
+            todayLink = url
         default: break
         }
         links.pending = nil

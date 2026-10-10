@@ -245,7 +245,7 @@ private struct PreferencesEditor: View {
     private var remindersSection: some View {
         Section {
             DisclosureGroup("Reminder preferences", isExpanded: $remindersExpanded) {
-                ForEach(["meals", "workouts", "sleep"], id: \.self) { kind in
+                ForEach(["meals", "workouts", "sleep", "weighIn"], id: \.self) { kind in
                     Toggle(PreferenceFields.label("reminders.\(kind)"), isOn: enabled("reminders.\(kind)"))
                         .accessibilityIdentifier("preferences.reminders.\(kind)")
                         .tint(.exPrimaryText)
@@ -253,6 +253,7 @@ private struct PreferencesEditor: View {
                 field("reminderTimes.meals", multiline: true)
                 field("reminderTimes.workout", keyboard: .numbersAndPunctuation)
                 field("reminderTimes.sleep", keyboard: .numbersAndPunctuation)
+                field("reminderTimes.weighIn", keyboard: .numbersAndPunctuation)
                 Text("Use 24-hour times, one meal time per line. These are your shared preferences. Notification delivery is enabled separately on each device.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }

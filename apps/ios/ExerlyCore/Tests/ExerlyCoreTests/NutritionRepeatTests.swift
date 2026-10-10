@@ -37,7 +37,10 @@ import Testing
         let expected = [(6, "Breakfast"), (10, "Breakfast"), (11, "Lunch"), (15, "Snacks"), (18, "Dinner"), (22, "Snacks"), (2, "Snacks")]
         for (hour, meal) in expected {
             #expect(nutrition.suggestedMeal(at: at(friday, hour), timeZone: newYork) == meal, "at \(hour):00")
+            #expect(NutritionStore.meal(atMinute: hour * 60) == meal, "The clock alone, at \(hour):00")
         }
+        #expect(NutritionStore.meal(atMinute: 10 * 60 + 29) == "Breakfast")
+        #expect(NutritionStore.meal(atMinute: 21 * 60 + 30) == "Snacks")
     }
 
     @Test func aMealsUsualTimeIsWhenItsFirstFoodIsUsuallyLogged() throws {

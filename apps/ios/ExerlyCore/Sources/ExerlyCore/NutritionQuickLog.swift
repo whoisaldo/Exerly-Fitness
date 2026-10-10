@@ -31,6 +31,14 @@ public struct QuickPortion: Sendable, Hashable, Identifiable {
     public var nutrients: NutrientAmounts { food.per100g.scaled(by: grams / 100) }
 }
 
+extension FoodSuggestion {
+    /// A portion offered for a meal, with the amount one tap logs.
+    public init(_ portion: QuickPortion, meal: String) {
+        self.init(food: portion.food, meal: meal, grams: portion.grams, serving: portion.serving,
+                  quantity: portion.quantity, days: 0)
+    }
+}
+
 extension NutritionStore {
     /// The portion one tap logs for `food`. With history, the amount last
     /// logged for it (see `rememberedEntry`); a saved food uses its current label, and a repeated
@@ -98,8 +106,7 @@ extension NutritionStore {
     /// Logs a portion as a new entry.
     @discardableResult
     public func log(_ portion: QuickPortion, on date: LocalDate, meal: String, at time: Date? = nil) throws -> FoodEntry {
-        try log(FoodSuggestion(food: portion.food, meal: meal, grams: portion.grams, serving: portion.serving,
-                               quantity: portion.quantity, days: 0), on: date, meal: meal, at: time)
+        try log(FoodSuggestion(portion, meal: meal), on: date, meal: meal, at: time)
     }
 
     /// The latest weighed entry of a food at the amount it was logged at:

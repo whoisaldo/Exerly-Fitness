@@ -46,7 +46,14 @@ extension NutritionStore {
             .max(by: { ($0.value.count, $1.key) < ($1.value.count, $0.key) }) {
             return habit.key
         }
-        switch now {
+        return Self.meal(atMinute: now)
+    }
+
+    /// The meal the clock alone suggests at a minute of the local day, before
+    /// any habit: breakfast from 4:00, lunch from 10:30 to 14:30, dinner from
+    /// 17:00 to 21:30, and snacks otherwise.
+    public nonisolated static func meal(atMinute minute: Int) -> String {
+        switch minute {
         case 4 * 60..<(10 * 60 + 30): return "Breakfast"
         case (10 * 60 + 30)..<(14 * 60 + 30): return "Lunch"
         case (17 * 60)..<(21 * 60 + 30): return "Dinner"
