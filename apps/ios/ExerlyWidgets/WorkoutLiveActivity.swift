@@ -30,6 +30,7 @@ struct WorkoutLiveActivity: Widget {
                     }
                     .padding(.leading, 4)
                     .accessibilityElement(children: .combine)
+                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 0) {
@@ -41,11 +42,14 @@ struct WorkoutLiveActivity: Widget {
                     .padding(.trailing, 4)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(state.spokenSets)
+                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    // Clear of the island's rounded corners.
+                    // Clear of the island's rounded corners. The island's regions have fixed
+                    // heights, so their text stops growing at extra large.
                     WorkoutActivityDetail(workoutID: context.attributes.workoutID, state: state, rest: rest, ringSize: 40)
                         .padding(.horizontal, 10).padding(.top, 4)
+                        .dynamicTypeSize(...DynamicTypeSize.xLarge)
                 }
             } compactLeading: {
                 Group {
@@ -122,49 +126,65 @@ struct WorkoutActivityDetail: View {
 
     var body: some View {
         if let rest {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 12) {
-                    RestRing(rest: rest).frame(width: ringSize, height: ringSize)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Rest").font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.textSecondary)
-                        Text(timerInterval: rest.startedAt...rest.endsAt, countsDown: true)
-                            .monospacedDigit().font(.title2).fontWeight(.bold).fontDesign(.rounded)
-                            .foregroundStyle(WidgetPalette.textPrimary)
+            // At large text sizes the next set gives way to the countdown.
+            ViewThatFits(in: .vertical) {
+                VStack(alignment: .leading, spacing: 6) {
+                    restRow(rest)
+                    if let next = state.next {
+                        NextSetLine(next: next, eyebrow: "Next", inline: true)
                     }
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .accessibilityElement(children: .combine)
-                    Spacer(minLength: 4)
-                    Button(intent: ExtendWorkoutRestIntent(workoutID: workoutID)) {
-                        ActivityButtonLabel(text: "+30 s", prominent: false)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add 30 seconds of rest")
-                    Button(intent: SkipWorkoutRestIntent(workoutID: workoutID)) {
-                        ActivityButtonLabel(text: "Skip", prominent: true)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Skip rest")
                 }
-                if let next = state.next {
-                    NextSetLine(next: next, eyebrow: "Next", inline: true)
-                }
+                restRow(rest)
             }
         } else if let next = state.next {
-            HStack(spacing: 12) {
-                NextSetLine(next: next, eyebrow: "Up next")
-                Spacer(minLength: 4)
-                if next.isLoggable {
-                    Button(intent: CompleteWorkoutSetIntent(workoutID: workoutID, setID: next.setID)) {
-                        ActivityButtonLabel(text: "Complete set", systemImage: "checkmark", prominent: true)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Complete set \(next.number), \(next.exercise), \(next.spokenValues)")
-                }
+            // At large text sizes the button shortens so the set stays whole.
+            ViewThatFits(in: .horizontal) {
+                nextRow(next, button: "Complete set")
+                nextRow(next, button: "Log")
             }
         } else {
             Label("All sets done. Finish in Exerly.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.success)
                 .lineLimit(1).minimumScaleFactor(0.7)
+        }
+    }
+
+    private func nextRow(_ next: WorkoutActivityAttributes.NextSet, button: String) -> some View {
+        HStack(spacing: 12) {
+            NextSetLine(next: next, eyebrow: "Up next")
+            Spacer(minLength: 4)
+            if next.isLoggable {
+                Button(intent: CompleteWorkoutSetIntent(workoutID: workoutID, setID: next.setID)) {
+                    ActivityButtonLabel(text: button, systemImage: "checkmark", prominent: true)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Complete set \(next.number), \(next.exercise), \(next.spokenValues)")
+            }
+        }
+    }
+
+    private func restRow(_ rest: WorkoutActivityAttributes.Rest) -> some View {
+        HStack(spacing: 12) {
+            RestRing(rest: rest).frame(width: ringSize, height: ringSize)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Rest").font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.textSecondary)
+                Text(timerInterval: rest.startedAt...rest.endsAt, countsDown: true)
+                    .monospacedDigit().font(.title2).fontWeight(.bold).fontDesign(.rounded)
+                    .foregroundStyle(WidgetPalette.textPrimary)
+            }
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 4)
+            Button(intent: ExtendWorkoutRestIntent(workoutID: workoutID)) {
+                ActivityButtonLabel(text: "+30 s", prominent: false)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add 30 seconds of rest")
+            Button(intent: SkipWorkoutRestIntent(workoutID: workoutID)) {
+                ActivityButtonLabel(text: "Skip", prominent: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Skip rest")
         }
     }
 }

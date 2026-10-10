@@ -21,6 +21,12 @@ final class LiveActivityUITests: ExerlyUITestCase {
         tap(app.buttons["Skip rest"], in: app)
         XCTAssertTrue(wait(activity, for: "active Pull 1/3"), "Rest skipped: \(activity.value ?? "")")
 
+        // The activity and the Next workout widget link to Train, wherever the app was.
+        tap(app.buttons["Today"], in: app)
+        XCTAssertTrue(app.scrollViews["today.screen"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.system.open(URL(string: "exerly://train")!)
+        XCTAssertTrue(app.buttons["training.finish"].waitForExistence(timeout: 10), "exerly://train opens the workout")
+
         tap(app.buttons["training.finish"], in: app)
         tap(app.buttons["Save workout"], in: app)
         XCTAssertTrue(wait(activity, for: "none"), "Ended with the workout: \(activity.value ?? "")")
@@ -48,10 +54,6 @@ final class LiveActivityUITests: ExerlyUITestCase {
         XCTAssertTrue(wait(activity, for: "active Pull 1/3 resting"))
 
         lockAndWake()
-        // iOS asks once whether to keep showing Exerly's Live Activities.
-        let allow = springboard.buttons["Allow"]
-        if allow.waitForExistence(timeout: 3) { allow.tap() }
-        pause(1)
         captureScreen("live-01-lock-rest")
         unlock()
         XCUIDevice.shared.press(.home)
@@ -107,9 +109,15 @@ final class LiveActivityUITests: ExerlyUITestCase {
     /// Locks the simulator, then wakes it to the Lock Screen.
     private func lockAndWake() {
         XCUIDevice.shared.perform(NSSelectorFromString("pressLockButton"))
-        Thread.sleep(forTimeInterval: 1.5)
+        pause(1.5)
         XCUIDevice.shared.press(.home)
-        Thread.sleep(forTimeInterval: 2.5)
+        pause(2.5)
+        // iOS asks, at first and again later, whether to keep showing Exerly's Live Activities.
+        let allow = springboard.buttons.matching(NSPredicate(format: "label IN %@", ["Allow", "Always Allow"])).firstMatch
+        if allow.exists {
+            allow.tap()
+            pause(1)
+        }
     }
 
     /// Swipes up from the bottom edge; the simulator has no passcode.

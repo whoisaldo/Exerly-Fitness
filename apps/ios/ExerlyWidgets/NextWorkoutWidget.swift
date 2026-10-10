@@ -110,9 +110,10 @@ struct NextWorkoutWidgetView: View {
     @ViewBuilder private func detail(_ workout: WidgetSnapshot.Workout) -> some View {
         switch workout {
         case .active(let active):
+            // A timer text takes all the width it's offered, so it goes last.
             HStack(spacing: 4) {
+                Text("\(active.completedSets)/\(active.totalSets) sets ·")
                 Text(timerInterval: active.startedAt...active.startedAt.addingTimeInterval(12 * 3600), countsDown: false)
-                Text("· \(active.completedSets)/\(active.totalSets) sets")
             }
             .monospacedDigit()
         case .done(let done, _):
