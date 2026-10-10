@@ -25,6 +25,8 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "design-04-training")
         openFoodLibrary(app)
         capture(app, "design-05-library")
+        // Return Profile to its root, where the library was pushed.
+        tap(app.navigationBars.buttons["Profile"], in: app)
         tap(app.buttons["Progress"], in: app)
         capture(app, "design-06-progress")
         tap(app.buttons["Profile"], in: app)
@@ -132,7 +134,8 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["nutrition.libraryCreate"], in: app)
         capture(app, "design-food-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
-        tap(app.buttons["Profile"], in: app)
+        // The library is pushed inside Profile, so its back button is also "Profile".
+        tap(app.navigationBars.buttons["Profile"], in: app)
         tap(app.buttons["profile.preferences"], in: app)
         capture(app, "design-preferences")
     }
@@ -254,14 +257,12 @@ final class ProductionUITests: ExerlyUITestCase {
         dismissPhotoPickerIntroduction(in: app)
         // The opt-in simulator has two freshly imported geometric PNGs first.
         let libraryPhotos = app.images.matching(identifier: "PXGGridLayout-Info")
-        XCTAssertTrue(libraryPhotos.element(boundBy: 0).waitForExistence(timeout: 10))
-        libraryPhotos.element(boundBy: 0).tap()
+        choosePickerPhoto(libraryPhotos.element(boundBy: 0), in: app)
         let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "progress.photo."))
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         tap(app.buttons["progress.addPhoto"], in: app)
         dismissPhotoPickerIntroduction(in: app)
-        XCTAssertTrue(libraryPhotos.element(boundBy: 1).waitForExistence(timeout: 10))
-        libraryPhotos.element(boundBy: 1).tap()
+        choosePickerPhoto(libraryPhotos.element(boundBy: 1), in: app)
         XCTAssertTrue(photos.element(boundBy: 1).waitForExistence(timeout: 10))
         XCTAssertEqual(photos.count, 2)
         capture(app, "design-photos-populated")
@@ -1786,7 +1787,8 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["training.addExercise"], in: app)
         let search = app.searchFields.firstMatch
         tap(search, in: app)
-        search.typeText("barbell bench press")
+        // Search, as on a small phone, where the keyboard covers the results.
+        search.typeText("barbell bench press\n")
         tap(app.buttons["Add Barbell Bench Press"], in: app)
         replace(app.textFields["set.barbell-bench-press.1.load"], with: "40.5", in: app)
         capture(app, "design-training-keypad")
@@ -1810,7 +1812,7 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["training.start"], in: app)
         tap(app.buttons["training.addExercise"], in: app)
         tap(app.searchFields.firstMatch, in: app)
-        app.searchFields.firstMatch.typeText("barbell bench press")
+        app.searchFields.firstMatch.typeText("barbell bench press\n")
         tap(app.buttons["Add Barbell Bench Press"], in: app)
         XCTAssertTrue(app.buttons["Previous: 40.5 kg × 8 reps"].exists)
         tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
@@ -2500,27 +2502,22 @@ final class ProductionUITests: ExerlyUITestCase {
             throw XCTSkip("Opt-in phone footage capture; run brag-output/record-phone.py")
         }
         fixtureURL = "http://127.0.0.1:39003"
-        let email = "phone-film-\(UUID().uuidString.lowercased())@exerly.test"
-        let signup = try await request("POST", "/signup", body: ["email": email, "password": "Simulator-Test-123!", "name": "Morgan"])
-        let token = try XCTUnwrap(signup["token"] as? String)
-        _ = try await request("POST", "/api/onboarding/complete", body: [
-            "name": "Morgan", "age": 34, "gender": "female", "sex": "female", "height": 167.5, "weight": 72.25,
-            "goal": "maintain", "activityLevel": "light", "unitSystem": "metric", "timezone": "America/New_York"
-        ], token: token)
-        let initialSummary = try await request("GET", "/api/summary", token: token)
-        let today = try XCTUnwrap(initialSummary["date"] as? String)
-        let formatter = DateFormatter(); formatter.dateFormat = "yyyy-MM-dd"; formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        let yesterday = formatter.string(from: try XCTUnwrap(formatter.date(from: today)).addingTimeInterval(-86400))
-        _ = try await request("POST", "/api/food", body: ["name": "Chicken & avocado bowl", "calories": 520,
-            "protein": 38, "carbs": 48, "fat": 19, "fiber": 8, "sugar": 4, "mealType": "lunch",
-            "servingSize": "1 bowl", "servings": 1, "source": "manual", "entry_date": yesterday], token: token)
+        let person = try await createAccount(prefix: "phone-film")
+        // Yesterday's lunch, so today's is waiting in the meal's recent foods.
+        let bowl = UUID().uuidString
+        let per100g: [String: Double] = ["energy": 130, "protein": 9.5, "carbohydrate": 12, "fat": 4.75, "fiber": 2, "sugars": 1]
+        let serving: [String: Any] = ["name": "1 bowl", "grams": 400]
+        _ = try await request("PUT", "/v1/documents/saved_food/\(bowl)", body: ["base_revision": 0, "payload": [
+            "id": bowl, "name": "Chicken & avocado bowl", "source": "custom", "per100g": per100g,
+            "servings": [serving], "favorite": false, "createdAt": "2026-10-01T12:00:00.000Z"] as [String: Any]], token: person.token)
+        let yesterday = Self.day(-1)
+        let lunchID = UUID().uuidString
+        _ = try await request("PUT", "/v1/documents/food_entry/\(lunchID)", body: ["base_revision": 0, "payload": [
+            "id": lunchID, "date": yesterday.date, "meal": "Lunch", "loggedAt": Self.iso(yesterday.at.addingTimeInterval(5 * 3600)),
+            "food": ["foodID": bowl, "name": "Chicken & avocado bowl", "source": "custom", "per100g": per100g],
+            "grams": 400, "serving": serving, "quantity": 1] as [String: Any]], token: person.token)
         let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 20))
+        signIn(app, email: person.email)
         func mark(_ phase: String) {
             print("EXERLY_BRAG \(phase) \(Date().timeIntervalSince1970)")
             fflush(stdout)
@@ -2529,37 +2526,54 @@ final class ProductionUITests: ExerlyUITestCase {
         try await Task.sleep(for: .seconds(4))
         mark("diary"); capture(app, "brag-phone-diary")
         try await Task.sleep(for: .seconds(3))
-        tap(app.buttons["diary.add.lunch"], in: app)
-        let meal = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Chicken & avocado bowl")).firstMatch
+        tap(app.buttons["nutrition.add.lunch"], in: app)
+        let meal = app.buttons["nutrition.food.\(bowl)"]
         XCTAssertTrue(meal.waitForExistence(timeout: 10))
         mark("recents"); capture(app, "brag-phone-recents")
         try await Task.sleep(for: .seconds(3))
         tap(meal, in: app)
+        let servings = app.textFields["Number of servings"]
+        XCTAssertTrue(servings.waitForExistence(timeout: 10))
         mark("serving"); capture(app, "brag-phone-serving")
         try await Task.sleep(for: .seconds(3))
-        replace(app.textFields["Number of servings"], with: "1.5", in: app)
+        replace(servings, with: "1.5", in: app)
         dismissKeyboard(app)
         mark("quantity"); capture(app, "brag-phone-quantity")
         try await Task.sleep(for: .seconds(3))
-        reveal(app.buttons["Log Food"], in: app)
         mark("save")
-        tap(app.buttons["Log Food"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        reveal(app.buttons["Edit Chicken & avocado bowl"], in: app)
+        tap(app.buttons["nutrition.saveEntry"], in: app)
+        let logged = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
+                                                      "nutrition.entry.", "Chicken & avocado bowl")).firstMatch
+        XCTAssertTrue(logged.waitForExistence(timeout: 15))
+        reveal(logged, in: app)
         mark("logged"); capture(app, "brag-phone-logged")
         try await Task.sleep(for: .seconds(3))
-        reveal(app.buttons["Add 250 ml of water"], in: app)
+        // Water moved from the diary to the day's activity and sleep.
+        tap(app.buttons["nutrition.dailyHealth"], in: app)
         mark("water")
         tap(app.buttons["Add 250 ml of water"], in: app)
         try await Task.sleep(for: .seconds(3))
+        tap(app.navigationBars.buttons["Today"], in: app)
         for _ in 0..<3 { app.swipeDown(velocity: .fast) }
         XCTAssertTrue(app.descendants(matching: .any)["diary.selected-day"].waitForExistence(timeout: 15))
         try await Task.sleep(for: .seconds(2))
         mark("summary"); capture(app, "brag-phone-summary")
         try await Task.sleep(for: .seconds(4))
-        let result = try await request("GET", "/api/summary", token: token)
-        XCTAssertEqual(result["water_ml"] as? Int, 250)
-        XCTAssertEqual(result["entry_count"] as? Int, 1)
+        var water = 0
+        var lunches: [[String: Any]] = []
+        for _ in 0..<40 {
+            water = (try await request("GET", "/api/summary", token: person.token))["water_ml"] as? Int ?? 0
+            let exported = try await request("GET", "/api/export", token: person.token)
+            lunches = (exported["documents"] as? [[String: Any]] ?? []).filter { $0["kind"] as? String == "food_entry" }
+                .compactMap { $0["payload"] as? [String: Any] }
+                .filter { $0["date"] as? String == Self.day(0).date && $0["meal"] as? String == "Lunch" }
+            if water == 250 && !lunches.isEmpty { break }
+            try await Task.sleep(for: .milliseconds(500))
+        }
+        XCTAssertEqual(water, 250)
+        XCTAssertEqual(lunches.count, 1)
+        XCTAssertEqual(lunches.first?["quantity"] as? Double, 1.5)
+        XCTAssertEqual(lunches.first?["grams"] as? Double, 600)
         mark("end")
     }
 
@@ -3358,7 +3372,9 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["nutrition.targetEnergy"].waitForExistence(timeout: 15))
         XCTAssertEqual(targetEnergy(app), expectedEnergy)
         shiftDay(-1, in: app)
-        XCTAssertTrue(app.staticTexts["No targets set for this day"].waitForExistence(timeout: 15))
+        // Targets start the day setup finished: the day before offers to set them instead of a ring.
+        XCTAssertTrue(app.buttons["today.setTargets"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.descendants(matching: .any)["nutrition.targetEnergy"].exists)
 
         let calendar = Calendar.current
         let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
@@ -3660,6 +3676,17 @@ final class ProductionUITests: ExerlyUITestCase {
     private func selectProgress(_ title: String, in app: XCUIApplication) {
         if app.buttons["progress.section"].exists { tap(app.buttons["progress.section"], in: app) }
         tap(app.buttons[title], in: app)
+    }
+    /// Taps a photo in iOS 26's photo picker. Its privacy introduction can
+    /// arrive after the grid, and the remote grid can report a visible
+    /// thumbnail as not hittable, so tap its visible center.
+    private func choosePickerPhoto(_ photo: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(photo.waitForExistence(timeout: 10))
+        dismissPhotoPickerIntroduction(in: app)
+        if photo.isHittable { photo.tap() } else {
+            XCTAssertTrue(app.frame.contains(CGPoint(x: photo.frame.midX, y: photo.frame.midY)), "The photo is outside the visible picker")
+            photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
     }
     private func dismissPhotoPickerIntroduction(in app: XCUIApplication) {
         let introduction = app.otherElements["PXGSingleViewContainerView_AX"]

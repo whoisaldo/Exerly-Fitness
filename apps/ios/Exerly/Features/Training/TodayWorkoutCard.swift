@@ -31,11 +31,9 @@ struct TodayWorkoutCard: View {
             VStack(alignment: .leading, spacing: ExSpacing.tight) {
                 Text(position.day.name).font(.exH1).foregroundStyle(Color.exTextPrimary)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("training.todayName")
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 0) { Text(program.name); Text(" · " + details) }
-                    VStack(alignment: .leading, spacing: 2) { Text(program.name); Text(details) }
-                }
-                .font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                Text("\(program.name) · \(details)")
+                    .font(.exLabel).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             VStack(spacing: 0) {
                 ForEach(Array(plan.exercises.prefix(shown).enumerated()), id: \.offset) { index, planned in

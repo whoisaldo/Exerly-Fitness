@@ -88,7 +88,7 @@ struct ExEyebrow: View {
     init(_ title: String, color: Color = .exTextSecondary) { self.title = title; self.color = color }
 
     var body: some View {
-        Text(title.uppercased()).font(.exSmall.weight(.semibold)).tracking(1.2).accessibilityLabel(title)
+        Text(title).textCase(.uppercase).font(.exSmall.weight(.semibold)).tracking(1.2).accessibilityLabel(title)
             .foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
     }
 }
