@@ -48,13 +48,37 @@ func fullBody(cycles: Int = 4, deload: DeloadPlacement = .none) -> Program {
         #expect(!Program(name: "One", days: program.days, cycles: 1, deload: .last).isDeload(cycle: 0))
     }
 
+    /// Sessions that each did their whole day: six working sets cover any day here.
     func history(_ program: Program, _ refs: [(ProgramDay, Int)]) -> TrainingHistory {
         let sessions = refs.enumerated().map { index, ref in
-            var session = Fixture.session(days: Double(index), [("back-squat", [Fixture.set(5, 100)])])
-            session.program = ProgramRef(programID: program.id, dayID: ref.0.id, cycle: ref.1)
-            return session
+            session(program, ref.0, cycle: ref.1, sets: 6, days: Double(index))
         }
         return TrainingHistory(sessions: sessions, library: .bundled)
+    }
+
+    func session(_ program: Program, _ day: ProgramDay, cycle: Int = 0, sets: Int, days: Double) -> WorkoutSession {
+        let warmUp = Fixture.set(5, 60, kind: .warmUp)
+        var session = Fixture.session(days: days, [("back-squat", [warmUp] + Array(repeating: Fixture.set(5, 100), count: sets))])
+        session.program = ProgramRef(programID: program.id, dayID: day.id, cycle: cycle)
+        return session
+    }
+
+    @Test func aWorkoutCutShortLeavesItsDayNext() {
+        let program = fullBody(cycles: 2)
+        let a = program.days[0], b = program.days[2]
+        // Day A plans six working sets; two, and a warm-up, don't do it.
+        let short = session(program, a, sets: 2, days: 0)
+        #expect(!ProgramSchedule.completes(short, of: program))
+        let cutShort = TrainingHistory(sessions: [short], library: .bundled)
+        #expect(ProgramSchedule.next(for: program, in: cutShort)?.day == a)
+        #expect(ProgramSchedule.progress(of: program, in: cutShort) == (0, 4))
+        // Half of them do.
+        let half = session(program, a, sets: 3, days: 1)
+        #expect(ProgramSchedule.completes(half, of: program))
+        let done = TrainingHistory(sessions: [short, half], library: .bundled)
+        #expect(ProgramSchedule.next(for: program, in: done)?.day == b)
+        #expect(ProgramSchedule.progress(of: program, in: done) == (1, 4))
+        #expect(!ProgramSchedule.completes(Fixture.session([("back-squat", [Fixture.set(5, 100)])]), of: program), "Not from the program")
     }
 
     @Test func theScheduleSkipsRestDaysWrapsCyclesAndEnds() {

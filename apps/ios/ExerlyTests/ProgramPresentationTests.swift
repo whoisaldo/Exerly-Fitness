@@ -167,10 +167,14 @@ final class ProgramPresentationTests: XCTestCase {
         XCTAssertEqual(plan.program?.dayID, program.days[0].id)
         let started = try workspace.store.startSession(from: plan, bodyweight: nil)
         XCTAssertFalse(started.exercises.flatMap(\.sets).contains(where: \.isCompleted))
-        var set = try XCTUnwrap(started.exercises.first?.sets.first)
-        set.primary = Effort(reps: 6, load: .kg(100))
-        try workspace.store.updateSet(set, in: started.exercises[0].id)
-        try workspace.store.completeSet(set.id)
+        // The whole day: a day cut short stays next (ProgramSchedule.completes).
+        for exercise in started.exercises {
+            for var set in exercise.sets {
+                set.primary = Effort(reps: 6, load: .kg(100))
+                try workspace.store.updateSet(set, in: exercise.id)
+                try workspace.store.completeSet(set.id)
+            }
+        }
         XCTAssertEqual(workspace.programs.nextWorkout(bodyweight: nil)?.program, plan.program)
         try workspace.store.finishSession()
         XCTAssertEqual(workspace.programs.nextWorkout(bodyweight: nil)?.program?.dayID, program.days[2].id)

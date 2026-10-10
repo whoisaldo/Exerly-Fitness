@@ -69,6 +69,7 @@ struct TrainingView: View {
         if let session = store.activeSession {
             ActiveWorkoutView(store: store, session: session, unit: unit, gym: workspace?.gyms.active,
                               targets: workspace?.slotTargets(for: session) ?? [:],
+                              program: session.program.flatMap { workspace?.programs.program($0.programID) },
                               onFinish: { finished = FinishedWorkout(result: $0) })
                 .transition(.opacity)
         } else {
@@ -258,7 +259,7 @@ private struct RecentWorkoutRow: View {
         HStack(spacing: ExSpacing.item) {
             layout {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                    Text(TrainingFormat.title(of: session).name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                         .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                     // Redrawn as time passes, so "3 minutes ago" stays true.
                     TimelineView(.periodic(from: .now, by: 15)) { _ in

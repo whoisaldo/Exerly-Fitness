@@ -369,7 +369,7 @@ struct TodayView: View {
     @ViewBuilder private var training: some View {
         let done = workspace.store.history.sessions.filter { $0.localDate == date && $0.endedAt != nil }
         if let session = workspace.store.activeSession, isToday {
-            trainingCard(eyebrow: "Workout in progress", title: session.name,
+            trainingCard(eyebrow: "Workout in progress", title: TrainingFormat.title(of: session).name,
                          detail: "\(session.exercises.flatMap(\.sets).filter(\.isCompleted).count) of \(session.exercises.flatMap(\.sets).count) sets done",
                          started: session.startedAt) {
                 Button("Resume", action: showTraining).buttonStyle(ExActionStyle()).accessibilityIdentifier("today.resumeWorkout")
@@ -377,12 +377,12 @@ struct TodayView: View {
         } else if !done.isEmpty {
             ForEach(done) { session in
                 let summary = workspace.store.summary(of: session)
-                trainingCard(eyebrow: "Workout done", title: session.name,
+                trainingCard(eyebrow: "Workout done", title: TrainingFormat.title(of: session).name,
                              detail: "\(summary.workingSets) working \(summary.workingSets == 1 ? "set" : "sets") · \(TodayNutritionCard.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb") volume",
                              icon: "checkmark.circle.fill") { EmptyView() }
             }
         } else if isToday, let plan {
-            trainingCard(eyebrow: plan.isDeload ? "Deload workout" : "Today's workout", title: plan.name,
+            trainingCard(eyebrow: plan.isDeload ? "Deload workout" : "Today's workout", title: TrainingFormat.title(plan.name, planned: true).name,
                          detail: planDetail(plan)) {
                 let layout = typeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(spacing: ExSpacing.small)) : AnyLayout(HStackLayout(spacing: ExSpacing.small))

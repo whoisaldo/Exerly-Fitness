@@ -23,7 +23,7 @@ struct WorkoutFinishSummary: View {
                                     in: Circle())
                         .accessibilityHidden(true)
                     ExEyebrow("Workout saved", color: .exPrimaryText)
-                    Text(session.name).font(.exH1).foregroundStyle(Color.exTextPrimary).multilineTextAlignment(.center)
+                    Text(TrainingFormat.title(of: session).name).font(.exH1).foregroundStyle(Color.exTextPrimary).multilineTextAlignment(.center)
                         .accessibilityAddTraits(.isHeader)
                     Text(TrainingFormat.date(session)).font(.exLabel).foregroundStyle(Color.exTextSecondary)
                 }

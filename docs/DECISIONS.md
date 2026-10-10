@@ -673,3 +673,19 @@ is left alone.
   database, and "ground beef" shouldn't offer ground turkey first. The
   simulator fixtures that ran this build serve claude/next's API, so the
   database half shows only in the API's tests until it lands.
+- **A workout cut short leaves its day next.** A session does its program day
+  once at least half of the day's planned working sets are done; until then the
+  program doesn't advance and the day doesn't count toward its progress.
+  Offering the choice at every finish was the alternative. A rule the finish
+  prompt states ("2 of 16 sets are done, less than half, so Pull stays your next
+  workout") decides the common case without a question and needs no new field.
+  The API's `next_workout` and program progress follow the same rule. The
+  prompt gains a Cancel with no cancel role, which a popover would hide.
+- **Workouts go by their day.** Recent workouts, history, the finish summary,
+  Today and the workout's spoken label show a planned session by its day
+  ("Pull"), as older sessions already were named.
+- **A set's checkmark is drawn.** The checkmark symbol showed up inside every
+  set's button as an image read "Selected", even hidden and with the button
+  ignoring its children. A drawn checkmark that looks the same carries nothing,
+  so only a done set's button is selected. It pops with a spring instead of the
+  symbol's bounce.

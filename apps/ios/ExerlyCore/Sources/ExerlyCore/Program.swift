@@ -189,14 +189,14 @@ public enum ProgramSchedule {
         public var isDeload: Bool
     }
 
-    /// The next training day: the one after the latest session that referenced
-    /// this program, wrapping into the next cycle. Nil once the last cycle is done.
-    /// If that day has since been removed or emptied, the cycle continues at
-    /// its first training day not done yet.
+    /// The next training day: the one after the latest session that did a day
+    /// of this program (see `completes`), wrapping into the next cycle. Nil
+    /// once the last cycle is done. If that day has since been removed or
+    /// emptied, the cycle continues at its first training day not done yet.
     public static func next(for program: Program, in history: TrainingHistory) -> Position? {
         let training = program.trainingDays
         guard !training.isEmpty else { return nil }
-        let refs = history.sessions.compactMap(\.program).filter { $0.programID == program.id }
+        let refs = history.sessions.filter { completes($0, of: program) }.compactMap(\.program)
         guard let ref = refs.last else {
             return Position(day: training[0], cycle: 0, isDeload: program.isDeload(cycle: 0))
         }
@@ -222,11 +222,21 @@ public enum ProgramSchedule {
         let total = program.trainingDays.count * program.cycles
         let days = Set(program.trainingDays.map(\.id))
         let done = Set(history.sessions.compactMap { session -> String? in
-            guard let ref = session.program, ref.programID == program.id, days.contains(ref.dayID),
+            guard let ref = session.program, completes(session, of: program), days.contains(ref.dayID),
                   ref.cycle < program.cycles else { return nil }
             return "\(ref.cycle)/\(ref.dayID)"
         }).count
         return (min(done, total), total)
+    }
+
+    /// Whether a session did its day of `program`: at least half the day's
+    /// planned working sets are done. A workout cut short leaves the day next;
+    /// a session of a day since removed counts.
+    public static func completes(_ session: WorkoutSession, of program: Program) -> Bool {
+        guard let ref = session.program, ref.programID == program.id else { return false }
+        guard let day = program.days.first(where: { $0.id == ref.dayID }) else { return true }
+        let planned = day.slots.map { program.target(for: $0, cycle: ref.cycle) }.filter(\.kind.isWorking).reduce(0) { $0 + $1.sets }
+        return session.exercises.flatMap(\.sets).filter(\.counts).count * 2 >= planned
     }
 }
 

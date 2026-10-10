@@ -247,9 +247,12 @@ struct TrainingSetRow: View {
     private var checkButton: some View {
         Button(action: actions.complete) {
             HStack(spacing: ExSpacing.small) {
-                // The symbol reads as "Selected" to VoiceOver; the button says what it does.
-                Image(systemName: "checkmark").font(.system(size: 15, weight: .bold))
-                    .symbolEffect(.bounce, value: set.isCompleted)
+                // Drawn, not the checkmark symbol, which reads as "Selected" on
+                // every set even hidden; the button says what it does.
+                SetDoneMark().stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                    .frame(width: 14, height: 11)
+                    .scaleEffect(set.isCompleted ? 1 : 0.85)
+                    .animation(.spring(duration: 0.3, bounce: 0.5), value: set.isCompleted)
                     .accessibilityHidden(true)
                 if typeSize.isAccessibilitySize { Text(set.isCompleted ? "Done" : "Complete set").font(.exBodyMedium) }
             }
@@ -272,5 +275,16 @@ struct TrainingSetRow: View {
         .accessibilityRemoveTraits(set.isCompleted ? [] : .isSelected)
         .accessibilityAddTraits(set.isCompleted ? .isSelected : [])
         .accessibilityIdentifier("set.\(exercise.id.rawValue).\(number).done")
+    }
+}
+
+/// A checkmark, drawn to fit its frame.
+private struct SetDoneMark: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.55))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.36, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        return path
     }
 }
