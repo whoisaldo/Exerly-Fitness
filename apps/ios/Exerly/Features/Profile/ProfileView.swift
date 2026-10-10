@@ -57,7 +57,8 @@ struct ProfileView: View {
             .padding(.bottom, ExSpacing.major)
         }
         .scrollPosition($position)
-        .onChange(of: entered) { _, _ in position.scrollTo(edge: .top) }
+        // Animated, so the large title comes back as it does when scrolling up by hand.
+        .onChange(of: entered) { _, _ in withAnimation(.snappy) { position.scrollTo(edge: .top) } }
         .scrollIndicators(.hidden)
         .exScrollEdges()
         .background(Color.exBackground)
