@@ -67,6 +67,42 @@ final class TodayUITests: ExerlyUITestCase {
         XCTAssertTrue(app.navigationBars["Today"].exists)
     }
 
+    /// The calorie ring is a button that pushes Targets, as Profile does.
+    func testTheCalorieRingIsAButtonThatOpensTargets() async throws {
+        let app = try await signedInWithWeek(prefix: "today-ring")
+        let ring = app.buttons["nutrition.targetEnergy"]
+        XCTAssertTrue(ring.waitForExistence(timeout: 20), "The ring reads as a button")
+        XCTAssertEqual(ring.label, "Calories")
+        tap(ring, in: app)
+        XCTAssertTrue(app.scrollViews["targets.screen"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars.buttons["Today"].exists, "Pushed, with a way back to Today")
+    }
+
+    /// A weigh-in saved from Today is confirmed like a logged food, and Undo deletes it.
+    func testAWeighInFromTodayCanBeUndone() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "today-weigh", units: "imperial")
+        try await deleteSetupWeight(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["today.weighIn"], in: app)
+        tap(app.buttons["weighIn.save"], in: app)
+        let undo = app.buttons["today.undoWeighIn"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Weighed in at ")).firstMatch.exists)
+        let today = Self.day(0).date
+        _ = try await waitForWeighIn(token: person.token) { $0["date"] as? String == today }
+        undo.tap()
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 3))
+        var left: [[String: Any]] = []
+        for _ in 0..<40 {
+            left = try await weighIns(token: person.token).values.filter { $0["date"] as? String == today }
+            if left.isEmpty { break }
+            try await Task.sleep(for: .milliseconds(500))
+        }
+        XCTAssertTrue(left.isEmpty, "Undo deleted the weigh-in on the server too")
+    }
+
     func testTheWeekStripReachesFutureDaysForPlanning() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "today-future", units: "imperial")

@@ -485,3 +485,32 @@ Deleted as unreachable: `DashboardView`, `SocialView` with `SocialService`,
 `HomeViewModel`, `StreakService`, `FoodLibraryService`, `StatMiniCard`,
 `CalorieRing`, `MultiSelectGrid`, and the local `WizardService` calculator,
 which only the deleted results screen used. Setup targets come from the API.
+
+## 2026-10-10: Fixes from the second code-blind usability run
+
+- **The last set rests on hold.** Completing a workout's last open set starts no
+  rest timer and stops one that's running. The rest it earned is held, not lost:
+  adding a set or an exercise within that rest starts it from when the set was
+  done, so logging one set at a time still rests. A skipped rest stays skipped.
+  With every set done, Finish saves without asking; it still asks when sets are
+  left, since those are removed.
+- **Targets push from both places.** The calorie ring on Today is now a button
+  that pushes Targets onto Today's stack, as Profile's plan card does, instead of
+  presenting a sheet with Close. Targets keeps one Edit, in the toolbar; its plan
+  rows open the editor too.
+- **Preferences has one action.** Done saves any edits, then closes once the
+  account has them. It stays open, with the reason, on an error, a conflict to
+  review or an unacknowledged save ("Retry save"). Swiping the sheet away still
+  keeps edits as a draft on the device.
+- **Chip rows wrap.** `ExChoiceChips` lays out as a flow and wraps to a new line
+  instead of scrolling sideways, so no choice is cut off at the edge.
+- **Every standard nutrient is listed.** Progress and a food's nutrient table
+  list energy, the macros, fiber, sugars, saturated fat and the vitamins and
+  minerals even when nothing reported them; the rest appear once reported. A
+  food's nutrients are one table instead of three nested disclosures.
+- **This month** joins the nutrition spans, labelled with the month ("Oct"). It
+  runs from the 1st through today; the others still end yesterday.
+- **The driver seeds a realistic month.** `signedInWithRealisticHistory` gives
+  usability runs four weeks of meals at their usual times with full labels, a
+  coached plan, a four-day split in round pounds and weigh-ins. `seedWeek`
+  stays as the tap-budget tests' fixture.

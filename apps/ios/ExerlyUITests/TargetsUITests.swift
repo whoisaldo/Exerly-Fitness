@@ -83,6 +83,10 @@ final class TargetsUITests: ExerlyUITestCase {
         let app = launch(resetSession: true)
         signIn(app, email: person.email)
         openTargets(app)
+        capture(app, "targets-manual-no-error")
+        XCTAssertFalse(app.staticTexts["The ± is one standard deviation: about a 2 in 3 chance the true value is in the range."].exists,
+                       "Manual targets show no ±, so nothing explains one")
+        XCTAssertFalse(app.buttons["targets.editPlan"].exists, "One Edit, in the toolbar")
 
         XCTAssertEqual(app.staticTexts["targets.checkIn.title"].label, "Off for manual targets")
         tap(app.buttons["targets.checkIn.coach"], in: app)

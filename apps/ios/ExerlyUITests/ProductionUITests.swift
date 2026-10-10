@@ -3279,8 +3279,10 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertEqual(app.textFields["preferences.name"].value as? String, "Legacy Taylor")
         replace(app.textFields["preferences.name"], with: "Upgraded Taylor", in: app)
         dismissKeyboard(app)
+        // Done saves the edit, then closes once the account has it.
         tap(app.buttons["preferences.save"], in: app)
-        XCTAssertTrue(app.staticTexts["Preferences saved."].waitForExistence(timeout: 15), app.debugDescription)
+        let closed = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.navigationBars["Preferences"])
+        await fulfillment(of: [closed], timeout: 15)
         let saved = try await request("GET", "/api/preferences", token: token)
         XCTAssertEqual((saved["values"] as? [String: Any])?["name"] as? String, "Upgraded Taylor")
         capture(app, "legacy-session-upgrade-saved-preferences")
@@ -3349,7 +3351,9 @@ final class ProductionUITests: ExerlyUITestCase {
         app.terminate(); app.launch()
         XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
         openPreferences(app)
-        XCTAssertTrue(app.buttons["Save preferences"].waitForExistence(timeout: 15))
+        // Done, not Retry save: the save sent before the relaunch was acknowledged.
+        let done = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label == %@", "preferences.save", "Done")).firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 15))
         replace(app.textFields["preferences.name"], with: "Native Reviewed Taylor", in: app)
         dismissKeyboard(app)
         let remote = try await request("GET", "/api/preferences", token: token)

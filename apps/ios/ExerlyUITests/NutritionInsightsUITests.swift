@@ -6,6 +6,36 @@ import XCTest
 final class NutritionInsightsUITests: ExerlyUITestCase {
     private var designCapture: Bool { ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" }
 
+    /// With no plan in force on the counted days, every standard nutrient is
+    /// still listed, as not reported where no food reported it, and this
+    /// month is a span of its own.
+    func testEveryStandardNutrientIsListedWithoutAPlan() async throws {
+        let app = try await signedInWithWeek(prefix: "nutrition-standard")
+        openNutrition(in: app)
+        selectRange("1W", in: app)
+        let fiber = app.buttons["nutrition.nutrient.fiber"]
+        reveal(fiber, in: app)
+        XCTAssertTrue(fiber.exists, "Fiber is listed though no food reported it")
+        XCTAssertTrue(fiber.label.contains("not reported"), fiber.label)
+        for nutrient in ["sodium", "saturatedFat", "sugars", "vitaminC", "calcium"] {
+            XCTAssertTrue(app.buttons["nutrition.nutrient.\(nutrient)"].exists, nutrient)
+        }
+        capture(app, "nutrition-standard-nutrients")
+        let thisMonth = app.buttons["nutrition.range.thisMonth"]
+        revealAbove(thisMonth, in: app)
+        tap(thisMonth, in: app)
+        let coverage = app.descendants(matching: .any)["nutrition.coverage"]
+        let first = Calendar(identifier: .gregorian).dateComponents(in: Self.newYork, from: Date()).day == 1
+        XCTAssertTrue(waitForLabel(coverage, containing: first ? "Today" : "\(Self.monthName()) 1 to "), coverage.label)
+        capture(app, "nutrition-this-month")
+    }
+
+    private static func monthName() -> String {
+        var style = Date.FormatStyle.dateTime.month(.abbreviated)
+        style.timeZone = newYork
+        return Date().formatted(style)
+    }
+
     /// Only complete, unmarked-with-food and fasting days count; a partial day
     /// doesn't. A nutrient no label reported says so, and a nutrient's foods
     /// add up over the range.

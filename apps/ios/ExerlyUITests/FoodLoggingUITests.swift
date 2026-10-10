@@ -39,6 +39,25 @@ final class FoodLoggingUITests: ExerlyUITestCase {
         XCTAssertEqual(pears.count, 2, "The undone entry is gone and the second one stays")
     }
 
+    /// Foods usually eaten at this hour are headed by the hour, or by "now"
+    /// late at night, when an hour like 12 AM reads oddly.
+    func testUsualFoodsAreHeadedByTheHourOrNowLateAtNight() async throws {
+        let app = try await signedInWithWeek(prefix: "food-usual")
+        openSearch(app)
+        XCTAssertTrue(app.descendants(matching: .any)["nutrition.group.suggested"].waitForExistence(timeout: 10))
+        let header = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Usual around")).firstMatch
+        XCTAssertTrue(header.exists)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = Self.newYork
+        let hour = calendar.component(.hour, from: Date())
+        if hour >= 22 || hour < 4 {
+            XCTAssertEqual(header.label, "Usual around now")
+        } else {
+            XCTAssertNotEqual(header.label, "Usual around now")
+        }
+        capture(app, "food-usual-header")
+    }
+
     func testBarcodeToLoggedInThreeTaps() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "food-barcode")
