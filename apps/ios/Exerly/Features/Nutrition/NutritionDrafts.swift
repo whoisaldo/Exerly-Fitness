@@ -182,7 +182,7 @@ final class NutritionEntryDraft: ObservableObject {
         var loggingFood = editing.map { $0.food.foodForLogging(serving: $0.serving) } ?? food
         if let editing, let saved = store.food(editing.food.foodID) {
             for serving in saved.servings where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
-            if let serving = saved.recipeServing, !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
+            for serving in saved.recipePortions where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
         }
         self.food = loggingFood
         original = editing
@@ -244,7 +244,7 @@ final class NutritionEntryDraft: ObservableObject {
 
     var publishedServings: [Serving] {
         guard snapshot.unweighed != true else { return [] }
-        return (food.servings + (food.recipeServing.map { [$0] } ?? [])).reduce(into: []) { result, serving in
+        return (food.servings + food.recipePortions).reduce(into: []) { result, serving in
             // Reopened entries also carry a synthetic oz/ml/fl oz serving.
             // Those are measures, not portions supplied by the food label.
             guard case .serving = NutritionPortionMeasure.saved(serving, food: food) else { return }
@@ -337,6 +337,18 @@ final class NutritionEntryDraft: ObservableObject {
             entry.quantity = anchor.quantity
         }
         return entry
+    }
+
+    /// Logs this portion of a recipe as its ingredients, each scaled to it,
+    /// instead of as one entry.
+    func saveIngredients(of recipe: ExerlyCore.Food, locale: Locale = .current) -> [FoodEntry]? {
+        errors = []
+        do {
+            let portion = try preview(locale: locale)
+            return try store.logIngredients(of: recipe, grams: portion.grams, on: date,
+                                            meal: meal.trimmingCharacters(in: .whitespacesAndNewlines), at: loggedAt)
+        } catch { errors = NutritionDraftError.messages(error) }
+        return nil
     }
 
     @discardableResult

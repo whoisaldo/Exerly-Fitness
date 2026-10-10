@@ -69,7 +69,7 @@ struct TodayView: View {
 
     enum Destination: Identifiable {
         case date, add(String), scan(String), quick(String), edit(FoodEntry), log(FoodSuggestion),
-             notes, copy(String?), nutrients, targets, weighIn
+             notes, copy(String?), recipe(String), nutrients, targets, weighIn
         var id: String {
             switch self {
             case .date: "date"
@@ -80,6 +80,7 @@ struct TodayView: View {
             case .log(let suggestion): "log-\(suggestion.food.foodID)"
             case .notes: "notes"
             case .copy(let meal): "copy-\(meal ?? "day")"
+            case .recipe(let meal): "recipe-\(meal)"
             case .nutrients: "nutrients"
             case .targets: "targets"
             case .weighIn: "weighIn"
@@ -448,7 +449,7 @@ struct TodayView: View {
                     destination = .edit(entry)
                 } repeatMeal: { repeated in
                     apply(repeated)
-                } copy: { destination = .copy(meal) }
+                } copy: { destination = .copy(meal) } saveAsRecipe: { destination = .recipe(meal) }
             }
         }
     }
@@ -588,6 +589,11 @@ struct TodayView: View {
                                  date: date, meal: currentMeal, timeZone: timeZone, unit: unit, actions: actions) { _ in }
         case .notes: NutritionDayNotesView(workspace: workspace, date: date, timeZone: timeZone)
         case .copy(let meal): NutritionCopyView(workspace: workspace, source: date, meal: meal, timeZone: timeZone)
+        case .recipe(let meal):
+            RecipeEditor(workspace: workspace, api: api, timeZone: timeZone, unit: unit,
+                         start: ExerlyCore.Food.recipe(from: store.entries(on: date).filter { $0.meal == meal })) {
+                show("Saved \($0.name) to your recipes")
+            }
         case .nutrients:
             NavigationStack {
                 ExScreen {
@@ -622,6 +628,7 @@ struct TodayMealCard: View {
     let edit: (FoodEntry) -> Void
     let repeatMeal: (MealRepeat) -> Void
     let copy: () -> Void
+    let saveAsRecipe: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -673,6 +680,9 @@ struct TodayMealCard: View {
         .overlay { RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5) }
         .contextMenu {
             if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
+            if entries.contains(where: { $0.food.unweighed != true }) {
+                Button("Save as recipe", systemImage: "frying.pan", action: saveAsRecipe).accessibilityIdentifier("today.saveRecipe")
+            }
         }
     }
 
