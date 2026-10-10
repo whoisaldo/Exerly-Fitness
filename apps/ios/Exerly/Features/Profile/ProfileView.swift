@@ -149,7 +149,16 @@ struct ProfileView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.sync")
             }
-            // Import rows (for example, Import from MacroFactor) belong here, after Sync.
+            if let workspace {
+                NavigationLink {
+                    MacroFactorImportView(workspace: workspace, unit: unit, timeZone: timeZone)
+                } label: {
+                    ProfileRow(title: "Import from MacroFactor", icon: "square.and.arrow.down",
+                               subtitle: "Food log, weigh-ins and workouts")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("profile.macroFactorImport")
+            }
             if let id = user?.id {
                 NavigationLink {
                     AccountManagementView(accountID: id, email: user?.email ?? "",
