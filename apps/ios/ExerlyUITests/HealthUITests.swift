@@ -9,7 +9,7 @@ final class HealthUITests: ExerlyUITestCase {
     private var designCapture: Bool { ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" }
 
     /// `launch(resetSession: true)` with the Health seed and write probe.
-    private func launchWithHealth(seed: String?) -> XCUIApplication {
+    private func launchWithHealth(seed: String?, probeIDs: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         if let appearance = ProcessInfo.processInfo.environment["EXERLY_TEST_APPEARANCE"],
@@ -23,6 +23,7 @@ final class HealthUITests: ExerlyUITestCase {
         app.launchEnvironment["EXERLY_TEST_STORE_ID"] = UUID().uuidString
         app.launchEnvironment["EXERLY_HEALTH_PROBE"] = "1"
         if let seed { app.launchEnvironment["EXERLY_HEALTH_SEED"] = seed }
+        app.launchEnvironment["EXERLY_HEALTH_PROBE_IDS"] = probeIDs.joined(separator: ",")
         app.launch()
         return app
     }
@@ -113,40 +114,67 @@ final class HealthUITests: ExerlyUITestCase {
         if designCapture { capture(app, "health-body") }
     }
 
-    /// Writing is off until its switch is on, then each record reaches Health
-    /// once: a second sync adds nothing.
+    private func relaunch(_ app: XCUIApplication) {
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--ui-testing" }
+        app.launch()
+        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 20))
+    }
+
+    /// Writing is off until its switch is on. Then each record reaches Health
+    /// once: another sync adds nothing, an edit replaces the samples rather
+    /// than adding more, and a deletion removes them.
     func testWritesReachHealthOnceAndOnlyWithConsent() async throws {
         continueAfterFailure = false
         try await control([:])
         let person = try await createAccount(prefix: "health-write", units: "metric")
-        _ = try await seedNutritionEntry(token: person.token, name: "Synthetic lentil soup",
-                                         nutrients: ["energy": 92, "protein": 6.1, "carbohydrate": 13.4, "fat": 1.2,
-                                                     "fiber": 3.8, "sodium": 310, "iron": 1.6, "water": 80], grams: 350)
-        let app = launchWithHealth(seed: nil)
+        let nutrients: [String: Double] = ["energy": 92, "protein": 6.1, "carbohydrate": 13.4, "fat": 1.2, "fiber": 3.8,
+                                           "sodium": 310, "iron": 1.6, "water": 80]
+        let soup = try await seedNutritionEntry(token: person.token, name: "Synthetic lentil soup", nutrients: nutrients, grams: 350)
+        _ = try await seedTrainingWorkout(name: "Synthetic pull", loads: [60, 70], token: person.token)
+        let app = launchWithHealth(seed: nil, probeIDs: [soup.id])
         signIn(app, email: person.email)
         // The diary and setup's weigh-in arrive before Health is turned on.
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Synthetic lentil soup"))
             .firstMatch.waitForExistence(timeout: 20))
         openHealthSettings(app)
-        await waitForProbe("food 0 weight 0 workout 0", in: app)
+        await waitForProbe("food 0 (0 kcal) weight 0 workout 0", in: app)
 
         await turnOn("health.writeWeights", in: app)
-        await waitForProbe("food 0 weight 1 workout 0", in: app)
+        await waitForProbe("food 0 (0 kcal) weight 1 workout 0", in: app)
         await turnOn("health.writeFood", in: app)
-        await waitForProbe("food 1 weight 1 workout 0", in: app)
+        await waitForProbe("food 1 (322 kcal) weight 1 workout 0", in: app)
+        await turnOn("health.writeWorkouts", in: app)
+        await waitForProbe("food 1 (322 kcal) weight 1 workout 1", in: app)
 
         let syncNow = app.buttons["health.syncNow"]
         tap(syncNow, in: app)
         XCTAssertTrue(app.descendants(matching: .any)["health.lastResult"].waitForExistence(timeout: 10))
         tap(syncNow, in: app)
         await wait(for: app.descendants(matching: .any)["health.lastResult"], "label CONTAINS %@", "up to date")
-        await waitForProbe("food 1 weight 1 workout 0", in: app)
+        await waitForProbe("food 1 (322 kcal) weight 1 workout 1", in: app)
         if designCapture {
             reveal(syncNow, in: app)
             capture(app, "health-settings-writing")
         }
 
-        // Turning food off stops it: a new entry isn't written.
+        // An edit on another device replaces the entry's samples.
+        let entry: [String: Any] = ["id": soup.id, "date": soup.date, "meal": "Dinner", "loggedAt": "2026-10-06T18:30:00.000Z",
+                                    "food": ["foodID": soup.foodID, "name": "Synthetic lentil soup", "source": "custom",
+                                             "per100g": nutrients], "grams": 500]
+        _ = try await request("PUT", "/v1/documents/food_entry/\(soup.id)", body: ["base_revision": 1, "payload": entry],
+                              token: person.token)
+        relaunch(app)
+        openHealthSettings(app)
+        await waitForProbe("food 1 (460 kcal) weight 1 workout 1", in: app)
+
+        // A deletion removes them.
+        _ = try await request("DELETE", "/v1/documents/food_entry/\(soup.id)", body: ["base_revision": 2], token: person.token)
+        relaunch(app)
+        openHealthSettings(app)
+        await waitForProbe("food 0 (0 kcal) weight 1 workout 1", in: app)
+
+        // Turning food off stops it.
         tap(app.switches["health.writeFood"], in: app)
         XCTAssertEqual(app.switches["health.writeFood"].value as? String, "0")
     }

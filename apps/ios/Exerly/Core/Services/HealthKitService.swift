@@ -341,9 +341,10 @@ final class HealthKitService: HealthStoreClient, @unchecked Sendable {
         try await store.save(objects)
     }
 
-    /// How many samples of a kind Exerly wrote for these records.
-    func debugCount(_ kind: HealthRecordKind, ids: [UUID]) async -> Int {
-        guard !ids.isEmpty else { return 0 }
+    /// How many samples of a kind Exerly wrote for these records, and for
+    /// food their total energy in kcal.
+    func debugCount(_ kind: HealthRecordKind, ids: [UUID]) async -> (count: Int, kilocalories: Double) {
+        guard !ids.isEmpty else { return (0, 0) }
         let predicate = HKQuery.predicateForObjects(withMetadataKey: HealthMetadata.recordID, allowedValues: ids.map(\.uuidString))
         let type: HKSampleType = switch kind {
         case .food: HKCorrelationType(.food)
@@ -353,7 +354,11 @@ final class HealthKitService: HealthStoreClient, @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             store.execute(HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit,
                                         sortDescriptors: nil) { _, samples, _ in
-                continuation.resume(returning: samples?.count ?? 0)
+                let energy = (samples ?? []).compactMap { $0 as? HKCorrelation }
+                    .flatMap { $0.objects(for: HKQuantityType(.dietaryEnergyConsumed)) }
+                    .compactMap { ($0 as? HKQuantitySample)?.quantity.doubleValue(for: .kilocalorie()) }
+                    .reduce(0, +)
+                continuation.resume(returning: (samples?.count ?? 0, energy))
             })
         }
     }

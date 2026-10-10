@@ -50,10 +50,13 @@ struct HealthDebugProbe: View {
 
     private func refresh() async {
         guard let workspace = sync.workspace, let service = sync.client as? HealthKitService else { return }
-        let food = await service.debugCount(.food, ids: workspace.nutrition.entries.map(\.id))
-        let weight = await service.debugCount(.weight, ids: workspace.nutrition.weights.map(\.id))
-        let workout = await service.debugCount(.workout, ids: workspace.store.history.sessions.map(\.id))
-        counts = "food \(food) weight \(weight) workout \(workout)"
+        // Records a test names stay counted after they're deleted in Exerly.
+        let named = (ProcessInfo.processInfo.environment["EXERLY_HEALTH_PROBE_IDS"] ?? "").split(separator: ",")
+            .compactMap { UUID(uuidString: String($0)) }
+        let food = await service.debugCount(.food, ids: workspace.nutrition.entries.map(\.id) + named)
+        let weight = await service.debugCount(.weight, ids: workspace.nutrition.weights.map(\.id) + named)
+        let workout = await service.debugCount(.workout, ids: workspace.store.history.sessions.map(\.id) + named)
+        counts = "food \(food.count) (\(Int(food.kilocalories.rounded())) kcal) weight \(weight.count) workout \(workout.count)"
     }
 }
 #endif
