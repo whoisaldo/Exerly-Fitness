@@ -234,8 +234,9 @@ class ExerlyUITestCase: XCTestCase {
         }.min() ?? app.frame.height
     }
     var persistentActionIDs: [String] {
+        // The live workout accessory sits above the tab bar on every other tab.
         ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
-         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save"]
+         "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save", "workout.accessory"]
     }
     func scrollViewport(in app: XCUIApplication) -> CGRect? {
         app.scrollViews.allElementsBoundByAccessibilityElement.compactMap { scroll in

@@ -37,6 +37,7 @@ struct ProfileView: View {
                 }
                 .buttonStyle(TodayPressStyle())
                 .accessibilityLabel("Your plan")
+                .accessibilityValue(ProfilePlanCard.spoken(workspace: workspace, timeZone: timeZone))
                 .accessibilityHint("Opens your calorie and macro targets")
                 .accessibilityIdentifier("profile.targets")
                 food

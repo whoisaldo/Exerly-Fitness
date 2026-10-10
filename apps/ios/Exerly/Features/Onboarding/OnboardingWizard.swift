@@ -44,17 +44,19 @@ struct OnboardingWizard: View {
 
     private var topBar: some View {
         HStack(spacing: ExSpacing.item) {
-            Button { state.prevStep() } label: {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.exTextPrimary)
-                    .frame(width: 44, height: 44)
-                    .background(Color.exSurface1, in: Circle())
+            if state.isFirstPage {
+                Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+            } else {
+                Button { state.prevStep() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.exTextPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.exSurface1, in: Circle())
+                }
+                .buttonStyle(TodayPressStyle())
+                .accessibilityLabel("Previous setup step")
+                .disabled(state.isSubmitting)
             }
-            .buttonStyle(TodayPressStyle())
-            .accessibilityLabel("Previous setup step")
-            .disabled(state.isSubmitting)
-            .opacity(state.isFirstPage ? 0 : 1)
-            .accessibilityHidden(state.isFirstPage)
             HStack(spacing: 4) {
                 ForEach(1...max(pageCount, 1), id: \.self) { index in
                     Capsule().fill(index <= pageIndex ? Color.exPrimary : Color.exPrimary.opacity(0.16))

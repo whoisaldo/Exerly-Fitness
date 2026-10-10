@@ -30,6 +30,7 @@ struct SetupAboutYouStep: View {
             }
             SetupLabel("Units")
             ExSegmentedControl(values: [false, true], selection: $state.useMetric) { $0 ? "Metric" : "U.S." }
+                .accessibilityElement(children: .contain)
                 .accessibilityLabel("Units")
             Text(state.useMetric ? "Kilograms and centimeters. Food energy in kcal."
                  : "Pounds, feet and inches. Food energy in kcal.")
@@ -39,6 +40,8 @@ struct SetupAboutYouStep: View {
                 SetupRow(title: "Sex") {
                     ExSegmentedControl(values: ["female", "male"], selection: $state.physiologicalSex) { $0.capitalized }
                         .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : 200)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("Sex, for the calorie estimate")
                         .accessibilityIdentifier("setup.formula")
                 }
                 SetupRow(title: "Age") {

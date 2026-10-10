@@ -88,6 +88,8 @@ struct SetupReviewStep: View {
                 get: { state.dietType ?? (state.dietaryStyle == .keto ? "keto" : "balanced") },
                 set: { state.dietType = $0 }
             )) { Self.split($0) }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Macro split")
             .accessibilityIdentifier("setup.macroSplit")
             Text(Self.splitDetail(state.dietType ?? "balanced"))
                 .font(.exCaption).foregroundStyle(Color.exTextSecondary)

@@ -213,6 +213,15 @@ struct ProfilePlanCard: View {
         .contentShape(Rectangle())
     }
 
+    /// Today's targets in a sentence, for VoiceOver.
+    static func spoken(workspace: TrainingWorkspace?, timeZone: TimeZone) -> String {
+        let today = LocalDate(Date(), in: timeZone)
+        guard let day = workspace?.nutrition.targets(on: today) else { return "No targets set" }
+        guard day.energy > 0 else { return "Fasting day" }
+        return "\(TargetsFormat.kcal(day.energy)) kilocalories today. Protein \(TargetsFormat.grams(day.protein)), "
+            + "carbs \(TargetsFormat.grams(day.carbohydrate)), fat \(TargetsFormat.grams(day.fat))"
+    }
+
     /// "Protein 165 g · Carbs 295 g · Fat 78 g", each name in its macro colour.
     private func macros(_ day: DailyTargets) -> some View {
         let layout = typeSize.isAccessibilitySize
