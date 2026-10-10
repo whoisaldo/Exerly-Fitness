@@ -46,8 +46,9 @@ struct ExerlyApp: App {
         container = try? ModelContainer(for: schema, migrationPlan: ExerlyMigrationPlan.self)
         #endif
         HealthSync.shared.registerAtLaunch()
-        // Live Activity buttons can launch the app in the background to run.
+        // Live Activity buttons and the watch can launch the app in the background to run.
         WorkoutActivityActions.install()
+        WatchCoordinator.shared.activate()
     }
 
     var body: some Scene {

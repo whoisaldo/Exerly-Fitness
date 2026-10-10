@@ -154,6 +154,27 @@ final class HealthSyncTests: XCTestCase {
         XCTAssertEqual(client.removed.map(\.kind), [.workout])
     }
 
+    func testAWorkoutTheWatchRecordedIsNotWrittenASecondTime() async throws {
+        let workspace = try open("account-a")
+        XCTAssertFalse(sync.writesWorkouts(accountID: "account-a"))
+        await sync.setEnabled(.writeWorkouts, true)
+        XCTAssertTrue(sync.writesWorkouts(accountID: "account-a"))
+        XCTAssertFalse(sync.writesWorkouts(accountID: "account-b"), "Each account has its own switch")
+        let template = try finishWorkout(workspace)
+        try await settle()
+        let watched = WorkoutSession(name: "Synthetic legs", startedAt: template.startedAt.addingTimeInterval(1),
+                                     endedAt: template.endedAt, timeZone: newYork)
+        WatchHealthWorkouts.insert(watched.id, defaults: defaults)
+        try workspace.store.importSessions([watched])
+        try await settle()
+        XCTAssertEqual(client.savedWorkouts.map(\.id), [template.id], "Only the workout the watch didn't record is saved")
+        XCTAssertNil(sync.problem)
+        // Deleting it in Exerly still removes what Exerly wrote under its ID.
+        try workspace.store.deleteSession(watched.id)
+        try await settle()
+        XCTAssertEqual(client.removed.map(\.kind), [.workout])
+    }
+
     func testADeniedWriteKeepsItsSwitchOffAndSaysWhere() async throws {
         let workspace = try open("account-a")
         client.denied = [.writeFood]
