@@ -12,6 +12,15 @@ public struct MealRepeat: Sendable, Hashable {
 }
 
 extension NutritionStore {
+    /// From 10 PM to 4 AM a clock hour reads oddly as a habit ("usual around
+    /// 12 AM"), so foods eaten around then are "usual around now".
+    public static func isLateNight(_ time: Date, timeZone: TimeZone) -> Bool {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let hour = calendar.component(.hour, from: time)
+        return hour >= 22 || hour < 4
+    }
+
     /// The meal a person is most likely logging at a local time.
     ///
     /// A habit wins over the clock: the meal logged most often within 90

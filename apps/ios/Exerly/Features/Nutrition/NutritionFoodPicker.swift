@@ -365,8 +365,10 @@ struct NutritionFoodPicker: View {
         NutritionStore.defaultMeals.contains(meal) ? NutritionStore.defaultMeals : NutritionStore.defaultMeals + [meal]
     }
 
+    /// "Usual around 7 AM"; late at night, when an hour reads oddly, "Usual around now".
     private var suggestedTitle: String {
-        "Usual around \(Date.now.formatted(Date.FormatStyle(timeZone: timeZone).hour()))"
+        NutritionStore.isLateNight(.now, timeZone: timeZone) ? "Usual around now"
+            : "Usual around \(Date.now.formatted(Date.FormatStyle(timeZone: timeZone).hour()))"
     }
 
     /// Recent and suggested foods are fixed when the screen opens, so rows

@@ -18,6 +18,20 @@ import Testing
         return calendar.date(from: DateComponents(year: date.year, month: date.month, day: date.day, hour: hour, minute: minute))!
     }
 
+    @Test func lateNightRunsFromTenAtNightToFourInTheMorning() {
+        func at(_ hour: Int, _ minute: Int = 0) -> Date {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = newYork
+            return calendar.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: hour, minute: minute))!
+        }
+        #expect(NutritionStore.isLateNight(at(0, 30), timeZone: newYork))
+        #expect(NutritionStore.isLateNight(at(22), timeZone: newYork))
+        #expect(NutritionStore.isLateNight(at(3, 59), timeZone: newYork))
+        #expect(!NutritionStore.isLateNight(at(4), timeZone: newYork))
+        #expect(!NutritionStore.isLateNight(at(21, 59), timeZone: newYork))
+        #expect(!NutritionStore.isLateNight(at(0, 30), timeZone: TimeZone(identifier: "Europe/London")!), "Read in the zone given")
+    }
+
     @Test func withoutHistoryTheMealFollowsTheClock() throws {
         let nutrition = try store()
         let expected = [(6, "Breakfast"), (10, "Breakfast"), (11, "Lunch"), (15, "Snacks"), (18, "Dinner"), (22, "Snacks"), (2, "Snacks")]
