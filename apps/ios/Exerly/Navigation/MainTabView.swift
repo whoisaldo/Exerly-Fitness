@@ -5,13 +5,29 @@ enum MainTab: Hashable {
     case today, training, progress, profile, search
 }
 
+/// A link from a widget, control or intent, held until the signed-in tabs
+/// follow it: after a launch for it, they appear a moment later.
+@MainActor
+final class ExerlyLinkRouter: ObservableObject {
+    static let shared = ExerlyLinkRouter()
+    @Published var pending: URL?
+
+    /// Lets the controls' intents, run in the app's process, open their screen.
+    static func install() {
+        ExerlyLinkHandler.open = { shared.pending = $0 }
+    }
+}
+
 struct MainTabView: View {
     @EnvironmentObject private var sync: SyncEngine
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var account: AppAccountWorkspace
+    @ObservedObject private var links = ExerlyLinkRouter.shared
     @State private var selectedTab: MainTab = .today
     /// Counts returns to the Profile tab, which then starts from its top.
     @State private var profileEntries = 0
+    /// Scan barcode or Weigh in, for Today to open.
+    @State private var todayLink: URL?
 
     private var unit: MassUnit { auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds }
     private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
@@ -21,7 +37,7 @@ struct MainTabView: View {
             Tab("Today", systemImage: "house", value: .today) {
                 NavigationStack {
                     if let id = auth.currentUser?.id {
-                        TodayHostView(accountID: id, unit: unit, timeZone: timeZone) { selectedTab = .training }
+                        TodayHostView(accountID: id, unit: unit, timeZone: timeZone, link: $todayLink) { selectedTab = .training }
                     }
                 }
             }
@@ -52,10 +68,29 @@ struct MainTabView: View {
         }
         .tint(Color.exPrimaryText)
         .environment(\.accountTimeZone, timeZone)
-        // Widgets and the workout's Live Activity open their tab.
-        .onOpenURL { url in
-            if url == ExerlyLinks.train { selectedTab = .training } else if url == ExerlyLinks.today { selectedTab = .today }
+        // Widgets, controls and the workout's Live Activity open their screen.
+        .task(id: "\(links.pending?.absoluteString ?? "")-\(account.training?.identity.uuidString ?? "")") { follow() }
+    }
+
+    private func follow() {
+        guard let url = links.pending else { return }
+        switch url {
+        case ExerlyLinks.today: selectedTab = .today
+        case ExerlyLinks.train: selectedTab = .training
+        case ExerlyLinks.search: selectedTab = .search
+        case ExerlyLinks.scan, ExerlyLinks.weighIn:
+            selectedTab = .today
+            todayLink = url
+        case ExerlyLinks.startWorkout:
+            // Waits for the account's data, then does what Today's Start does.
+            guard let workspace = account.training, workspace.accountID == auth.currentUser?.id else { return }
+            if workspace.store.activeSession == nil, (try? workspace.startNextWorkout(timeZone: timeZone, unit: unit)) == true {
+                Task { await workspace.synchronize() }
+            }
+            selectedTab = .training
+        default: break
         }
+        links.pending = nil
     }
 }
 

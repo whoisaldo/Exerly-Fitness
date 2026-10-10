@@ -23,6 +23,8 @@ struct RootView: View {
         }
         .tint(Color.exPrimaryText)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+        // Kept until the signed-in tabs can follow it, so a link that launched the app isn't lost.
+        .onOpenURL { ExerlyLinkRouter.shared.pending = $0 }
     }
 
     private var accountContent: some View {
@@ -72,7 +74,10 @@ struct RootView: View {
             await account.retryCleanup(auth: authVM)
         }
         .task(id: account.training?.identity) {
-            if let workspace = account.training { await SetupWeighIn.recordIfPending(workspace) }
+            guard let workspace = account.training else { return }
+            // Phrases that name a usual food are built from the account's foods.
+            ExerlyShortcuts.updateAppShortcutParameters()
+            await SetupWeighIn.recordIfPending(workspace)
         }
         .task(id: authVM.accountsAwaitingLocalCleanup) {
             await account.retryCleanup(auth: authVM)

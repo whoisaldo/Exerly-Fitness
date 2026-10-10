@@ -5,6 +5,7 @@ struct TodayHostView: View {
     let accountID: String
     let unit: MassUnit
     let timeZone: TimeZone
+    @Binding var link: URL?
     let showTraining: () -> Void
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var auth: AuthViewModel
@@ -13,7 +14,7 @@ struct TodayHostView: View {
         Group {
             if let workspace = account.training, workspace.accountID == accountID,
                let api = auth.accountAPI, api.accountID == accountID {
-                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, showTraining: showTraining)
+                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, link: $link, showTraining: showTraining)
                     .id(workspace.identity)
             } else if account.openingError != nil {
                 ContentUnavailableView {
@@ -36,6 +37,8 @@ struct TodayView: View {
     let api: AccountAPI
     let unit: MassUnit
     let timeZone: TimeZone
+    /// Scan barcode or Weigh in from a control or intent, opened once on today.
+    @Binding var link: URL?
     let showTraining: () -> Void
     @State private var date: LocalDate
     @State private var openedOn: LocalDate
@@ -90,11 +93,13 @@ struct TodayView: View {
         }
     }
 
-    init(workspace: TrainingWorkspace, api: AccountAPI, unit: MassUnit, timeZone: TimeZone, showTraining: @escaping () -> Void) {
+    init(workspace: TrainingWorkspace, api: AccountAPI, unit: MassUnit, timeZone: TimeZone, link: Binding<URL?>,
+         showTraining: @escaping () -> Void) {
         self.workspace = workspace
         self.api = api
         self.unit = unit
         self.timeZone = timeZone
+        _link = link
         self.showTraining = showTraining
         _date = State(initialValue: LocalDate(Date(), in: timeZone))
         _openedOn = State(initialValue: LocalDate(Date(), in: timeZone))
@@ -188,6 +193,7 @@ struct TodayView: View {
             if suggestionsLogged.isEmpty { refreshSuggestions() }
         }
         .onChange(of: date) { _, _ in refreshSuggestions() }
+        .task(id: link) { openLink() }
         .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight, unit: unit) : nil }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { backgrounded = true }
@@ -202,6 +208,17 @@ struct TodayView: View {
                 refreshSuggestions()
             }
         }
+    }
+
+    private func openLink() {
+        guard let link else { return }
+        if link == ExerlyLinks.scan {
+            date = today
+            destination = .scan(currentMeal)
+        } else if link == ExerlyLinks.weighIn {
+            destination = .weighIn
+        }
+        self.link = nil
     }
 
     // MARK: Header

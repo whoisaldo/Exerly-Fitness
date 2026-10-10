@@ -60,9 +60,17 @@ extension WorkoutActivityAttributes.ContentState {
     func activeRest(isStale: Bool) -> WorkoutActivityAttributes.Rest? { isStale ? nil : rest }
 }
 
-/// Links from widgets and the Live Activity into the app.
+/// Links from widgets, controls and the Live Activity into the app.
 enum ExerlyLinks {
     static let today = URL(string: "exerly://today")!
     /// The Train tab, with the workout in progress.
     static let train = URL(string: "exerly://train")!
+    /// The food search tab.
+    static let search = URL(string: "exerly://search")!
+    /// The barcode scanner over Today.
+    static let scan = URL(string: "exerly://scan")!
+    /// A new weigh-in over Today.
+    static let weighIn = URL(string: "exerly://weigh-in")!
+    /// Starts today's workout, or returns to the one in progress.
+    static let startWorkout = URL(string: "exerly://start-workout")!
 }
