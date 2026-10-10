@@ -2,22 +2,28 @@ import ExerlyCore
 import SwiftUI
 
 /// One nutrient over the span: its average against the goal, day by day, and
-/// every food that supplied it with its share.
+/// every food that supplied it with its share. Its goal from today can be
+/// changed and the nutrient pinned to Today from here.
 struct NutrientDetailView: View {
-    let store: NutritionStore
+    @ObservedObject var workspace: TrainingWorkspace
     let row: NutrientOverview.Row
     let series: IntakeSeries
     let range: IntakeRange
     let today: LocalDate
+    let timeZone: TimeZone
     @State private var showsAll = false
+    @State private var editsGoal = false
+    @State private var error: String?
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    private var store: NutritionStore { workspace.nutrition }
     private var nutrient: Nutrient { row.nutrient }
 
     var body: some View {
         let contributions = store.contributions(of: nutrient, from: series.from, through: series.through)
         ExScreen {
             summary(contributions)
+            goalCard
             if range != .yesterday, series.countedDays > 0 {
                 NutrientDayChart(series: series, nutrient: nutrient, range: range, today: today)
             }
@@ -25,6 +31,70 @@ struct NutrientDetailView: View {
         }
         .navigationTitle(IntakeFormat.name(nutrient))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $editsGoal) { NutrientGoalEditor(workspace: workspace, nutrient: nutrient, timeZone: timeZone) }
+    }
+
+    // MARK: Goal from today
+
+    /// The goal in force today, which the span above may not have had yet,
+    /// with Edit and Pin. Energy and the macros take theirs from Targets.
+    @ViewBuilder private var goalCard: some View {
+        if !nutrient.isTarget, let plan = store.plan(on: today) {
+            let goal = plan.goal(for: nutrient, on: today)
+            let mine = plan.nutrientGoals?[nutrient] != nil
+            let pins = plan.pinnedNutrients ?? []
+            let pinned = pins.contains(nutrient)
+            let full = !pinned && pins.count >= NutritionPlan.maximumPins
+            ExCard {
+                ExEyebrow("Goal from today", color: .exPrimaryText)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(goal.map { IntakeFormat.goalSummary($0, nutrient) } ?? "No goal").font(.exH3).monospacedDigit()
+                        .foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
+                    Text(mine ? "Yours. Earlier days keep the goal they had." : goal == nil ? "There's no daily value for it."
+                         : "The US FDA daily value, until you set your own.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Goal from today")
+                .accessibilityValue((goal.map { IntakeFormat.goalSummary($0, nutrient, spoken: true) } ?? "No goal")
+                    + (goal == nil ? "" : mine ? ", your goal" : ", US FDA daily value"))
+                .accessibilityIdentifier("nutrition.detail.goal")
+                let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: ExSpacing.small))
+                    : AnyLayout(HStackLayout(spacing: ExSpacing.small))
+                layout {
+                    Button { editsGoal = true } label: {
+                        Label(goal == nil ? "Set a goal" : "Edit goal", systemImage: "slider.horizontal.3")
+                    }
+                    .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("nutrition.detail.editGoal")
+                    Button { pin(!pinned) } label: {
+                        Label(pinned ? "On Today" : "Pin to Today", systemImage: pinned ? "pin.fill" : "pin")
+                    }
+                    .buttonStyle(ExActionStyle(secondary: true)).disabled(full)
+                    .accessibilityLabel(pinned ? "Unpin from Today" : "Pin to Today")
+                    .accessibilityIdentifier("nutrition.detail.pin")
+                }
+                .sensoryFeedback(.selection, trigger: pinned)
+                if full {
+                    Text("Today shows \(NutritionPlan.maximumPins) already. Unpin one in Targets → Nutrient goals to pin this.")
+                        .font(.exSmall).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
+                }
+                if let error {
+                    Text(error).font(.exCaption).foregroundStyle(Color.exError).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func pin(_ pinned: Bool) {
+        error = nil
+        do {
+            try store.setPinned(nutrient, pinned, timeZone: timeZone)
+        } catch {
+            self.error = TargetsFormat.message(error)
+            return
+        }
+        let workspace = workspace
+        Task { await workspace.synchronize() }
     }
 
     // MARK: Summary

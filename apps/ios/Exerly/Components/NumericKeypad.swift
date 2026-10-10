@@ -10,12 +10,16 @@ struct ExNumericTextField: UIViewRepresentable {
     var integer = false
     var centered = false
     var identifier = ""
+    /// Takes focus with its text selected once on screen, for an editor
+    /// whose one job is this number.
+    var focusOnAppear = false
     @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeUIView(context: Context) -> UITextField {
-        let field = UITextField()
+        let field = FocusingTextField()
+        field.focusOnAppear = focusOnAppear
         field.delegate = context.coordinator
         field.adjustsFontForContentSizeCategory = true
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -81,6 +85,22 @@ struct ExNumericTextField: UIViewRepresentable {
         init(_ parent: ExNumericTextField) { self.parent = parent }
 
         @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
+    }
+}
+
+/// A text field that can take focus the first time it reaches a window,
+/// which a sheet's content only does once it is presented.
+private final class FocusingTextField: UITextField {
+    var focusOnAppear = false
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard focusOnAppear, window != nil else { return }
+        focusOnAppear = false
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.becomeFirstResponder() else { return }
+            self.selectAll(nil)
+        }
     }
 }
 

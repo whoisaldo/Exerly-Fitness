@@ -121,6 +121,40 @@ enum IntakeFormat {
         return parts.joined(separator: ", ")
     }
 
+    /// A goal in the editor's words: "At least 28 g", "At least 25 g, about 35 g".
+    static func goalSummary(_ goal: NutrientGoal, _ nutrient: Nutrient, spoken: Bool = false) -> String {
+        let amount = spoken ? spokenAmount : self.amount
+        var parts: [String] = []
+        if let floor = goal.floor { parts.append("at least \(amount(floor, nutrient))") }
+        if let target = goal.target { parts.append("about \(amount(target, nutrient))") }
+        if let ceiling = goal.ceiling { parts.append("at most \(amount(ceiling, nutrient))") }
+        let text = parts.joined(separator: ", ")
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
+    /// How a pinned nutrient's day stands: "10 g to go", "1,060 mg left",
+    /// "240 mg over", or its goal when nothing reports it.
+    static func standing(_ day: NutrientDay, spoken: Bool = false) -> String {
+        let amount = spoken ? spokenAmount : self.amount
+        guard let goal = day.goal else { return "No goal" }
+        guard let eaten = day.amount, let standing = day.standing else { return goalSummary(goal, day.nutrient, spoken: spoken) }
+        switch standing {
+        case .short(let toGo): return "\(amount(toGo, day.nutrient)) to go"
+        case .over(let over): return "\(amount(over, day.nutrient)) over"
+        case .met(let left?): return "\(amount(left, day.nutrient)) left"
+        case .met(nil):
+            if goal.floor != nil, let target = goal.target, eaten < target { return "\(amount(target - eaten, day.nutrient)) to target" }
+            return "Goal met"
+        }
+    }
+
+    /// The denominator behind a day's total, when some foods didn't report
+    /// the nutrient: "From 3 of 5 foods". Nil when all or none did.
+    static func completeness(reporting: Int, entries: Int, spoken: Bool = false) -> String? {
+        guard reporting > 0, reporting < entries else { return nil }
+        return "From \(reporting) of \(entries) foods\(spoken ? " that report it" : "")"
+    }
+
     static func days(_ count: Int) -> String { count == 1 ? "1 day" : "\(count) days" }
     static func entries(_ count: Int) -> String { count == 1 ? "1 entry" : "\(count) entries" }
 

@@ -339,6 +339,7 @@ struct TargetsDetailRow: View {
     let title: String
     let value: String
     var detail: String?
+    var hint = "Opens the plan editor"
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -367,7 +368,7 @@ struct TargetsDetailRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
         .accessibilityValue([value, detail].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityHint("Opens the plan editor")
+        .accessibilityHint(hint)
         .accessibilityAddTraits(.isButton)
     }
 }

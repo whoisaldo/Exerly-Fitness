@@ -106,12 +106,16 @@ struct TodayWeekStrip: View {
     }
 }
 
-/// The day's calories as a ring, with the three macros beside it.
+/// The day's calories as a ring, with the three macros beside it and any
+/// pinned nutrients under them.
 struct TodayNutritionCard: View {
     let progress: DayProgress
     /// Opens targets for a day without them; nil for a past day, which
     /// only shows what was eaten.
     let onSetTargets: (() -> Void)?
+    /// The pinned nutrients' day, under the macros.
+    var pinned: [NutrientDay] = []
+    var onPinned: () -> Void = {}
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .title) private var ringSize: CGFloat = 116
 
@@ -128,6 +132,10 @@ struct TodayNutritionCard: View {
                         TodayMacroLine(title: "Carbs", progress: progress.carbohydrate, color: .exAccent)
                         TodayMacroLine(title: "Fat", progress: progress.fat, color: .exSecondary)
                     }
+                }
+                if !pinned.isEmpty {
+                    TargetsDivider()
+                    TodayPinnedNutrients(days: pinned, open: onPinned)
                 }
                 if [progress.energy, progress.protein, progress.carbohydrate, progress.fat].contains(where: { $0.unreported > 0 }) {
                     Text("Some labels omit nutrients, so totals may be low.")

@@ -45,6 +45,8 @@ struct TodayView: View {
     @State private var destination: Destination?
     /// Targets push, as they do from Profile.
     @State private var showsTargets = false
+    /// Nutrient goals and pins, from a pinned nutrient.
+    @State private var showsGoals = false
     @State private var toast: Toast?
     @State private var plan: WorkoutPlan?
     /// "Log again" as it stood when the screen opened, so chips don't move
@@ -130,7 +132,8 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Review changes")
                 }
-                TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { showsTargets = true })
+                TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { showsTargets = true },
+                                   pinned: store.nutrientDays(store.pinnedNutrients(today: today), on: date)) { showsGoals = true }
                 quickActions
                 if isToday { suggestions }
                 if let error = actions.error {
@@ -185,6 +188,10 @@ struct TodayView: View {
         .sheet(item: $destination) { sheet($0) }
         .navigationDestination(isPresented: $showsTargets) {
             TargetsView(workspace: workspace, unit: unit, timeZone: timeZone)
+        }
+        .sheet(isPresented: $showsGoals) {
+            NavigationStack { NutrientGoalsView(workspace: workspace, timeZone: timeZone) { showsGoals = false } }
+                .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         }
         .onAppear { if suggested == nil { refreshSuggestions() } }
         .task {
@@ -629,7 +636,10 @@ struct TodayView: View {
         case .nutrients:
             NavigationStack {
                 ExScreen {
-                    NutritionAmountsView(amounts: store.summary(on: date).totals)
+                    let summary = store.summary(on: date)
+                    NutritionAmountsView(amounts: summary.totals) {
+                        IntakeFormat.completeness(reporting: summary.reporting[$0] ?? 0, entries: summary.entries)
+                    }
                     Text("Totals use reported nutrients. Missing values do not mean zero.")
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 }

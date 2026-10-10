@@ -57,6 +57,8 @@ struct NutritionConfirmation: View {
 /// standard nutrients are always listed; the rest once a food reports them.
 struct NutritionAmountsView: View {
     let amounts: NutrientAmounts
+    /// A line under an amount, such as how many foods it comes from.
+    var note: (Nutrient) -> String? = { _ in nil }
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private static let groups: [[Nutrient.Group]] = [[.energy, .macros], [.carbohydrates], [.fats], [.vitamins], [.minerals],
@@ -83,9 +85,14 @@ struct NutritionAmountsView: View {
 
     private func row(_ nutrient: Nutrient) -> some View {
         let name = Text(nutrient == .energy ? "Calories" : nutrient.name).font(.exBody).foregroundStyle(Color.exTextPrimary)
-        let amount = Text(amounts[nutrient].map { FoodFormat.nutrient($0, nutrient) } ?? "Not reported")
+        let text = Text(amounts[nutrient].map { FoodFormat.nutrient($0, nutrient) } ?? "Not reported")
             .font(.exBody).monospacedDigit()
             .foregroundStyle(amounts[nutrient] == nil ? Color.exTextMuted : Color.exTextPrimary)
+        let note = self.note(nutrient)
+        let amount = VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 1) {
+            text
+            if let note { Text(note).font(.exSmall).foregroundStyle(Color.exTextMuted) }
+        }
         return Group {
             if typeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 2) { name; amount }
