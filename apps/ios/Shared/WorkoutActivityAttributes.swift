@@ -73,4 +73,15 @@ enum ExerlyLinks {
     static let weighIn = URL(string: "exerly://weigh-in")!
     /// Starts today's workout, or returns to the one in progress.
     static let startWorkout = URL(string: "exerly://start-workout")!
+
+    /// One of the person's foods, ready to log over Today.
+    static func food(_ id: String) -> URL {
+        var link = URLComponents(string: "exerly://food")!
+        link.queryItems = [URLQueryItem(name: "id", value: id)]
+        return link.url!
+    }
+    static func foodID(in url: URL) -> String? {
+        guard url.scheme == "exerly", url.host == "food" else { return nil }
+        return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "id" }?.value
+    }
 }

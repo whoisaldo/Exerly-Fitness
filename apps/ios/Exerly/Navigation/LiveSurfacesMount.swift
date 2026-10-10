@@ -3,9 +3,9 @@ import SwiftUI
 import UserNotifications
 
 extension View {
-    /// Keeps the workout's Live Activity, the widgets' snapshot and the watch
-    /// in step with the open account, and clears them (and any delivered
-    /// notifications) at sign-out.
+    /// Keeps the workout's Live Activity, the widgets' snapshot, the watch and
+    /// Spotlight in step with the open account, and clears them (and any
+    /// delivered notifications) at sign-out.
     func liveSurfaces(_ account: AppAccountWorkspace, signedOut: Bool, unit: MassUnit, timeZone: TimeZone) -> some View {
         modifier(LiveSurfacesMount(account: account, workspace: account.training, signedOut: signedOut,
                                    unit: unit, timeZone: timeZone))
@@ -36,11 +36,16 @@ private struct LiveSurfacesMount: ViewModifier {
                 guard let workspace else { return }
                 await WidgetSnapshotWriter(workspace: workspace, unit: unit, timeZone: timeZone).follow()
             }
+            .task(id: "\(workspace?.identity.uuidString ?? "")-\(unit)") {
+                guard let workspace else { return }
+                await FoodSpotlight.follow(IntentAccess.Account(workspace: workspace, unit: unit, timeZone: timeZone))
+            }
             .task(id: signedOut) {
                 guard signedOut else { return }
                 await WorkoutActivityCoordinator.shared.endAll()
                 WidgetSnapshotWriter.clear()
                 WatchCoordinator.shared.signOut()
+                await FoodSpotlight.clear()
                 UNUserNotificationCenter.current().removeAllDeliveredNotifications()
             }
             #if DEBUG

@@ -159,6 +159,15 @@ enum LoggingActions {
         return store.food(foodID).flatMap { $0.archivedAt == nil ? store.quickPortion(for: $0, unit: account.unit) : nil }
     }
 
+    /// The person's own foods, for Spotlight: recently logged, then saved
+    /// foods and recipes, each once with the portion one tap logs.
+    static func ownFoods(in account: IntentAccess.Account) -> [QuickPortion] {
+        let store = account.store
+        let saved = store.foods.filter { $0.archivedAt == nil }.compactMap { store.quickPortion(for: $0, unit: account.unit) }
+        var seen = Set<String>()
+        return (store.recentPortions(limit: 100) + saved).filter { seen.insert($0.id).inserted }
+    }
+
     /// Today's first Log again chip for a time of day, logged into `meal`:
     /// a meal reminder's Log usual button.
     static func logUsual(_ meal: String, at time: Date, in account: IntentAccess.Account) throws -> String {

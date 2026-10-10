@@ -1,4 +1,5 @@
 import AppIntents
+import CoreSpotlight
 import ExerlyCore
 import Foundation
 
@@ -18,7 +19,8 @@ enum IntentMeal: String, AppEnum {
 }
 
 /// A food the person logs: usual at this time of day, recent, or saved.
-struct FoodEntity: AppEntity {
+/// Their own foods are in Spotlight too (see FoodSpotlight).
+struct FoodEntity: IndexedEntity, Hashable {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Food"
     static let defaultQuery = FoodEntityQuery()
 
@@ -28,6 +30,13 @@ struct FoodEntity: AppEntity {
     let portion: String
 
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)", subtitle: "\(portion)") }
+
+    var attributeSet: CSSearchableItemAttributeSet {
+        let attributes = defaultAttributeSet
+        attributes.title = name
+        attributes.contentDescription = portion
+        return attributes
+    }
 
     init(_ portion: QuickPortion, unit: MassUnit) {
         id = portion.id
@@ -57,6 +66,49 @@ struct FoodEntityQuery: EntityStringQuery {
         try await IntentAccess().perform(changing: false) { account in
             LoggingActions.foods(matching: string, in: account).map { FoodEntity($0, unit: account.unit) }
         }
+    }
+}
+
+/// A food chosen in Spotlight that the Log a food shortcut doesn't offer,
+/// such as a saved food or recipe never logged: its portion sheet on Today,
+/// so the portion is checked before one tap logs it. (Spotlight shows usual
+/// and recent foods as that shortcut, which logs the remembered portion.)
+struct OpenFoodIntent: OpenIntent {
+    static let title: LocalizedStringResource = "Open a food"
+    static let description = IntentDescription("Opens one of your foods, ready to log with the portion you last had.")
+
+    @Parameter(title: "Food") var target: FoodEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        ExerlyLinkHandler.open?(ExerlyLinks.food(target.id))
+        return .result()
+    }
+}
+
+/// Keeps the person's own foods in Spotlight: recently logged and saved
+/// ones, recipes included, never the food database.
+@MainActor
+enum FoodSpotlight {
+    /// Indexes the account's foods on every change until the calling task is
+    /// cancelled. The first pass replaces whatever an earlier run left.
+    static func follow(_ account: IntentAccess.Account) async {
+        let index = CSSearchableIndex.default()
+        var indexed: [FoodEntity]?
+        for await foods in Observations({ @MainActor in LoggingActions.ownFoods(in: account).map { FoodEntity($0, unit: account.unit) } })
+        where foods != indexed {
+            if let indexed {
+                let gone = Set(indexed.map(\.id)).subtracting(foods.map(\.id))
+                if !gone.isEmpty { try? await index.deleteAppEntities(identifiedBy: Array(gone), ofType: FoodEntity.self) }
+            } else { await clear() }
+            try? await index.indexAppEntities(foods)
+            indexed = foods
+        }
+    }
+
+    /// At sign-out or account deletion.
+    static func clear() async {
+        try? await CSSearchableIndex.default().deleteAppEntities(ofType: FoodEntity.self)
     }
 }
 

@@ -3,8 +3,9 @@ import UserNotifications
 import XCTest
 @testable import Exerly
 
-/// What reminders' buttons do and say: the meal a reminder's time names,
-/// typed weights, confirmations, and accounts that can't log.
+/// What reminders' buttons do and say, and what Spotlight holds: the meal a
+/// reminder's time names, typed weights, confirmations, and accounts that
+/// can't log.
 @MainActor
 final class ReminderActionsTests: XCTestCase {
     private let zone = TimeZone(identifier: "America/New_York")!
@@ -233,6 +234,43 @@ final class ReminderActionsTests: XCTestCase {
             XCTAssertNil(notice)
             XCTAssertEqual(ExerlyLinkRouter.shared.pending, link)
         }
+    }
+
+    // MARK: Spotlight
+
+    func testSpotlightHoldsTheirOwnFoodsAndRecipesAndOpensOnesPortion() async throws {
+        let workspace = try TrainingWorkspace(accountID: "reminders", root: temporaryRoot())
+        let store = workspace.nutrition
+        let account = IntentAccess.Account(workspace: workspace, unit: .kilograms, timeZone: zone)
+        let oats = ExerlyCore.Food(name: "Synthetic oats", per100g: NutrientAmounts([.energy: 380]), servings: [Serving("cup", grams: 80)])
+        let archived = ExerlyCore.Food(name: "Synthetic old cereal", per100g: NutrientAmounts([.energy: 370]))
+        let bowl = ExerlyCore.Food.recipe(name: "Synthetic oat bowl", ingredients: [RecipeIngredient(food: oats.snapshot, grams: 80)],
+                                          servingCount: 2)
+        for food in [oats, archived, bowl] { try store.saveFood(food) }
+        try store.archiveFood(archived.id)
+        // Logged from the food database, never saved: recent, so theirs.
+        let pear = ExerlyCore.Food(name: "Synthetic pear", source: .usda, per100g: NutrientAmounts([.energy: 57]))
+        try store.log(pear, grams: 180, on: today, meal: "Snacks")
+
+        let foods = LoggingActions.ownFoods(in: account)
+        XCTAssertEqual(foods.first?.food.name, "Synthetic pear", "Recent first")
+        XCTAssertEqual(Set(foods.map(\.food.name)), ["Synthetic pear", "Synthetic oats", "Synthetic oat bowl"], "Archived foods leave Spotlight")
+        XCTAssertEqual(foods.first { $0.id == oats.id }?.serving?.name, "cup", "With the portion choosing it starts from")
+        let entity = FoodEntity(try XCTUnwrap(foods.first { $0.id == bowl.id }), unit: .kilograms)
+        XCTAssertEqual(entity.attributeSet.title, "Synthetic oat bowl")
+        XCTAssertEqual(entity.attributeSet.contentDescription, entity.portion)
+
+        ExerlyLinkRouter.install()
+        defer {
+            ExerlyLinkHandler.open = nil
+            ExerlyLinkRouter.shared.pending = nil
+        }
+        var open = OpenFoodIntent()
+        open.target = entity
+        _ = try await open.perform()
+        XCTAssertEqual(ExerlyLinkRouter.shared.pending, ExerlyLinks.food(bowl.id))
+        XCTAssertEqual(ExerlyLinks.foodID(in: ExerlyLinks.food("a b&c/d")), "a b&c/d")
+        XCTAssertNil(ExerlyLinks.foodID(in: ExerlyLinks.search))
     }
 
     // MARK: Preferences

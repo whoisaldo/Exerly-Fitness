@@ -714,3 +714,23 @@ delivered notifications.
 Taps from a banner or the Lock Screen: a usual breakfast is 2 (hold, Log
 usual breakfast); a weigh-in is 2 (hold, which opens the weight field because
 it is the reminder's only button, type, Log).
+
+## 2026-10-10: The person's foods in Spotlight
+
+`FoodEntity` is an `IndexedEntity`, indexed with `indexAppEntities`, the
+iOS 18+ way that lets Spotlight hand a result back to an `OpenIntent`. Only
+the person's own foods are indexed: the 100 most recently logged and their
+saved foods and recipes, not archived ones and never the food database. The
+index follows the library through `Observations` while the app runs, is
+rebuilt each time the account's data opens, and is emptied at sign-out and
+account deletion.
+
+Spotlight decides what choosing a result does, and on iOS 26 it splits the
+way I'd choose anyway. A food the Log a food shortcut offers (usual now, or
+one of the 30 most recent) shows as that shortcut: a tap logs the remembered
+portion and Spotlight shows the sentence it logged ("Logged Greek yogurt,
+plain, 170 g, to Breakfast. 1,856 kcal left today."), 1 tap after typing.
+Other indexed foods, saved foods and recipes never logged or logged long ago,
+run `OpenFoodIntent`, which opens the portion sheet over Today (at the last
+portion, else the first serving): 2 taps after typing. A portion just logged
+is safe to repeat without looking; a first serving is a guess worth seeing.
