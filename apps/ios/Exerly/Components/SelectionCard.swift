@@ -56,33 +56,3 @@ struct SelectionCard: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: isSelected)
     }
 }
-
-struct MultiSelectGrid<Item: Identifiable & Hashable>: View {
-    let items: [Item]
-    @Binding var selected: Set<Item>
-    let label: (Item) -> String
-    let icon: ((Item) -> String)?
-    var columns: Int = 2
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    var body: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : columns),
-            spacing: 10
-        ) {
-            ForEach(items) { item in
-                SelectionCard(
-                    title: label(item),
-                    icon: icon?(item),
-                    isSelected: selected.contains(item)
-                ) {
-                    if selected.contains(item) {
-                        selected.remove(item)
-                    } else {
-                        selected.insert(item)
-                    }
-                }
-            }
-        }
-    }
-}

@@ -1,76 +1,31 @@
 import ExerlyCore
 import SwiftUI
 
+/// First-run setup in five pages: about you, goal, everyday activity,
+/// training, and the targets they produce.
 struct OnboardingWizard: View {
     @StateObject private var state = OnboardingState(automaticallySync: true)
     @EnvironmentObject private var authVM: AuthViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ZStack {
-            Color.exBackground.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                topBar
-                progressBar
-                if state.repairSteps != nil {
-                    Text("Finish account setup. Your existing logs are kept; only missing details need attention.")
-                        .font(.callout).padding(.horizontal, 24).padding(.top, 12)
-                }
-                if let message = state.cloudMessage {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(message).font(.callout)
-                        if state.cloudConflict == nil {
-                            Button("Retry draft sync") { Task { await state.syncCloud() } }
-                                .frame(minHeight: 44)
-                        }
-                    }.padding(.horizontal, 24).accessibilityIdentifier("setup.cloudStatus")
-                }
-                if let error = state.validationError ?? authVM.error {
-                    Text(error).font(.callout).foregroundStyle(.exError)
-                        .padding(.horizontal, 24).padding(.top, 12)
-                        .accessibilityIdentifier("setup.error")
-                }
-                if state.repairUnavailable {
-                    Button("Retry account repair") {
-                        Task {
-                            await authVM.checkAuth()
-                            if let accountID = authVM.currentUser?.id {
-                                state.restoreCheckpoint(accountID: accountID, name: authVM.currentUser?.name, repair: authVM.setupStatus)
-                            }
-                        }
-                    }.frame(minHeight: 44)
-                }
-                stepContent
-            }
+        VStack(spacing: 0) {
+            topBar
+            notices
+            stepContent
         }
-         .task(id: authVM.setupStatus?.needs_repair) {
+        .background(Color.exBackground.ignoresSafeArea())
+        .task(id: authVM.setupStatus?.needs_repair) {
             if let accountID = authVM.currentUser?.id {
                 state.restoreCheckpoint(accountID: accountID, name: authVM.currentUser?.name, repair: authVM.setupStatus)
                 await state.syncCloud()
             }
         }
+        .onChange(of: state.validationError) { _, error in
+            if let error { UIAccessibility.post(notification: .announcement, argument: error) }
+        }
         .sheet(isPresented: Binding(get: { state.cloudConflict != nil }, set: { _ in })) {
-            if let remote = state.cloudConflict {
-                NavigationStack {
-                    ExList {
-                        Section("On this device") {
-                            draftSummary(state.request())
-                        }
-                        Section("Saved on another device") {
-                            draftSummary(remote.answers)
-                        }
-                        Section {
-                            Button("Use saved server answers") {
-                                Task { await state.resolveCloudConflict(useServer: true) }
-                            }.frame(minHeight: 44)
-                            Button("Keep these device answers") {
-                                Task { await state.resolveCloudConflict(useServer: false) }
-                            }.frame(minHeight: 44)
-                        }
-                    }.navigationTitle("Review setup changes")
-                }.interactiveDismissDisabled()
-            }
+            if let remote = state.cloudConflict { conflict(remote) }
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -80,50 +35,128 @@ struct OnboardingWizard: View {
         }
     }
 
+    // MARK: Chrome
+
+    private var pageIndex: Int {
+        state.repairSteps == nil ? state.questionNumber : (state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1
+    }
+    private var pageCount: Int { state.repairSteps == nil ? state.questionCount : state.visibleSteps.count }
+
     private var topBar: some View {
-        HStack {
-            if state.visibleSteps.first != state.step {
-                Button { state.prevStep() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.exTextPrimary)
-                        .frame(width: 44, height: 44)
-                }.accessibilityLabel("Previous setup step").disabled(state.isSubmitting)
-            } else {
-                Spacer().frame(width: 44)
+        HStack(spacing: ExSpacing.item) {
+            Button { state.prevStep() } label: {
+                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.exTextPrimary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.exSurface1, in: Circle())
             }
-
-            Spacer()
-
-            Text(state.repairSteps == nil ? "\(state.questionNumber) of \(state.questionCount)" : "Repair \((state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1) of \(state.visibleSteps.count)")
-                .font(.exLabel)
-                .foregroundStyle(.exTextSecondary)
-
-            Spacer()
-            Spacer().frame(width: 44)
+            .buttonStyle(TodayPressStyle())
+            .accessibilityLabel("Previous setup step")
+            .disabled(state.isSubmitting)
+            .opacity(state.isFirstPage ? 0 : 1)
+            .accessibilityHidden(state.isFirstPage)
+            HStack(spacing: 4) {
+                ForEach(1...max(pageCount, 1), id: \.self) { index in
+                    Capsule().fill(index <= pageIndex ? Color.exPrimary : Color.exPrimary.opacity(0.16))
+                        .frame(height: 4)
+                }
+            }
+            .animation(reduceMotion ? nil : .snappy, value: pageIndex)
+            .accessibilityHidden(true)
+            Text(state.repairSteps == nil ? "\(pageIndex) of \(pageCount)" : "Repair \(pageIndex) of \(pageCount)")
+                .font(.exCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Color.exTextSecondary)
+                .fixedSize()
+                .accessibilityLabel(state.repairSteps == nil ? "Step \(pageIndex) of \(pageCount)" : "Repair \(pageIndex) of \(pageCount)")
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, ExSpacing.page)
+        .padding(.vertical, ExSpacing.tight)
     }
 
-    private var progressBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.exSurface2)
-                Capsule()
-                    .fill(Color.exPrimary)
-                    .frame(width: geo.size.width * progress)
-                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: state.questionNumber)
+    @ViewBuilder private var notices: some View {
+        VStack(alignment: .leading, spacing: ExSpacing.small) {
+            if state.repairSteps != nil {
+                notice("Finish account setup. Your logs are kept; only the missing details need an answer.", icon: "wrench.and.screwdriver")
+            }
+            if let message = state.cloudMessage {
+                VStack(alignment: .leading, spacing: ExSpacing.tight) {
+                    notice(message, icon: "icloud.slash")
+                    if state.cloudConflict == nil {
+                        Button("Retry draft sync") { Task { await state.syncCloud() } }
+                            .font(.exLabel).foregroundStyle(Color.exPrimaryText).frame(minHeight: 44)
+                    }
+                }.accessibilityIdentifier("setup.cloudStatus")
+            }
+            if let error = state.validationError ?? authVM.error {
+                Label(error, systemImage: "exclamationmark.circle.fill")
+                    .font(.exLabel).foregroundStyle(Color.exError)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("setup.error")
+            }
+            if state.repairUnavailable {
+                Button("Retry account repair") {
+                    Task {
+                        await authVM.checkAuth()
+                        if let accountID = authVM.currentUser?.id {
+                            state.restoreCheckpoint(accountID: accountID, name: authVM.currentUser?.name, repair: authVM.setupStatus)
+                        }
+                    }
+                }
+                .buttonStyle(ExActionStyle(secondary: true))
             }
         }
-        .frame(height: 4)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, ExSpacing.page)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.snappy, value: state.validationError)
     }
 
-    private var progress: Double {
-        if state.repairSteps != nil {
-            return Double((state.visibleSteps.firstIndex(of: state.step) ?? 0) + 1) / Double(state.visibleSteps.count)
+    private func notice(_ text: String, icon: String) -> some View {
+        Label(text, systemImage: icon).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(ExSpacing.item)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.control, style: .continuous))
+    }
+
+    // MARK: Pages
+
+    private var pageKey: String { "\(state.step <= 1 ? 0 : state.step)-\(state.step == 3 ? state.planningPage : 0)" }
+
+    private var stepContent: some View {
+        ZStack {
+            Group {
+                switch state.step {
+                case 0, 1: SetupAboutYouStep(state: state)
+                case 2: SetupGoalStep(state: state)
+                case 3: SetupWeekStep(state: state)
+                default: SetupReviewStep(state: state, onComplete: completeOnboarding)
+                }
+            }
+            .id(pageKey)
+            .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: state.direction).combined(with: .opacity),
+                                                             removal: .opacity))
         }
-        return Double(state.questionNumber) / Double(state.questionCount)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: pageKey)
+        .disabled(state.isSubmitting || state.repairUnavailable)
+        .frame(maxHeight: .infinity)
+    }
+
+    private func conflict(_ remote: SetupCloudDraft) -> some View {
+        NavigationStack {
+            ExList {
+                Section("On this device") { draftSummary(state.request()) }
+                Section("Saved on another device") { draftSummary(remote.answers) }
+                Section {
+                    Button("Use saved server answers") {
+                        Task { await state.resolveCloudConflict(useServer: true) }
+                    }.frame(minHeight: 44)
+                    Button("Keep these device answers") {
+                        Task { await state.resolveCloudConflict(useServer: false) }
+                    }.frame(minHeight: 44)
+                }
+            }
+            .navigationTitle("Review setup changes").navigationBarTitleDisplayMode(.inline)
+        }
+        .interactiveDismissDisabled()
     }
 
     private func draftSummary(_ answers: OnboardingRequest) -> some View {
@@ -138,28 +171,14 @@ struct OnboardingWizard: View {
             Text("Age \(answers.age) · \(heightLabel) · \(weight) \(unit.rawValue)")
             Text("Goal: \(answers.goal.replacingOccurrences(of: "_", with: " "))")
             Text("Activity: \(answers.activityLevel)")
-        }.font(.body).accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder
-    private var stepContent: some View {
-        Group {
-            switch state.step {
-            case 0: Step1Name(state: state)
-            case 1: Step2AgeGender(state: state)
-            case 2: Step4Goals(state: state)
-            case 3: Step5ActivityLevel(state: state)
-            default: Step10Results(state: state, onComplete: completeOnboarding)
-            }
-        }
-        .disabled(state.isSubmitting || state.repairUnavailable)
+        }.font(.exBody).accessibilityElement(children: .combine)
     }
 
     private func completeOnboarding() {
         guard !state.isSubmitting, !state.repairUnavailable else { return }
         if let invalid = (0..<state.totalSteps).first(where: { state.errorForStep($0) != nil }) {
-            state.step = invalid
             state.validationError = state.errorForStep(invalid)
+            if invalid != state.step { state.direction = .leading; state.step = invalid }
             return
         }
         state.isSubmitting = true
@@ -172,7 +191,10 @@ struct OnboardingWizard: View {
             let data = state.prepareSubmission()
             let success = await authVM.completeOnboarding(data, operationID: state.operationID)
             state.isSubmitting = false
-            if success { state.clearCheckpoint() }
+            if success {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                state.clearCheckpoint()
+            }
         }
     }
 }
