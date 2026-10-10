@@ -41,7 +41,14 @@ if [[ "$mode" == test ]]; then
   if [[ -n "${EXERLY_TEST_DESTINATION:-}" ]]; then
     destination="$EXERLY_TEST_DESTINATION"
   else
-    device="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for k,v in data["devices"].items() if "iOS" in k for d in v if "iPhone" in d["name"]))')"
+    # An iPhone on the newest iOS runtime: older runtimes are below the deployment target.
+    device="$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys
+data = json.load(sys.stdin)
+def version(key):
+    match = re.search(r"iOS-(\d+)-(\d+)", key)
+    return tuple(map(int, match.groups())) if match else (0, 0)
+runtimes = sorted((k for k in data["devices"] if "iOS" in k), key=version, reverse=True)
+print(next(d["udid"] for k in runtimes for d in data["devices"][k] if "iPhone" in d["name"]))')"
     destination="platform=iOS Simulator,id=$device"
   fi
   # Simulator ad-hoc signing supplies the entitlements Keychain requires.
