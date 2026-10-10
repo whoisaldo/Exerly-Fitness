@@ -85,7 +85,7 @@ enum DietaryStyle: String, CaseIterable, Identifiable, Codable {
     case standard, vegetarian, vegan, keto, paleo, mediterranean
 
     var id: String { rawValue }
-    var label: String { rawValue.capitalized }
+    var label: String { self == .standard ? "No special diet" : rawValue.capitalized }
 }
 
 enum Allergy: String, CaseIterable, Identifiable, Hashable, Codable {

@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 
 struct EditProfileView: View {
@@ -81,15 +82,16 @@ private struct PreferencesEditor: View {
         .navigationTitle("Preferences")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+            // One action: Done saves any edits, then closes once the account has them.
             ToolbarItem(placement: .confirmationAction) {
-                Button(store.draft?.pending == nil ? "Save" : "Retry save") {
+                Button(store.draft?.pending == nil ? "Done" : "Retry save") {
                     focusedField = nil
-                    perform { await store.save() }
+                    perform { await saveAndClose() }
                 }
-                .accessibilityLabel(store.draft?.pending == nil ? "Save preferences" : "Retry save")
+                .fontWeight(.semibold)
+                .accessibilityHint(store.hasEdits || store.draft?.pending != nil ? "Saves your changes and closes" : "Closes preferences")
                 .accessibilityIdentifier("preferences.save")
-                .disabled(store.isSaving || store.isLoading || !store.isReadable || store.conflict != nil || store.draft == nil)
+                .disabled(store.isSaving || store.isLoading)
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -108,6 +110,18 @@ private struct PreferencesEditor: View {
         }
         .task { store.activate(); await store.load() }
         .onDisappear { editTask?.cancel(); store.stop() }
+    }
+
+    /// Saves edits the account can take, and closes unless the save needs
+    /// attention: an error, a conflict to review, or a reply still owed. Edits
+    /// that can't be sent now stay in the draft on this device.
+    private func saveAndClose() async {
+        let canSave = store.isReadable && store.conflict == nil && store.draft != nil
+        if canSave, store.hasEdits || store.draft?.pending != nil {
+            await store.save()
+            guard store.error == nil, store.conflict == nil, store.draft?.pending == nil else { return }
+        }
+        dismiss()
     }
 
     private var statusSection: some View {
@@ -191,7 +205,10 @@ private struct PreferencesEditor: View {
     private var foodSection: some View {
         Section {
             DisclosureGroup("Food preferences", isExpanded: $foodExpanded) {
-                field("dietaryStyle")
+                field("dietaryStyle", text: Binding(
+                    // A saved choice from setup reads as its name, not its code.
+                    get: { fields["dietaryStyle"].flatMap(DietaryStyle.init(rawValue:))?.label ?? fields["dietaryStyle"] ?? "" },
+                    set: { store.edit("dietaryStyle", value: $0) }))
                 field("allergies", multiline: true)
                 Text("Enter one allergy per line. Check food labels when choosing products.")
                     .font(.subheadline).foregroundStyle(.secondary)
@@ -313,14 +330,14 @@ private struct PreferencesEditor: View {
         guard let total = UserEnteredNumber.parse(fields["height"] ?? ""), total > 0 else {
             feetText = ""; inchesText = ""; return
         }
-        var feet = Int(total / 12)
-        var inches = ((total - Double(feet * 12)) * 10).rounded() / 10
-        if inches >= 12 { feet += 1; inches = 0 }
-        feetText = String(feet)
-        inchesText = inches.formatted(.number.grouping(.never).precision(.fractionLength(0...1)))
+        // Whole inches, as Profile shows them; only a typed change is saved.
+        let height = USUnits.feetAndInches(centimeters: USUnits.centimeters(feet: 0, inches: total))
+        feetText = String(height.feet)
+        inchesText = height.inches.formatted(.number.grouping(.never).precision(.fractionLength(0)))
     }
 
-    private func field(_ key: String, label: String? = nil, keyboard: UIKeyboardType = .default, multiline: Bool = false) -> some View {
+    private func field(_ key: String, label: String? = nil, keyboard: UIKeyboardType = .default, multiline: Bool = false,
+                       text: Binding<String>? = nil) -> some View {
         let title = label ?? PreferenceFields.label(key)
         return VStack(alignment: .leading, spacing: 8) {
             Text(title).font(.subheadline.weight(.medium))
@@ -330,7 +347,7 @@ private struct PreferencesEditor: View {
                     .focused($focusedField, equals: key)
                     .accessibilityIdentifier("preferences.\(key)")
             } else {
-                TextField(title, text: binding(key))
+                TextField(title, text: text ?? binding(key))
                     .keyboardType(keyboard)
                     .focused($focusedField, equals: key)
                     .accessibilityIdentifier("preferences.\(key)")

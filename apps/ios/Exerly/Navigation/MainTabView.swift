@@ -10,6 +10,8 @@ struct MainTabView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @EnvironmentObject private var account: AppAccountWorkspace
     @State private var selectedTab: MainTab = .today
+    /// Counts returns to the Profile tab, which then starts from its top.
+    @State private var profileEntries = 0
 
     private var unit: MassUnit { auth.currentUser?.unitSystem == "metric" ? .kilograms : .pounds }
     private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
@@ -34,7 +36,7 @@ struct MainTabView: View {
                 NavigationStack { ProgressView_(initialDate: sync.today) }
             }
             Tab("Profile", systemImage: "person.crop.circle", value: .profile) {
-                NavigationStack { ProfileView() }
+                NavigationStack { ProfileView(entered: profileEntries) }
             }
             Tab("Log food", systemImage: "magnifyingglass", value: .search, role: .search) {
                 if let id = auth.currentUser?.id {
@@ -45,6 +47,9 @@ struct MainTabView: View {
         .modifier(LiveWorkoutAccessory(store: account.training?.store, hidden: selectedTab == .training) {
             selectedTab = .training
         })
+        .onChange(of: selectedTab) { old, new in
+            if new == .profile, old != .profile { profileEntries += 1 }
+        }
         .tint(Color.exPrimaryText)
         .environment(\.accountTimeZone, timeZone)
     }
