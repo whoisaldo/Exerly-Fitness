@@ -36,6 +36,8 @@ final class FailingPersistence: TrainingPersistence {
         var set = store.activeSession!.exercises[0].sets[0]
         set.primary = Effort(reps: 5, load: .kg(100))
         try store.updateSet(set, in: squat)
+        // A second set to come, so completing the first starts its rest.
+        try store.addSet(to: squat)
         return (persistence, store, squat, set.id)
     }
 

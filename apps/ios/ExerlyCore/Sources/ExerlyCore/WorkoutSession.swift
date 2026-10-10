@@ -162,5 +162,10 @@ public struct WorkoutSession: Sendable, Codable, Hashable, Identifiable {
     /// The calendar day the session belongs to, in the zone it started in.
     public var localDate: LocalDate { LocalDate(startedAt, in: timeZone) }
     public var isFinished: Bool { endedAt != nil }
+    /// It has sets and every one is done: nothing is left to do but finish.
+    public var isEverySetCompleted: Bool {
+        let sets = exercises.flatMap(\.sets)
+        return !sets.isEmpty && sets.allSatisfy(\.isCompleted)
+    }
     public var duration: Double? { endedAt.map { $0.timeIntervalSince(startedAt) } }
 }

@@ -247,8 +247,10 @@ struct TrainingSetRow: View {
     private var checkButton: some View {
         Button(action: actions.complete) {
             HStack(spacing: ExSpacing.small) {
+                // The symbol reads as "Selected" to VoiceOver; the button says what it does.
                 Image(systemName: "checkmark").font(.system(size: 15, weight: .bold))
                     .symbolEffect(.bounce, value: set.isCompleted)
+                    .accessibilityHidden(true)
                 if typeSize.isAccessibilitySize { Text(set.isCompleted ? "Done" : "Complete set").font(.exBodyMedium) }
             }
             .foregroundStyle(set.isCompleted ? Color.white : isNext ? Color.exPrimaryText : Color.exTextMuted)
@@ -266,6 +268,9 @@ struct TrainingSetRow: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(set.isCompleted ? "Reopen" : "Complete") set \(number), \(exercise.name)")
         .accessibilityValue(TrainingFormat.set(set, unit: unit))
+        // Only a done set is selected.
+        .accessibilityRemoveTraits(set.isCompleted ? [] : .isSelected)
+        .accessibilityAddTraits(set.isCompleted ? .isSelected : [])
         .accessibilityIdentifier("set.\(exercise.id.rawValue).\(number).done")
     }
 }

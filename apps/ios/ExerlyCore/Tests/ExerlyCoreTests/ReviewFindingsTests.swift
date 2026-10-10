@@ -13,6 +13,8 @@ import Testing
         var set = store.activeSession!.exercises[0].sets[0]
         set.primary = Effort(reps: 5, load: .kg(100))
         try store.updateSet(set, in: bench)
+        // A second set to come, so the first one's rest runs.
+        try store.addSet(to: bench)
         try store.completeSet(set.id)
         return (store, bench, store.activeSession!.exercises[0].sets[0])
     }

@@ -1322,8 +1322,8 @@ final class ProductionUITests: ExerlyUITestCase {
         try await control(["offline": true])
         replace(app.textFields["set.deadlift.3.load"], with: "1000", in: app)
         dismissKeyboard(app)
+        // Every set is done, so Finish saves without asking.
         tap(app.buttons["training.finish"], in: app)
-        tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["training.summaryDone"], in: app)
         tap(app.buttons["suggestions.open"], in: app)
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "suggestions.proposal.")).firstMatch
@@ -1400,8 +1400,8 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["Train"], in: app)
         XCTAssertTrue(app.navigationBars["Manual with checks off"].waitForExistence(timeout: 20))
         try await control(["offline": true])
+        // Every set is done, so Finish saves without asking.
         tap(app.buttons["training.finish"], in: app)
-        tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["training.summaryDone"], in: app)
         tap(app.buttons["observations.open"], in: app)
         tap(app.buttons["observations.suggestions"], in: app)
@@ -1805,8 +1805,8 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertTrue(app.buttons["Reopen set 1, Barbell Bench Press"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.textFields["set.barbell-bench-press.1.load"].value as? String, "40.5")
         XCTAssertEqual(app.textFields["set.barbell-bench-press.1.reps"].value as? String, "8")
+        // Every set is done, so Finish saves without asking.
         tap(app.buttons["training.finish"], in: app)
-        tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["training.summaryDone"], in: app)
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 10))
         tap(app.buttons["training.start"], in: app)
