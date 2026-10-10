@@ -21,6 +21,7 @@ struct BodyWeightSection: View {
         let store = workspace.nutrition
         let estimates = BodyEstimates.shared.estimates(store, through: today)
         VStack(alignment: .leading, spacing: ExSpacing.page) {
+            HealthWeighInPrompt()
             if let summary = WeightTrend.summary(estimates, through: today) {
                 let start = range.start(today: today, first: estimates.first?.date)
                 let points = WeightTrend.series(estimates, from: start, through: today)

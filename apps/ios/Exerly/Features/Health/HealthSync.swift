@@ -19,6 +19,14 @@ struct HealthSyncResult: Equatable {
     var removedReadings = 0
     var written: [HealthRecordKind: Int] = [:]
 
+    var isEmpty: Bool { read == 0 && removedReadings == 0 && written.values.allSatisfy { $0 == 0 } }
+
+    mutating func add(_ other: HealthSyncResult) {
+        read += other.read
+        removedReadings += other.removedReadings
+        written.merge(other.written, uniquingKeysWith: +)
+    }
+
     var summary: String {
         var parts: [String] = []
         if read > 0 { parts.append(read == 1 ? "1 weigh-in from Health" : "\(read) weigh-ins from Health") }
@@ -68,7 +76,7 @@ final class HealthSync: ObservableObject {
     private var state = HealthSyncState()
     private var foodRecords: [UUID: (entry: FoodEntry, record: HealthFoodRecord?)] = [:]
     private var scheduled: Task<Void, Never>?
-    private var rerun: (reading: Bool, pending: Bool) = (false, false)
+    private var rerun: (reading: Bool, pending: Bool, asked: Bool) = (false, false, false)
 
     static let writeCategories: [HealthCategory] = [.writeFood, .writeWeights, .writeWorkouts]
     static let observingKey = "health.observeWeights"
@@ -172,26 +180,39 @@ final class HealthSync: ObservableObject {
     // MARK: Syncing
 
     /// Reads weigh-ins, then writes whatever changed. One sync runs at a time;
-    /// a request during one runs again after it.
-    func sync(reading: Bool = true) async {
+    /// a request during one runs again after it. The summary keeps the last
+    /// sync that changed something, unless the person asked: an automatic sync
+    /// that finds nothing new doesn't hide what the last one did.
+    func sync(reading: Bool = true, asked: Bool = false) async {
         if isSyncing {
-            rerun = (rerun.reading || reading, true)
+            rerun = (rerun.reading || reading, true, rerun.asked || asked)
             return
         }
         guard anyOn else { return }
         isSyncing = true
         defer { isSyncing = false }
-        var read = reading
+        var read = reading, show = asked
+        var total = HealthSyncResult()
+        var account = workspace
         // The account can change during a sync; the next round follows it.
         while let workspace {
-            rerun = (false, false)
-            await perform(workspace, reading: read)
+            if workspace !== account {
+                account = workspace
+                total = HealthSyncResult()
+            }
+            rerun = (false, false, false)
+            if let round = await perform(workspace, reading: read) {
+                total.add(round)
+                if show || !total.isEmpty { lastResult = total }
+            }
             guard rerun.pending else { break }
             read = rerun.reading
+            show = show || rerun.asked
         }
     }
 
-    private func perform(_ workspace: TrainingWorkspace, reading: Bool) async {
+    /// One round for one account, or nil when the account changed during it.
+    private func perform(_ workspace: TrainingWorkspace, reading: Bool) async -> HealthSyncResult? {
         var result = HealthSyncResult()
         var failure: String?
         if reading, preferences.isOn(.readWeights) {
@@ -199,12 +220,15 @@ final class HealthSync: ObservableObject {
                 let imported = try await importWeights(workspace)
                 result.read = imported.added + imported.updated
                 result.removedReadings = imported.removed
+                // Send them to the account now, as screens do after a change,
+                // so other devices see them; offline, they wait in the queue.
+                if imported.added + imported.updated + imported.removed > 0 { Task { await workspace.synchronize() } }
             } catch {
                 failure = "Weigh-ins from Health couldn't be read. Exerly will try again."
             }
         }
         for category in Self.writeCategories where preferences.isOn(category) {
-            guard self.workspace === workspace, let kind = category.recordKind else { return }
+            guard self.workspace === workspace, let kind = category.recordKind else { return nil }
             guard client.writeAccess(category) == .allowed else {
                 notices[category] = Self.deniedNotice
                 continue
@@ -216,13 +240,13 @@ final class HealthSync: ObservableObject {
                 failure = failure ?? "Some changes couldn't be saved to Health. Exerly will try again."
             }
         }
-        guard self.workspace === workspace else { return }
+        guard self.workspace === workspace else { return nil }
         problem = failure
         if failure == nil {
             preferences.lastSync = Date()
             savePreferences()
         }
-        lastResult = result
+        return result
     }
 
     private func importWeights(_ workspace: TrainingWorkspace) async throws -> HealthWeightImport {

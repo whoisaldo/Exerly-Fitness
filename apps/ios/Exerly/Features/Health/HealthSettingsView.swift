@@ -251,7 +251,7 @@ struct HealthKitSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Button {
-                Task { await sync.sync() }
+                Task { await sync.sync(asked: true) }
             } label: {
                 HStack(spacing: ExSpacing.small) {
                     if sync.isSyncing {
