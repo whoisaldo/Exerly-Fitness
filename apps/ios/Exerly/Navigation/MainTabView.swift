@@ -47,6 +47,10 @@ struct MainTabView: View {
         })
         .tint(Color.exPrimaryText)
         .environment(\.accountTimeZone, timeZone)
+        // Widgets and the workout's Live Activity open their tab.
+        .onOpenURL { url in
+            if url == ExerlyLinks.train { selectedTab = .training } else if url == ExerlyLinks.today { selectedTab = .today }
+        }
     }
 }
 

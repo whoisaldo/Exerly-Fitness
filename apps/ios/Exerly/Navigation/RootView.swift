@@ -1,3 +1,4 @@
+import ExerlyCore
 import SwiftUI
 import SwiftData
 
@@ -56,6 +57,9 @@ struct RootView: View {
         .environmentObject(sync)
         .environmentObject(account)
         .healthSync(account.training, timeZone: authVM.currentUser?.timezone)
+        .liveSurfaces(account, signedOut: authVM.authState == .unauthenticated,
+                      unit: authVM.currentUser?.unitSystem == "metric" ? .kilograms : .pounds,
+                      timeZone: TimeZone(identifier: authVM.currentUser?.timezone ?? "UTC") ?? .gmt)
         .disabled(account.isChangingAccount)
         .overlay {
             if account.isChangingAccount {
