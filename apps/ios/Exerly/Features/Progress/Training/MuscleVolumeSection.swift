@@ -40,7 +40,8 @@ struct MuscleVolumeSection: View {
                         ForEach(others, id: \.muscle) { row($0) }
                     }
                 }
-                if report.muscles.count > Self.collapsedCount {
+                // Shown whenever a muscle is hidden: ranked past the top six, or without a range.
+                if ranged.count > Self.collapsedCount || !others.isEmpty {
                     Button { withAnimation(.snappy) { showsAll.toggle() } } label: {
                         HStack {
                             Text(showsAll ? "Show fewer" : "Show all \(report.muscles.count) muscles")
