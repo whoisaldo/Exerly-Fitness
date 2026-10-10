@@ -191,7 +191,18 @@ struct HealthKitSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("health.\(category.rawValue).notice")
             }
+            if category == .readWeights, nothingReadYet {
+                // Health never says whether reading was allowed, so say what to check.
+                Text("No weigh-ins from Health yet. If your scale saves to Health, check that Exerly can read Weight in the Health app: your profile › Apps › Exerly.")
+                    .font(.exCaption).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    private var nothingReadYet: Bool {
+        guard sync.preferences.isOn(.readWeights), sync.preferences.lastSync != nil, !sync.isSyncing,
+              let weights = sync.workspace?.nutrition.weights else { return false }
+        return !weights.contains { $0.source == .appleHealth }
     }
 
     private var activityRow: some View {

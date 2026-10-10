@@ -75,6 +75,7 @@ final class HealthSync: ObservableObject {
     private var timeZone = TimeZone.gmt
     private var state = HealthSyncState()
     private var foodRecords: [UUID: (entry: FoodEntry, record: HealthFoodRecord?)] = [:]
+    private var foodFingerprints: [UUID: String] = [:]
     private var scheduled: Task<Void, Never>?
     private var rerun: (reading: Bool, pending: Bool, asked: Bool) = (false, false, false)
 
@@ -97,7 +98,11 @@ final class HealthSync: ObservableObject {
     /// Follows the open account. Called on every launch and account change.
     func attach(_ workspace: TrainingWorkspace?, timeZone: TimeZone) {
         if let workspace, workspace === self.workspace {
-            self.timeZone = timeZone
+            if timeZone != self.timeZone {
+                self.timeZone = timeZone
+                foodRecords = [:]
+                foodFingerprints = [:]
+            }
             return
         }
         scheduled?.cancel()
@@ -106,6 +111,7 @@ final class HealthSync: ObservableObject {
         self.timeZone = timeZone
         accountID = workspace?.accountID
         foodRecords = [:]
+        foodFingerprints = [:]
         notices = [:]
         problem = nil
         lastResult = nil
@@ -288,9 +294,14 @@ final class HealthSync: ObservableObject {
         let start = calendar.startOfDay(for: enabled)
         switch kind {
         case .food:
-            return try await apply(state.ledger.changes(for: foodRecords(workspace), since: start), workspace: workspace) {
-                try await self.client.saveFood($0)
+            let records = foodRecords(workspace)
+            let changes = state.ledger.changes(for: records, since: start) { record in
+                if let known = foodFingerprints[record.id] { return known }
+                let fingerprint = record.fingerprint
+                foodFingerprints[record.id] = fingerprint
+                return fingerprint
             }
+            return try await apply(changes, workspace: workspace) { try await self.client.saveFood($0) }
         case .weight:
             let records = workspace.nutrition.weights.compactMap { HealthWeightRecord(entry: $0, timeZone: timeZone) }
             return try await apply(state.ledger.changes(for: records, since: start), workspace: workspace) {
@@ -324,7 +335,8 @@ final class HealthSync: ObservableObject {
         return written
     }
 
-    /// Food records, rebuilt only for entries that changed since the last sync.
+    /// Food records, rebuilt only for entries that changed since the last
+    /// sync, so a long diary isn't encoded again after every change.
     private func foodRecords(_ workspace: TrainingWorkspace) -> [HealthFoodRecord] {
         var next: [UUID: (entry: FoodEntry, record: HealthFoodRecord?)] = [:]
         for entry in workspace.nutrition.entries {
@@ -332,6 +344,7 @@ final class HealthSync: ObservableObject {
                 next[entry.id] = cached
             } else {
                 next[entry.id] = (entry, HealthFoodRecord(entry: entry, timeZone: timeZone))
+                foodFingerprints[entry.id] = nil
             }
         }
         foodRecords = next

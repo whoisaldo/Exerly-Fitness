@@ -128,6 +128,9 @@ import Testing
 
         // A retry, or a sync with nothing new, writes nothing.
         #expect(ledger.changes(for: [b, before, a], since: start).isEmpty)
+        // A caller's cached digests stand in for computing them again.
+        let cached = [a.id: a.fingerprint, b.id: "stale"]
+        #expect(ledger.changes(for: [b, before, a], since: start) { cached[$0.id] ?? $0.fingerprint }.write == [b])
 
         // An edit replaces its record; a deletion removes it.
         var edited = a

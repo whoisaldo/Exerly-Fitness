@@ -247,15 +247,17 @@ public struct HealthWriteLedger: Sendable, Codable, Hashable {
     /// the kind Exerly holds now. Records from `start` on are written; earlier
     /// ones only when they were written before (and changed since). A record
     /// that changed is removed, then written again; one that's gone is removed.
-    public func changes<R: HealthRecord>(for records: [R], since start: Date) -> HealthWriteChanges<R> {
+    /// `fingerprint` lets a caller reuse digests it already has.
+    public func changes<R: HealthRecord>(for records: [R], since start: Date,
+                                         fingerprint: (R) -> String = { $0.fingerprint }) -> HealthWriteChanges<R> {
         let ledger = written[R.kind] ?? [:]
         var changes = HealthWriteChanges<R>()
         var held = Set<String>()
         for record in records.sorted(by: { ($0.at, $0.id.uuidString) < ($1.at, $1.id.uuidString) }) {
             let key = record.id.uuidString
             guard held.insert(key).inserted else { continue }
-            if let fingerprint = ledger[key] {
-                guard fingerprint != record.fingerprint else { continue }
+            if let written = ledger[key] {
+                guard written != fingerprint(record) else { continue }
                 changes.remove.append(record.id)
                 changes.write.append(record)
             } else if record.at >= start {
