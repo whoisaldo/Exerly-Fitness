@@ -50,7 +50,8 @@ struct NextWorkoutWidgetView: View {
                     VStack(spacing: 0) {
                         Image(systemName: Self.icon(workout)).font(.title3.weight(.semibold))
                         if case .planned(let planned) = workout {
-                            Text("\(planned.exercises.count)").font(.caption2.weight(.semibold))
+                            Text(Self.count(planned.exercises.reduce(0) { $0 + $1.sets }, "set"))
+                                .font(.caption2.weight(.semibold)).minimumScaleFactor(0.6)
                         }
                     }
                 }
@@ -63,23 +64,39 @@ struct NextWorkoutWidgetView: View {
             }
             .lineLimit(1).minimumScaleFactor(0.7)
         case .systemMedium:
-            HStack(alignment: .top, spacing: 16) {
-                summary(workout).frame(maxWidth: .infinity, alignment: .leading)
-                aside(workout).frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 0) {
+                header(workout)
+                Spacer(minLength: 4)
+                HStack(alignment: .bottom, spacing: 16) {
+                    details(workout).frame(maxWidth: .infinity, alignment: .leading)
+                    aside(workout).frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         default:
             summary(workout)
         }
     }
 
-    /// Eyebrow, name and one line of detail: the small widget, and the medium's left half.
+    /// The small widget: the eyebrow on top, the workout at the bottom.
     private func summary(_ workout: WidgetSnapshot.Workout) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                PulseMark(size: 14)
-                WidgetEyebrow(text: Self.eyebrow(workout), color: Self.isDone(workout) ? WidgetPalette.success : WidgetPalette.primaryText)
-            }
+            header(workout)
             Spacer(minLength: 0)
+            details(workout)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func header(_ workout: WidgetSnapshot.Workout) -> some View {
+        HStack(spacing: 6) {
+            PulseMark(size: 14)
+            WidgetEyebrow(text: Self.eyebrow(workout), color: Self.isDone(workout) ? WidgetPalette.success : WidgetPalette.primaryText)
+        }
+    }
+
+    /// Name, program and one line of detail.
+    private func details(_ workout: WidgetSnapshot.Workout) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(Self.name(workout)).font(.headline).foregroundStyle(WidgetPalette.textPrimary)
                 .lineLimit(2).minimumScaleFactor(0.75)
             if let program = Self.program(workout) {
@@ -88,7 +105,6 @@ struct NextWorkoutWidgetView: View {
             detail(workout).font(.caption.weight(.medium)).foregroundStyle(WidgetPalette.primaryText)
                 .lineLimit(1).minimumScaleFactor(0.7)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func detail(_ workout: WidgetSnapshot.Workout) -> some View {
@@ -100,7 +116,7 @@ struct NextWorkoutWidgetView: View {
             }
             .monospacedDigit()
         case .done(let done, _):
-            Text("\(done.workingSets) working \(done.workingSets == 1 ? "set" : "sets")")
+            Text(Self.count(done.workingSets, "working set"))
         case .planned(let planned):
             Text(Self.size(planned))
         case .none:
@@ -117,7 +133,7 @@ struct NextWorkoutWidgetView: View {
                     HStack(spacing: 6) {
                         Text(exercise.name).foregroundStyle(WidgetPalette.textPrimary).lineLimit(1)
                         Spacer(minLength: 2)
-                        Text("\(exercise.sets)×").foregroundStyle(WidgetPalette.textMuted).monospacedDigit()
+                        Text(Self.count(exercise.sets, "set")).foregroundStyle(WidgetPalette.textMuted).monospacedDigit()
                     }
                     .font(.caption).minimumScaleFactor(0.8)
                 }
@@ -125,7 +141,6 @@ struct NextWorkoutWidgetView: View {
                     Text("+\(planned.exercises.count - 4) more").font(.caption2).foregroundStyle(WidgetPalette.textMuted)
                 }
             }
-            .frame(maxHeight: .infinity)
         case .active(let active):
             VStack(alignment: .leading, spacing: 6) {
                 Text("\(active.completedSets) of \(active.totalSets) sets").font(.subheadline.weight(.semibold))
@@ -134,7 +149,6 @@ struct NextWorkoutWidgetView: View {
                           color: WidgetPalette.primary)
                 Text("Tap to log your next set").font(.caption).foregroundStyle(WidgetPalette.textSecondary)
             }
-            .frame(maxHeight: .infinity)
         case .done(_, let next):
             VStack(alignment: .leading, spacing: 4) {
                 Image(systemName: "checkmark.circle.fill").font(.title2).foregroundStyle(WidgetPalette.success)
@@ -143,10 +157,9 @@ struct NextWorkoutWidgetView: View {
                     Text(next.name).font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.textPrimary).lineLimit(2)
                 }
             }
-            .frame(maxHeight: .infinity)
         case .none:
             Image(systemName: "calendar.badge.plus").font(.largeTitle).foregroundStyle(WidgetPalette.primaryText)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
@@ -188,16 +201,17 @@ struct NextWorkoutWidgetView: View {
 
     /// "4 exercises · 12 sets"
     static func size(_ planned: WidgetSnapshot.PlannedWorkout) -> String {
-        let sets = planned.exercises.reduce(0) { $0 + $1.sets }
-        let exercises = planned.exercises.count
-        return "\(exercises) \(exercises == 1 ? "exercise" : "exercises") · \(sets) \(sets == 1 ? "set" : "sets")"
+        "\(count(planned.exercises.count, "exercise")) · \(count(planned.exercises.reduce(0) { $0 + $1.sets }, "set"))"
     }
+
+    /// "1 set", "3 sets"
+    static func count(_ value: Int, _ noun: String) -> String { "\(value) \(noun)\(value == 1 ? "" : "s")" }
 
     static func inline(_ workout: WidgetSnapshot.Workout) -> String {
         switch workout {
         case .active(let active): "\(active.name) · \(active.completedSets)/\(active.totalSets) sets"
         case .done(let done, _): "\(done.name) done"
-        case .planned(let planned): "\(planned.name) · \(planned.exercises.count) exercises"
+        case .planned(let planned): "\(planned.name) · \(count(planned.exercises.count, "exercise"))"
         case .none: "No workout planned"
         }
     }
@@ -207,7 +221,7 @@ struct NextWorkoutWidgetView: View {
         case .active(let active):
             "Workout in progress, \(active.name), \(active.completedSets) of \(active.totalSets) sets done"
         case .done(let done, let next):
-            "Workout done, \(done.name), \(done.workingSets) working sets" + (next.map { ". Next, \($0.name)" } ?? "")
+            "Workout done, \(done.name), \(count(done.workingSets, "working set"))" + (next.map { ". Next, \($0.name)" } ?? "")
         case .planned(let planned):
             "\(eyebrow(workout)), \(planned.name)" + (planned.program.map { ", \($0)" } ?? "") + ", \(size(planned))"
         case .none:

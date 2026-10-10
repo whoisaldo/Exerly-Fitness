@@ -43,8 +43,9 @@ struct WorkoutLiveActivity: Widget {
                     .accessibilityLabel(state.spokenSets)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
+                    // Clear of the island's rounded corners.
                     WorkoutActivityDetail(workoutID: context.attributes.workoutID, state: state, rest: rest, ringSize: 40)
-                        .padding(.horizontal, 4).padding(.top, 4)
+                        .padding(.horizontal, 10).padding(.top, 4)
                 }
             } compactLeading: {
                 Group {
@@ -81,32 +82,33 @@ struct WorkoutLockScreenView: View {
     let rest: WorkoutActivityAttributes.Rest?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
                 PulseMark(size: 30)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(state.title).font(.headline).foregroundStyle(WidgetPalette.textPrimary)
-                    HStack(spacing: 4) {
-                        Text(timerInterval: state.elapsed, countsDown: false).monospacedDigit()
-                        if let program = state.program { Text("· \(program)") }
+                    if let program = state.program {
+                        Text(program).font(.caption).foregroundStyle(WidgetPalette.textSecondary)
                     }
-                    .font(.caption).foregroundStyle(WidgetPalette.textSecondary)
                 }
                 .lineLimit(1).minimumScaleFactor(0.75)
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(state.setsLabel).font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
+                VStack(alignment: .trailing, spacing: 1) {
+                    let sets = Text(state.setsLabel).font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(WidgetPalette.textPrimary)
-                    Text("sets").font(.caption).foregroundStyle(WidgetPalette.textSecondary)
+                    let word = Text(" sets").font(.caption).foregroundStyle(WidgetPalette.textSecondary)
+                    Text("\(sets)\(word)").monospacedDigit().lineLimit(1)
+                        .accessibilityLabel(state.spokenSets)
+                    // A timer text takes all the width it's offered.
+                    Text(timerInterval: state.elapsed, countsDown: false)
+                        .font(.caption).monospacedDigit().foregroundStyle(WidgetPalette.textSecondary)
+                        .multilineTextAlignment(.trailing).frame(maxWidth: 80, alignment: .trailing)
                 }
-                .lineLimit(1)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(state.spokenSets)
             }
             .accessibilityElement(children: .combine)
-            WorkoutActivityDetail(workoutID: workoutID, state: state, rest: rest, ringSize: 46)
+            WorkoutActivityDetail(workoutID: workoutID, state: state, rest: rest, ringSize: 40)
         }
-        .padding(16)
+        .padding(.horizontal, 16).padding(.vertical, 14)
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 }
@@ -120,13 +122,13 @@ struct WorkoutActivityDetail: View {
 
     var body: some View {
         if let rest {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 12) {
                     RestRing(rest: rest).frame(width: ringSize, height: ringSize)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Rest").font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.textSecondary)
                         Text(timerInterval: rest.startedAt...rest.endsAt, countsDown: true)
-                            .font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
+                            .monospacedDigit().font(.title2).fontWeight(.bold).fontDesign(.rounded)
                             .foregroundStyle(WidgetPalette.textPrimary)
                     }
                     .lineLimit(1).minimumScaleFactor(0.7)
@@ -144,7 +146,7 @@ struct WorkoutActivityDetail: View {
                     .accessibilityLabel("Skip rest")
                 }
                 if let next = state.next {
-                    NextSetLine(next: next, eyebrow: "Next")
+                    NextSetLine(next: next, eyebrow: "Next", inline: true)
                 }
             }
         } else if let next = state.next {
@@ -167,16 +169,26 @@ struct WorkoutActivityDetail: View {
     }
 }
 
+/// "Up next" above the set, or "Next" beside it where height is short.
 private struct NextSetLine: View {
     let next: WorkoutActivityAttributes.NextSet
     let eyebrow: String
+    var inline = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(eyebrow).font(.caption.weight(.semibold)).foregroundStyle(WidgetPalette.primaryText)
-            Text(next.line).font(.subheadline.weight(.semibold)).foregroundStyle(WidgetPalette.textPrimary)
-                .lineLimit(1).minimumScaleFactor(0.7)
+        let label = Text(eyebrow).foregroundStyle(WidgetPalette.primaryText)
+        let line = Text(next.line).foregroundStyle(WidgetPalette.textPrimary)
+        Group {
+            if inline {
+                Text("\(label)  \(line)").font(.subheadline.weight(.semibold))
+            } else {
+                VStack(alignment: .leading, spacing: 1) {
+                    label.font(.caption.weight(.semibold))
+                    line.font(.subheadline.weight(.semibold))
+                }
+            }
         }
+        .lineLimit(1).minimumScaleFactor(0.7)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(next.spokenLine)
     }
