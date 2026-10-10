@@ -132,6 +132,7 @@ final class ProductionUITests: ExerlyUITestCase {
         openFoodLibrary(app)
         capture(app, "design-empty-library")
         tap(app.buttons["nutrition.libraryCreate"], in: app)
+        tap(app.buttons["nutrition.libraryNewFood"], in: app)
         capture(app, "design-food-editor")
         tap(app.buttons["Cancel"].firstMatch, in: app)
         // The library is pushed inside Profile, so its back button is also "Profile".

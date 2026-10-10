@@ -43,10 +43,15 @@ public struct FoodSnapshot: Sendable, Codable, Hashable {
 public struct RecipeIngredient: Sendable, Codable, Hashable {
     public var food: FoodSnapshot
     public var grams: Double
+    /// The serving it was entered in, and how many, so "2 eggs" stays 2 eggs.
+    public var serving: Serving?
+    public var quantity: Double?
 
-    public init(food: FoodSnapshot, grams: Double) {
+    public init(food: FoodSnapshot, grams: Double, serving: Serving? = nil, quantity: Double? = nil) {
         self.food = food
         self.grams = grams
+        self.serving = serving
+        self.quantity = quantity
     }
 }
 
@@ -187,7 +192,8 @@ public struct Food: Sendable, Codable, Hashable, Identifiable {
             problems.append("the serving count must be positive")
         }
         if source == .recipe && (ingredients ?? []).isEmpty { problems.append("a recipe needs ingredients") }
-        if (ingredients ?? []).contains(where: { !($0.grams.isFinite && $0.grams > 0) }) {
+        if (ingredients ?? []).contains(where: { !($0.grams.isFinite && $0.grams > 0) || $0.quantity.map { !($0.isFinite && $0 > 0) } == true
+            || $0.serving.map { !($0.grams.isFinite && $0.grams > 0) } == true }) {
             problems.append("each ingredient needs a positive weight")
         }
         problems += volume?.problems ?? []

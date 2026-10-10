@@ -31,7 +31,9 @@ struct NutritionLibraryView: View {
     let unit: MassUnit
     @State private var query = ""
     @State private var creating = false
+    @State private var creatingRecipe = false
     @State private var showArchived = false
+    @EnvironmentObject private var auth: AuthViewModel
 
     init(workspace: TrainingWorkspace, timeZone: TimeZone, unit: MassUnit) {
         self.workspace = workspace
@@ -48,7 +50,7 @@ struct NutritionLibraryView: View {
             if visibleFoods.isEmpty {
                 ExEmptyState(icon: showArchived ? "archivebox" : "book.closed",
                              title: query.isEmpty ? (showArchived ? "No archived foods" : "Keep your go-to foods here") : "No matches",
-                             message: query.isEmpty ? "Create a label, or favorite a food from your diary to find it here." : "Try a different name, or create a food label.",
+                             message: query.isEmpty ? "Create a label or a recipe, or favorite a food from your diary to find it here." : "Try a different name, or create a food label.",
                              action: "Create food") { creating = true }
             } else {
                 VStack(alignment: .leading, spacing: ExSpacing.item) {
@@ -69,11 +71,18 @@ struct NutritionLibraryView: View {
         .navigationTitle("Food library").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Create food", systemImage: "plus") { creating = true }
-                    .accessibilityIdentifier("nutrition.libraryCreate")
+                Menu("Create", systemImage: "plus") {
+                    Button("New food", systemImage: "square.and.pencil") { creating = true }
+                        .accessibilityIdentifier("nutrition.libraryNewFood")
+                    Button("New recipe", systemImage: "frying.pan") { creatingRecipe = true }
+                        .accessibilityIdentifier("nutrition.libraryNewRecipe")
+                }.accessibilityIdentifier("nutrition.libraryCreate")
             }
         }
         .sheet(isPresented: $creating) { NutritionFoodEditor(workspace: workspace) { _ in } }
+        .sheet(isPresented: $creatingRecipe) {
+            if let api = auth.accountAPI { RecipeEditor(workspace: workspace, api: api, timeZone: timeZone, unit: unit) }
+        }
     }
 
     private var visibleFoods: [ExerlyCore.Food] {
@@ -98,7 +107,7 @@ struct NutritionFoodRow: View {
             : AnyLayout(HStackLayout(spacing: ExSpacing.item))
         layout {
             if showsIcon && !typeSize.isAccessibilitySize {
-            Image(systemName: food.favorite ? "star.fill" : "fork.knife")
+            Image(systemName: food.favorite ? "star.fill" : food.source == .recipe ? "frying.pan" : "fork.knife")
                 .foregroundStyle(food.favorite ? Color.exAccent : Color.exPrimary)
                 .frame(width: 42, height: 48).background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: ExRadius.control))
                 .accessibilityHidden(true)
@@ -135,12 +144,14 @@ private struct NutritionLibraryDetail: View {
     @State private var destination: Destination?
     @State private var logged: FoodEntry?
     @AccessibilityFocusState private var errorFocused: Bool
+    @EnvironmentObject private var auth: AuthViewModel
 
     private enum Destination: Identifiable {
-        case edit(ExerlyCore.Food), log(ExerlyCore.Food), archive(ExerlyCore.Food)
+        case edit(ExerlyCore.Food), duplicate(ExerlyCore.Food), log(ExerlyCore.Food), archive(ExerlyCore.Food)
         var id: String {
             switch self {
             case .edit(let food): "edit-\(food.id)"
+            case .duplicate(let food): "duplicate-\(food.id)"
             case .log(let food): "log-\(food.id)"
             case .archive(let food): "archive-\(food.id)"
             }
@@ -163,8 +174,8 @@ private struct NutritionLibraryDetail: View {
                     ExEyebrow(food.archivedAt == nil ? NutritionFormat.source(food.source) : "Archived", color: .exPrimaryText)
                     Text(food.name).font(.exH2)
                     if let brand = food.brand { Text(brand).font(.exCaption).foregroundStyle(Color.exTextSecondary) }
-                    ExEyebrow("Per 100 g")
-                    NutritionDailySummary(amounts: food.per100g, targets: nil, showHeading: false)
+                    ExEyebrow(food.recipeServing.map { "Per serving · \(FoodFormat.weight($0.grams, unit: unit))" } ?? "Per 100 g")
+                    NutritionDailySummary(amounts: food.perRecipeServing ?? food.per100g, targets: nil, showHeading: false)
                     if food.archivedAt == nil {
                         Button("Log this food", systemImage: "plus") { destination = .log(food) }
                             .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.libraryLog")
@@ -181,6 +192,7 @@ private struct NutritionLibraryDetail: View {
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         .accessibilityIdentifier("nutrition.libraryLogged")
                 }
+                if food.ingredients?.isEmpty == false { RecipeDetails(recipe: food, unit: unit) }
                 ExCard {
                     ExSectionHeading("Nutrition label", detail: "Per 100 g")
                     NutritionAmountsView(amounts: food.per100g)
@@ -220,6 +232,11 @@ private struct NutritionLibraryDetail: View {
                         if food.source == .custom || food.source == .imported {
                             Button("Edit food label", systemImage: "square.and.pencil") { destination = .edit(food) }
                                 .accessibilityIdentifier("nutrition.libraryEdit")
+                        } else if food.source == .recipe {
+                            Button("Edit recipe", systemImage: "square.and.pencil") { destination = .edit(food) }
+                                .accessibilityIdentifier("recipe.edit")
+                            Button("Duplicate recipe", systemImage: "plus.square.on.square") { destination = .duplicate(food.duplicated()) }
+                                .accessibilityIdentifier("recipe.duplicate")
                         }
                         Button("Archive food", systemImage: "archivebox") {
                             actions.clearError(); destination = .archive(food)
@@ -231,7 +248,11 @@ private struct NutritionLibraryDetail: View {
         .onChange(of: actions.error) { _, error in errorFocused = error != nil }
         .sheet(item: $destination) { destination in
             switch destination {
+            case .edit(let food) where food.source == .recipe:
+                if let api = auth.accountAPI { RecipeEditor(workspace: workspace, api: api, timeZone: timeZone, unit: unit, editing: food) }
             case .edit(let food): NutritionFoodEditor(workspace: workspace, editing: food) { _ in }
+            case .duplicate(let copy):
+                if let api = auth.accountAPI { RecipeEditor(workspace: workspace, api: api, timeZone: timeZone, unit: unit, start: copy) }
             case .log(let food):
                 NutritionEntryEditor(workspace: workspace, food: food, date: LocalDate(Date(), in: timeZone),
                                      meal: workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone), timeZone: timeZone, unit: unit,

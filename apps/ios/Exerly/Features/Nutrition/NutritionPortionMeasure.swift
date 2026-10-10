@@ -34,7 +34,10 @@ enum NutritionPortionMeasure: Hashable {
         }
     }
 
-    var amountTitle: String { symbol.isEmpty ? "Number of servings" : "Amount (\(symbol))" }
+    var amountTitle: String {
+        if case .serving(let serving) = self, serving.name == ExerlyCore.Food.wholeRecipe { return "Share of the recipe" }
+        return symbol.isEmpty ? "Number of servings" : "Amount (\(symbol))"
+    }
     var step: Double { self == .grams || self == .milliliters ? 10 : 0.5 }
     var initialAmount: Double { self == .grams || self == .milliliters ? 100 : 1 }
     var presets: [Double] {
@@ -43,7 +46,7 @@ enum NutritionPortionMeasure: Hashable {
         case .milliliters: [30, 100, 250]
         case .ounces: [1, 2, 4]
         case .fluidOunces: [1, 4, 8]
-        case .serving: [0.5, 1, 2]
+        case .serving(let serving): serving.name == ExerlyCore.Food.wholeRecipe ? [0.25, 0.5, 1] : [0.5, 1, 2]
         }
     }
 
@@ -70,7 +73,7 @@ enum NutritionPortionMeasure: Hashable {
     static func available(for food: ExerlyCore.Food, unit: MassUnit) -> [Self] {
         var choices: [Self] = unit == .pounds ? [.ounces, .grams] : [.grams, .ounces]
         if food.volume != nil { choices += unit == .pounds ? [.fluidOunces, .milliliters] : [.milliliters, .fluidOunces] }
-        for serving in food.servings + (food.recipeServing.map { [$0] } ?? []) {
+        for serving in food.servings + food.recipePortions {
             let measure = saved(serving, food: food)
             if !choices.contains(measure) { choices.append(measure) }
         }

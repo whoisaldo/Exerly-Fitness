@@ -16,6 +16,8 @@ struct NutritionFoodPicker: View {
     let onPick: ((ExerlyCore.Food) -> Int?)?
     let pickError: () -> String?
     let presentation: FoodPickerPresentation
+    /// What picked foods go into: a meal or a recipe.
+    let pickingInto: String
     @StateObject private var search: NutritionSearchModel
     @State private var meal: String
     @State private var query = ""
@@ -24,6 +26,7 @@ struct NutritionFoodPicker: View {
     @State private var selectedFood: ExerlyCore.Food?
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
+    @State private var creatingRecipe = false
     @State private var scanningLabel = false
     @State private var quickAdding = false
     @State private var buildingMeal = false
@@ -47,7 +50,7 @@ struct NutritionFoodPicker: View {
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
          timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
          startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
-         pickError: @escaping () -> String? = { nil }, presentation: FoodPickerPresentation = .sheet) {
+         pickError: @escaping () -> String? = { nil }, presentation: FoodPickerPresentation = .sheet, pickingInto: String = "meal") {
         self.workspace = workspace
         self.api = api
         self.date = date
@@ -58,6 +61,7 @@ struct NutritionFoodPicker: View {
         self.onPick = onPick
         self.pickError = pickError
         self.presentation = presentation
+        self.pickingInto = pickingInto
         // A sheet opened to search starts typing; one opened to scan doesn't.
         focusesSearch = presentation == .sheet && !startsWithBarcode
         _meal = State(initialValue: presentation == .tab ? workspace.nutrition.suggestedMeal(at: .now, timeZone: timeZone) : meal)
@@ -77,7 +81,7 @@ struct NutritionFoodPicker: View {
             .overlay(alignment: .bottom) { toast }
             .safeAreaInset(edge: .bottom) {
                 if picking {
-                    Button(pickedCount == 0 ? "Back to meal" : "Review meal · \(pickedCount) \(pickedCount == 1 ? "food" : "foods")") { dismiss() }
+                    Button(pickedCount == 0 ? "Back to \(pickingInto)" : "Review \(pickingInto) · \(pickedCount) \(pickedCount == 1 ? "food" : "foods")") { dismiss() }
                         .buttonStyle(ExActionStyle()).accessibilityIdentifier("nutrition.reviewPlate")
                         .padding(ExSpacing.page).background(Color.exBackground)
                 }
@@ -100,6 +104,9 @@ struct NutritionFoodPicker: View {
             .sheet(isPresented: $creating, onDismiss: openCreatedFood) {
                 NutritionFoodEditor(workspace: workspace) { createdFood = $0 }
             }
+            .sheet(isPresented: $creatingRecipe, onDismiss: openCreatedFood) {
+                RecipeEditor(workspace: workspace, api: api, timeZone: timeZone, unit: unit) { createdFood = $0 }
+            }
             .sheet(isPresented: $scanningLabel, onDismiss: openCreatedFood) {
                 NutritionLabelCaptureView(workspace: workspace) { createdFood = $0 }
             }
@@ -114,7 +121,7 @@ struct NutritionFoodPicker: View {
             }
             .sheet(item: $selectedFood, onDismiss: finishSheet) { food in
                 NutritionEntryEditor(workspace: workspace, food: food, date: date, meal: meal,
-                                     timeZone: timeZone, unit: unit, actions: actions) { sheetLogged = [$0] }
+                                     timeZone: timeZone, unit: unit, actions: actions) { sheetLogged = (sheetLogged ?? []) + [$0] }
             }
         }
         .onAppear(perform: refresh)
@@ -208,6 +215,13 @@ struct NutritionFoodPicker: View {
                 Label("Create a food", systemImage: "plus").font(.exLabel)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText).accessibilityIdentifier("nutrition.createFoodRow")
+            if !picking {
+                Button { creatingRecipe = true } label: {
+                    Label("Create a recipe", systemImage: "plus").font(.exLabel)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText).accessibilityIdentifier("nutrition.createRecipeRow")
+                    .padding(.top, -ExSpacing.page) // One group with "Create a food", without the screen's spacing.
+            }
             if mine.isEmpty {
                 emptyMessage("Nothing saved yet", "Foods you create, recipes, and foods you star are kept here, ready offline.")
             } else { group("Saved foods", mine, id: "mine") }
@@ -267,6 +281,8 @@ struct NutritionFoodPicker: View {
                 Menu("More ways to log", systemImage: "ellipsis") {
                     Button("Build a meal from several foods", systemImage: "plus.rectangle.on.rectangle") { buildingMeal = true }
                         .accessibilityIdentifier("nutrition.buildMeal")
+                    Button("Create a recipe", systemImage: "frying.pan") { creatingRecipe = true }
+                        .accessibilityIdentifier("nutrition.newRecipe")
                 }.accessibilityIdentifier("nutrition.moreFoodOptions")
             }
         }

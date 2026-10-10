@@ -602,3 +602,29 @@ app with its own App Store profile (`asc.mjs provision watch`, HealthKit),
 which `release.sh` installs and `release_checks.py` verifies like the
 widgets'. `apps/ios/scripts/watch-uitest.sh` runs the watch's UI test beside a
 phone UI test on a paired pair of simulators.
+
+## 2026-10-10: Recipes are built in food search and logged like any food
+
+A recipe is a saved food with ingredients, so it syncs as a `saved_food`
+document and shows up in search, recents and suggestions with no new paths. The
+legacy `/api/library/recipes` route (flat macros, no weights) has no client and
+is left alone.
+
+- Totals add what the ingredients report, as a day's totals do. A nutrient no
+  ingredient reports stays unknown; one only some report counts those, and the
+  editor names the ingredients that leave out calories or a macro. A recipe
+  logged whole then counts exactly what its ingredients logged one by one would.
+  Making a nutrient unknown whenever one ingredient lacks it would drop most
+  micronutrients from any recipe with a packaged ingredient.
+- A share of the pot is a serving named "whole recipe" that weighs the cooked
+  (or raw) total, logged with the share as its quantity: "0.25 × whole recipe".
+  Entries need no new fields.
+- Ingredients keep the serving and count they were entered in (optional
+  fields, validated by the API like an entry's), so 2 eggs reopen as 2 eggs and
+  half the recipe expands to 1 egg.
+- Ingredients are snapshots. Editing a food doesn't change recipes made with it,
+  just as editing a recipe doesn't change entries logged from it.
+- Save as recipe makes one serving of a meal's weighed entries. Quick adds have
+  no weight, so they are left out.
+- The saved-foods CSV gains cooked weight, serving count, ingredients and
+  preparation, which it dropped.

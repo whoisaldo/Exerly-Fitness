@@ -15,6 +15,7 @@ struct NutritionEntryEditor: View {
     @StateObject private var libraryActions: NutritionLibraryActions
     @State private var confirmation: Confirmation?
     @State private var nutritionEditing: FoodEntry?
+    @State private var asIngredients = false
     @FocusState private var typing: Bool
     @AccessibilityFocusState private var errorsFocused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -158,7 +159,19 @@ struct NutritionEntryEditor: View {
                 Label("Estimated weight from volume", systemImage: "info.circle")
                     .font(.exCaption).foregroundStyle(Color.exTextSecondary)
             }
+            if recipe != nil {
+                Toggle(isOn: $asIngredients) {
+                    Text("Log ingredients separately").font(.exLabel)
+                    Text("Each one scaled to this portion, to change one later").font(.exCaption)
+                }.tint(Color.exActionFill).accessibilityIdentifier("nutrition.logIngredients")
+            }
         }
+    }
+
+    /// The saved recipe this sheet logs, when it can be logged as its ingredients.
+    private var recipe: ExerlyCore.Food? {
+        guard editing == nil, let food = workspace.nutrition.food(draft.food.id), food.recipeGrams != nil else { return nil }
+        return food
     }
 
     private var details: some View {
@@ -229,9 +242,10 @@ struct NutritionEntryEditor: View {
         Button {
             typing = false
             hideKeyboard()
-            if let entry = draft.save() {
+            let saved = if asIngredients, let recipe { draft.saveIngredients(of: recipe) } else { draft.save().map { [$0] } }
+            if let saved {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                onSaved(entry)
+                saved.forEach(onSaved)
                 Task { await workspace.synchronize() }
                 dismiss()
             }

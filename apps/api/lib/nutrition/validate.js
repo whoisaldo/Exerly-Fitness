@@ -175,9 +175,19 @@ function foodProblems(food, id) {
     if (!Array.isArray(food.ingredients)) problems.push('ingredients must be an array');
     else
       food.ingredients.forEach((ingredient, i) => {
-        if (!isObject(ingredient) || !(isNumber(ingredient.grams) && ingredient.grams > 0))
+        if (!isObject(ingredient) || !(isNumber(ingredient.grams) && ingredient.grams > 0)) {
           problems.push(`ingredients[${i}] needs a positive weight`);
-        else problems.push(...snapshotProblems(ingredient.food, `ingredients[${i}].food`));
+          return;
+        }
+        problems.push(...snapshotProblems(ingredient.food, `ingredients[${i}].food`));
+        // The serving it was entered in, and how many, as on a food entry.
+        if (!absent(ingredient.serving))
+          problems.push(...servingProblems(ingredient.serving, `ingredients[${i}].serving`));
+        if (
+          !absent(ingredient.quantity) &&
+          !(isNumber(ingredient.quantity) && ingredient.quantity > 0)
+        )
+          problems.push(`ingredients[${i}].quantity must be positive`);
       });
   }
   if (food.source === 'recipe' && !(Array.isArray(food.ingredients) && food.ingredients.length))
