@@ -48,6 +48,8 @@ struct ExerlyApp: App {
         HealthSync.shared.registerAtLaunch()
         // Live Activity buttons can launch the app in the background to run.
         WorkoutActivityActions.install()
+        // Controls bring the app to the front, then run their intent here.
+        ExerlyLinkRouter.install()
     }
 
     var body: some Scene {

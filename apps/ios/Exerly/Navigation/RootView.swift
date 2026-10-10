@@ -23,6 +23,8 @@ struct RootView: View {
         }
         .tint(Color.exPrimaryText)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+        // Kept until the signed-in tabs can follow it, so a link that launched the app isn't lost.
+        .onOpenURL { ExerlyLinkRouter.shared.pending = $0 }
     }
 
     private var accountContent: some View {

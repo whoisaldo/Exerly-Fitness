@@ -11,5 +11,9 @@ struct ExerlyWidgetsBundle: WidgetBundle {
         NextWorkoutWidget()
         #endif
         WorkoutLiveActivity()
+        LogFoodControl()
+        ScanBarcodeControl()
+        WeighInControl()
+        StartWorkoutControl()
     }
 }
