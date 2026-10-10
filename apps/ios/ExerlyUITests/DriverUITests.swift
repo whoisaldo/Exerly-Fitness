@@ -23,7 +23,7 @@ final class DriverUITests: ExerlyUITestCase {
             try await control([:])
             app = launch(resetSession: true)
         } else {
-            app = try await signedInWithWeek(prefix: "driver")
+            app = try await signedInWithRealisticHistory(prefix: "driver")
         }
         var step = 0, taps = 0, handled = 0
         func report(_ result: String) {

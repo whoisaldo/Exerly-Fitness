@@ -5,8 +5,8 @@
 #   SIM=<udid> PORT=<fixture port> DIR=<folder> apps/ios/scripts/drive.sh
 #
 # Append commands to $DIR/commands.jsonl; read $DIR/step-N.png and .txt,
-# where N is in $DIR/latest. NEW_USER=1 starts signed out instead of with a
-# week of synthetic history. Build for testing first (capture.sh BUILD=1).
+# where N is in $DIR/latest. NEW_USER=1 starts signed out instead of with four
+# weeks of synthetic history. Build for testing first (capture.sh BUILD=1).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-26.2.app/Contents/Developer}"
