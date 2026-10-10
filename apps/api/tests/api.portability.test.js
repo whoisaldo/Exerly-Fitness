@@ -186,6 +186,41 @@ test('CSV files label units, leave unknowns empty, and are safe in a spreadsheet
   assert.equal(cell(-5), '-5');
 });
 
+test('a recipe exports its ingredients, cooked weight, servings and preparation', async () => {
+  const user = await signUp(api);
+  const oats = { foodID: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 } };
+  const milk = { foodID: 'F2', name: 'Milk', source: 'custom', per100g: { energy: 60 } };
+  await put(user, 'saved_food', {
+    id: 'R1',
+    name: 'Porridge',
+    source: 'recipe',
+    per100g: { energy: 121 },
+    servings: [],
+    favorite: false,
+    createdAt: '2026-10-10T08:00:00.000Z',
+    yieldGrams: 400,
+    servingCount: 2,
+    preparation: 'Simmer, stirring.',
+    ingredients: [
+      { food: oats, grams: 80, serving: { name: '1/2 cup', grams: 40 }, quantity: 2 },
+      { food: milk, grams: 300 },
+    ],
+  });
+  const [header, row] = parse(
+    (await api.get('/v1/export/saved_foods.csv', { token: user.token })).body
+  );
+  const columns = header.split(',');
+  const values = cells(row);
+  const value = (column) => values[columns.indexOf(column)];
+  assert.deepEqual(['yield_grams', 'serving_count', 'ingredients', 'preparation'].map(value), [
+    '400',
+    '2',
+    'Oats = 80 g; Milk = 300 g',
+    'Simmer, stirring.',
+  ]);
+  assert.equal(value('energy_kcal_per_100g'), '121');
+});
+
 test('an export imports into another account whole, and twice changes nothing', async () => {
   const from = await signUp(api);
   await seed(from);

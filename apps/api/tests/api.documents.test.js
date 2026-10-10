@@ -719,7 +719,7 @@ test('custom metrics, their values and experiments sync, with metric references 
   assert.equal((await write('custom_metric', randomUUID(), { name: 'No kind' })).status, 400);
 });
 
-test('a recipe keeps its serving count and preparation; an agent cannot write a bad count', async () => {
+test('a recipe round-trips whole; an agent cannot write a bad count or ingredient serving', async () => {
   const { token } = await signUp(api);
   const recipe = {
     id: 'R1',
@@ -733,8 +733,11 @@ test('a recipe keeps its serving count and preparation; an agent cannot write a 
       {
         food: { foodID: 'F1', name: 'Oats', source: 'custom', per100g: { energy: 380 } },
         grams: 80,
+        serving: { name: '1/2 cup', grams: 40 },
+        quantity: 2,
       },
     ],
+    yieldGrams: 160,
     servingCount: 2,
     preparation: 'Simmer 5 minutes, stirring.',
   };
@@ -745,15 +748,18 @@ test('a recipe keeps its serving count and preparation; an agent cannot write a 
   );
   assert.equal(saved.status, 201, JSON.stringify(saved.body));
   const [change] = (await api.get('/v1/changes?after=0', { token })).body.changes;
-  assert.deepEqual(
-    [change.payload.servingCount, change.payload.preparation],
-    [2, 'Simmer 5 minutes, stirring.']
-  );
+  assert.deepEqual(change.payload, recipe, 'a recipe round-trips whole');
 
   assert.deepEqual(foodProblems(recipe, 'R1'), []);
   assert.deepEqual(foodProblems({ ...recipe, servingCount: 0, preparation: 3 }, 'R1'), [
     'the serving count must be positive',
     'preparation must be text',
+  ]);
+  const [oats] = recipe.ingredients;
+  const counted = { ...oats, serving: { name: '', grams: 40 }, quantity: 0 };
+  assert.deepEqual(foodProblems({ ...recipe, ingredients: [counted] }, 'R1'), [
+    'ingredients[0].serving needs a name and a positive weight in grams',
+    'ingredients[0].quantity must be positive',
   ]);
 });
 

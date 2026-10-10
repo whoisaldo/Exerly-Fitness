@@ -233,18 +233,17 @@ public final class NutritionStore {
     }
 
     /// Logs a portion of a recipe as its ingredients, each scaled to the
-    /// portion, so they can be changed one by one. All or none. The entries
-    /// add up to the ingredients' nutrients for that portion.
+    /// portion with its serving, so they can be changed one by one. All or
+    /// none. The entries add up to the ingredients' nutrients for that portion.
     @discardableResult
     public func logIngredients(of recipe: Food, grams: Double? = nil, serving: Serving? = nil, quantity: Double? = nil,
                                on date: LocalDate, meal: String, at time: Date? = nil) throws -> [FoodEntry] {
-        guard let ingredients = recipe.ingredients, let whole = recipe.recipeGrams else {
-            throw StoreError.invalid(["\(recipe.name) has no ingredients"])
-        }
+        guard recipe.recipeGrams != nil else { throw StoreError.invalid(["\(recipe.name) has no ingredients"]) }
         let portion = try Self.preview(recipe, grams: grams, serving: serving, quantity: quantity).grams
         let loggedAt = time?.roundedToMilliseconds ?? now()
-        let parts = ingredients.map {
-            FoodEntry(date: date, meal: meal, loggedAt: loggedAt, food: $0.food, grams: $0.grams * portion / whole)
+        let parts = recipe.ingredients(inPortion: portion).map {
+            FoodEntry(date: date, meal: meal, loggedAt: loggedAt, food: $0.food, grams: $0.grams,
+                      serving: $0.serving, quantity: $0.serving == nil ? nil : $0.quantity)
         }
         try saveAll(parts)
         return parts
