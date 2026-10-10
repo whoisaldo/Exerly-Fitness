@@ -125,10 +125,20 @@ public enum NutritionCheckIn {
 }
 
 extension NutritionStore {
+    /// The version in force on `date` as a check-in reviews it: a version
+    /// that only changed nutrient goals or pins starts when the targets it
+    /// kept did, so a goal edit doesn't put off the week's check-in.
+    public func checkInPlan(on date: LocalDate) -> NutritionPlan? {
+        guard var plan = plan(on: date), var index = plans.firstIndex(where: { $0.id == plan.id }) else { return nil }
+        while index > 0, plans[index - 1].sameTargets(as: plan) { index -= 1 }
+        plan.startDate = plans[index].startDate
+        return plan
+    }
+
     /// The check-in due by `today` for the plan in force, from this store's log.
     /// The first plan's basis is the prior for expenditure. Nil without a plan.
     public func checkIn(today: LocalDate, existing: [Proposal], unit: MassUnit = .kilograms) throws -> NutritionCheckIn.Review? {
-        guard let plan = plan(on: today), let first = plans.first else { return nil }
+        guard let plan = checkInPlan(on: today), let first = plans.first else { return nil }
         let start = min(weights.first?.date ?? first.startDate, first.startDate)
         let days = energyBalanceDays(from: start, through: today.adding(days: -1))
         return try NutritionCheckIn.review(plan: plan, days: days,

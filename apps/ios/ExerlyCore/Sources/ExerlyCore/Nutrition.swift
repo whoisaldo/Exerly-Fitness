@@ -328,6 +328,9 @@ public struct NutritionSummary: Sendable, Hashable {
     public var totals: NutrientAmounts
     public var byMeal: [String: NutrientAmounts]
     public var entries: Int
+    /// How many of the entries report each nutrient: a total from fewer
+    /// than `entries` may be low.
+    public var reporting: [Nutrient: Int] = [:]
 
     /// The share of energy each macro provides, from Atwater factors.
     public var energyShares: [Nutrient: Double] {
