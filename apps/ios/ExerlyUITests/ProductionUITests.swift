@@ -2477,7 +2477,10 @@ final class ProductionUITests: ExerlyUITestCase {
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveFood"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
-        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "75")
+        // Correcting the entry didn't change the amount the food starts at: its default.
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "100")
+        replace(app.textFields["Amount (g)"], with: "75", in: app)
+        dismissKeyboard(app)
         tap(app.buttons["nutrition.saveEntry"], in: app)
         tap(app.buttons["Profile"], in: app)
         tap(app.buttons["profile.sync"], in: app)

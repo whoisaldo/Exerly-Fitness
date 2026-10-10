@@ -37,7 +37,7 @@ struct NutritionEntryEditor: View {
         self.onSaved = onSaved
         _libraryActions = StateObject(wrappedValue: NutritionLibraryActions(store: workspace.nutrition))
         _draft = StateObject(wrappedValue: NutritionEntryDraft(store: workspace.nutrition, food: food,
-            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id },
+            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id && $0.amountChanged != true },
             preferredUnit: unit, timeZone: timeZone))
     }
 

@@ -375,8 +375,10 @@ final class NutritionEntryDraft: ObservableObject {
         do {
             let entry = try stagedEntry(locale: locale)
             try store.saveEntry(entry)
-            original = entry
-            return entry
+            // As saved: a changed amount is marked there.
+            let saved = store.entries.first { $0.id == entry.id } ?? entry
+            original = saved
+            return saved
         } catch { errors = NutritionDraftError.messages(error) }
         return nil
     }

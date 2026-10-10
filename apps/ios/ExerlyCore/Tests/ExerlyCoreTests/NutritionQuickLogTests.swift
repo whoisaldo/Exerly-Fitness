@@ -56,6 +56,37 @@ import Testing
         #expect(portion.food.per100g[.energy] == 400, "A saved food's current label is used")
     }
 
+    @Test func correctingAnEntrysAmountLeavesTheRememberedAmountAlone() throws {
+        let nutrition = try store()
+        let recipe = Food.recipe(name: "Synthetic chili", ingredients: [
+            RecipeIngredient(food: Foods.chicken.snapshot, grams: 400), RecipeIngredient(food: Foods.oats.snapshot, grams: 200)
+        ], servingCount: 2)
+        try nutrition.saveFood(recipe)
+        let serving = try #require(recipe.recipeServing)
+        let bowl = try nutrition.log(recipe, serving: serving, quantity: 1, on: monday, meal: "Dinner")
+        var half = bowl
+        half.quantity = 0.5
+        half.grams = serving.grams / 2
+        try nutrition.saveEntry(half)
+        #expect(nutrition.entries.first?.amountChanged == true && nutrition.entries.first?.grams == 150)
+        // Every amount it was logged at was corrected, so it starts from one serving again.
+        let portion = try #require(nutrition.quickPortion(for: recipe))
+        #expect(portion.quantity == 1 && portion.serving == serving && !portion.repeated)
+        #expect(nutrition.recentPortions().first?.quantity == 1)
+
+        try nutrition.log(Foods.oats, grams: 80, on: monday, meal: "Breakfast", at: Fixture.instant(minutes: -60))
+        var corrected = try nutrition.log(Foods.oats, grams: 80, on: monday, meal: "Breakfast")
+        corrected.grams = 50
+        try nutrition.saveEntry(corrected)
+        let oats = try #require(nutrition.quickPortion(for: Foods.oats))
+        #expect(oats.repeated && oats.grams == 80, "The earlier entry, as logged")
+        // Moving an entry to another meal isn't a change to its amount.
+        var moved = try #require(nutrition.entries.first { $0.food.foodID == Foods.oats.id && $0.grams == 80 })
+        moved.meal = "Snacks"
+        try nutrition.saveEntry(moved)
+        #expect(nutrition.entries.first { $0.id == moved.id }?.amountChanged == nil)
+    }
+
     @Test func repeatingACorrectedDatabaseFoodKeepsItsMarkAndNutrients() throws {
         let nutrition = try store()
         let bar = Food(id: "off:0012345678905", name: "Synthetic oat bar", source: .openFoodFacts,

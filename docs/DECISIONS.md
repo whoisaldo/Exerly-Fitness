@@ -637,3 +637,10 @@ is left alone.
   logged on the day it counts for on at least 3 of them, else 8:00, 12:30,
   18:30 or 15:00 (the times Health export already used). Going back to the
   first meal restores its time, and a time the person set stays.
+- **A remembered amount ignores corrections.** Changing a logged entry's amount
+  marks it `amountChanged`, an optional field on the entry that syncs as it is.
+  The amount one tap logs comes from the latest entry as it was logged, so
+  halving tonight's chili doesn't make half a bowl the recipe's default. A food
+  whose every entry was corrected starts from its default again. "0.5 × 1
+  serving" reads "0.5 serving", and two "2 servings"; "2 × 1 banana" stays rather
+  than guess at a plural.

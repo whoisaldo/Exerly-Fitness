@@ -115,7 +115,14 @@ public final class NutritionStore {
                             quantity: serving == nil ? nil : (quantity ?? 1))
     }
 
+    /// Saves a new entry, or a change to one. A change to a logged entry's
+    /// amount marks it `amountChanged`.
     public func saveEntry(_ entry: FoodEntry) throws {
+        var entry = entry
+        if let logged = entries.first(where: { $0.id == entry.id }),
+           (logged.grams, logged.serving, logged.quantity) != (entry.grams, entry.serving, entry.quantity) {
+            entry.amountChanged = true
+        }
         let problems = entry.problems
         guard problems.isEmpty else { throw StoreError.invalid(problems) }
         try commit(Self.entryKind, entry.id.uuidString, entry)
@@ -251,7 +258,7 @@ public final class NutritionStore {
 
     /// Foods usually logged within 90 minutes of `time`'s time of day over
     /// the `days` days before it, on the most days first, then the most
-    /// recently. Each comes with the amount and meal last used, so one tap
+    /// recently. Each comes with the amount and meal last logged, so one tap
     /// logs it. Foods already logged that day, and archived foods, are left
     /// out. Only entries logged on the day they count for say when a food was
     /// eaten. A saved food's current nutrients are used.
@@ -273,7 +280,8 @@ public final class NutritionStore {
             let gap = abs(minute(entry.loggedAt) - target)
             guard min(gap, 24 * 60 - gap) <= 90 else { continue }
             dates[entry.food.foodID, default: []].insert(entry.date)
-            latest[entry.food.foodID] = entry
+            // An amount corrected later isn't the one to offer again.
+            if entry.amountChanged != true { latest[entry.food.foodID] = entry }
         }
         let ranked = latest.values.sorted {
             (dates[$0.food.foodID]!.count, $0.loggedAt, $0.food.foodID) > (dates[$1.food.foodID]!.count, $1.loggedAt, $1.food.foodID)
