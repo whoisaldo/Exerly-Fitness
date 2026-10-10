@@ -78,7 +78,9 @@ final class NutritionInsightsUITests: ExerlyUITestCase {
         // A tap on the chart's last day picks it, and the page still scrolls afterwards.
         let chart = app.descendants(matching: .any)["nutrition.chart"]
         XCTAssertTrue(chart.exists)
-        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.6)).tap()
+        // Its middle is clear of the tab bar once revealed; any height picks the day.
+        reveal(chart, in: app)
+        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)).tap()
         let readout = app.descendants(matching: .any)["nutrition.readout"]
         XCTAssertTrue(waitForLabel(readout, containing: "Yesterday · Complete"), readout.label)
         XCTAssertTrue(readout.label.contains("1,016 kilocalories"), readout.label)

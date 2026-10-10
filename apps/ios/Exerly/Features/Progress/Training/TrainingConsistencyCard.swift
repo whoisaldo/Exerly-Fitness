@@ -50,19 +50,34 @@ struct TrainingConsistencyCard: View {
         let week = selected.flatMap { day in report.weeks.first { $0.start == day } }
         let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
             : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 6))
-        VStack(alignment: .leading, spacing: 2) {
-            layout {
-                Text(week.map { formatted(value($0)) } ?? average.map(formatted) ?? "–")
-                    .font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
-                    .contentTransition(.numericText())
-                Text(week == nil ? "\(noun) a week" : noun).font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
+        HStack(alignment: .top, spacing: ExSpacing.small) {
+            VStack(alignment: .leading, spacing: 2) {
+                layout {
+                    Text(week.map { formatted(value($0)) } ?? average.map(formatted) ?? "–")
+                        .font(.exStat).monospacedDigit().foregroundStyle(Color.exTextPrimary)
+                        .contentTransition(.numericText())
+                    Text(week == nil ? "\(noun) a week" : noun).font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
+                }
+                Text(readoutDetail(week)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(readoutDetail(week)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(spokenReadout(week))
+            .accessibilityIdentifier("training.weeklyAverage")
+            Spacer(minLength: 0)
+            if week != nil {
+                Button {
+                    withAnimation(.snappy) { selected = nil }
+                } label: {
+                    Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(Color.exTextSecondary)
+                        .frame(width: 30, height: 30).background(Color.exSurface2, in: Circle())
+                        .frame(width: 44, height: 44).contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Show the average")
+                .accessibilityIdentifier("training.clearSelection")
+            }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spokenReadout(week))
-        .accessibilityIdentifier("training.weeklyAverage")
     }
 
     private var noun: String {
@@ -216,12 +231,9 @@ private struct WeeklyBarChart: View {
             }
         }
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-        .chartXSelection(value: $scrub)
-        .onChange(of: scrub) { _, date in
-            selection = date.flatMap { date in
-                let day = BodyDates.date(date)
-                return weeks.last { $0.start <= day }?.start
-            }
+        .chartPicking($scrub) { (date: Date) in
+            let day = BodyDates.date(date)
+            selection = weeks.last { $0.start <= day }?.start
         }
         .sensoryFeedback(.selection, trigger: selection)
         .environment(\.timeZone, BodyDates.utc).environment(\.calendar, calendar)
