@@ -141,7 +141,11 @@ final class HealthSync: ObservableObject {
         guard enabled else {
             preferences.enabledAt[category] = nil
             savePreferences()
-            if category == .readWeights { client.stopObservingWeights() }
+            if category == .readWeights {
+                // Another account turning it on here registers again.
+                defaults.set(false, forKey: Self.observingKey)
+                client.stopObservingWeights()
+            }
             return
         }
         guard client.isAvailable else {
