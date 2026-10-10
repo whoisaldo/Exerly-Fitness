@@ -40,6 +40,8 @@ struct TodayView: View {
     @State private var date: LocalDate
     @State private var openedOn: LocalDate
     @State private var destination: Destination?
+    /// Targets push, as they do from Profile.
+    @State private var showsTargets = false
     @State private var toast: Toast?
     @State private var plan: WorkoutPlan?
     /// "Log again" as it stood when the screen opened, so chips don't move
@@ -60,6 +62,8 @@ struct TodayView: View {
             case remove([UUID])
             /// Restores the entry the editor just deleted.
             case restoreDeleted
+            /// Deletes the weigh-in just saved.
+            case removeWeight(UUID)
         }
         let id = UUID()
         let message: String
@@ -69,7 +73,7 @@ struct TodayView: View {
 
     enum Destination: Identifiable {
         case date, add(String), scan(String), quick(String), edit(FoodEntry), log(FoodSuggestion),
-             notes, copy(String?), nutrients, targets, weighIn
+             notes, copy(String?), nutrients, weighIn
         var id: String {
             switch self {
             case .date: "date"
@@ -81,7 +85,6 @@ struct TodayView: View {
             case .notes: "notes"
             case .copy(let meal): "copy-\(meal ?? "day")"
             case .nutrients: "nutrients"
-            case .targets: "targets"
             case .weighIn: "weighIn"
             }
         }
@@ -122,7 +125,7 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Review changes")
                 }
-                TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { destination = .targets })
+                TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { showsTargets = true })
                 quickActions
                 if isToday { suggestions }
                 if let error = actions.error {
@@ -157,7 +160,7 @@ struct TodayView: View {
         .overlay(alignment: .bottom) {
             if let toast {
                 TodayToast(message: toast.message, failed: toast.failed, undo: toast.undo == nil ? nil : { undo(toast) },
-                           undoIdentifier: toast.undo == .restoreDeleted ? "nutrition.undoDelete" : "today.undo")
+                           undoIdentifier: undoIdentifier(toast.undo))
                     .padding(.bottom, ExSpacing.small)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .task(id: toast.id) {
@@ -175,6 +178,9 @@ struct TodayView: View {
             refreshSuggestions()
         }
         .sheet(item: $destination) { sheet($0) }
+        .navigationDestination(isPresented: $showsTargets) {
+            TargetsView(workspace: workspace, unit: unit, timeZone: timeZone)
+        }
         .onAppear { if suggested == nil { refreshSuggestions() } }
         .task {
             await workspace.synchronize()
@@ -315,7 +321,22 @@ struct TodayView: View {
         case .restoreDeleted:
             withAnimation(.snappy) { self.toast = nil }
             if actions.undoDeletion() { Task { await workspace.synchronize() } }
+        case .removeWeight(let id):
+            do {
+                if store.weights.contains(where: { $0.id == id }) { try store.deleteWeight(id) }
+                withAnimation(.snappy) { self.toast = nil }
+                UIAccessibility.post(notification: .announcement, argument: "Weigh-in removed")
+                Task { await workspace.synchronize() }
+            } catch { show("Could not undo. The weigh-in is still saved.", failed: true) }
         case nil: break
+        }
+    }
+
+    private func undoIdentifier(_ undo: Toast.Undo?) -> String {
+        switch undo {
+        case .restoreDeleted: "nutrition.undoDelete"
+        case .removeWeight: "today.undoWeighIn"
+        default: "today.undo"
         }
     }
 
@@ -599,11 +620,8 @@ struct TodayView: View {
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { self.destination = nil } } }
             }
         case .weighIn:
-            WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone)
-        case .targets:
-            NavigationStack {
-                TargetsView(workspace: workspace, unit: unit, timeZone: timeZone)
-                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { self.destination = nil } } }
+            WeighInSheet(workspace: workspace, unit: unit, timeZone: timeZone) { entry in
+                show("Weighed in at \(BodyFormat.reading(entry.weight, unit))", undo: .removeWeight(entry.id))
             }
         }
     }
