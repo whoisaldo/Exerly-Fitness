@@ -106,12 +106,16 @@ struct TodayWeekStrip: View {
     }
 }
 
-/// The day's calories as a ring, with the three macros beside it.
+/// The day's calories as a ring, with the three macros beside it and any
+/// pinned nutrients under them.
 struct TodayNutritionCard: View {
     let progress: DayProgress
     /// Opens targets for a day without them; nil for a past day, which
     /// only shows what was eaten.
     let onSetTargets: (() -> Void)?
+    /// The pinned nutrients' day, under the macros.
+    var pinned: [NutrientDay] = []
+    var onPinned: () -> Void = {}
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .title) private var ringSize: CGFloat = 116
 
@@ -128,6 +132,10 @@ struct TodayNutritionCard: View {
                         TodayMacroLine(title: "Carbs", progress: progress.carbohydrate, color: .exAccent)
                         TodayMacroLine(title: "Fat", progress: progress.fat, color: .exSecondary)
                     }
+                }
+                if !pinned.isEmpty {
+                    TargetsDivider()
+                    TodayPinnedNutrients(days: pinned, open: onPinned)
                 }
                 if [progress.energy, progress.protein, progress.carbohydrate, progress.fat].contains(where: { $0.unreported > 0 }) {
                     Text("Some labels omit nutrients, so totals may be low.")
@@ -203,27 +211,41 @@ struct TodayNutritionCard: View {
     }
 
     static func number(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
+
+    /// What's left of a target, or how far past it, as the ring says it:
+    /// ("57", "left") until a whole unit over, then ("12", "over").
+    static func left(_ progress: NutrientProgress) -> (amount: String, words: String, over: Bool) {
+        let over = (progress.over ?? 0).rounded() > 0
+        return (number(over ? progress.over ?? 0 : progress.remaining ?? 0), over ? "over" : "left", over)
+    }
 }
 
+/// A macro as the ring reads calories: what's left first, or how far over,
+/// then what's eaten of the target.
 struct TodayMacroLine: View {
     let title: String
     let progress: NutrientProgress
     let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-                Spacer(minLength: ExSpacing.small)
-                let consumed = Text(TodayNutritionCard.number(progress.consumed)).font(.exStatSmall).foregroundStyle(Color.exTextPrimary)
-                let target = Text(" / \(TodayNutritionCard.number(progress.target ?? 0)) g").font(.exCaption).foregroundStyle(Color.exTextMuted)
-                Text("\(consumed)\(target)")
+        let left = TodayNutritionCard.left(progress)
+        let eaten = TodayNutritionCard.number(progress.consumed), target = TodayNutritionCard.number(progress.target ?? 0)
+        let name = Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+        let amount = Text(left.amount).font(.exStatSmall).foregroundStyle(left.over ? Color.exAccent : Color.exTextPrimary)
+        let words = Text(" g \(left.words)").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+        VStack(alignment: .leading, spacing: 4) {
+            // One line where it fits; at the largest sizes on a small phone, one under the other.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) { name; Spacer(minLength: ExSpacing.small); Text("\(amount)\(words)").monospacedDigit() }
+                VStack(alignment: .leading, spacing: 2) { name; Text("\(amount)\(words)").monospacedDigit() }
             }
             ExProgressBar(value: progress.consumed, total: progress.target ?? 0, color: color)
+            Text("\(eaten) / \(target) g").font(.exSmall).monospacedDigit().foregroundStyle(Color.exTextMuted)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue("\(TodayNutritionCard.number(progress.consumed)) of \(TodayNutritionCard.number(progress.target ?? 0)) grams")
+        .accessibilityValue("\(left.amount) grams \(left.words), \(eaten) of \(target) grams eaten")
+        .accessibilityIdentifier("today.macro.\(title.lowercased())")
     }
 }
 

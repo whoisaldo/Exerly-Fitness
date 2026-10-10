@@ -121,6 +121,63 @@ enum IntakeFormat {
         return parts.joined(separator: ", ")
     }
 
+    /// A goal in the editor's words: "At least 28 g", "At least 25 g, about 35 g".
+    static func goalSummary(_ goal: NutrientGoal, _ nutrient: Nutrient, spoken: Bool = false) -> String {
+        let amount = spoken ? spokenAmount : self.amount
+        var parts: [String] = []
+        if let floor = goal.floor { parts.append("at least \(amount(floor, nutrient))") }
+        if let target = goal.target { parts.append("about \(amount(target, nutrient))") }
+        if let ceiling = goal.ceiling { parts.append("at most \(amount(ceiling, nutrient))") }
+        let text = parts.joined(separator: ", ")
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
+    /// A pinned nutrient's standing as its amount and words, for the amount
+    /// to stand out: (10, "to go"), (1060, "left"), (240, "over"),
+    /// (nil, "Goal met"). Nil without an amount and a goal.
+    static func standingParts(_ day: NutrientDay) -> (amount: Double?, words: String)? {
+        guard let eaten = day.amount, let goal = day.goal, let standing = day.standing else { return nil }
+        switch standing {
+        case .short(let toGo): return (toGo, "to go")
+        case .over(let over): return (over, "over")
+        case .met(let left?): return (left, "left")
+        case .met(nil):
+            if goal.floor != nil, let target = goal.target, eaten < target { return (target - eaten, "to target") }
+            return (nil, "Goal met")
+        }
+    }
+
+    /// How a pinned nutrient's day stands: "10 g to go", "1,060 mg left",
+    /// "240 mg over", or its goal when nothing reports it.
+    static func standing(_ day: NutrientDay, spoken: Bool = false) -> String {
+        guard let goal = day.goal else { return "No goal" }
+        guard let parts = standingParts(day) else { return goalSummary(goal, day.nutrient, spoken: spoken) }
+        guard let value = parts.amount else { return parts.words }
+        return "\((spoken ? spokenAmount : amount)(value, day.nutrient)) \(parts.words)"
+    }
+
+    /// What's eaten against the amount the standing counts to, as the macros
+    /// put it: "8.9 / 25 g", or "8.9 of 25 grams eaten". Nil without an
+    /// amount and a goal.
+    static func eatenOfGoal(_ day: NutrientDay, spoken: Bool = false) -> String? {
+        guard let eaten = day.amount, let goal = day.goal, let standing = day.standing else { return nil }
+        let bound: Double = switch standing {
+        case .short(let toGo): eaten + toGo
+        case .over(let over): eaten - over
+        case .met(let left?): eaten + left
+        case .met(nil): goal.target ?? goal.floor ?? goal.ceiling ?? eaten
+        }
+        let text = number(eaten, day.nutrient.unit)
+        return spoken ? "\(text) of \(spokenAmount(bound, day.nutrient)) eaten" : "\(text) / \(amount(bound, day.nutrient))"
+    }
+
+    /// The denominator behind a day's total, when some foods didn't report
+    /// the nutrient: "From 3 of 5 foods". Nil when all or none did.
+    static func completeness(reporting: Int, entries: Int, spoken: Bool = false) -> String? {
+        guard reporting > 0, reporting < entries else { return nil }
+        return "From \(reporting) of \(entries) foods\(spoken ? " that report it" : "")"
+    }
+
     static func days(_ count: Int) -> String { count == 1 ? "1 day" : "\(count) days" }
     static func entries(_ count: Int) -> String { count == 1 ? "1 entry" : "\(count) entries" }
 

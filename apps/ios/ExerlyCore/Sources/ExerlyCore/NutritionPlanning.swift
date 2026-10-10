@@ -210,6 +210,7 @@ public struct NutritionPlanDraft: Sendable, Hashable {
     public var manual: DailyTargets
     /// Kept from the plan the draft started from.
     public var nutrientGoals: [Nutrient: NutrientGoal]?
+    public var pinnedNutrients: [Nutrient]?
 
     /// Starts from `plan`; without one, a coached plan toward `goal` with
     /// balanced macros, moderate protein, even days and Monday check-ins.
@@ -223,6 +224,7 @@ public struct NutritionPlanDraft: Sendable, Hashable {
         allowBelowFloor = plan?.allowBelowFloor ?? false
         manual = plan?.averageDay.map(Self.whole) ?? DailyTargets(energy: 2000, protein: 140, fat: 65, carbohydrate: 210)
         nutrientGoals = plan?.nutrientGoals
+        pinnedNutrients = plan?.pinnedNutrients
         if self.goal.direction != .maintain && !(self.goal.weeklyRate > 0) {
             self.goal.weeklyRate = NutritionRate.standard(for: self.goal.direction)
         }
@@ -243,7 +245,8 @@ public struct NutritionPlanDraft: Sendable, Hashable {
         if goal.direction == .maintain { goal = NutritionGoal(.maintain) }
         var plan = NutritionPlan(id: id, startDate: date, createdAt: now.roundedToMilliseconds, goal: goal, mode: mode, diet: diet,
                                  protein: protein, weekdayWeights: weekdayWeights, checkInDay: checkInDay,
-                                 allowBelowFloor: allowBelowFloor, nutrientGoals: nutrientGoals)
+                                 allowBelowFloor: allowBelowFloor, nutrientGoals: nutrientGoals,
+                                 pinnedNutrients: pinnedNutrients)
         do {
             if mode == .manual {
                 plan.targets = try NutritionTargets.manual(manual, weekdayWeights: weekdayWeights)

@@ -217,12 +217,17 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
     /// Goals for other nutrients, in each nutrient's unit. Nutrients without
     /// one use their reference intake; energy and macros come from `targets`.
     public var nutrientGoals: [Nutrient: NutrientGoal]?
+    /// Nutrients Today shows beside the macros, in the order pinned: up to
+    /// `maximumPins`, none of them energy or a macro.
+    public var pinnedNutrients: [Nutrient]?
+
+    public static let maximumPins = 3
 
     public init(id: UUID = UUID(), startDate: LocalDate, createdAt: Date = Date().roundedToMilliseconds, goal: NutritionGoal,
                 mode: PlanMode = .coached, diet: DietType = .balanced, protein: ProteinLevel = .moderate,
                 weekdayWeights: [Double] = Array(repeating: 1, count: 7), checkInDay: Weekday = .monday,
                 allowBelowFloor: Bool = false, basis: PlanBasis? = nil, targets: [DailyTargets] = [],
-                nutrientGoals: [Nutrient: NutrientGoal]? = nil) {
+                nutrientGoals: [Nutrient: NutrientGoal]? = nil, pinnedNutrients: [Nutrient]? = nil) {
         self.id = id
         self.startDate = startDate
         self.createdAt = createdAt
@@ -236,6 +241,7 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
         self.basis = basis
         self.targets = targets
         self.nutrientGoals = nutrientGoals
+        self.pinnedNutrients = pinnedNutrients
     }
 
     /// The goal for a nutrient on a date: energy and macros from that weekday's
@@ -281,6 +287,10 @@ public struct NutritionPlan: Sendable, Codable, Hashable, Identifiable {
             } else {
                 problems += goal.problems.map { "\(nutrient.name): \($0)" }
             }
+        }
+        let pins = pinnedNutrients ?? []
+        if pins.count > Self.maximumPins || Set(pins).count < pins.count || pins.contains(where: \.isTarget) {
+            problems.append("Pin up to \(Self.maximumPins) nutrients, each once, other than energy and the macros")
         }
         return problems
     }

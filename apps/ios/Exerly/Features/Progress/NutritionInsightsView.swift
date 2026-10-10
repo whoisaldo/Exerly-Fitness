@@ -41,7 +41,7 @@ private struct NutritionInsightsContent: View {
                     topFoods(store: store, series: series, overview: overview, today: today)
                     timing(store: store, span: span)
                     NutrientGroupsView(overview: overview, series: series) { row in
-                        NutrientDetailView(store: store, row: row, series: series, range: range, today: today)
+                        NutrientDetailView(workspace: workspace, row: row, series: series, range: range, today: today, timeZone: timeZone)
                     }
                 } else if !store.entries.isEmpty || store.days.values.contains(where: { $0.status == .fasting }) {
                     timing(store: store, span: span)
@@ -191,7 +191,7 @@ private struct NutritionInsightsContent: View {
                     ExEyebrow("Where calories came from", color: .exPrimaryText)
                     Spacer(minLength: ExSpacing.small)
                     NavigationLink {
-                        NutrientDetailView(store: store, row: row, series: series, range: range, today: today)
+                        NutrientDetailView(workspace: workspace, row: row, series: series, range: range, today: today, timeZone: timeZone)
                     } label: {
                         Text("All \(energy.foods.count)").font(.exCaption.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
                             .frame(minHeight: 44).contentShape(Rectangle())

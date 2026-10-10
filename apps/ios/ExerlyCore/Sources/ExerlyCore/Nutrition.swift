@@ -334,6 +334,9 @@ public struct NutritionSummary: Sendable, Hashable {
     public var totals: NutrientAmounts
     public var byMeal: [String: NutrientAmounts]
     public var entries: Int
+    /// How many of the entries report each nutrient: a total from fewer
+    /// than `entries` may be low.
+    public var reporting: [Nutrient: Int] = [:]
 
     /// The share of energy each macro provides, from Atwater factors.
     public var energyShares: [Nutrient: Double] {
@@ -384,6 +387,14 @@ public struct NutrientProgress: Sendable, Hashable {
     /// Entries that don't report it, so the total may be low.
     public var unreported: Int
     public var target: Double?
+
+    public init(nutrient: Nutrient, consumed: Double, unreported: Int, target: Double?) {
+        self.nutrient = nutrient
+        self.consumed = consumed
+        self.unreported = unreported
+        self.target = target
+    }
+
     /// The target minus consumed, never below zero; nil without a target.
     public var remaining: Double? { target.map { max(0, $0 - consumed) } }
     /// Consumed minus the target when above it, else zero; nil without a target.

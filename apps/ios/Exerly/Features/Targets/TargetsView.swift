@@ -39,6 +39,7 @@ struct TargetsView: View {
     @State private var editor: TargetsEditorRequest?
     @State private var toast: Toast?
     @State private var error: String?
+    @State private var showsGoals = false
 
     struct Toast: Equatable {
         let id = UUID()
@@ -103,6 +104,7 @@ struct TargetsView: View {
                     }
             }
         }
+        .navigationDestination(isPresented: $showsGoals) { NutrientGoalsView(workspace: workspace, timeZone: timeZone) }
         .sheet(item: $editor) { request in
             TargetsPlanEditor(workspace: workspace, unit: unit, timeZone: timeZone, request: request) { message, checkIn in
                 show(message, undo: checkIn)
@@ -330,6 +332,11 @@ struct TargetsView: View {
                     TargetsDivider()
                 }
                 TargetsDetailRow(title: "Weekdays", value: WeekdayBudget.isEven(plan.weekdayWeights) ? "Even" : "Custom") { open(.edit) }
+                TargetsDivider()
+                let custom = plan.nutrientGoals?.count ?? 0, pins = plan.pinnedNutrients?.count ?? 0
+                TargetsDetailRow(title: "Nutrient goals", value: custom == 0 ? "Daily values" : "\(custom) of your own",
+                                 detail: pins == 0 ? nil : "\(pins) on Today", hint: "Opens nutrient goals and pins") { showsGoals = true }
+                    .accessibilityIdentifier("targets.nutrientGoals")
             }
         }
     }
@@ -337,12 +344,13 @@ struct TargetsView: View {
     // MARK: History
 
     private func historyCard(today: LocalDate) -> some View {
-        let versions = Array(store.plans.suffix(6).reversed())
+        let all = store.versionsInForce
+        let versions = Array(all.suffix(6).reversed())
         let inForce = store.plan(on: today)?.id
         let checkIns = Set(workspace.agent.proposals.filter { $0.author == NutritionCheckIn.author && $0.status == .accepted }
             .compactMap { NutritionCheckIn.proposedPlan($0)?.id })
         return ExCard {
-            ExSectionHeading("Versions", detail: store.plans.count > versions.count ? "Latest \(versions.count) of \(store.plans.count)" : nil)
+            ExSectionHeading("Versions", detail: all.count > versions.count ? "Latest \(versions.count) of \(all.count)" : nil)
             VStack(spacing: 0) {
                 ForEach(Array(versions.enumerated()), id: \.element.id) { index, version in
                     if index > 0 { TargetsDivider() }
@@ -350,7 +358,9 @@ struct TargetsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(TargetsFormat.shortDate(version.startDate, today: today)).font(.exBodyMedium)
                                 .foregroundStyle(Color.exTextPrimary)
-                            Text(checkIns.contains(version.id) ? "Check-in" : version.mode == .manual ? "Manual targets" : "Plan change")
+                            let earlier = all.firstIndex(of: version).flatMap { $0 > 0 ? all[$0 - 1] : nil }
+                            Text(checkIns.contains(version.id) ? "Check-in" : earlier.map(version.sameTargets(as:)) == true ? "Nutrient goals"
+                                 : version.mode == .manual ? "Manual targets" : "Plan change")
                                 .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                         }
                         Spacer(minLength: ExSpacing.small)
@@ -441,13 +451,14 @@ struct TargetsView: View {
                 let review = try? store.checkIn(today: today, existing: proposals, unit: unit)
                 return .decided(latest, proposed: proposed, before: store.plan(before: proposed),
                                 canUndo: latest.status == .accepted,
-                                next: review.map { NutritionCheckIn.nextDate(plan: plan, review: $0) } ?? weekStart.adding(days: 7))
+                                next: review.map { NutritionCheckIn.nextDate(plan: store.checkInPlan(on: today) ?? plan, review: $0) }
+                                    ?? weekStart.adding(days: 7))
             }
         }
         guard let review = try? store.checkIn(today: today, existing: proposals.filter { $0.id != excluded }, unit: unit) else {
             return .scheduled(weekStart.adding(days: 7))
         }
-        let next = NutritionCheckIn.nextDate(plan: plan, review: review)
+        let next = NutritionCheckIn.nextDate(plan: store.checkInPlan(on: today) ?? plan, review: review)
         switch review.outcome {
         case .proposed:
             guard let proposal = review.proposal, let proposed = NutritionCheckIn.proposedPlan(proposal) else { return .scheduled(next) }

@@ -345,7 +345,10 @@ public final class NutritionStore {
         for entry in logged { byMeal[entry.meal, default: NutrientAmounts()] += entry.nutrients }
         return NutritionSummary(date: date, status: day(date).status,
                                 totals: logged.reduce(NutrientAmounts()) { $0 + $1.nutrients },
-                                byMeal: byMeal, entries: logged.count)
+                                byMeal: byMeal, entries: logged.count,
+                                reporting: logged.reduce(into: [:]) { counts, entry in
+                                    for nutrient in entry.nutrients.values.keys { counts[nutrient, default: 0] += 1 }
+                                })
     }
 
     /// Each entry's share of a nutrient on a day, largest first.
@@ -398,6 +401,25 @@ public final class NutritionStore {
         }
         guard problems.isEmpty else { throw StoreError.invalid(problems) }
         try commit(Self.planKind, plan.id.uuidString, plan)
+    }
+
+    /// Saves the version in force today again as a new version from today,
+    /// changed by `change`: how a nutrient goal or a pin changes without
+    /// touching the targets or past days. Nothing is saved when `change`
+    /// changes nothing.
+    @discardableResult
+    public func revisePlan(timeZone: TimeZone, _ change: (inout NutritionPlan) -> Void) throws -> NutritionPlan {
+        let today = LocalDate(now(), in: timeZone)
+        guard let current = plan(on: today) else { throw StoreError.invalid(["Set up your targets first"]) }
+        var plan = current
+        change(&plan)
+        guard plan != current else { return current }
+        plan.id = UUID()
+        plan.startDate = today
+        // After the version it replaces, even within the same millisecond.
+        plan.createdAt = max(now(), current.createdAt.addingTimeInterval(0.001))
+        try savePlan(plan, timeZone: timeZone)
+        return plan
     }
 
     // MARK: Imports

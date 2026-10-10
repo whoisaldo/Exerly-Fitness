@@ -8,10 +8,13 @@ Rewrite this file each iteration and keep it under 80 lines. See `docs/AGENT_BRI
   sets with Crown edits, rest ring, live heart rate; the phone stays the source of
   truth and Health gets one workout); nine App Intents with phrases and four Control
   Center controls; fixes from code-blind run 3; weekly chart no longer blocks scroll.
-- This landing, uploaded next: native recipes. Build one from usual foods (10 taps),
-  save a meal as one (3 taps), log by serving, grams or share of the pot, or as its
-  ingredients; edit and duplicate never touch past entries. Full UI suite green
-  (86 run, 25 opt-in skips, 0 failures).
+- 2610101238 (internal TestFlight): native recipes. Build one from usual foods (10
+  taps), save a meal as one (3 taps), log by serving, grams or share of the pot, or
+  as its ingredients; edit and duplicate never touch past entries.
+- This landing, uploaded next: nutrient goals (floor/target/ceiling editor with
+  ordering checks; past days keep their goal), up to three pinned nutrients on Today
+  with "from 2 of 4 foods" completeness, and macros that lead with what's left.
+  Full UI suite green (90 run, 27 opt-in skips, 0 failures); unit tests 286.
 
 ## Current outcome
 
@@ -20,14 +23,16 @@ Rewrite this file each iteration and keep it under 80 lines. See `docs/AGENT_BRI
 
 ## In flight
 
-- `claude/goals` (helper): nutrient goal editor (floor/target/ceiling with ordering
-  checks), up to three nutrients pinned on Today, completeness line ("from 3 of 5
-  foods that report it"). PARITY N29 and N32.
+- `claude/polish3` (helper): fixes from code-blind run 4 (all 8 tasks passed, no
+  blockers). Major: recipe ingredients arrive at wrong default portions (chili took
+  53 actions), slow keypad editing, a pending check-in invisible on Today. Plus
+  partial-word search, visible Save as recipe, Today tab returns to today, half-done
+  workouts advancing the program, and polish.
 
 ## Next three steps
 
-1. Land goals, then code-blind usability run 4 on the realistic seed covering recipes,
-   goals and the new Today; fix what it finds.
+1. Land polish3, re-drive the chili task (target under 20 actions), upload; then
+   code-blind run 5 covering goals and pins.
 2. Outcome 3 from `docs/PARITY.md`: multi-select move (N07), removing an hourly
    suggestion (N09), duplicate custom food (N10), recipe sharing and import (N12).
 3. Outcome 4: notification actions, Spotlight for foods and recipes; widgets and
@@ -47,10 +52,10 @@ background work (`sleep 1200` with run_in_background).
 
 ## Merge status
 
-| Branch       | Unlanded                    | Last landed |
-| ------------ | --------------------------- | ----------- |
-| claude/next  | nothing                     | this commit |
-| claude/goals | nutrient goals, in progress | none        |
+| Branch         | Unlanded                 | Last landed |
+| -------------- | ------------------------ | ----------- |
+| claude/next    | nothing                  | this commit |
+| claude/polish3 | run 4 fixes, in progress | none        |
 
 ## Risks
 

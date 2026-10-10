@@ -628,3 +628,57 @@ is left alone.
   no weight, so they are left out.
 - The saved-foods CSV gains cooked weight, serving count, ingredients and
   preparation, which it dropped.
+
+## 2026-10-10: Nutrient goals and pins are part of the plan
+
+A nutrient's floor, target and ceiling were already fields of a nutrition
+plan version, so editing one saves a new version from today
+(`NutritionStore.revisePlan`), the way a Targets edit does: past days, their
+charts and their averages keep the goal they had, which `IntakeSeries`
+already read per day. Saving the daily value itself, or resetting to it,
+removes the custom goal, so a later change to the reference applies. Like
+other plan edits there is no undo; only check-ins have one.
+
+Pins live in the same document (`pinnedNutrients`, up to three, never energy
+or a macro). The plan is already per account, saved offline first and synced,
+and the server's `nutrition_plan` check accepts the extra field. Server
+preferences would have needed an API change for a list only the app reads.
+Today shows the pins of the version in force today, on any day it shows, with
+each day's own goal. Like every plan edit, two devices changing goals or pins
+offline on the same day don't merge: the later version wins whole.
+
+Versions that change only goals or pins needed two rules in ExerlyCore, both
+tested. A check-in dates such a version from the one whose targets it kept
+(`checkInPlan(on:)`); otherwise pinning fiber on check-in day would postpone
+that week's check-in. And a version replaced by another starting the same day
+never applied to any day, so the Versions list shows only versions in force
+(`versionsInForce`) and labels goal-only ones "Nutrient goals". After an
+accepted check-in, a goal edit hides its Undo, which would leave the edit's
+copy of those targets in force.
+
+A day's total of a nutrient some of its foods don't report says how many it
+came from ("From 3 of 5 foods") on Today's pins and in the day's Nutrients
+sheet, from per-nutrient counts on `NutritionSummary`; spans keep
+`NutrientContributions`' "N of M entries didn't report it". A pin no food
+reports reads "Not reported", never 0.
+
+Taps, counted by UI tests from the screen a person starts on: a fiber floor
+from Progress is 5 (Progress, Nutrition, Fiber, Edit goal, Save; the amount
+opens focused and selected, so it is typed straight away), where
+MacroFactor's help describes 7 from its dashboard (See All, the nutrient, the
+goal icon, Active Goal, Custom, the field, the checkmark). Pinning two
+nutrients from Today is 6 (ring, Nutrient goals, two pins, back twice)
+against 7 or more (More, Dashboard, Add or Remove Nutrients, two toggles,
+Save, Save); from a nutrient's page a pin is one tap. Unpinning from Today is
+3 (the pinned nutrient, its pin, Done) against the same 7.
+
+## 2026-10-10: Today's macros read as what's left
+
+A code-blind run read "645 kcal left" on the ring but "75 / 132 g" for
+protein and had to work out the 57 g left. Protein, carbs and fat now lead
+with what's left, "57 g left", or "12 g over" in the ring's over colour once
+a whole gram past the target, with eaten and target under the bar. Pinned
+nutrients read the same way: "16 g to go" or "2,091 mg left" first (a limit
+passed is in the warning colour), then "8.9 / 25 g", counted to the bound the
+standing refers to, then the completeness line. VoiceOver hears the same
+order, "57 grams left, 75 of 132 grams eaten".
