@@ -226,7 +226,7 @@ struct ProfilePlanCard: View {
     }
 
     private func macro(_ title: String, grams: Double, color: Color) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
+        HStack(alignment: .center, spacing: 4) {
             Circle().fill(color).frame(width: 7, height: 7).accessibilityHidden(true)
             Text(TargetsFormat.grams(grams)).font(.exLabel.weight(.semibold)).monospacedDigit().foregroundStyle(Color.exTextPrimary)
             Text(title).font(.exCaption).foregroundStyle(Color.exTextSecondary)

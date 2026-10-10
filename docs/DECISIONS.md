@@ -445,8 +445,11 @@ review of the resulting targets. Removed from setup, and why:
 Steps 0 and 1 stay separate in the saved draft, so drafts, repair and the
 server's `last_valid_step` (at most 4) are unchanged; they share one page.
 Old drafts on a removed page resume on the training page. The weight entered
-still becomes a weigh-in: setup completion saves it on the server and Today
-imports it into ExerlyCore, which a UI test now checks.
+becomes the first ExerlyCore weigh-in as soon as the account's workspace opens.
+Before, it reached ExerlyCore only when Today's import of older weigh-ins found
+the server's copy, which skips silently when sync is busy and waits for the next
+launch. The local copy takes that import's ID for the day, so it is never added
+twice; a setup repair adds none. A unit test and a UI test check it.
 
 Removed from Profile's preferences, which nothing in the app or API reads:
 preferred activities, meals per day, preferred bedtime and wake time. The

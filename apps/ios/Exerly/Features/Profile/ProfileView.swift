@@ -9,6 +9,7 @@ struct ProfileView: View {
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var dailySync: SyncEngine
     @AppStorage("exerlyAppearance") private var appearance = "dark"
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showEditProfile = false
     @State private var showChangePassword = false
     @State private var changingUnits = false
@@ -108,7 +109,7 @@ struct ProfileView: View {
                             get: { user?.unitSystem == "metric" ? "metric" : "imperial" },
                             set: setUnits
                         )) { $0 == "metric" ? "Metric" : "U.S." }
-                        .frame(maxWidth: 190)
+                        .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : 190)
                         .disabled(changingUnits || user == nil)
                     }
                     .accessibilityElement(children: .contain)
@@ -117,7 +118,7 @@ struct ProfileView: View {
                 }
                 ProfileControlRow(title: "Appearance", icon: "circle.lefthalf.filled") {
                     ExSegmentedControl(values: ["dark", "light", "system"], selection: $appearance) { $0.capitalized }
-                        .frame(maxWidth: 240)
+                        .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : 240)
                         .accessibilityElement(children: .contain)
                         .accessibilityLabel("Appearance")
                         .accessibilityIdentifier("profile.appearance")

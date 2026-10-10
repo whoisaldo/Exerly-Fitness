@@ -54,7 +54,6 @@ private struct PreferencesEditor: View {
             ExForm {
                 Section {
                     ExCard(accent: true) {
-                        Text(fields["name"] ?? "Your profile").font(.exBodyMedium)
                         statusSection.id("preferences-status")
                     }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
@@ -118,8 +117,13 @@ private struct PreferencesEditor: View {
                     Text(store.isSaving ? "Saving preferences…" : "Refreshing preferences…")
                 }
             } else if let message = store.message {
-                Text(message == "Preferences are up to date." ? "Up to date." : message)
-                    .font(.exCaption).accessibilityIdentifier("preferences.status")
+                let settled = message == "Preferences are up to date." || message == "Preferences saved."
+                Image(systemName: settled ? "checkmark.icloud" : "icloud.and.arrow.up")
+                    .font(.exCaption).foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                Text(message == "Preferences are up to date." ? "Up to date with your account" : message)
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("preferences.status")
             }
             Spacer(minLength: 0)
             Button("Refresh preferences", systemImage: "arrow.clockwise") { focusedField = nil; perform { await store.load() } }
