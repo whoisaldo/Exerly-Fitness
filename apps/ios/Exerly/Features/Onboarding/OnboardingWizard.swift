@@ -86,12 +86,6 @@ struct OnboardingWizard: View {
                     }
                 }.accessibilityIdentifier("setup.cloudStatus")
             }
-            if let error = state.validationError ?? authVM.error {
-                Label(error, systemImage: "exclamationmark.circle.fill")
-                    .font(.exLabel).foregroundStyle(Color.exError)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("setup.error")
-            }
             if state.repairUnavailable {
                 Button("Retry account repair") {
                     Task {
@@ -106,7 +100,6 @@ struct OnboardingWizard: View {
         }
         .padding(.horizontal, ExSpacing.page)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.snappy, value: state.validationError)
     }
 
     private func notice(_ text: String, icon: String) -> some View {
@@ -136,6 +129,7 @@ struct OnboardingWizard: View {
                                                              removal: .opacity))
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: pageKey)
+        .environment(\.setupError, state.validationError ?? authVM.error)
         .disabled(state.isSubmitting || state.repairUnavailable)
         .frame(maxHeight: .infinity)
     }
@@ -189,9 +183,15 @@ struct OnboardingWizard: View {
                 return
             }
             let data = state.prepareSubmission()
+            let repairing = state.repairSteps != nil
+            let accountID = authVM.currentUser?.id
             let success = await authVM.completeOnboarding(data, operationID: state.operationID)
             state.isSubmitting = false
             if success {
+                // A repair keeps the account's history and adds no weigh-in.
+                if !repairing, let accountID {
+                    SetupWeighIn.remember(accountID: accountID, kilograms: data.weight, timeZone: data.timezone)
+                }
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 state.clearCheckpoint()
             }

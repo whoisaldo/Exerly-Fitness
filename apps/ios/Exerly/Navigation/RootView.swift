@@ -66,6 +66,9 @@ struct RootView: View {
                            timeZone: authVM.currentUser?.timezone)
             await account.retryCleanup(auth: authVM)
         }
+        .task(id: account.training?.identity) {
+            if let workspace = account.training { await SetupWeighIn.recordIfPending(workspace) }
+        }
         .task(id: authVM.accountsAwaitingLocalCleanup) {
             await account.retryCleanup(auth: authVM)
         }
