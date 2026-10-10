@@ -4,6 +4,8 @@ import SwiftUI
 extension EnvironmentValues {
     /// Why the page can't move on yet, shown beside its button.
     @Entry var setupError: String?
+    /// Scrolls the page to a field by its ID, to keep it above the keyboard.
+    @Entry var setupReveal: (String) -> Void = { _ in }
 }
 
 /// A setup page: a title, one line on why it's asked, the questions, and a
@@ -22,6 +24,7 @@ struct SetupPage<Content: View>: View {
     @Environment(\.setupError) private var error
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: ExSpacing.content) {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {
@@ -43,6 +46,12 @@ struct SetupPage<Content: View>: View {
         .scrollDismissesKeyboard(.interactively)
         .scrollIndicators(.hidden)
         .exScrollEdges()
+        .environment(\.setupReveal) { id in
+            // After the keyboard has changed the safe area.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: ExSpacing.small) {
                 if let error {
@@ -68,6 +77,7 @@ struct SetupPage<Content: View>: View {
             .frame(maxWidth: .infinity)
             .background(Color.exBackground)
             .animation(.snappy, value: error)
+        }
         }
     }
 }
@@ -215,6 +225,7 @@ struct SetupNumberField: View {
     @FocusState private var focused: Bool
     @ScaledMetric(relativeTo: .title2) private var scaledWidth: CGFloat = 96
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.setupReveal) private var reveal
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.tight) {
@@ -242,6 +253,7 @@ struct SetupNumberField: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { focused = true }
+        .id(label)
         .onAppear { text = Self.format(value, digits: integer ? 0 : digits) }
         .onChange(of: value) { _, new in
             if !focused { text = Self.format(new, digits: integer ? 0 : digits) }
@@ -254,6 +266,7 @@ struct SetupNumberField: View {
             if isFocused {
                 // Typing replaces the number, as in a picker.
                 DispatchQueue.main.async { selection = TextSelection(range: text.startIndex..<text.endIndex) }
+                reveal(label)
             } else { text = Self.format(value, digits: integer ? 0 : digits) }
         }
     }

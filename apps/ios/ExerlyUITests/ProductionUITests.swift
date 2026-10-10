@@ -3354,7 +3354,8 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["nutrition.targetEnergy"].waitForExistence(timeout: 15))
         XCTAssertEqual(targetEnergy(app), expectedEnergy)
         shiftDay(-1, in: app)
-        XCTAssertTrue(app.staticTexts["No targets set for this day"].waitForExistence(timeout: 15))
+        // Setup's targets start today, so yesterday offers to set them.
+        XCTAssertTrue(app.buttons["today.setTargets"].waitForExistence(timeout: 15))
 
         let calendar = Calendar.current
         let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!

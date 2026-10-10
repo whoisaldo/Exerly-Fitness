@@ -33,6 +33,8 @@ final class ProfileOnboardingUITests: ExerlyUITestCase {
         replace(app.textFields["Height, feet"], with: "5", in: app)
         replace(app.textFields["Height, inches"], with: "10", in: app)
         replace(app.textFields["Weight, lb"], with: "182.4", in: app)
+        try await Task.sleep(for: .seconds(0.8))
+        capture(app, "po-04b-setup-typing")
         dismissKeyboard(app)
         tap(app.buttons["Male"], in: app)
         app.swipeDown()
@@ -95,7 +97,12 @@ final class ProfileOnboardingUITests: ExerlyUITestCase {
         XCTAssertFalse(app.buttons["Previous setup step"].exists, "The first page has no back button")
         tap(app.buttons["Metric"], in: app)
         replace(app.textFields["Height, cm"], with: "172", in: app)
+        dismissKeyboard(app)
         replace(app.textFields["Weight, kg"], with: "81.4", in: app)
+        let weightField = app.textFields["Weight, kg"]
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists && weightField.frame.maxY < keyboard.frame.minY,
+                      "The field being typed in stays above the keyboard")
         dismissKeyboard(app)
         tap(app.buttons["Continue"], in: app)
         XCTAssertTrue(app.descendants(matching: .any)["setup.error"].waitForExistence(timeout: 5),
