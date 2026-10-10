@@ -24,6 +24,8 @@ private struct PreferencesEditor: View {
     @State private var trainingExpanded = false
     @State private var remindersExpanded = false
     @State private var editTask: Task<Void, Never>?
+    @State private var feetText = ""
+    @State private var inchesText = ""
 
     init(accountID: String, auth: AuthViewModel) {
         let sessionID = auth.sessionID
@@ -173,7 +175,9 @@ private struct PreferencesEditor: View {
             picker("gender", choices: [("female", "Female"), ("male", "Male"), ("nonbinary", "Nonbinary"),
                                         ("other", "Other or prefer not to say")])
             picker("unitSystem", choices: [("metric", "Metric, kg and cm"), ("imperial", "U.S., lb and inches")])
-            field("height", label: "Height (\(fields["unitSystem"] == "imperial" ? "in" : "cm"))", keyboard: .decimalPad)
+            if fields["unitSystem"] == "imperial" { imperialHeight } else {
+                field("height", label: "Height (cm)", keyboard: .decimalPad)
+            }
             picker("activityLevel", choices: [
                 ("sedentary", "Mostly seated"), ("light", "Lightly active"),
                 ("moderate", "Moderately active"), ("active", "Very active"), ("very_active", "Extremely active")
@@ -265,6 +269,52 @@ private struct PreferencesEditor: View {
             Text("Save preference edits first. Reminder times use your saved time zone. Changes made on another device apply here when Exerly next connects.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
+    }
+
+    /// Height in feet and inches. The draft keeps total inches, as the store
+    /// expects; an untouched height is never rewritten.
+    private var imperialHeight: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Height").font(.subheadline.weight(.medium))
+            HStack(spacing: ExSpacing.item) {
+                heightPart("Feet", unit: "ft", text: $feetText, key: "heightFeet")
+                heightPart("Inches", unit: "in", text: $inchesText, key: "heightInches")
+            }
+        }
+        .padding(.vertical, 6)
+        .onAppear(perform: showHeight)
+        .onChange(of: fields["height"]) { _, _ in
+            if focusedField != "heightFeet" && focusedField != "heightInches" { showHeight() }
+        }
+    }
+
+    private func heightPart(_ title: String, unit: String, text: Binding<String>, key: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            TextField(title, text: text)
+                .keyboardType(key == "heightFeet" ? .numberPad : .decimalPad)
+                .focused($focusedField, equals: key)
+                .accessibilityLabel("Height, \(title.lowercased())")
+                .accessibilityIdentifier("preferences.\(key)")
+                .onChange(of: text.wrappedValue) { _, _ in
+                    guard focusedField == key else { return }
+                    let feet = UserEnteredNumber.parse(feetText) ?? 0
+                    let inches = UserEnteredNumber.parse(inchesText) ?? 0
+                    store.edit("height", value: feetText.isEmpty && inchesText.isEmpty ? "" : PreferenceFields.numberText(feet * 12 + inches))
+                }
+            Text(unit).foregroundStyle(.secondary).accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
+    }
+
+    private func showHeight() {
+        guard let total = UserEnteredNumber.parse(fields["height"] ?? ""), total > 0 else {
+            feetText = ""; inchesText = ""; return
+        }
+        var feet = Int(total / 12)
+        var inches = ((total - Double(feet * 12)) * 10).rounded() / 10
+        if inches >= 12 { feet += 1; inches = 0 }
+        feetText = String(feet)
+        inchesText = inches.formatted(.number.grouping(.never).precision(.fractionLength(0...1)))
     }
 
     private func field(_ key: String, label: String? = nil, keyboard: UIKeyboardType = .default, multiline: Bool = false) -> some View {
