@@ -51,6 +51,8 @@ struct ExerlyApp: App {
         WatchCoordinator.shared.activate()
         // Controls bring the app to the front, then run their intent here.
         ExerlyLinkRouter.install()
+        // Reminder buttons can launch the app in the background to log.
+        ReminderResponder.install()
     }
 
     var body: some Scene {

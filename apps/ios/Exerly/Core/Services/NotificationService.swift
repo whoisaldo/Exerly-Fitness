@@ -1,3 +1,4 @@
+import ExerlyCore
 import Foundation
 import UserNotifications
 import CryptoKit
@@ -7,17 +8,39 @@ struct ReminderSpec: Equatable {
     let title: String
     let body: String
     let components: DateComponents
+    /// Its buttons (see ReminderActions), and what they act on.
+    var category = ""
+    var info: [String: String] = [:]
 }
 struct ReminderPlan {
     let reminders: [ReminderSpec]
     let missing: [String]
 
-    static func make(_ snapshot: PreferencesSnapshot, namespace: String) throws -> ReminderPlan {
+    /// The start of the IDs of an account's reminders, so a reminder can be
+    /// told apart from one left by another account.
+    static func prefix(namespace: String, accountID: String) -> String {
+        let owner = SHA256.hash(data: Data("\(namespace):\(accountID)".utf8)).map { String(format: "%02x", $0) }.joined()
+        return "exerly.reminder.\(owner)."
+    }
+
+    /// The meal a reminder at `time` is for, as Today would pick it then: by
+    /// the account's habit when its data is open, else by the clock.
+    @MainActor
+    static func meal(at time: DateComponents, store: NutritionStore?) -> String {
+        let hour = time.hour ?? 0, minute = time.minute ?? 0
+        guard let store, let zone = time.timeZone, let calendar = time.calendar,
+              let date = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: .now) else {
+            return NutritionStore.meal(atMinute: hour * 60 + minute)
+        }
+        return store.suggestedMeal(at: date, timeZone: zone)
+    }
+
+    @MainActor
+    static func make(_ snapshot: PreferencesSnapshot, namespace: String, meals store: NutritionStore? = nil) throws -> ReminderPlan {
         guard case .string(let zone) = snapshot.value("timezone"), let timezone = TimeZone(identifier: zone) else {
             throw PreferencesError.message("Choose a valid time zone before scheduling reminders.")
         }
-        let owner = SHA256.hash(data: Data("\(namespace):\(snapshot.accountID)".utf8)).map { String(format: "%02x", $0) }.joined()
-        let prefix = "exerly.reminder.\(owner)."
+        let prefix = Self.prefix(namespace: namespace, accountID: snapshot.accountID)
         var reminders: [ReminderSpec] = []
         var missing: [String] = []
         func components(_ raw: JSONValue, weekday: Int? = nil) -> DateComponents? {
@@ -40,7 +63,10 @@ struct ReminderPlan {
             for time in times.prefix(10) {
                 let text = PreferenceFields.text(time)
                 if let date = components(time), seen.insert(text).inserted {
-                    reminders.append(ReminderSpec(id: prefix + "meal." + text, title: "Meal reminder", body: "Ready to log your meal?", components: date))
+                    let meal = Self.meal(at: date, store: store)
+                    reminders.append(ReminderSpec(id: prefix + "meal." + text, title: meal,
+                                                  body: "Press and hold to log your usual or repeat yesterday's.", components: date,
+                                                  category: ReminderActions.mealCategory(meal), info: ["meal": meal, "time": text]))
                 }
             }
             if reminders.isEmpty { missing.append("Choose meal reminder times.") }
@@ -53,7 +79,8 @@ struct ReminderPlan {
             for day in days {
                 if let weekday = weekdayMap[PreferenceFields.text(day)], seen.insert(weekday).inserted,
                    let date = components(snapshot.value("reminderTimes.workout"), weekday: weekday) {
-                    reminders.append(ReminderSpec(id: prefix + "workout.\(weekday)", title: "Workout reminder", body: "Your planned workout is ready when you are.", components: date))
+                    reminders.append(ReminderSpec(id: prefix + "workout.\(weekday)", title: "Workout reminder", body: "Your planned workout is ready when you are.",
+                                                  components: date, category: ReminderActions.workoutCategory))
                 }
             }
             if !reminders.contains(where: { $0.id.contains(".workout.") }) { missing.append("Choose workout days and a reminder time.") }
@@ -62,6 +89,13 @@ struct ReminderPlan {
             if let date = components(snapshot.value("reminderTimes.sleep")) {
                 reminders.append(ReminderSpec(id: prefix + "sleep", title: "Sleep reminder", body: "Time to start your bedtime routine.", components: date))
             } else { missing.append("Choose a sleep reminder time.") }
+        }
+        if snapshot.value("reminders.weighIn") == .bool(true) {
+            if let date = components(snapshot.value("reminderTimes.weighIn")) {
+                let unit = snapshot.value("unitSystem") == .string("metric") ? "kg" : "lb"
+                reminders.append(ReminderSpec(id: prefix + "weighIn", title: "Weigh-in", body: "Press and hold to type today's weight in \(unit).",
+                                              components: date, category: ReminderActions.weighInCategory))
+            } else { missing.append("Choose a weigh-in reminder time.") }
         }
         return ReminderPlan(reminders: reminders, missing: missing)
     }
@@ -87,7 +121,15 @@ struct SystemReminderScheduler: ReminderScheduling {
         content.title = reminder.title
         content.body = reminder.body
         content.sound = .default
-        let trigger = UNCalendarNotificationTrigger(dateMatching: reminder.components, repeats: true)
+        content.categoryIdentifier = reminder.category
+        content.userInfo = reminder.info
+        var trigger: UNNotificationTrigger = UNCalendarNotificationTrigger(dateMatching: reminder.components, repeats: true)
+        #if DEBUG
+        // UI tests act on reminders in SpringBoard, so theirs arrive seconds after scheduling.
+        if let delay = ProcessInfo.processInfo.environment["EXERLY_TEST_REMINDER_DELAY"].flatMap(TimeInterval.init) {
+            trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        }
+        #endif
         try await center.add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))
     }
 }
@@ -187,6 +229,11 @@ final class NotificationService: ObservableObject {
         await waitForSchedule()
     }
     func waitForSchedule() async { await scheduleTask?.value }
+    /// Schedules again from the saved preferences, for when the account's data opens.
+    func reschedule() async {
+        enqueueSchedule()
+        await waitForSchedule()
+    }
 
     private func enqueueSchedule() {
         let previous = scheduleTask
@@ -209,10 +256,19 @@ final class NotificationService: ObservableObject {
         authorization = status
         var desired: [ReminderSpec] = []
         missing = []
-        if isDeviceEnabled, let snapshot,
+        if isDeviceEnabled, var snapshot,
            status == .authorized || status == .provisional || status == .ephemeral {
+            #if DEBUG
+            // UI tests can schedule reminders their fixture's API doesn't keep yet.
+            if let json = ProcessInfo.processInfo.environment["EXERLY_TEST_REMINDER_VALUES"]?.data(using: .utf8),
+               let values = try? JSONDecoder().decode([String: JSONValue].self, from: json) {
+                snapshot.values.merge(values) { $1 }
+            }
+            #endif
             do {
-                let plan = try ReminderPlan.make(snapshot, namespace: api.storageNamespace)
+                // Meal reminders name the meal by the account's habit once its data is open.
+                let meals = WorkoutActivityActions.account?.training.flatMap { $0.accountID == accountID ? $0.nutrition : nil }
+                let plan = try ReminderPlan.make(snapshot, namespace: api.storageNamespace, meals: meals)
                 desired = plan.reminders
                 missing = plan.missing
             } catch { self.error = error.localizedDescription }

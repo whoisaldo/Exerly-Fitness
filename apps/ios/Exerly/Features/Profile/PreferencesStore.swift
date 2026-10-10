@@ -38,8 +38,9 @@ enum PreferenceFields {
         ("workoutDaysPerWeek", "Weekly workout goal"), ("workoutDays", "Workout days"),
         ("sleepGoalHours", "Sleep goal (hours)"),
         ("reminders.meals", "Meal reminders"), ("reminders.workouts", "Workout reminders"), ("reminders.sleep", "Sleep reminders"),
+        ("reminders.weighIn", "Weigh-in reminders"),
         ("reminderTimes.meals", "Meal reminder times"), ("reminderTimes.workout", "Workout reminder time"),
-        ("reminderTimes.sleep", "Sleep reminder time")
+        ("reminderTimes.sleep", "Sleep reminder time"), ("reminderTimes.weighIn", "Weigh-in reminder time")
     ]
     static let days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     static let lists = ["allergies", "equipment", "workoutDays", "reminderTimes.meals"]
@@ -192,10 +193,11 @@ final class PreferencesStore: ObservableObject {
         storageKey = "preferences.draft.v1.\(api.storageNamespace).\(accountID)"
         do {
             if let data = try self.storage.read(storageKey) {
-                let saved = try JSONDecoder().decode(PreferencesDraft.self, from: data)
+                var saved = try JSONDecoder().decode(PreferencesDraft.self, from: data)
                 try validate(saved.base)
+                // A draft saved before a field existed leaves that field as saved.
+                for (key, value) in PreferenceFields.fields(saved.base) where saved.fields[key] == nil { saved.fields[key] = value }
                 guard saved.version == 1, saved.accountID == accountID,
-                      PreferenceFields.definitions.allSatisfy({ saved.fields[$0.key] != nil }),
                       saved.heightCM == nil || saved.heightCM!.isFinite,
                       saved.pending == nil || (!saved.pending!.id.isEmpty && saved.pending!.body.baseRevision >= 0 && !saved.pending!.body.changes.isEmpty)
                 else { throw PreferencesError.message("Unreadable saved preferences") }

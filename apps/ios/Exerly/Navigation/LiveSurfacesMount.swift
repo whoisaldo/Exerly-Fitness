@@ -1,9 +1,11 @@
 import ExerlyCore
 import SwiftUI
+import UserNotifications
 
 extension View {
     /// Keeps the workout's Live Activity, the widgets' snapshot and the watch
-    /// in step with the open account, and clears them at sign-out.
+    /// in step with the open account, and clears them (and any delivered
+    /// notifications) at sign-out.
     func liveSurfaces(_ account: AppAccountWorkspace, signedOut: Bool, unit: MassUnit, timeZone: TimeZone) -> some View {
         modifier(LiveSurfacesMount(account: account, workspace: account.training, signedOut: signedOut,
                                    unit: unit, timeZone: timeZone))
@@ -39,6 +41,7 @@ private struct LiveSurfacesMount: ViewModifier {
                 await WorkoutActivityCoordinator.shared.endAll()
                 WidgetSnapshotWriter.clear()
                 WatchCoordinator.shared.signOut()
+                UNUserNotificationCenter.current().removeAllDeliveredNotifications()
             }
             #if DEBUG
             .overlay(alignment: .topLeading) {

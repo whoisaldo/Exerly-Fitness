@@ -682,3 +682,35 @@ nutrients read the same way: "16 g to go" or "2,091 mg left" first (a limit
 passed is in the warning colour), then "8.9 / 25 g", counted to the bound the
 standing refers to, then the completeness line. VoiceOver hears the same
 order, "57 grams left, 75 of 132 grams eaten".
+
+## 2026-10-10: Reminder buttons and a weigh-in reminder
+
+Meal reminders carry buttons for their meal: Log usual breakfast, Repeat
+yesterday's breakfast and Search. The meal is named when the reminder is
+scheduled, from its time, as `suggestedMeal(at:timeZone:)` names it: by the
+account's habit once its data is open (reminders are rescheduled when it
+opens), else by the clock (`NutritionStore.meal(atMinute:)`). The title can't
+change after delivery, so the button logs into the meal it names. Log usual
+logs Today's first Log again chip for the reminder's time of day; Repeat
+copies yesterday's meal only, because the button says yesterday (Today's
+repeat button still reaches back a week), and only into an empty meal. Search
+opens food search, and a workout reminder's Start workout follows the Start
+workout intent's link. A new weigh-in reminder (`reminders.weighIn`,
+`reminderTimes.weighIn`, set in Profile like the others and allowed by the
+API) takes the weight typed into the notification, in the person's unit,
+with either decimal mark and an optional "lb" or "kg"; the range check and
+its message are the weigh-in sheet's. Tapping it opens a weigh-in.
+
+Logging buttons run in the background through the intents' actions and ask
+for an unlocked phone, as the intents do. A silent notification then says
+what was saved in the intents' words ("Logged Blueberries, 80 g, to
+Breakfast. 1,934 kcal left today."), or, titled "Nothing was logged", why
+not: signed out, no usual food, a bad number, or a reminder left by another
+account (its ID's owner prefix doesn't match). Each replaces the last. It
+doesn't update the delivered reminder, because re-adding a request with a
+repeating reminder's ID would replace its schedule. Sign-out removes
+delivered notifications.
+
+Taps from a banner or the Lock Screen: a usual breakfast is 2 (hold, Log
+usual breakfast); a weigh-in is 2 (hold, which opens the weight field because
+it is the reminder's only button, type, Log).

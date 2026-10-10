@@ -107,7 +107,8 @@ class ExerlyUITestCase: XCTestCase {
             Thread.sleep(forTimeInterval: 0.4)
         }
     }
-    func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil) -> XCUIApplication {
+    func launch(resetSession: Bool, legacyToken: String? = nil, accountControls: String? = nil,
+                environment: [String: String] = [:]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = resetSession ? ["--ui-testing"] : []
         if let appearance = ProcessInfo.processInfo.environment["EXERLY_TEST_APPEARANCE"],
@@ -121,6 +122,7 @@ class ExerlyUITestCase: XCTestCase {
         app.launchEnvironment["EXERLY_TEST_STORE_ID"] = UUID().uuidString
         app.launchEnvironment["EXERLY_TEST_LEGACY_TOKEN"] = legacyToken
         app.launchEnvironment["EXERLY_TEST_ACCOUNT_CONTROLS"] = accountControls
+        app.launchEnvironment.merge(environment) { $1 }
         app.launch()
         return app
     }

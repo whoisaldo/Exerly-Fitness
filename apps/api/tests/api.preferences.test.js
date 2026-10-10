@@ -76,8 +76,8 @@ test('preferences preserve setup values and update non-nutrition goals atomicall
     sleepGoalHours: 7.25,
     bedtime: '23:15',
     wakeTime: '06:45',
-    reminders: { meals: true, workouts: false, sleep: true },
-    reminderTimes: { meals: ['18:00', '08:30', '12:00'], sleep: '22:45' },
+    reminders: { meals: true, workouts: false, sleep: true, weighIn: true },
+    reminderTimes: { meals: ['18:00', '08:30', '12:00'], sleep: '22:45', weighIn: '07:15' },
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.revision, 2);
@@ -85,6 +85,8 @@ test('preferences preserve setup values and update non-nutrition goals atomicall
   assert.equal(result.body.user.name, 'Edited Taylor');
   assert.equal(result.body.user.preferencesRevision, 2);
   assert.deepEqual(result.body.values.reminderTimes.meals, ['08:30', '12:00', '18:00']);
+  assert.equal(result.body.values.reminders.weighIn, true);
+  assert.equal(result.body.values.reminderTimes.weighIn, '07:15');
   const after = (await api.get('/api/export', options(user))).body;
   assert.deepEqual(after.weights, before.weights);
   assert.deepEqual(after.program, before.program);
@@ -150,6 +152,8 @@ test('invalid preference fields and values cannot partially change data or initi
     { allergies: 'sesame' },
     { reminders: { meals: 'maybe' } },
     { reminderTimes: { meals: ['25:00'] } },
+    { reminders: { naps: true } },
+    { reminderTimes: { weighIn: '7am' } },
     { calories: 2000 },
     { weight: 90 },
     { __proto__: null, isAdmin: true },
