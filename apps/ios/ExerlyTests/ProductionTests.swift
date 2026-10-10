@@ -311,29 +311,78 @@ final class ProductionTests: XCTestCase {
         state.equipment = [.dumbbells, .bench]
         state.dietType = "low_fat"
         state.step = 3
-        for page in 0...3 {
+        for page in 0...1 {
             XCTAssertEqual(state.planningPage, page)
             let restored = OnboardingState(defaults: defaults)
             restored.restoreCheckpoint(accountID: "guided-setup")
             XCTAssertEqual(restored.step, 3)
             XCTAssertEqual(restored.planningPage, page)
-            XCTAssertEqual(restored.questionNumber, 4 + page)
+            XCTAssertEqual(restored.questionNumber, 3 + page)
             XCTAssertEqual(restored.request().experienceLevel, "intermediate")
             XCTAssertEqual(restored.request().workoutDaysPerWeek, 4)
             XCTAssertEqual(restored.request().workoutDays, state.workoutDays)
             XCTAssertEqual(Set(restored.request().equipment), ["dumbbells", "bench"])
             XCTAssertEqual(restored.request().dietType, "low_fat")
-            if page < 3 { state.nextStep() }
+            if page < 1 { state.nextStep() }
         }
         state.nextStep()
         XCTAssertEqual(state.step, 4)
-        XCTAssertEqual(state.questionNumber, 8)
+        XCTAssertEqual(state.questionNumber, 5)
+        XCTAssertEqual(state.questionCount, 5)
         state.prevStep()
         XCTAssertEqual(state.step, 3)
-        XCTAssertEqual(state.planningPage, 3)
+        XCTAssertEqual(state.planningPage, 1)
         state.prevStep()
         XCTAssertEqual(state.step, 3)
-        XCTAssertEqual(state.planningPage, 2)
+        XCTAssertEqual(state.planningPage, 0)
+    }
+
+    func testFirstPageAsksNameAndMeasurementsTogetherAndChecksBoth() {
+        let state = OnboardingState(defaults: defaults)
+        state.restoreCheckpoint(accountID: "about-you")
+        XCTAssertTrue(state.isFirstPage)
+        state.name = "Taylor"
+        state.continueFromAboutYou()
+        XCTAssertEqual(state.step, 0, "Missing sex keeps the person on the first page")
+        XCTAssertNotNil(state.validationError)
+        state.physiologicalSex = "female"
+        state.continueFromAboutYou()
+        XCTAssertEqual(state.step, 2)
+        XCTAssertNil(state.validationError)
+        XCTAssertEqual(state.questionNumber, 2)
+        state.prevStep()
+        XCTAssertEqual(state.step, 1)
+        XCTAssertTrue(state.isFirstPage, "Steps 0 and 1 are one page, so it has no back button")
+        state.name = " "
+        state.continueFromAboutYou()
+        XCTAssertEqual(state.step, 1)
+        XCTAssertEqual(state.validationError, "Enter your name.")
+    }
+
+    func testManualTargetsAreCheckedOnTheReview() {
+        let state = OnboardingState(defaults: defaults)
+        state.restoreCheckpoint(accountID: "manual-review")
+        state.manualTargetMode = true
+        state.manualTargets.calories = 500
+        XCTAssertNil(state.errorForStep(1), "Own targets don't need the estimate's sex")
+        XCTAssertNotNil(state.errorForStep(4))
+        state.manualTargets.calories = 2100
+        XCTAssertNil(state.errorForStep(4))
+    }
+
+    func testChoosingAGoalSuggestsATargetWeightOnTheRightSide() {
+        let state = OnboardingState(defaults: defaults)
+        state.weightKg = 90
+        state.targetWeightKg = 95
+        state.goal = .loseWeight
+        state.suggestTargetWeight()
+        XCTAssertLessThan(state.targetWeightKg, 90)
+        state.targetWeightKg = 85
+        state.suggestTargetWeight()
+        XCTAssertEqual(state.targetWeightKg, 85, "A target already on the right side is kept")
+        state.goal = .gainMuscle
+        state.suggestTargetWeight()
+        XCTAssertGreaterThan(state.targetWeightKg, 90)
     }
 
     func testOptionalProfilePreferencesDoNotReplaceExplicitManualTargets() {

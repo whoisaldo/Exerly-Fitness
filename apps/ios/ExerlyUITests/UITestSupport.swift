@@ -259,6 +259,7 @@ class ExerlyUITestCase: XCTestCase {
     /// floats above the tab bar on every other tab: content under either
     /// isn't tappable.
     var persistentActionIDs: [String] {
+        // The live workout accessory sits above the tab bar on every other tab.
         ["nutrition.plateAddFoods", "nutrition.reviewPlate", "setup.continueWeek", "setup.finish",
          "planSetup.continue", "planSetup.accept", "gym.save", "nutrition.quick.save", "nutrition.saveEntry",
          "workout.accessory"]

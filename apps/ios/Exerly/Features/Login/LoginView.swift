@@ -2,115 +2,71 @@ import SwiftUI
 
 struct LoginView: View {
     let onBack: () -> Void
+    var onSwitchToSignup: (() -> Void)?
     @EnvironmentObject private var authVM: AuthViewModel
 
     @State private var email = ""
     @State private var password = ""
     @State private var shakeAttempts: CGFloat = 0
+    @FocusState private var focus: Field?
     @AccessibilityFocusState private var errorFocused: Bool
 
+    enum Field { case email, password }
+
+    private var canSubmit: Bool { !email.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty && !authVM.isSubmitting }
+
     var body: some View {
-        ZStack {
-            Color.exBackground.ignoresSafeArea()
-
-            ScrollView {
-                VStack(spacing: 24) {
-                    header
-                    inputFields
-                    errorMessage
-                    loginButton
-                    if Bundle.main.object(forInfoDictionaryKey: "EXERLY_BUILD_ENVIRONMENT") as? String == "staging" {
-                        Text("Internal testing. Enable Tailscale to connect.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                    appleSignIn
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 60)
+        AuthPage(title: "Welcome back", detail: "Sign in to pick up where you left off.", onBack: onBack) {
+            VStack(spacing: ExSpacing.small) {
+                AuthField(title: "Email", kind: .email, text: $email, field: Field.email, focus: $focus) { focus = .password }
+                AuthField(title: "Password", kind: .password, text: $password, field: Field.password, focus: $focus,
+                          submitLabel: .go) { if canSubmit { submit() } }
             }
-        }
-        .overlay(alignment: .topLeading) { backButton }
-    }
-
-    private var header: some View {
-        VStack(spacing: 8) {
-            Text("Welcome back")
-                .font(.exH1)
-                .foregroundStyle(.exTextPrimary)
-            Text("Your training and nutrition, together.")
-                .font(.exBody)
-                .foregroundStyle(.exTextSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var inputFields: some View {
-        VStack(spacing: 16) {
-            FloatingLabelTextField(label: "Email", text: $email, keyboardType: .emailAddress)
-            FloatingLabelTextField(label: "Password", text: $password, isSecure: true)
-        }
-        .modifier(ShakeEffect(animatableData: shakeAttempts))
-    }
-
-    @ViewBuilder
-    private var errorMessage: some View {
-        if let error = authVM.error {
-            Text(error)
-                .font(.exCaption)
-                .foregroundStyle(.exError)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityFocused($errorFocused)
-        }
-    }
-
-    private var loginButton: some View {
-        ActionButton(
-            title: "Log In",
-            isLoading: authVM.isSubmitting,
-            isDisabled: email.isEmpty || password.isEmpty
-        ) {
-            Task {
-                await authVM.login(email: email, password: password)
-                if authVM.error != nil {
-                    errorFocused = true
-                    withAnimation(.spring(response: 0.3)) {
-                        shakeAttempts += 1
-                    }
+            .modifier(ShakeEffect(animatableData: shakeAttempts))
+            if let error = authVM.error {
+                Label(error, systemImage: "exclamationmark.circle.fill")
+                    .font(.exLabel).foregroundStyle(Color.exError)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityFocused($errorFocused)
+            }
+            Button(action: submit) {
+                HStack(spacing: ExSpacing.small) {
+                    if authVM.isSubmitting { ProgressView().tint(.white) }
+                    Text("Log In")
                 }
             }
-        }
-    }
-
-    private var appleSignIn: some View {
-        VStack(spacing: 12) {
-            divider
+            .buttonStyle(ExActionStyle())
+            .disabled(!canSubmit)
+            if Bundle.main.object(forInfoDictionaryKey: "EXERLY_BUILD_ENVIRONMENT") as? String == "staging" {
+                Text("Internal testing. Enable Tailscale to connect.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+            AuthDivider().padding(.vertical, ExSpacing.tight)
             AppleAuthorizationButton { payload in
                 await authVM.signInWithApple(identityToken: payload.identityToken, rawNonce: payload.rawNonce, name: payload.name)
                 if authVM.error != nil { errorFocused = true }
             }
             .disabled(authVM.isSubmitting)
+            if let onSwitchToSignup {
+                AuthSwitchLink(question: "New to Exerly?", action: "Create an account") {
+                    authVM.error = nil
+                    onSwitchToSignup()
+                }
+                .padding(.top, ExSpacing.small)
+            }
         }
+        .onAppear { authVM.error = nil }
     }
 
-    private var divider: some View {
-        HStack {
-            Rectangle().fill(Color.exBorder).frame(height: 1)
-            Text("or").font(.exCaption).foregroundStyle(.exTextMuted)
-            Rectangle().fill(Color.exBorder).frame(height: 1)
+    private func submit() {
+        focus = nil
+        Task {
+            await authVM.login(email: email.trimmingCharacters(in: .whitespaces), password: password)
+            if authVM.error != nil {
+                errorFocused = true
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                withAnimation(.spring(response: 0.3)) { shakeAttempts += 1 }
+            }
         }
-    }
-
-    private var backButton: some View {
-        Button(action: onBack) {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(.exTextPrimary)
-                .frame(width: 44, height: 44)
-                .background(Color.exBackground, in: Circle())
-        }
-        .padding(.leading, 12)
-        .padding(.top, 8)
-        .accessibilityLabel("Back")
     }
 }

@@ -214,4 +214,22 @@ final class AccountWorkspaceTests: XCTestCase {
         XCTAssertNil(offline["account"])
         XCTAssertNotNil(offline["note"])
     }
+
+    func testSetupWeightIsRecordedOnceWithTheLegacyImportsID() async throws {
+        let workspace = try TrainingWorkspace(accountID: "account-a", root: root)
+        let zone = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-09T02:30:00Z"))
+        SetupWeighIn.remember(accountID: "account-a", kilograms: 81.4, timeZone: zone.identifier,
+                              namespace: namespace, defaults: defaults, now: now)
+        await SetupWeighIn.recordIfPending(workspace, namespace: namespace, defaults: defaults)
+        let day = try XCTUnwrap(LocalDate("2026-10-08"), "The account's day, not UTC's")
+        XCTAssertEqual(workspace.nutrition.weights.map(\.id), [NutritionStore.legacyWeightID(accountID: "account-a", date: day)])
+        XCTAssertEqual(workspace.nutrition.weights.first?.weight.kilograms ?? 0, 81.4, accuracy: 0.0001)
+        await SetupWeighIn.recordIfPending(workspace, namespace: namespace, defaults: defaults)
+        let serverCopy = try workspace.nutrition.importLegacyWeights([LegacyWeighIn(date: day, kilograms: 81.4)],
+                                                                    accountID: "account-a", timeZone: zone)
+        XCTAssertEqual(serverCopy, 0, "Today's import of the server's copy adds nothing")
+        XCTAssertEqual(workspace.nutrition.weights.count, 1)
+        await workspace.close()
+    }
 }

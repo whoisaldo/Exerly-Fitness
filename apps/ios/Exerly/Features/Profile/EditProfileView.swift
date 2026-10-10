@@ -22,9 +22,10 @@ private struct PreferencesEditor: View {
     @State private var showReplaceConfirmation = false
     @State private var foodExpanded = false
     @State private var trainingExpanded = false
-    @State private var sleepExpanded = false
     @State private var remindersExpanded = false
     @State private var editTask: Task<Void, Never>?
+    @State private var feetText = ""
+    @State private var inchesText = ""
 
     init(accountID: String, auth: AuthViewModel) {
         let sessionID = auth.sessionID
@@ -55,7 +56,6 @@ private struct PreferencesEditor: View {
             ExForm {
                 Section {
                     ExCard(accent: true) {
-                        Text(fields["name"] ?? "Your profile").font(.exBodyMedium)
                         statusSection.id("preferences-status")
                     }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
@@ -119,8 +119,13 @@ private struct PreferencesEditor: View {
                     Text(store.isSaving ? "Saving preferences…" : "Refreshing preferences…")
                 }
             } else if let message = store.message {
-                Text(message == "Preferences are up to date." ? "Up to date." : message)
-                    .font(.exCaption).accessibilityIdentifier("preferences.status")
+                let settled = message == "Preferences are up to date." || message == "Preferences saved."
+                Image(systemName: settled ? "checkmark.icloud" : "icloud.and.arrow.up")
+                    .font(.exCaption).foregroundStyle(Color.exPrimaryText).accessibilityHidden(true)
+                Text(message == "Preferences are up to date." ? "Up to date with your account" : message)
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("preferences.status")
             }
             Spacer(minLength: 0)
             Button("Refresh preferences", systemImage: "arrow.clockwise") { focusedField = nil; perform { await store.load() } }
@@ -167,16 +172,19 @@ private struct PreferencesEditor: View {
         Section("About you") {
             field("name")
             field("age", keyboard: .numberPad)
-            field("gender")
+            picker("gender", choices: [("female", "Female"), ("male", "Male"), ("nonbinary", "Nonbinary"),
+                                        ("other", "Other or prefer not to say")])
             picker("unitSystem", choices: [("metric", "Metric, kg and cm"), ("imperial", "U.S., lb and inches")])
-            field("height", label: "Height (\(fields["unitSystem"] == "imperial" ? "in" : "cm"))", keyboard: .decimalPad)
+            if fields["unitSystem"] == "imperial" { imperialHeight } else {
+                field("height", label: "Height (cm)", keyboard: .decimalPad)
+            }
             picker("activityLevel", choices: [
                 ("sedentary", "Mostly seated"), ("light", "Lightly active"),
                 ("moderate", "Moderately active"), ("active", "Very active"), ("very_active", "Extremely active")
             ])
             field("timezone")
             Button("Use device time zone") { store.edit("timezone", value: TimeZone.current.identifier) }
-            Text("Log new weight readings in Progress. Review nutrition goals and accepted targets in Nutrition Program.")
+            Text("Weigh in from Today or Progress. Calorie and macro targets live in Profile, under Your plan.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
     }
@@ -185,7 +193,6 @@ private struct PreferencesEditor: View {
             DisclosureGroup("Food preferences", isExpanded: $foodExpanded) {
                 field("dietaryStyle")
                 field("allergies", multiline: true)
-                field("mealsPerDay", keyboard: .numberPad)
                 Text("Enter one allergy per line. Check food labels when choosing products.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
@@ -197,8 +204,7 @@ private struct PreferencesEditor: View {
                 picker("experienceLevel", choices: [("beginner", "Beginner"), ("intermediate", "Intermediate"), ("advanced", "Advanced")])
                 picker("equipmentAccess", choices: [("bodyweight", "Bodyweight"), ("home", "Home"), ("full_gym", "Gym")])
                 field("equipment", multiline: true)
-                field("activityTypes", multiline: true)
-                Text("Enter one item or activity per line.").font(.subheadline).foregroundStyle(.secondary)
+                Text("Enter one item per line.").font(.subheadline).foregroundStyle(.secondary)
                 field("workoutDaysPerWeek", keyboard: .numberPad)
                 ForEach(PreferenceFields.days, id: \.self) { day in
                     Toggle(day.capitalized, isOn: Binding(get: {
@@ -215,14 +221,8 @@ private struct PreferencesEditor: View {
         }
     }
     private var sleepSection: some View {
-        Section {
-            DisclosureGroup("Sleep preferences", isExpanded: $sleepExpanded) {
-                field("sleepGoalHours", keyboard: .decimalPad)
-                field("bedtime", keyboard: .numbersAndPunctuation)
-                field("wakeTime", keyboard: .numbersAndPunctuation)
-                Text("Use 24-hour times such as 22:30. Preferred times do not create sleep entries.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
+        Section("Sleep") {
+            field("sleepGoalHours", keyboard: .decimalPad)
         }
     }
     private var remindersSection: some View {
@@ -269,6 +269,52 @@ private struct PreferencesEditor: View {
             Text("Save preference edits first. Reminder times use your saved time zone. Changes made on another device apply here when Exerly next connects.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
+    }
+
+    /// Height in feet and inches. The draft keeps total inches, as the store
+    /// expects; an untouched height is never rewritten.
+    private var imperialHeight: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Height").font(.subheadline.weight(.medium))
+            HStack(spacing: ExSpacing.item) {
+                heightPart("Feet", unit: "ft", text: $feetText, key: "heightFeet")
+                heightPart("Inches", unit: "in", text: $inchesText, key: "heightInches")
+            }
+        }
+        .padding(.vertical, 6)
+        .onAppear(perform: showHeight)
+        .onChange(of: fields["height"]) { _, _ in
+            if focusedField != "heightFeet" && focusedField != "heightInches" { showHeight() }
+        }
+    }
+
+    private func heightPart(_ title: String, unit: String, text: Binding<String>, key: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            TextField(title, text: text)
+                .keyboardType(key == "heightFeet" ? .numberPad : .decimalPad)
+                .focused($focusedField, equals: key)
+                .accessibilityLabel("Height, \(title.lowercased())")
+                .accessibilityIdentifier("preferences.\(key)")
+                .onChange(of: text.wrappedValue) { _, _ in
+                    guard focusedField == key else { return }
+                    let feet = UserEnteredNumber.parse(feetText) ?? 0
+                    let inches = UserEnteredNumber.parse(inchesText) ?? 0
+                    store.edit("height", value: feetText.isEmpty && inchesText.isEmpty ? "" : PreferenceFields.numberText(feet * 12 + inches))
+                }
+            Text(unit).foregroundStyle(.secondary).accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
+    }
+
+    private func showHeight() {
+        guard let total = UserEnteredNumber.parse(fields["height"] ?? ""), total > 0 else {
+            feetText = ""; inchesText = ""; return
+        }
+        var feet = Int(total / 12)
+        var inches = ((total - Double(feet * 12)) * 10).rounded() / 10
+        if inches >= 12 { feet += 1; inches = 0 }
+        feetText = String(feet)
+        inchesText = inches.formatted(.number.grouping(.never).precision(.fractionLength(0...1)))
     }
 
     private func field(_ key: String, label: String? = nil, keyboard: UIKeyboardType = .default, multiline: Bool = false) -> some View {

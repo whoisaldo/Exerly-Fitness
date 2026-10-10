@@ -442,3 +442,43 @@ dashboard and the app agreed, the dashboard is out of scope, the native tests
 only ever skipped without the harness, and one could no longer pass after the
 weigh-in flow moved to ExerlyCore. The rest of the web dashboard is untouched;
 remove it too if it starts to cost time.
+
+## 2026-10-09: Setup is five pages; Profile is a hub
+
+Setup now asks only what targets and training need, in five pages: about you
+(name, units, sex for the calorie equation, age, height, weight), goal, everyday
+activity, training (workouts a week, experience, gym or home equipment), and a
+review of the resulting targets. Removed from setup, and why:
+
+- The welcome card and three-line feature list: the Welcome screen says it.
+- Gender identity: it never chose the equation. It's in Profile, and setup asks
+  only when repairing an account saved without one.
+- Meals per day and diet style (vegetarian, keto and so on): neither changed a
+  target or filtered a food. Diet style stays in Profile.
+- The separate equipment and nutrition pages: equipment joins the training
+  page; the macro split and "Use my own targets" moved to the review, where
+  their effect on the numbers shows at once.
+- Sleep and notification steps and their unreachable screens (`Step0Welcome`,
+  `Step6ActivityTypes` to `Step9Equipment`, `Step11Notifications`) were deleted
+  with the old step files. Reminders are set in Profile.
+
+Steps 0 and 1 stay separate in the saved draft, so drafts, repair and the
+server's `last_valid_step` (at most 4) are unchanged; they share one page.
+Old drafts on a removed page resume on the training page. The weight entered
+becomes the first ExerlyCore weigh-in as soon as the account's workspace opens.
+Before, it reached ExerlyCore only when Today's import of older weigh-ins found
+the server's copy, which skips silently when sync is busy and waits for the next
+launch. The local copy takes that import's ID for the day, so it is never added
+twice; a setup repair adds none. A unit test and a UI test check it.
+
+Removed from Profile's preferences, which nothing in the app or API reads:
+preferred activities, meals per day, preferred bedtime and wake time. The
+values stay on the account. Gender identity is now a picker instead of free
+text, and the change-password screen requires 8 characters like the server
+(it allowed 6, which the server rejected).
+
+Deleted as unreachable: `DashboardView`, `SocialView` with `SocialService`,
+`AICoachView` (the agent API and MCP server are untouched), `NotificationsView`,
+`HomeViewModel`, `StreakService`, `FoodLibraryService`, `StatMiniCard`,
+`CalorieRing`, `MultiSelectGrid`, and the local `WizardService` calculator,
+which only the deleted results screen used. Setup targets come from the API.

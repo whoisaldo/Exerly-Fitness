@@ -32,18 +32,18 @@ enum PreferenceFields {
         ("name", "Name"), ("age", "Age"), ("gender", "Gender identity"),
         ("unitSystem", "Display units"), ("height", "Height"),
         ("activityLevel", "Usual activity level"), ("timezone", "Time zone"),
-        ("dietaryStyle", "Diet preference"), ("allergies", "Allergies"), ("mealsPerDay", "Meals per day"),
+        ("dietaryStyle", "Diet preference"), ("allergies", "Allergies"),
         ("experienceLevel", "Training experience"), ("equipmentAccess", "Training location"),
-        ("equipment", "Available equipment"), ("activityTypes", "Preferred activities"),
+        ("equipment", "Available equipment"),
         ("workoutDaysPerWeek", "Weekly workout goal"), ("workoutDays", "Workout days"),
-        ("sleepGoalHours", "Sleep goal (hours)"), ("bedtime", "Preferred bedtime"), ("wakeTime", "Preferred wake time"),
+        ("sleepGoalHours", "Sleep goal (hours)"),
         ("reminders.meals", "Meal reminders"), ("reminders.workouts", "Workout reminders"), ("reminders.sleep", "Sleep reminders"),
         ("reminderTimes.meals", "Meal reminder times"), ("reminderTimes.workout", "Workout reminder time"),
         ("reminderTimes.sleep", "Sleep reminder time")
     ]
     static let days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    static let lists = ["allergies", "equipment", "activityTypes", "workoutDays", "reminderTimes.meals"]
-    static let numbers = ["age", "mealsPerDay", "workoutDaysPerWeek", "sleepGoalHours"]
+    static let lists = ["allergies", "equipment", "workoutDays", "reminderTimes.meals"]
+    static let numbers = ["age", "workoutDaysPerWeek", "sleepGoalHours"]
     static func label(_ key: String) -> String { definitions.first { $0.key == key }?.label ?? key.capitalized }
 
     static func numberText(_ number: Double) -> String {

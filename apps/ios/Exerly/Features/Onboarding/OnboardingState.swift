@@ -98,7 +98,6 @@ final class OnboardingState: ObservableObject {
     @Published var notifyWorkouts = false { didSet { saveCheckpoint() } }
     @Published var notifyMeals = false { didSet { saveCheckpoint() } }
     @Published var notifySleep = false { didSet { saveCheckpoint() } }
-    @Published var results: WizardResults?
     @Published var serverPreview: SetupPreview?
     @Published var previewError: String?
     @Published var validationError: String?
@@ -133,8 +132,16 @@ final class OnboardingState: ObservableObject {
         self.automaticallySync = automaticallySync
     }
     var totalSteps: Int { 5 }
-    var questionNumber: Int { step < 3 ? step + 1 : step == 3 ? 4 + planningPage : 8 }
-    var questionCount: Int { 8 }
+    /// Steps 0 and 1 share the first page: name, units and measurements.
+    /// Step 3 has two pages: everyday activity, then training.
+    var questionNumber: Int { step <= 1 ? 1 : step == 2 ? 2 : step == 3 ? 3 + planningPage : 5 }
+    var questionCount: Int { 5 }
+    static let lastPlanningPage = 1
+    /// The page a person starts on, which has no back button.
+    var isFirstPage: Bool {
+        guard let first = visibleSteps.first else { return true }
+        return step == first || (first == 0 && step == 1)
+    }
     var visibleSteps: [Int] { repairSteps ?? Array(0..<totalSteps) }
     var previewIdentity: Data? { signature(content()) }
     private func checkpointKey(_ accountID: String) -> String {
@@ -158,10 +165,6 @@ final class OnboardingState: ObservableObject {
         get { Int(USUnits.feetAndInches(centimeters: heightCm).inches) }
         set { heightCm = USUnits.centimeters(feet: heightFeet, inches: Double(newValue)) }
     }
-    var bmiPreview: Double { WizardService.calculateBMI(weightKg: weightKg, heightCm: heightCm) }
-    var weightRateSafety: WeightRateSafety {
-        WizardService.assessWeightRate(currentKg: weightKg, targetKg: targetWeightKg, weeks: timelineWeeks)
-    }
     var nutritionGoal: String {
         if let nutritionGoalChoice { return nutritionGoalChoice }
         switch goal {
@@ -178,12 +181,7 @@ final class OnboardingState: ObservableObject {
             if unansweredFields.contains("gender") { return "Choose a gender identity, or prefer not to say." }
             if !(18...120).contains(age) { return "Exerly currently supports adults aged 18 or older." }
             if !manualTargetMode && !["male", "female"].contains(physiologicalSex) {
-                return "Choose a calculation parameter or enter your own targets."
-            }
-            if manualTargetMode && (!(800...10000).contains(manualTargets.calories) ||
-                !(0...500).contains(manualTargets.protein_g) || !(0...1500).contains(manualTargets.carbs_g) ||
-                !(0...500).contains(manualTargets.fat_g)) {
-                return "Enter valid calorie and nutrient targets."
+                return "Choose the sex used for the calorie estimate."
             }
             return (50...280).contains(heightCm) && (20...500).contains(weightKg) ? nil : "Enter a valid height and weight."
         case 2:
@@ -198,14 +196,46 @@ final class OnboardingState: ObservableObject {
             if !["beginner", "intermediate", "advanced"].contains(experienceLevel) { return "Choose your training experience." }
             if !(0...7).contains(workoutDaysPerWeek) { return "Choose how many days you plan to train." }
             return nil
+        case 4:
+            if manualTargetMode && (!(800...10000).contains(manualTargets.calories) ||
+                !(0...500).contains(manualTargets.protein_g) || !(0...1500).contains(manualTargets.carbs_g) ||
+                !(0...500).contains(manualTargets.fat_g)) {
+                return "Enter calories from 800 to 10,000 and grams for each macro."
+            }
+            return nil
         default: return nil
+        }
+    }
+
+    /// Leaves the first page, which asks the questions of steps 0 and 1.
+    func continueFromAboutYou() {
+        guard !isSubmitting else { return }
+        if let invalid = [0, 1].filter(visibleSteps.contains).first(where: { errorForStep($0) != nil }) {
+            validationError = errorForStep(invalid)
+            return
+        }
+        validationError = nil
+        guard let next = visibleSteps.first(where: { $0 > 1 }) else { return }
+        direction = .trailing
+        step = next
+    }
+
+    /// A target weight on the side of the current weight the goal points to,
+    /// unless the person already entered one there.
+    func suggestTargetWeight() {
+        switch nutritionGoal {
+        case "lose" where targetWeightKg >= weightKg || targetWeightKg < 20:
+            targetWeightKg = (weightKg * 0.92 * 10).rounded() / 10
+        case "gain" where targetWeightKg <= weightKg || targetWeightKg > 500:
+            targetWeightKg = (weightKg * 1.05 * 10).rounded() / 10
+        default: break
         }
     }
 
     func nextStep() {
         guard !isSubmitting else { return }
         validationError = errorForStep(step)
-        if step == 3, repairSteps == nil, planningPage < 3, validationError == nil {
+        if step == 3, repairSteps == nil, planningPage < Self.lastPlanningPage, validationError == nil {
             planningPage += 1
             return
         }
@@ -222,7 +252,7 @@ final class OnboardingState: ObservableObject {
         guard !isSubmitting, let previous = visibleSteps.last(where: { $0 < step }) else { return }
         validationError = nil
         direction = .leading
-        if step == 4, previous == 3, repairSteps == nil { planningPage = 3 }
+        if step == 4, previous == 3, repairSteps == nil { planningPage = Self.lastPlanningPage }
         step = previous
     }
 
@@ -283,16 +313,6 @@ final class OnboardingState: ObservableObject {
         return answer
     }
 
-    func computeResults() {
-        // Legacy optional screens still use the local preview. The review and
-        // submitted targets use the server calculation below.
-        results = WizardService.computeResults(name: name, age: age, gender: gender,
-            heightCm: heightCm, weightKg: weightKg, goal: goal, targetWeightKg: targetWeightKg,
-            activityLevel: activityLevel, activityTypes: activityTypes, equipment: equipment,
-            hasGymAccess: hasGymAccess, sleepHours: sleepHours, wakeHour: wakeHour,
-            wakeMinute: wakeMinute, daysPerWeek: 3)
-    }
-
     func loadPreview() async {
         guard !repairUnavailable else { return }
         previewError = nil
@@ -344,7 +364,7 @@ final class OnboardingState: ObservableObject {
         submittedPayload = draft.submittedPayload
         repairSteps = draft.repairSteps
         apply(draft.answers, step: draft.step, schema: draft.schemaVersion)
-        planningPage = min(max(draft.planningPage ?? 0, 0), 3)
+        planningPage = min(max(draft.planningPage ?? 0, 0), Self.lastPlanningPage)
         // The old app used the production API. A staging build must never
         // adopt those answers merely because its account ID happens to match.
         defaults.set(data, forKey: checkpointKey(accountID))
