@@ -6,6 +6,8 @@ struct TodayHostView: View {
     let unit: MassUnit
     let timeZone: TimeZone
     @Binding var link: URL?
+    /// Taps on the Today tab while it shows.
+    var reselected = 0
     let showTraining: () -> Void
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var auth: AuthViewModel
@@ -14,7 +16,8 @@ struct TodayHostView: View {
         Group {
             if let workspace = account.training, workspace.accountID == accountID,
                let api = auth.accountAPI, api.accountID == accountID {
-                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, link: $link, showTraining: showTraining)
+                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, link: $link, reselected: reselected,
+                          showTraining: showTraining)
                     .id(workspace.identity)
             } else if account.openingError != nil {
                 ContentUnavailableView {
@@ -39,8 +42,11 @@ struct TodayView: View {
     let timeZone: TimeZone
     /// Scan barcode or Weigh in from a control or intent, opened once on today.
     @Binding var link: URL?
+    /// Taps on the Today tab while it shows: each returns to today, at the top.
+    let reselected: Int
     let showTraining: () -> Void
     @State private var date: LocalDate
+    @State private var scroll = ScrollPosition(edge: .top)
     @State private var openedOn: LocalDate
     @State private var destination: Destination?
     /// Targets push, as they do from Profile.
@@ -49,7 +55,8 @@ struct TodayView: View {
     @State private var plan: WorkoutPlan?
     /// "Log again" as it stood when the screen opened, so chips don't move
     /// under a finger as foods are logged. Refreshed on a new day, on
-    /// returning to the app and on pull to refresh.
+    /// returning to the app and on pull to refresh. Empty once the current
+    /// meal has food.
     @State private var suggested: [FoodSuggestion]?
     /// Entries logged from those chips, by food.
     @State private var suggestionsLogged: [String: FoodEntry] = [:]
@@ -97,12 +104,13 @@ struct TodayView: View {
     }
 
     init(workspace: TrainingWorkspace, api: AccountAPI, unit: MassUnit, timeZone: TimeZone, link: Binding<URL?>,
-         showTraining: @escaping () -> Void) {
+         reselected: Int = 0, showTraining: @escaping () -> Void) {
         self.workspace = workspace
         self.api = api
         self.unit = unit
         self.timeZone = timeZone
         _link = link
+        self.reselected = reselected
         self.showTraining = showTraining
         _date = State(initialValue: LocalDate(Date(), in: timeZone))
         _openedOn = State(initialValue: LocalDate(Date(), in: timeZone))
@@ -153,6 +161,7 @@ struct TodayView: View {
             .padding(.top, ExSpacing.small)
             .padding(.bottom, ExSpacing.major)
         }
+        .scrollPosition($scroll)
         .scrollIndicators(.hidden)
         .exScrollEdges()
         .background(Color.exBackground)
@@ -198,6 +207,10 @@ struct TodayView: View {
             if suggestionsLogged.isEmpty { refreshSuggestions() } else { refreshCheckIn() }
         }
         .onChange(of: date) { _, _ in refreshSuggestions() }
+        .onChange(of: reselected) {
+            date = today
+            withAnimation(.snappy) { scroll.scrollTo(edge: .top) }
+        }
         .task(id: link) { openLink() }
         .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight, unit: unit) : nil }
         .onChange(of: scenePhase) { _, phase in
@@ -284,9 +297,16 @@ struct TodayView: View {
                             } log: {
                                 if let logged { unlog(logged) } else { log(suggestion) }
                             }
+                            // Two chips and a clear part of the next, so the row reads as one that scrolls.
+                            .containerRelativeFrame(.horizontal, count: typeSize.isAccessibilitySize ? 5 : 7,
+                                                    span: typeSize.isAccessibilitySize ? 4 : 3, spacing: ExSpacing.small)
                         }
-                    }.padding(.horizontal, ExSpacing.page)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .scrollTargetLayout()
                 }
+                .contentMargins(.horizontal, ExSpacing.page, for: .scrollContent)
+                .scrollTargetBehavior(.viewAligned)
                 .scrollIndicators(.hidden)
                 .padding(.horizontal, -ExSpacing.page)
             }
@@ -320,7 +340,9 @@ struct TodayView: View {
     }
 
     private func refreshSuggestions() {
-        suggested = store.suggestions(at: .now, timeZone: timeZone, limit: 10)
+        // Once the meal the chips log into has food, its usual foods would log it twice.
+        let mealLogged = store.entries(on: today).contains { $0.meal == currentMeal }
+        suggested = mealLogged ? [] : store.suggestions(at: .now, timeZone: timeZone, limit: 10)
         suggestionsLogged = [:]
         refreshCheckIn()
     }

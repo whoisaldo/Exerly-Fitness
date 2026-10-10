@@ -697,3 +697,10 @@ is left alone.
   dated ("As of Oct 4, your expenditure was about…", "…in the week to Oct 4"):
   they stop the day before the check-in, so they can differ from Today's current
   estimate.
+- **Log again stays out of a meal already logged.** Once the meal its chips log
+  into has food, the row isn't shown; a second usual breakfast offered beside
+  the first is how the tester logged breakfast twice. Chips are sized so two and
+  a clear part of a third show, snap as the row scrolls, and carry their log or
+  undo action for VoiceOver even when the + is off screen.
+- **Today's tab goes back to today.** Tapping it while it shows returns it to
+  today, at the top.

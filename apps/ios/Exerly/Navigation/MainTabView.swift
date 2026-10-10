@@ -26,6 +26,8 @@ struct MainTabView: View {
     @State private var selectedTab: MainTab = .today
     /// Counts returns to the Profile tab, which then starts from its top.
     @State private var profileEntries = 0
+    /// Counts taps on the Today tab while it shows, which take it back to today.
+    @State private var todayReselections = 0
     /// Scan barcode or Weigh in, for Today to open.
     @State private var todayLink: URL?
 
@@ -33,11 +35,12 @@ struct MainTabView: View {
     private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabSelection) {
             Tab("Today", systemImage: "house", value: .today) {
                 NavigationStack {
                     if let id = auth.currentUser?.id {
-                        TodayHostView(accountID: id, unit: unit, timeZone: timeZone, link: $todayLink) { selectedTab = .training }
+                        TodayHostView(accountID: id, unit: unit, timeZone: timeZone, link: $todayLink,
+                                      reselected: todayReselections) { selectedTab = .training }
                     }
                 }
             }
@@ -70,6 +73,14 @@ struct MainTabView: View {
         .environment(\.accountTimeZone, timeZone)
         // Widgets, controls and the workout's Live Activity open their screen.
         .task(id: "\(links.pending?.absoluteString ?? "")-\(account.training?.identity.uuidString ?? "")") { follow() }
+    }
+
+    /// The selected tab; a tap on the one already showing reaches here too.
+    private var tabSelection: Binding<MainTab> {
+        Binding(get: { selectedTab }, set: { tab in
+            if tab == .today, selectedTab == .today { todayReselections += 1 }
+            selectedTab = tab
+        })
     }
 
     private func follow() {

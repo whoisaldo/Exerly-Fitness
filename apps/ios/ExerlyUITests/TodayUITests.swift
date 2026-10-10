@@ -103,6 +103,43 @@ final class TodayUITests: ExerlyUITestCase {
         XCTAssertTrue(left.isEmpty, "Undo deleted the weigh-in on the server too")
     }
 
+    /// Tapping Today's tab while it shows another day, scrolled down, comes
+    /// back to today at the top.
+    func testTappingTheTodayTabReturnsToToday() async throws {
+        let app = try await signedInWithWeek(prefix: "today-tab")
+        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 10))
+        let today = try XCTUnwrap(shownDay(app))
+        shiftDay(-1, in: app)
+        XCTAssertTrue(app.navigationBars["Yesterday"].waitForExistence(timeout: 5))
+        app.swipeUp()
+        tapCount = 0
+        tap(app.tabBars.buttons["Today"], in: app)
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 5))
+        XCTAssertEqual(shownDay(app), today)
+        XCTAssertEqual(tapCount, 1)
+        let strip = app.descendants(matching: .any)["diary.selected-day"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 5) && strip.isHittable, "Back at the top, with the week in view")
+    }
+
+    /// Once the meal "Log again" fills has food, its usual foods aren't
+    /// offered, so it isn't logged twice.
+    func testAMealAlreadyLoggedIsNotOfferedAgain() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "today-logged-meal", units: "imperial")
+        try await seedWeek(token: person.token)
+        // The usual breakfast is around now; today's already has yogurt.
+        let yogurt = SeedFood(name: "Synthetic yogurt", per100g: ["energy": 73, "protein": 10, "carbohydrate": 3.9, "fat": 1.9])
+        try await seedEntry(yogurt, grams: 170, daysAgo: 0, meal: "Breakfast", minutes: 5, token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        let entry = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Synthetic yogurt")).firstMatch
+        reveal(entry, in: app)
+        XCTAssertTrue(entry.waitForExistence(timeout: 20))
+        app.swipeDown()
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "today.suggestion.log.")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["Log again"].exists)
+    }
+
     func testTheWeekStripReachesFutureDaysForPlanning() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "today-future", units: "imperial")
