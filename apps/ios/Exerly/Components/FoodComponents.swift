@@ -15,6 +15,14 @@ enum FoodFormat {
         value.formatted(.number.precision(.fractionLength(0...(value < 10 ? 1 : 0))))
     }
 
+    /// Any nutrient with its unit, rounded as the portion summary rounds:
+    /// whole kilocalories, one decimal under 10, whole numbers above, and
+    /// "<0.1" for a trace that would otherwise read as none.
+    static func nutrient(_ value: Double, _ nutrient: Nutrient) -> String {
+        let number = nutrient == .energy ? kcal(value) : value > 0 && value < 0.05 ? "<0.1" : grams(value)
+        return "\(number) \(nutrient.unit.rawValue)"
+    }
+
     /// What a quick portion logs, as a person would say it: "2 × Scoop · 84 g",
     /// "1 bar (40 g)", "2.5 oz" or "150 g".
     static func portion(_ portion: QuickPortion, unit: MassUnit) -> String {

@@ -52,31 +52,55 @@ struct NutritionConfirmation: View {
     }
 }
 
+/// Every nutrient as one table: each group a heading, the name on the left
+/// and the amount on the right, rounded as the portion summary rounds. The
+/// standard nutrients are always listed; the rest once a food reports them.
 struct NutritionAmountsView: View {
     let amounts: NutrientAmounts
-    var showAll = true
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private static let groups: [[Nutrient.Group]] = [[.energy, .macros], [.carbohydrates], [.fats], [.vitamins], [.minerals],
+                                                      [.aminoAcids], [.other]]
 
     var body: some View {
-        ForEach([Nutrient.energy, .protein, .carbohydrate, .fat], id: \.self) { nutrient in
-            row(nutrient)
-        }
-        if showAll {
-            DisclosureGroup("All nutrients") {
-                ForEach(Nutrient.Group.allCases.filter { $0 != .energy && $0 != .macros }, id: \.self) { group in
-                    DisclosureGroup(NutritionFormat.group(group)) {
-                        ForEach(Nutrient.allCases.filter { $0.group == group }, id: \.self) { row($0) }
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Self.groups, id: \.self) { groups in
+                let nutrients = Nutrient.allCases.filter { groups.contains($0.group) && ($0.isStandard || amounts[$0] != nil) }
+                if !nutrients.isEmpty {
+                    Text(groups == [.energy, .macros] ? "Energy and macros" : NutritionFormat.group(groups[0]))
+                        .font(.exLabel.weight(.semibold)).foregroundStyle(Color.exPrimaryText)
+                        .padding(.top, groups == Self.groups[0] ? 0 : ExSpacing.content).padding(.bottom, ExSpacing.tight)
+                        .accessibilityAddTraits(.isHeader)
+                    ForEach(Array(nutrients.enumerated()), id: \.element) { index, nutrient in
+                        if index > 0 { Divider().overlay(Color.exBorder.opacity(0.3)) }
+                        row(nutrient)
                     }
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func row(_ nutrient: Nutrient) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(nutrient.name).foregroundStyle(.secondary)
-            Text(amounts[nutrient].map { "\(TrainingFormat.number($0)) \(nutrient.unit.rawValue)" } ?? "Not reported")
-                .font(.exStatSmall)
-        }.fixedSize(horizontal: false, vertical: true).accessibilityElement(children: .combine)
+        let name = Text(nutrient == .energy ? "Calories" : nutrient.name).font(.exBody).foregroundStyle(Color.exTextPrimary)
+        let amount = Text(amounts[nutrient].map { FoodFormat.nutrient($0, nutrient) } ?? "Not reported")
+            .font(.exBody).monospacedDigit()
+            .foregroundStyle(amounts[nutrient] == nil ? Color.exTextMuted : Color.exTextPrimary)
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 2) { name; amount }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+                    name
+                    Spacer(minLength: ExSpacing.small)
+                    amount
+                }
+            }
+        }
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
     }
 }
 
