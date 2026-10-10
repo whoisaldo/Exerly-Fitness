@@ -28,6 +28,7 @@ fi
 PRIVATE=''
 KEYCHAIN=''
 PROFILE_INSTALLED=''
+WIDGETS_PROFILE_INSTALLED=''
 OLD_KEYCHAINS=()
 cleanup() {
   result=$?
@@ -37,6 +38,7 @@ cleanup() {
     security delete-keychain "$KEYCHAIN" >/dev/null || result=1
   fi
   [[ -z "$PROFILE_INSTALLED" ]] || rm -f "$PROFILE_INSTALLED"
+  [[ -z "$WIDGETS_PROFILE_INSTALLED" ]] || rm -f "$WIDGETS_PROFILE_INSTALLED"
   [[ -z "$PRIVATE" ]] || rm -rf "$PRIVATE"
   [[ "$MODE" == --dry-run ]] || rmdir "$LOCK"
   exit "$result"
@@ -59,6 +61,14 @@ from release_checks import read_profile, validate_profile
 p = read_profile(sys.argv[2]); validate_profile(p); print(p['UUID'])
 PY
 )"
+  WIDGETS_PROFILE="$HOME/private_keys/exerly-distribution/com.exerly.fitness.widgets.mobileprovision"
+  WIDGETS_PROFILE_UUID="$(python3 - "$ROOT/scripts" "$WIDGETS_PROFILE" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from release_checks import read_profile, validate_profile, WIDGETS
+p = read_profile(sys.argv[2]); validate_profile(p, WIDGETS); print(p['UUID'])
+PY
+)"
   CERT_DIR="$HOME/private_keys/eternalmonitor-distribution"
   PRIVATE="$(mktemp -d "${TMPDIR:-/tmp}/exerly-release.XXXXXX")"
   chmod 700 "$PRIVATE"
@@ -79,14 +89,22 @@ PY
   else
     cmp -s "$PROFILE" "$PROFILE_DEST" || { echo 'Installed profile differs; refusing to overwrite it' >&2; exit 2; }
   fi
+  WIDGETS_PROFILE_DEST="$(dirname "$PROFILE_DEST")/$WIDGETS_PROFILE_UUID.mobileprovision"
+  if [[ ! -e "$WIDGETS_PROFILE_DEST" ]]; then
+    cp "$WIDGETS_PROFILE" "$WIDGETS_PROFILE_DEST"
+    WIDGETS_PROFILE_INSTALLED="$WIDGETS_PROFILE_DEST"
+  else
+    cmp -s "$WIDGETS_PROFILE" "$WIDGETS_PROFILE_DEST" || { echo 'Installed widgets profile differs; refusing to overwrite it' >&2; exit 2; }
+  fi
   SIGN_ARGS=(CODE_SIGN_STYLE=Manual 'CODE_SIGN_IDENTITY=Apple Distribution' DEVELOPMENT_TEAM=9X79V37Q89
-    "EXERLY_PROVISIONING_PROFILE=$PROFILE_UUID" "OTHER_CODE_SIGN_FLAGS=--keychain $KEYCHAIN")
-  python3 - "$OUT/exportOptions.plist" "$PROFILE_UUID" <<'PY'
+    "EXERLY_PROVISIONING_PROFILE=$PROFILE_UUID" "EXERLY_WIDGETS_PROVISIONING_PROFILE=$WIDGETS_PROFILE_UUID"
+    "OTHER_CODE_SIGN_FLAGS=--keychain $KEYCHAIN")
+  python3 - "$OUT/exportOptions.plist" "$PROFILE_UUID" "$WIDGETS_PROFILE_UUID" <<'PY'
 import pathlib, plistlib, sys
 pathlib.Path(sys.argv[1]).write_bytes(plistlib.dumps({
   'method': 'app-store-connect', 'destination': 'export', 'teamID': '9X79V37Q89',
   'signingStyle': 'manual', 'signingCertificate': 'Apple Distribution',
-  'provisioningProfiles': {'com.exerly.fitness': sys.argv[2]},
+  'provisioningProfiles': {'com.exerly.fitness': sys.argv[2], 'com.exerly.fitness.widgets': sys.argv[3]},
   'manageAppVersionAndBuildNumber': False, 'uploadSymbols': True,
   'testFlightInternalTestingOnly': True,
 }))
@@ -94,7 +112,7 @@ PY
 fi
 
 # Apple rejects App Intent phrases containing Apple product names.
-if rg -n -i '(IntentDescription|LocalizedStringResource|shortTitle|phrases).*\b(apple|iphone|ipad|ipod|siri|ios|macos|mac|watchos|airpods|homepod|vision ?pro|health)\b' "$ROOT/Exerly" --glob '*.swift'; then
+if rg -n -i '(IntentDescription|LocalizedStringResource|shortTitle|phrases).*\b(apple|iphone|ipad|ipod|siri|ios|macos|mac|watchos|airpods|homepod|vision ?pro|health)\b' "$ROOT/Exerly" "$ROOT/Shared" "$ROOT/ExerlyWidgets" --glob '*.swift'; then
   echo 'Remove Apple product names from App Intent titles and phrases' >&2
   exit 2
 fi

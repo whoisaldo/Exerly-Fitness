@@ -485,3 +485,16 @@ Deleted as unreachable: `DashboardView`, `SocialView` with `SocialService`,
 `HomeViewModel`, `StreakService`, `FoodLibraryService`, `StatMiniCard`,
 `CalorieRing`, `MultiSelectGrid`, and the local `WizardService` calculator,
 which only the deleted results screen used. Setup targets come from the API.
+
+## 2026-10-10: The workout Live Activity ships before the widgets
+
+The Today and Next workout widgets read a snapshot the app writes to an App
+Group, and Apple's API can't register App Groups, so that waits on Ali (see
+QUESTIONS_FOR_ALI.md). Until then, release builds sign the app and the
+extension without the group, and the extension's bundle holds only the
+workout Live Activity, which needs no group. Debug builds keep both. Turning
+the widgets on is one change in `project.yml`: release entitlements with the
+group, and `EXERLY_APP_GROUP` for ExerlyWidgets' Release configuration. The
+extension has its own App ID and App Store profile, provisioned through the API
+(`node apps/ios/scripts/asc.mjs provision widgets`), and `release.sh` signs and
+checks both.

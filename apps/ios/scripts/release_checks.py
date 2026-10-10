@@ -11,6 +11,7 @@ import tempfile
 from urllib.parse import urlparse
 
 BUNDLE = "com.exerly.fitness"
+WIDGETS = "com.exerly.fitness.widgets"
 TEAM = "9X79V37Q89"
 
 
@@ -53,13 +54,15 @@ def validate_metadata(info, privacy, version, build, internal_staging=False):
             "Missing app-only UserDefaults reason")
 
 
-def validate_profile(profile):
+def validate_profile(profile, bundle=BUNDLE):
+    """An App Store profile for `bundle`; the app's must carry HealthKit and Sign in with Apple."""
     entitlements = profile.get("Entitlements", {})
     require(profile.get("TeamIdentifier") == [TEAM], "Profile team mismatch")
-    require(entitlements.get("application-identifier") == f"{TEAM}.{BUNDLE}", "Profile is for another app")
+    require(entitlements.get("application-identifier") == f"{TEAM}.{bundle}", "Profile is for another app")
     require(entitlements.get("get-task-allow") is False, "Profile allows debugging")
-    require(entitlements.get("com.apple.developer.healthkit") is True, "Profile lacks HealthKit")
-    require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Profile lacks Sign in with Apple")
+    if bundle == BUNDLE:
+        require(entitlements.get("com.apple.developer.healthkit") is True, "Profile lacks HealthKit")
+        require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Profile lacks Sign in with Apple")
     require(not profile.get("ProvisionedDevices") and not profile.get("ProvisionsAllDevices"),
             "Profile is not for App Store distribution")
     expiry = profile.get("ExpirationDate")
@@ -110,6 +113,14 @@ def main():
         require(entitlements.get("com.apple.developer.healthkit") is True, "Signed app lacks HealthKit")
         require(entitlements.get("com.apple.developer.applesignin") == ["Default"], "Signed app lacks Sign in with Apple")
         require(not entitlements.get("get-task-allow", False), "Signed app allows debugging")
+        widgets = app / "PlugIns/ExerlyWidgets.appex"
+        require(widgets.is_dir(), "Widgets extension missing")
+        validate_profile(read_profile(widgets / "embedded.mobileprovision"), WIDGETS)
+        raw = subprocess.run(["codesign", "-d", "--entitlements", ":-", str(widgets)],
+                             capture_output=True, check=True).stdout
+        extension = plistlib.loads(raw) if raw.strip() else {}
+        require(extension.get("application-identifier") == f"{TEAM}.{WIDGETS}", "Widgets signature identity mismatch")
+        require(not extension.get("get-task-allow", False), "Signed widgets allow debugging")
     print(f"Verified Exerly {args.version} ({args.build}); {'unsigned' if args.unsigned else 'signed'} archive")
 
 

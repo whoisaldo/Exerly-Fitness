@@ -111,6 +111,20 @@ class ReleaseChecksTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             checks.validate_profile(profile)
 
+    def test_widgets_profile_needs_its_own_bundle_but_no_app_capabilities(self):
+        from datetime import datetime, timedelta, timezone
+        profile = {
+            "UUID": "test-widgets", "TeamIdentifier": ["9X79V37Q89"],
+            "ExpirationDate": datetime.now(timezone.utc) + timedelta(days=30),
+            "Entitlements": {"application-identifier": "9X79V37Q89.com.exerly.fitness.widgets", "get-task-allow": False},
+        }
+        checks.validate_profile(profile, checks.WIDGETS)
+        with self.assertRaises(ValueError):
+            checks.validate_profile(profile)
+        profile["Entitlements"]["get-task-allow"] = True
+        with self.assertRaises(ValueError):
+            checks.validate_profile(profile, checks.WIDGETS)
+
     def test_profile_decoding_is_isolated_and_cleans_up_on_rejection(self):
         for rejected in [False, True]:
             calls = []

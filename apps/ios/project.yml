@@ -84,6 +84,11 @@ targets:
           EXERLY_API_BASE_URL: https://exerly-fitness-93dyl.ondigitalocean.app
           EXERLY_BUILD_ENVIRONMENT: production
           PROVISIONING_PROFILE_SPECIFIER: $(EXERLY_PROVISIONING_PROFILE)
+          # Until group.com.exerly.fitness is registered (docs/QUESTIONS_FOR_ALI.md),
+          # release builds sign without the App Group and ship the Live Activity
+          # only. To turn the widgets on: use Exerly.entitlements here and in
+          # ExerlyWidgets, and add EXERLY_APP_GROUP to ExerlyWidgets' Release.
+          CODE_SIGN_ENTITLEMENTS: Exerly/Exerly-NoAppGroup.entitlements
     scheme:
       testTargets:
         - ExerlyTests
@@ -119,8 +124,11 @@ targets:
         SWIFT_VERSION: 5.0
         TARGETED_DEVICE_FAMILY: "1,2"
       configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG EXERLY_APP_GROUP $(inherited)
         Release:
           PROVISIONING_PROFILE_SPECIFIER: $(EXERLY_WIDGETS_PROVISIONING_PROFILE)
+          CODE_SIGN_ENTITLEMENTS: ExerlyWidgets/ExerlyWidgets-NoAppGroup.entitlements
   ExerlyTests:
     type: bundle.unit-test
     platform: iOS

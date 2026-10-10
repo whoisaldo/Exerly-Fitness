@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, verify } from 'node:crypto';
-import { createToken, internalGroupBody, validateGroup, validateTester, apiURL, requiredCapabilityBodies, supportsRequiredCapabilities } from '../asc.mjs';
+import { createToken, internalGroupBody, validateGroup, validateTester, apiURL, requiredCapabilityBodies, supportsRequiredCapabilities, profileFits, provisionTargets } from '../asc.mjs';
 
 test('ASC JWT is a short-lived ES256 token without exposing the private key', () => {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
@@ -55,4 +55,16 @@ test('Apple sign-in provisioning configures Exerly as its own primary app', () =
   assert.deepEqual(requests[1].data.attributes.settings, [
     { key: 'APPLE_ID_AUTH_APP_CONSENT', options: [{ key: 'PRIMARY_APP_CONSENT', enabled: true }] }
   ]);
+});
+
+test('each provisioning target accepts only a profile for its own bundle and capabilities', () => {
+  const app = { 'application-identifier': '9X79V37Q89.com.exerly.fitness', 'com.apple.developer.healthkit': true,
+    'com.apple.developer.applesignin': ['Default'] };
+  const widgets = { 'application-identifier': '9X79V37Q89.com.exerly.fitness.widgets' };
+  assert.equal(profileFits(provisionTargets.app, app), true);
+  assert.equal(profileFits(provisionTargets.app, { ...app, 'com.apple.developer.healthkit': null }), false);
+  assert.equal(profileFits(provisionTargets.widgets, widgets), true);
+  assert.equal(profileFits(provisionTargets.widgets, app), false);
+  assert.equal(profileFits(provisionTargets.app, widgets), false);
+  assert.deepEqual(requiredCapabilityBodies('X', provisionTargets.widgets.capabilities), []);
 });

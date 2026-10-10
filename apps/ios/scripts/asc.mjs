@@ -11,6 +11,12 @@ import { execFileSync } from 'node:child_process';
 
 const origin = 'https://api.appstoreconnect.apple.com';
 const bundle = 'com.exerly.fitness';
+const teamID = '9X79V37Q89';
+/** What `provision` can sign for: the app, and its widgets and Live Activity extension. */
+export const provisionTargets = {
+  app: { bundle, name: 'Exerly', capabilities: ['HEALTHKIT', 'APPLE_ID_AUTH'] },
+  widgets: { bundle: `${bundle}.widgets`, name: 'Exerly Widgets', capabilities: [] },
+};
 const groupName = 'Exerly Internal · Ali';
 const keyID = '4Z7KFJ8DWZ';
 
@@ -47,8 +53,8 @@ export function validateTester(tester, email) {
   }
 }
 
-export function requiredCapabilityBodies(bundleID) {
-  return ['HEALTHKIT', 'APPLE_ID_AUTH'].map(capabilityType => ({ data: {
+export function requiredCapabilityBodies(bundleID, types = provisionTargets.app.capabilities) {
+  return types.map(capabilityType => ({ data: {
     type: 'bundleIdCapabilities',
     attributes: { capabilityType, ...(capabilityType === 'APPLE_ID_AUTH' ? { settings: [
       { key: 'APPLE_ID_AUTH_APP_CONSENT', options: [{ key: 'PRIMARY_APP_CONSENT', enabled: true }] }
@@ -63,14 +69,22 @@ export function supportsRequiredCapabilities(entitlements) {
     entitlements['com.apple.developer.applesignin'].includes('Default');
 }
 
+/** A profile fits a target when it signs that bundle and carries the target's capabilities. */
+export function profileFits(target, entitlements) {
+  if (entitlements?.['application-identifier'] !== `${teamID}.${target.bundle}`) return false;
+  return target.capabilities.length === 0 || supportsRequiredCapabilities(entitlements);
+}
+
 function profileEntitlements(profileContent) {
   const dir = mkdtempSync(join(tmpdir(), 'exerly-profile-'));
   try {
     const path = join(dir, 'profile.mobileprovision');
     writeFileSync(path, Buffer.from(profileContent, 'base64'), { mode: 0o600 });
-    const xml = execFileSync('/usr/bin/security', ['cms', '-D', '-i', path],
+    // openssl decodes without the keychain, which agent sessions can't reach.
+    // The profile came straight from the ASC API over TLS.
+    const xml = execFileSync('openssl', ['smime', '-inform', 'der', '-verify', '-noverify', '-in', path],
       { stdio: ['pipe', 'pipe', 'pipe'] });
-    const script = 'import sys,plistlib,json; p=plistlib.loads(sys.stdin.buffer.read())["Entitlements"]; print(json.dumps({k:p.get(k) for k in ["com.apple.developer.healthkit","com.apple.developer.applesignin"]}))';
+    const script = 'import sys,plistlib,json; p=plistlib.loads(sys.stdin.buffer.read())["Entitlements"]; print(json.dumps({k:p.get(k) for k in ["application-identifier","com.apple.developer.healthkit","com.apple.developer.applesignin"]}))';
     return JSON.parse(execFileSync('python3', ['-c', script],
       { input: xml, stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' }));
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -106,7 +120,8 @@ async function findApp(request) {
   return apps[0];
 }
 
-async function provision(request) {
+async function provision(request, target = provisionTargets.app) {
+  const { bundle } = target;
   const certificateDir = join(homedir(), 'private_keys/eternalmonitor-distribution');
   const certificateID = (await readFile(join(certificateDir, 'certificate-id.txt'), 'utf8')).trim();
   const cert = (await request(`/v1/certificates/${encodeURIComponent(certificateID)}`)).data;
@@ -116,11 +131,11 @@ async function provision(request) {
       Date.parse(cert.attributes.expirationDate) <= Date.now()) throw new Error('Authorized distribution certificate unavailable');
   let [identifier] = await all(request, `/v1/bundleIds?filter[identifier]=${bundle}`);
   if (!identifier) identifier = (await request('/v1/bundleIds', 'POST', { data: { type: 'bundleIds',
-    attributes: { name: 'Exerly', identifier: bundle, platform: 'IOS' } } })).data;
+    attributes: { name: target.name, identifier: bundle, platform: 'IOS' } } })).data;
   if (identifier.attributes.identifier !== bundle) throw new Error('Unexpected bundle identifier');
   const capabilities = await all(request, `/v1/bundleIds/${identifier.id}/bundleIdCapabilities`);
   let capabilityChanged = false;
-  for (const body of requiredCapabilityBodies(identifier.id)) {
+  for (const body of requiredCapabilityBodies(identifier.id, target.capabilities)) {
     if (capabilities.some(c => c.attributes.capabilityType === body.data.attributes.capabilityType)) continue;
     await request('/v1/bundleIdCapabilities', 'POST', body);
     capabilityChanged = true;
@@ -132,21 +147,22 @@ async function provision(request) {
     const certificates = await all(request, `/v1/profiles/${candidate.id}/certificates`);
     if (!certificates.some(c => c.id === certificateID)) continue;
     const full = candidate.attributes.profileContent ? candidate : (await request(`/v1/profiles/${candidate.id}`)).data;
-    if (supportsRequiredCapabilities(profileEntitlements(full.attributes.profileContent))) { profile = full; break; }
+    if (profileFits(target, profileEntitlements(full.attributes.profileContent))) { profile = full; break; }
   }
   if (!profile) profile = (await request('/v1/profiles', 'POST', { data: { type: 'profiles',
-    attributes: { name: `Exerly App Store ${new Date().toISOString().replace(/[:.]/g, '-')}`, profileType: 'IOS_APP_STORE' },
+    attributes: { name: `${target.name} App Store ${new Date().toISOString().replace(/[:.]/g, '-')}`, profileType: 'IOS_APP_STORE' },
     relationships: { bundleId: { data: { type: 'bundleIds', id: identifier.id } },
       certificates: { data: [{ type: 'certificates', id: certificateID }] } } } })).data;
   if (!profile.attributes.profileContent) profile = (await request(`/v1/profiles/${profile.id}`)).data;
-  if (!supportsRequiredCapabilities(profileEntitlements(profile.attributes.profileContent))) {
-    throw new Error('The profile must include HealthKit and Sign in with Apple');
+  if (!profileFits(target, profileEntitlements(profile.attributes.profileContent))) {
+    throw new Error(target.capabilities.length ? 'The profile must include HealthKit and Sign in with Apple'
+      : `The profile must sign ${bundle}`);
   }
   const output = join(homedir(), 'private_keys/exerly-distribution');
   await mkdir(output, { recursive: true, mode: 0o700 });
   await writeFile(join(output, `${bundle}.mobileprovision`), Buffer.from(profile.attributes.profileContent, 'base64'), { mode: 0o600 });
   console.log(JSON.stringify({ bundle, bundleID: identifier.id, profileID: profile.id,
-    expires: profile.attributes.expirationDate, profileDirectory: output, healthKit: true, signInWithApple: true }));
+    expires: profile.attributes.expirationDate, profileDirectory: output, capabilities: target.capabilities }));
 }
 
 async function internal(request, app, buildNumber) {
@@ -175,12 +191,15 @@ async function internal(request, app, buildNumber) {
 }
 
 async function main() {
-  const [command = 'status', buildNumber] = process.argv.slice(2);
-  if (!['status', 'provision', 'internal'].includes(command) || (buildNumber && !/^\d+$/.test(buildNumber))) {
-    throw new Error('Usage: node asc.mjs [status|provision|internal [build-number]]');
+  const [command = 'status', argument] = process.argv.slice(2);
+  const buildNumber = command === 'provision' ? undefined : argument;
+  const target = command === 'provision' ? provisionTargets[argument ?? 'app'] : undefined;
+  if (!['status', 'provision', 'internal'].includes(command) || (buildNumber && !/^\d+$/.test(buildNumber))
+      || (command === 'provision' && !target)) {
+    throw new Error('Usage: node asc.mjs [status|provision [app|widgets]|internal [build-number]]');
   }
   const request = await client();
-  if (command === 'provision') return provision(request);
+  if (command === 'provision') return provision(request, target);
   const app = await findApp(request);
   if (!app) {
     console.log(JSON.stringify({ bundle, appRecord: false, next: 'Create Exerly in App Store Connect: iOS, English (US), com.exerly.fitness, SKU sideband-exerly-ios. The REST API cannot create app records.' }));
