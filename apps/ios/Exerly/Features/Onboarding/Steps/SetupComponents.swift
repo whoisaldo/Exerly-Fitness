@@ -221,7 +221,9 @@ struct SetupNumberField: View {
     var width: CGFloat = 96
     let commit: (Double?) -> Void
     @State private var text = ""
-    @State private var selection: TextSelection?
+    /// The value shown while the field is empty: the number before editing.
+    @State private var prompt = "0"
+    @State private var clearing = false
     @FocusState private var focused: Bool
     @ScaledMetric(relativeTo: .title2) private var scaledWidth: CGFloat = 96
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -229,7 +231,7 @@ struct SetupNumberField: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.tight) {
-            TextField(label, text: $text, selection: $selection, prompt: Text("0").foregroundColor(.exTextMuted))
+            TextField(label, text: $text, prompt: Text(prompt).foregroundColor(.exTextMuted))
                 .keyboardType(integer ? .numberPad : .decimalPad)
                 .font(.exStatMedium).monospacedDigit()
                 .foregroundStyle(Color.exTextPrimary)
@@ -257,17 +259,24 @@ struct SetupNumberField: View {
         .onAppear { text = Self.format(value, digits: integer ? 0 : digits) }
         .onChange(of: value) { _, new in
             if !focused { text = Self.format(new, digits: integer ? 0 : digits) }
+            else if text.isEmpty { prompt = Self.format(new, digits: integer ? 0 : digits) }
         }
         .onChange(of: text) { _, new in
+            if clearing { clearing = false; return }
             guard focused else { return }
             commit(UserEnteredNumber.parse(new))
         }
         .onChange(of: focused) { _, isFocused in
             if isFocused {
-                // Typing replaces the number, as in a picker.
-                DispatchQueue.main.async { selection = TextSelection(range: text.startIndex..<text.endIndex) }
+                // Typing replaces the number, as in a picker; the old one
+                // stays visible as the prompt and returns if nothing is typed.
+                prompt = text.isEmpty ? "0" : text
+                if !text.isEmpty { clearing = true; text = "" }
                 reveal(label)
-            } else { text = Self.format(value, digits: integer ? 0 : digits) }
+            } else {
+                prompt = "0"
+                text = Self.format(value, digits: integer ? 0 : digits)
+            }
         }
     }
 

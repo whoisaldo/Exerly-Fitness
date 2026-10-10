@@ -1,5 +1,10 @@
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Scrolls a sign-in page to a field by its title, to keep it above the keyboard.
+    @Entry var authReveal: (String) -> Void = { _ in }
+}
+
 /// The Exerly mark on its tile, lifted by a soft purple glow.
 struct ExerlyMarkTile: View {
     var size: CGFloat = 72
@@ -62,6 +67,7 @@ struct AuthField<Field: Hashable>: View {
     var submitLabel: SubmitLabel = .next
     var onSubmit: () -> Void = {}
     @State private var revealed = false
+    @Environment(\.authReveal) private var reveal
 
     private var icon: String {
         switch kind {
@@ -101,6 +107,10 @@ struct AuthField<Field: Hashable>: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { focus.wrappedValue = field }
+        .id(title)
+        .onChange(of: focus.wrappedValue == field) { _, focused in
+            if focused { reveal(title) }
+        }
         .animation(.snappy(duration: 0.2), value: focus.wrappedValue == field)
     }
 
@@ -169,6 +179,7 @@ struct AuthPage<Content: View>: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             AuthBackdrop(intensity: 0.6)
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: ExSpacing.content) {
                     ExerlyMarkTile(size: 56).padding(.bottom, ExSpacing.small)
@@ -193,6 +204,13 @@ struct AuthPage<Content: View>: View {
             .scrollEdgeEffectStyle(.soft, for: .top)
             .safeAreaBar(edge: .top, alignment: .leading) {
                 AuthBackButton(action: onBack)
+            }
+            .environment(\.authReveal) { id in
+                // After the keyboard has changed the safe area.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+                }
+            }
             }
         }
     }

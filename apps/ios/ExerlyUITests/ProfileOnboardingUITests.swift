@@ -17,13 +17,15 @@ final class ProfileOnboardingUITests: ExerlyUITestCase {
         tap(app.buttons["Back"], in: app)
         tap(app.buttons["Get Started"], in: app)
         try await Task.sleep(for: .seconds(1))
-        // Dismiss the keyboard between fields: on a small phone its AutoFill
-        // bar covers the next field.
+        // Return moves to the next field, which scrolls above the keyboard.
         replace(app.textFields["Name"], with: "Riley Synthetic", in: app)
-        dismissKeyboard(app)
+        app.textFields["Name"].typeText("\n")
         replace(app.textFields["Email"], with: "po-\(UUID().uuidString.prefix(8).lowercased())@exerly.test", in: app)
-        dismissKeyboard(app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
+        app.textFields["Email"].typeText("\n")
+        try await Task.sleep(for: .seconds(0.8))
+        let password = app.secureTextFields["Password"]
+        XCTAssertTrue(password.frame.maxY < app.keyboards.firstMatch.frame.minY, "The next field scrolls above the keyboard")
+        replace(password, with: "Simulator-Test-123!", in: app)
         dismissKeyboard(app)
         tap(app.buttons["I agree to the Terms of Service & Privacy Policy"], in: app)
         capture(app, "po-03-signup")

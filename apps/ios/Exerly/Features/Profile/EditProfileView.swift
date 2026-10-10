@@ -276,9 +276,10 @@ private struct PreferencesEditor: View {
     private var imperialHeight: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Height").font(.subheadline.weight(.medium))
-            HStack(spacing: ExSpacing.item) {
+            HStack(spacing: ExSpacing.section) {
                 heightPart("Feet", unit: "ft", text: $feetText, key: "heightFeet")
                 heightPart("Inches", unit: "in", text: $inchesText, key: "heightInches")
+                Spacer(minLength: 0)
             }
         }
         .padding(.vertical, 6)
@@ -301,9 +302,11 @@ private struct PreferencesEditor: View {
                     let inches = UserEnteredNumber.parse(inchesText) ?? 0
                     store.edit("height", value: feetText.isEmpty && inchesText.isEmpty ? "" : PreferenceFields.numberText(feet * 12 + inches))
                 }
+                .frame(minWidth: 44, maxWidth: 72)
+                .fixedSize(horizontal: true, vertical: false)
             Text(unit).foregroundStyle(.secondary).accessibilityHidden(true)
         }
-        .frame(maxWidth: .infinity, minHeight: 44)
+        .frame(minHeight: 44)
     }
 
     private func showHeight() {
