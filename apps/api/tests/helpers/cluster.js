@@ -39,7 +39,9 @@ function binary(name) {
 // A cluster whose owning process was killed outlives it. Each records its
 // owner; starting a new cluster stops those whose owner is gone.
 function sweep() {
-  for (const name of fs.readdirSync(os.tmpdir()).filter((entry) => entry.startsWith('exerly-pg-'))) {
+  for (const name of fs
+    .readdirSync(os.tmpdir())
+    .filter((entry) => entry.startsWith('exerly-pg-'))) {
     const root = path.join(os.tmpdir(), name);
     const file = path.join(root, 'owner.pid');
     const owner = fs.existsSync(file) ? Number(fs.readFileSync(file, 'utf8')) : 0;
@@ -51,9 +53,13 @@ function sweep() {
       if (error.code !== 'ESRCH') continue;
     }
     try {
-      execFileSync(binary('pg_ctl'), ['-D', path.join(root, 'data'), '-m', 'immediate', '-w', 'stop'], {
-        stdio: 'ignore',
-      });
+      execFileSync(
+        binary('pg_ctl'),
+        ['-D', path.join(root, 'data'), '-m', 'immediate', '-w', 'stop'],
+        {
+          stdio: 'ignore',
+        }
+      );
     } catch {
       // Already stopped.
     }
