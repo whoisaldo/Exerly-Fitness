@@ -252,6 +252,113 @@ struct LiftDetailView: View {
     }
 }
 
+/// An exercise's history on its library page: where its estimated 1RM
+/// stands and trends, the last sessions, and a way into the lift's detail.
+struct ExerciseHistorySection: View {
+    let store: TrainingStore
+    let exerciseID: ExerciseID
+    let unit: MassUnit
+    let timeZone: TimeZone
+    @State private var report: TrainingInsights.LiftReport?
+    @State private var selected: UUID?
+
+    private let shownSessions = 3
+
+    var body: some View {
+        let today = LocalDate(Date(), in: timeZone)
+        let history = store.history
+        let exercise = store.library.exercise(exerciseID)
+        ExCard {
+            ExSectionHeading("Your history", detail: report.flatMap { $0.sessions.isEmpty ? nil : InsightFormat.sessions($0.sessions.count) })
+            if let report {
+                if report.sessions.isEmpty {
+                    Text("Nothing logged yet. After a workout with this exercise, your sessions and estimated 1RM show here.")
+                        .font(.exBody).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("exerciseHistory.empty")
+                } else {
+                    if let summary = report.summary { estimate(summary) }
+                    if report.summary != nil, report.sessions.count >= 2 {
+                        LiftChart(sessions: report.sessions, metric: .oneRepMax, unit: unit, span: axisSpan(report, today: today),
+                                  trend: report.summary?.trendLine, selection: $selected)
+                            .frame(height: 150)
+                            .accessibilityLabel("Estimated 1RM by session")
+                            .accessibilityIdentifier("exerciseHistory.chart")
+                    }
+                    VStack(spacing: 0) {
+                        ForEach(Array(report.sessions.suffix(shownSessions).reversed().enumerated()), id: \.element.sessionID) { index, session in
+                            if index > 0 { Divider().overlay(Color.exBorder.opacity(0.35)) }
+                            sessionRow(session, today: today, bodyweight: exercise?.metric.usesBodyweight == true)
+                        }
+                    }
+                    NavigationLink {
+                        LiftDetailView(store: store, exerciseID: exerciseID, unit: unit, timeZone: timeZone, initialSpan: .threeMonths)
+                    } label: {
+                        ExNavigationLabel(title: "All sessions and records", icon: "chart.xyaxis.line")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("exerciseHistory.detail")
+                }
+            } else {
+                ProgressView().frame(maxWidth: .infinity, minHeight: 60).accessibilityLabel("Reading your sessions")
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("exerciseHistory")
+        .task(id: TrainingAnalysisInput(history)) {
+            let id = exerciseID, weekday = TrainingInsightsModel.firstWeekday
+            let result = await Task.detached(priority: .userInitiated) {
+                TrainingInsights.liftReport(id, in: history, span: .all, through: today, firstWeekday: weekday)
+            }.value
+            guard !Task.isCancelled else { return }
+            report = result
+        }
+    }
+
+    /// The shortest span covering every session, for the axis's date labels.
+    private func axisSpan(_ report: TrainingInsights.LiftReport, today: LocalDate) -> TrainingInsights.Span {
+        let days = report.sessions.first.map { $0.date.days(until: today) } ?? 0
+        return days < 28 ? .fourWeeks : days < 91 ? .threeMonths : days < 365 ? .year : .all
+    }
+
+    private func estimate(_ summary: TrainingInsights.LiftSummary) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(InsightFormat.estimate(summary.current, unit, withUnit: false)).font(.exStat).monospacedDigit()
+                    .foregroundStyle(Color.exTextPrimary)
+                Text("\(unit.rawValue) estimated 1RM").font(.exBodyMedium).foregroundStyle(Color.exTextSecondary)
+            }
+            if let change = summary.change, let trend = summary.trend {
+                Text("\(InsightFormat.change(change, unit)) over \(InsightFormat.sessions(trend.sessions))")
+                    .font(.exLabel).foregroundStyle(LiftTone.color(change, unit: unit))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Estimated 1RM \(InsightFormat.spokenEstimate(summary.current, unit))"
+            + ((summary.change).map { ", \(InsightFormat.spokenChange($0, unit)) over \(InsightFormat.sessions(summary.trend?.sessions ?? summary.sessions))" } ?? ""))
+        .accessibilityIdentifier("exerciseHistory.estimate")
+    }
+
+    private func sessionRow(_ session: TrainingInsights.LiftSession, today: LocalDate, bodyweight: Bool) -> some View {
+        let day = InsightFormat.day(session.date, today: today)
+        let sets = session.statistics.totalSets == 1 ? "1 set" : "\(session.statistics.totalSets) sets"
+        let best = session.bestSet.map { InsightFormat.set($0, unit: unit, bodyweight: bodyweight) }
+        return HStack(alignment: .firstTextBaseline, spacing: ExSpacing.small) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(day).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                Text(sets).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            }
+            Spacer(minLength: ExSpacing.small)
+            if let best {
+                Text(best).font(.system(.subheadline, design: .rounded, weight: .medium)).foregroundStyle(Color.exTextPrimary)
+                    .multilineTextAlignment(.trailing).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, ExSpacing.small)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(day), \(sets)\(best.map { ", best set \($0.replacingOccurrences(of: "×", with: "for"))" } ?? "")")
+    }
+}
+
 /// What the lift chart can plot, one value per session.
 enum LiftMetric: String, CaseIterable, Identifiable, Hashable {
     case oneRepMax, heaviest, bestSetVolume, volume, reps

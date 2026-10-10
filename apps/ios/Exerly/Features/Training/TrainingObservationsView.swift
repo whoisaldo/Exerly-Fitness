@@ -69,7 +69,7 @@ struct TrainingObservationsView: View {
             }
             if let date = observations.through {
                 Section {
-                    Text("Through \(date.description) · \(timeZone.identifier)")
+                    Text(TrainingFormat.through(date, today: LocalDate(Date(), in: timeZone)))
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }

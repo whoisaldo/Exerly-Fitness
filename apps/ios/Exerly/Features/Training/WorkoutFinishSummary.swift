@@ -12,6 +12,8 @@ struct WorkoutFinishSummary: View {
     var body: some View {
         let session = result.session
         let summary = WorkoutSummary(session: session, library: library, at: session.endedAt ?? Date())
+        // One record per exercise, so a lighter day doesn't read as three.
+        let records = PersonalRecord.headlines(result.records)
         NavigationStack {
             ExScreen {
                 VStack(spacing: ExSpacing.item) {
@@ -32,13 +34,13 @@ struct WorkoutFinishSummary: View {
                     stat("Time", TrainingFormat.minutes(summary.duration), icon: "clock")
                     stat("Working sets", "\(summary.workingSets)", icon: "checkmark.circle")
                     stat("Volume", TrainingFormat.volume(summary.tonnage, unit: unit), icon: "scalemass")
-                    stat("Records", "\(result.records.count)", icon: "trophy")
+                    stat("Records", "\(records.count)", icon: "trophy")
                 }
-                if !result.records.isEmpty {
+                if !records.isEmpty {
                     VStack(alignment: .leading, spacing: ExSpacing.small) {
                         Text("Personal records").font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
                         TrainingGroupedRows {
-                            ForEach(Array(result.records.enumerated()), id: \.offset) { index, record in
+                            ForEach(Array(records.enumerated()), id: \.offset) { index, record in
                                 if index > 0 { Divider().overlay(Color.exBorder.opacity(0.4)).padding(.leading, ExSpacing.content) }
                                 recordRow(record)
                             }
@@ -54,9 +56,16 @@ struct WorkoutFinishSummary: View {
                         }
                     }
                 }
-                Button("Done") { dismiss() }.buttonStyle(ExActionStyle()).accessibilityIdentifier("training.summaryDone")
             }
+            // Scrolled content goes under a solid edge, not through the title.
+            .scrollEdgeEffectStyle(.hard, for: .top)
             .navigationTitle("Summary").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // Always in reach, however long the summary.
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.accessibilityIdentifier("training.summaryDone")
+                }
+            }
         }
     }
 

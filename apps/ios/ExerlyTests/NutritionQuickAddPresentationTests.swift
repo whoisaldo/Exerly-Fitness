@@ -23,7 +23,7 @@ final class NutritionQuickAddPresentationTests: XCTestCase {
         XCTAssertEqual(store.entries.count, 1)
         XCTAssertTrue(store.foods.isEmpty)
         XCTAssertTrue(store.recentFoods().isEmpty)
-        XCTAssertFalse(NutritionFormat.portion(entry).contains("100"))
+        XCTAssertFalse(NutritionFormat.portion(entry, unit: .kilograms).contains("100"))
     }
 
     func testMacrosOnlyAcceptsLocaleDecimalsWithoutInventingCalories() throws {

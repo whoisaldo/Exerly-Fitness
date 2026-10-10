@@ -68,6 +68,35 @@ final class TrainingLoggingPresentationTests: XCTestCase {
         XCTAssertEqual(TrainingFormat.compact(PerformedSet(efforts: [Effort(duration: 45)]), metric: .duration, unit: .kilograms), "45 s")
         let drop = PerformedSet(kind: .drop, efforts: [Effort(reps: 8, load: .kg(40)), Effort(reps: 6, load: .kg(30))])
         XCTAssertEqual(TrainingFormat.compact(drop, metric: .weightReps, unit: .kilograms), "40 × 8 +1")
+        let converted = PerformedSet(efforts: [Effort(reps: 5, load: .kg(60))])
+        XCTAssertEqual(TrainingFormat.compact(converted, metric: .weightReps, unit: .pounds), "132.3 × 5")
+    }
+
+    func testLoadsShowToATenthWithoutTrailingZeros() {
+        XCTAssertEqual(TrainingFormat.load(140), "140")
+        XCTAssertEqual(TrainingFormat.load(132.277), "132.3")
+        XCTAssertEqual(TrainingFormat.load(62.25), "62.3")
+        XCTAssertEqual(TrainingFormat.load(1250.04), "1250")
+        XCTAssertEqual(TrainingFormat.mass(.kg(60), unit: .pounds), "132.3 lb")
+        XCTAssertEqual(TrainingFormat.mass(.lb(140), unit: .pounds), "140 lb")
+        XCTAssertEqual(TrainingFormat.set(PerformedSet(efforts: [Effort(reps: 5, load: .kg(60))]), unit: .pounds), "132.3 lb × 5 reps")
+        XCTAssertEqual(InsightFormat.set(PerformedSet(efforts: [Effort(reps: 5, load: .kg(60))]), unit: .pounds), "132.3 lb × 5")
+    }
+
+    func testWorkoutDatesReadAsDaysAndNameOnlyAnotherZone() throws {
+        let today = try XCTUnwrap(LocalDate("2026-10-09"))
+        XCTAssertEqual(TrainingFormat.through(today, today: today), "Through today")
+        XCTAssertEqual(TrainingFormat.through(today.adding(days: -1), today: today), "Through yesterday")
+        XCTAssertEqual(TrainingFormat.through(today.adding(days: -3), today: today), "Through Tue, Oct 6")
+        let newYork = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        let losAngeles = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        XCTAssertNil(TrainingFormat.zoneNote(newYork, account: newYork))
+        XCTAssertNil(TrainingFormat.zoneNote(try XCTUnwrap(TimeZone(identifier: "America/Detroit")), account: newYork),
+                     "Another city in the same zone isn't worth a line")
+        let note = try XCTUnwrap(TrainingFormat.zoneNote(losAngeles, account: newYork))
+        XCTAssertTrue(note.hasPrefix("Logged in "), note)
+        XCTAssertFalse(note.contains("/"), note)
+        XCTAssertEqual(TrainingFormat.minutes(1800), "30 min")
     }
 
     func testGridCellsShowWhatTheSetHoldsAndPointAtWhatIsMissing() throws {
@@ -76,7 +105,7 @@ final class TrainingLoggingPresentationTests: XCTestCase {
         let set = PerformedSet(efforts: [Effort(reps: 8, load: .kg(60))], rir: 6)
         XCTAssertEqual(SetGrid.text(.load, of: set, unit: .kilograms), "60")
         XCTAssertEqual(SetGrid.text(.rir, of: set, unit: .kilograms), "6+")
-        XCTAssertEqual(SetGrid.text(.load, of: set, unit: .pounds), "132.277", "Shown in the person's unit, saved as entered")
+        XCTAssertEqual(SetGrid.text(.load, of: set, unit: .pounds), "132.3", "Shown in the person's unit to 0.1, saved as entered")
         XCTAssertEqual(SetGrid.fields(.weightReps), [.load, .reps, .rir])
         XCTAssertEqual(SetGrid.fields(.distanceDuration), [.distance, .duration])
         XCTAssertEqual(SetGrid.shortTitle(.load, metric: .bodyweightReps, unit: .pounds), "+LB")

@@ -63,6 +63,11 @@ final class BodyPresentationTests: XCTestCase {
         XCTAssertEqual(BodyRange.month.start(today: today, first: first), today.adding(days: -29))
         XCTAssertEqual(BodyRange.all.start(today: today, first: first), first)
         XCTAssertEqual(BodyRange.all.start(today: today, first: nil), today)
+        let start = BodyRange.quarter.start(today: today, first: first)
+        XCTAssertEqual(BodyRange.quarter.phrase(start: start, firstShown: start), "past 3 months")
+        XCTAssertEqual(BodyRange.quarter.phrase(start: start, firstShown: nil), "past 3 months")
+        XCTAssertEqual(BodyRange.quarter.phrase(start: start, firstShown: LocalDate("2026-09-13")), "since Sep 13",
+                       "A chart whose data starts late says so")
     }
 
     func testExpenditureSaysWhatItStillNeeds() {

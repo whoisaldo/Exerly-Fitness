@@ -37,7 +37,7 @@ struct ActiveWorkoutView: View {
 
     var body: some View {
         let summary = store.summary(of: session)
-        dialogs(sheets(chrome(workoutList(summary: summary), summary: summary)), summary: summary)
+        dialogs(sheets(chrome(workoutList(summary: summary), summary: summary)))
     }
 
     private func workoutList(summary: WorkoutSummary) -> some View {
@@ -128,6 +128,13 @@ struct ActiveWorkoutView: View {
                 }
                     .buttonStyle(.glassProminent).tint(Color.exActionFill)
                     .accessibilityIdentifier("training.finish")
+                    // Attached to the button so its popover points at Finish.
+                    .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
+                        Button("Save workout") { finish() }
+                    } message: {
+                        Text(summary.completedSets == summary.totalSets ? "All \(summary.totalSets) sets are done."
+                             : "\(summary.completedSets) of \(summary.totalSets) sets are done. Sets you didn't complete are removed.")
+                    }
             }
         }
     }
@@ -148,7 +155,7 @@ struct ActiveWorkoutView: View {
         .sheet(isPresented: $details) { WorkoutNotesView(store: store, session: session, unit: unit) }
         .sheet(item: $guiding) { exercise in
             NavigationStack {
-                ExerciseGuideView(exercise: exercise)
+                ExerciseGuideView(exercise: exercise, store: store, unit: unit)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Close") { guiding = nil }
@@ -160,7 +167,7 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func dialogs<Content: View>(_ content: Content, summary: WorkoutSummary) -> some View {
+    private func dialogs<Content: View>(_ content: Content) -> some View {
         content
         .alert("Exercise note", isPresented: Binding(get: { noting != nil }, set: { if !$0 { noting = nil } })) {
             TextField("Note", text: $noteDraft)
@@ -173,12 +180,6 @@ struct ActiveWorkoutView: View {
                 if let performed = removing { withAnimation { save { try store.removeExercise(performed.id) } } }
             }
         } message: { Text("Its sets in this workout are removed, including completed ones.") }
-        .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
-            Button("Save workout") { finish() }
-        } message: {
-            Text(summary.completedSets == summary.totalSets ? "All \(summary.totalSets) sets are done."
-                 : "\(summary.completedSets) of \(summary.totalSets) sets are done. Sets you didn't complete are removed.")
-        }
         .confirmationDialog("Discard this workout?", isPresented: $discarding, titleVisibility: .visible) {
             Button("Discard workout", role: .destructive) { save { try store.discardSession() } }
         } message: { Text("This removes the workout and all of its sets from this device.") }
@@ -382,7 +383,7 @@ struct ActiveWorkoutView: View {
         let delta: Double = up ? 1 : -1
         switch field {
         case .load:
-            return TrainingFormat.number(increments(for: exercise).stepped(TrainingInput.number(input) ?? 0, up: up, in: unit))
+            return TrainingFormat.load(increments(for: exercise).stepped(TrainingInput.number(input) ?? 0, up: up, in: unit))
         case .reps:
             return String(max(0, (TrainingInput.reps(input) ?? 0) + (up ? 1 : -1)))
         case .rir:
@@ -474,7 +475,7 @@ private struct WorkoutNotesView: View {
             }
             .onAppear {
                 name = session.name; notes = session.notes
-                weight = session.bodyweight.map { TrainingFormat.number($0.value(in: unit)) } ?? ""
+                weight = session.bodyweight.map { TrainingFormat.load($0.value(in: unit)) } ?? ""
             }
         }
     }
@@ -487,7 +488,7 @@ private struct WorkoutNotesView: View {
                 $0.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Workout" : name
                 $0.notes = notes
                 // Keep the exact saved weight unless the shown number was edited.
-                if session.bodyweight.map({ TrainingFormat.number($0.value(in: unit)) }) != weight { $0.bodyweight = mass }
+                if session.bodyweight.map({ TrainingFormat.load($0.value(in: unit)) }) != weight { $0.bodyweight = mass }
             }
             dismiss()
         } catch { self.error = TrainingFormat.error(error) }

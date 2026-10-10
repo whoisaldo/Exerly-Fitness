@@ -103,7 +103,7 @@ struct ProposalFieldPresentation {
               session.exercises[exercise].sets.indices.contains(set),
               session.exercises[exercise].sets[set].efforts.indices.contains(effort),
               let load = session.exercises[exercise].sets[set].efforts[effort].load else { return nil }
-        return "\(load.value(in: unit).formatted(.number.precision(.fractionLength(0...3)))) \(unit == .kilograms ? "kg" : "lb")"
+        return "\(load.value(in: unit).formatted(.number.precision(.fractionLength(0...1)).rounded(rule: .toNearestOrAwayFromZero))) \(unit == .kilograms ? "kg" : "lb")"
     }
 
     private static func label(_ leaf: String) -> String {

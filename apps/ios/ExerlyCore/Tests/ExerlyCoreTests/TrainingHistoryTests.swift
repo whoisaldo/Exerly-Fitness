@@ -116,6 +116,24 @@ import Testing
         #expect(repRecords.first?.load == .kg(105))
     }
 
+    @Test func headlinesKeepOneRecordPerExerciseByMeaning() throws {
+        func record(_ kind: PersonalRecord.Kind, _ exercise: ExerciseID) -> PersonalRecord {
+            PersonalRecord(kind: kind, exerciseID: exercise, sessionID: UUID(), setID: UUID(), value: 2, previous: 1)
+        }
+        // Lighter but more reps: no heavier weight, so the estimated 1RM leads.
+        let lighter = [record(.setVolume, "deadlift"), record(.repsAtLoad, "deadlift"), record(.oneRepMax, "deadlift")]
+        #expect(PersonalRecord.headlines(lighter).map(\.kind) == [.oneRepMax])
+        let mixed = [record(.oneRepMax, "back-squat"), record(.repsAtLoad, "pull-up"), record(.heaviestLoad, "back-squat"),
+                     record(.setVolume, "pull-up"), record(.duration, "plank")]
+        let headlines = PersonalRecord.headlines(mixed)
+        #expect(headlines.map(\.exerciseID) == ["back-squat", "pull-up", "plank"])
+        #expect(headlines.map(\.kind) == [.heaviestLoad, .repsAtLoad, .duration])
+        #expect(PersonalRecord.headlines([]).isEmpty)
+        // Every kind in Kind has a place in the order.
+        let all = PersonalRecord.Kind.allCases.map { record($0, "deadlift") }
+        #expect(PersonalRecord.headlines(all.reversed()).first?.kind == .heaviestLoad)
+    }
+
     @Test func recordsIgnoreWarmUpsAndUnknownBodyweight() {
         let earlier = Fixture.session(days: 0, [("pull-up", [Fixture.set(8)])])
         let later = Fixture.session(days: 1, bodyweight: nil, [("pull-up", [Fixture.set(12), Fixture.set(20, kind: .warmUp)])])

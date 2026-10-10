@@ -173,8 +173,13 @@ enum TrainingFormat {
         value.formatted(.number.grouping(.never).precision(.fractionLength(0...3)))
     }
 
+    /// A load to the nearest 0.1, without trailing zeros: "140", "132.3".
+    static func load(_ value: Double) -> String {
+        value.formatted(.number.grouping(.never).precision(.fractionLength(0...1)).rounded(rule: .toNearestOrAwayFromZero))
+    }
+
     static func mass(_ mass: Mass, unit: MassUnit) -> String {
-        "\(number(mass.value(in: unit))) \(unit == .kilograms ? "kg" : "lb")"
+        "\(load(mass.value(in: unit))) \(unit == .kilograms ? "kg" : "lb")"
     }
 
     static func set(_ set: PerformedSet, unit: MassUnit) -> String {
@@ -223,7 +228,7 @@ enum TrainingFormat {
     /// "BW × 9", "+10 × 8", "45 s", "400 m".
     static func compact(_ set: PerformedSet, metric: TrackingMetric, unit: MassUnit) -> String {
         let effort = set.primary
-        let load = effort.load.map { number($0.value(in: unit)) }
+        let load = effort.load.map { self.load($0.value(in: unit)) }
         let text: String
         switch metric {
         case .weightReps: text = "\(load ?? "–") × \(effort.reps.map(String.init) ?? "–")"
@@ -268,6 +273,27 @@ enum TrainingFormat {
         }
     }
 
+    /// What a set of this exercise records, in words.
+    static func logged(_ metric: TrackingMetric) -> String {
+        switch metric {
+        case .weightReps: "Weight and reps"
+        case .bodyweightReps: "Reps, with any added weight"
+        case .assistedReps: "Reps, with any assistance"
+        case .duration: "Time"
+        case .weightDuration: "Weight and time"
+        case .distanceDuration: "Distance and time"
+        case .weightDistance: "Weight and distance"
+        }
+    }
+
+    static func sides(_ laterality: Laterality) -> String {
+        switch laterality {
+        case .bilateral: "Both sides together"
+        case .unilateral: "One side at a time, logged as separate sets"
+        case .alternating: "Alternating sides within a set"
+        }
+    }
+
     static func words(_ raw: String) -> String {
         raw.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression).capitalized
     }
@@ -278,6 +304,20 @@ enum TrainingFormat {
         formatter.timeStyle = .short
         formatter.timeZone = session.timeZone
         return formatter.string(from: session.startedAt)
+    }
+
+    /// "Through today", "Through yesterday" or "Through Tue, Oct 6".
+    static func through(_ date: LocalDate, today: LocalDate) -> String {
+        let day = BodyFormat.day(date, today: today)
+        return "Through \(date >= today.adding(days: -1) ? day.lowercased() : day)"
+    }
+
+    /// "Logged in Pacific Time" for a workout saved in another time zone
+    /// than the account's; nil when they match.
+    static func zoneNote(_ zone: TimeZone, account: TimeZone) -> String? {
+        let name = zone.localizedName(for: .generic, locale: .current) ?? zone.identifier
+        guard zone.identifier != account.identifier, name != account.localizedName(for: .generic, locale: .current) else { return nil }
+        return "Logged in \(name)"
     }
 
     static func error(_ error: Error) -> String {

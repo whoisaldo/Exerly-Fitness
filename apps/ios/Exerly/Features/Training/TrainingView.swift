@@ -51,7 +51,7 @@ struct TrainingView: View {
             .scrollContentBackground(.hidden)
             .background(Color.exBackground)
             .sheet(isPresented: $browsing) {
-                ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active)
+                ExercisePickerView(store: store, onSelect: nil, gym: workspace?.gyms.active, unit: unit)
             }
             .sheet(isPresented: $previewing) {
                 if let workspace { PlannedWorkoutView(workspace: workspace, unit: unit, timeZone: timeZone) }
@@ -95,9 +95,27 @@ struct TrainingView: View {
 
     // MARK: Today
 
+    /// The latest workout saved today, if any.
+    private var finishedToday: WorkoutSession? {
+        let today = LocalDate(Date(), in: timeZone)
+        return store.history.sessions.last { $0.endedAt != nil && $0.localDate == today }
+    }
+
+    /// The program's next day, when there is one to start.
+    private var nextDayName: String? {
+        guard let workspace, let program = workspace.programs.active,
+              let position = ProgramSchedule.next(for: program, in: store.history),
+              workspace.nextWorkout(bodyweight: workspace.latestBodyweight, unit: unit) != nil else { return nil }
+        return position.day.name
+    }
+
     @ViewBuilder
     private var hero: some View {
-        if let workspace, let program = workspace.programs.active {
+        if let done = finishedToday {
+            // Like Today: what's done comes first, the next workout second.
+            TrainingDoneCard(session: done, summary: store.summary(of: done), unit: unit, next: nextDayName,
+                             start: startToday, preview: { previewing = true }, empty: startEmpty)
+        } else if let workspace, let program = workspace.programs.active {
             if let position = ProgramSchedule.next(for: program, in: store.history),
                let plan = workspace.nextWorkout(bodyweight: workspace.latestBodyweight, unit: unit) {
                 TodayWorkoutCard(plan: plan, position: position, program: program, library: store.library,
@@ -242,8 +260,11 @@ private struct RecentWorkoutRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                         .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-                    Text("\(session.startedAt.formatted(.relative(presentation: .named))) · \(TrainingFormat.minutes(summary.duration))")
-                        .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    // Redrawn as time passes, so "3 minutes ago" stays true.
+                    TimelineView(.periodic(from: .now, by: 15)) { _ in
+                        Text("\(session.startedAt.formatted(.relative(presentation: .named))) · \(TrainingFormat.minutes(summary.duration))")
+                            .font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                    }
                 }
                 if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
                 VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
@@ -272,6 +293,8 @@ struct ExercisePickerView: View {
     let store: TrainingStore
     let onSelect: ((ExerlyCore.Exercise) throws -> Void)?
     var gym: GymProfile?
+    /// Browsing only: each exercise's page shows your history in this unit.
+    var unit: MassUnit?
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var muscle: Muscle?
@@ -310,9 +333,9 @@ struct ExercisePickerView: View {
                             } label: { ExerciseLibraryRow(exercise: exercise) }
                             .foregroundStyle(.primary)
                             .accessibilityLabel("Add \(exercise.name)")
-                        } else {
+                        } else if let unit {
                             NavigationLink {
-                                ExerciseGuideView(exercise: exercise)
+                                ExerciseGuideView(exercise: exercise, store: store, unit: unit)
                             } label: { ExerciseLibraryRow(exercise: exercise) }
                         }
                     }

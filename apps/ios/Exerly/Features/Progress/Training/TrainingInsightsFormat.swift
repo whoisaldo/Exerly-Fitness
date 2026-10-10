@@ -133,7 +133,7 @@ enum InsightFormat {
         let effort = set.primary
         var text: String
         if let load = effort.load, !load.isZero {
-            text = "\(load.value(in: unit).formatted(.number.precision(.fractionLength(0...2)))) \(unit.rawValue)"
+            text = self.load(load.kilograms, unit)
             if bodyweight { text = "BW + " + text }
         } else {
             text = bodyweight ? "Bodyweight" : "–"

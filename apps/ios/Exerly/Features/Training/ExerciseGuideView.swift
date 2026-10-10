@@ -73,8 +73,12 @@ enum ExerciseGuideCatalog {
     ]
 }
 
+/// An exercise's page: your history with it, then how to do it.
 struct ExerciseGuideView: View {
     let exercise: ExerlyCore.Exercise
+    let store: TrainingStore
+    let unit: MassUnit
+    @Environment(\.accountTimeZone) private var timeZone
 
     var body: some View {
         ExScreen {
@@ -85,6 +89,7 @@ struct ExerciseGuideView: View {
                     .font(.exLabel).foregroundStyle(Color.exTextSecondary)
                 if let technique { Text(technique.purpose).font(.exBody).foregroundStyle(Color.exTextSecondary) }
             }
+            ExerciseHistorySection(store: store, exerciseID: exercise.id, unit: unit, timeZone: timeZone)
             if let technique {
                 ExCard {
                     ExSectionHeading("Set up")
@@ -116,23 +121,34 @@ struct ExerciseGuideView: View {
                     .font(.exBody)
             }
             ExCard {
-                DisclosureGroup("Muscles & tracking") {
-                    VStack(alignment: .leading, spacing: ExSpacing.item) {
-                        Text("Target muscles").font(.exLabel)
-                        Text(exercise.targetMuscles.map(\.name).joined(separator: ", ")).font(.exBody)
-                        if !exercise.synergistMuscles.isEmpty {
-                            Text("Assisting muscles").font(.exLabel)
-                            Text(exercise.synergistMuscles.map(\.name).joined(separator: ", ")).font(.exBody)
-                        }
-                        Text("Tracking").font(.exLabel)
-                        Text(TrainingFormat.words(exercise.metric.rawValue)).font(.exBody)
-                        Text(TrainingFormat.words(exercise.laterality.rawValue)).font(.exBody)
-                        ForEach(exercise.actions, id: \.self) { Text(TrainingFormat.words($0.rawValue)).font(.exCaption) }
-                    }.padding(.top, ExSpacing.item)
-                }.font(.exLabel)
+                ExSectionHeading("Muscles & tracking")
+                VStack(alignment: .leading, spacing: ExSpacing.item) {
+                    fact("Target", exercise.targetMuscles.map(\.name).joined(separator: ", "))
+                    if !exercise.synergistMuscles.isEmpty {
+                        fact("Assisting", exercise.synergistMuscles.map(\.name).joined(separator: ", "))
+                    }
+                    fact("You log", TrainingFormat.logged(exercise.metric))
+                    fact("Sides", TrainingFormat.sides(exercise.laterality))
+                    if !exercise.actions.isEmpty {
+                        let actions = exercise.actions.map { TrainingFormat.words($0.rawValue).lowercased() }.joined(separator: ", ")
+                        fact("Movement", actions.prefix(1).uppercased() + actions.dropFirst())
+                    }
+                }
             }
         }
+        // Scrolled text goes under a solid edge, not through the title.
+        .scrollEdgeEffectStyle(.hard, for: .top)
         .navigationTitle("Exercise guide").navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// A label over its value, read together.
+    private func fact(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+            Text(value).font(.exBody).foregroundStyle(Color.exTextPrimary).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private var technique: ExerciseTechnique? { ExerciseGuideCatalog.guides[exercise.id] }

@@ -16,7 +16,7 @@ struct EffortFields: Identifiable {
 
     init(_ effort: Effort, unit: MassUnit) {
         original = effort
-        initialLoad = effort.load.map { TrainingFormat.number($0.value(in: unit)) } ?? ""
+        initialLoad = effort.load.map { TrainingFormat.load($0.value(in: unit)) } ?? ""
         initialDuration = effort.duration.map(TrainingFormat.number) ?? ""
         initialDistance = effort.distance.map(TrainingFormat.number) ?? ""
         reps = effort.reps.map(String.init) ?? ""

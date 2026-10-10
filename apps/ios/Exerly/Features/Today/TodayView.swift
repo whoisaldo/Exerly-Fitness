@@ -42,6 +42,13 @@ struct TodayView: View {
     @State private var destination: Destination?
     @State private var toast: Toast?
     @State private var plan: WorkoutPlan?
+    /// "Log again" as it stood when the screen opened, so chips don't move
+    /// under a finger as foods are logged. Refreshed on a new day, on
+    /// returning to the app and on pull to refresh.
+    @State private var suggested: [FoodSuggestion]?
+    /// Entries logged from those chips, by food.
+    @State private var suggestionsLogged: [String: FoodEntry] = [:]
+    @State private var backgrounded = false
     @StateObject private var actions: NutritionDiaryActions
     @EnvironmentObject private var dailySync: SyncEngine
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -115,7 +122,7 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Review changes")
                 }
-                TodayNutritionCard(progress: store.progress(on: date)) { destination = .targets }
+                TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { destination = .targets })
                 quickActions
                 if isToday { suggestions }
                 if let error = actions.error {
@@ -163,15 +170,31 @@ struct TodayView: View {
         .onChange(of: actions.deleted) { _, deleted in
             if let deleted { show("Removed \(deleted.food.name)", undo: .restoreDeleted) }
         }
-        .refreshable { await workspace.synchronize() }
+        .refreshable {
+            await workspace.synchronize()
+            refreshSuggestions()
+        }
         .sheet(item: $destination) { sheet($0) }
-        .task { await workspace.synchronize() }
+        .onAppear { if suggested == nil { refreshSuggestions() } }
+        .task {
+            await workspace.synchronize()
+            // Synced history can change the chips; not once one was used.
+            if suggestionsLogged.isEmpty { refreshSuggestions() }
+        }
+        .onChange(of: date) { _, _ in refreshSuggestions() }
         .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight, unit: unit) : nil }
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background { backgrounded = true }
+            guard phase == .active else { return }
             // After midnight, a screen left on the old today moves to the new one.
-            guard phase == .active, openedOn != today else { return }
-            if date == openedOn { date = today }
-            openedOn = today
+            if openedOn != today {
+                if date == openedOn { date = today }
+                openedOn = today
+            }
+            if backgrounded {
+                backgrounded = false
+                refreshSuggestions()
+            }
         }
     }
 
@@ -216,7 +239,7 @@ struct TodayView: View {
     private var defaultMeal: String { isToday ? currentMeal : "Snacks" }
 
     @ViewBuilder private var suggestions: some View {
-        let items = store.suggestions(at: .now, timeZone: timeZone, limit: 10)
+        let items = suggested ?? []
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
                 HStack(alignment: .firstTextBaseline) {
@@ -227,9 +250,12 @@ struct TodayView: View {
                 ScrollView(.horizontal) {
                     HStack(spacing: ExSpacing.small) {
                         ForEach(items, id: \.food.foodID) { suggestion in
-                            TodaySuggestionChip(suggestion: suggestion) {
+                            let logged = suggestionsLogged[suggestion.food.foodID]
+                            TodaySuggestionChip(suggestion: suggestion, unit: unit, logged: logged != nil) {
                                 destination = .log(suggestion)
-                            } log: { log(suggestion) }
+                            } log: {
+                                if let logged { unlog(logged) } else { log(suggestion) }
+                            }
                         }
                     }.padding(.horizontal, ExSpacing.page)
                 }
@@ -244,9 +270,30 @@ struct TodayView: View {
             let meal = currentMeal
             let entry = try store.log(suggestion, on: date, meal: meal)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(.snappy) { suggestionsLogged[suggestion.food.foodID] = entry }
             show("Logged \(suggestion.food.name) to \(meal)", undo: .remove([entry.id]))
             Task { await workspace.synchronize() }
         } catch { show("Could not log \(suggestion.food.name). Try again.", failed: true) }
+    }
+
+    /// A second tap on a logged chip removes what it logged.
+    private func unlog(_ entry: FoodEntry) {
+        do {
+            // An entry edited since is left alone; its chip just resets.
+            if store.entries.first(where: { $0.id == entry.id }) == entry { try store.deleteEntry(entry.id) }
+            UISelectionFeedbackGenerator().selectionChanged()
+            withAnimation(.snappy) {
+                suggestionsLogged[entry.food.foodID] = nil
+                if toast?.undo == .remove([entry.id]) { toast = nil }
+            }
+            UIAccessibility.post(notification: .announcement, argument: "Removed \(entry.food.name)")
+            Task { await workspace.synchronize() }
+        } catch { show("Could not remove \(entry.food.name). It is still logged.", failed: true) }
+    }
+
+    private func refreshSuggestions() {
+        suggested = store.suggestions(at: .now, timeZone: timeZone, limit: 10)
+        suggestionsLogged = [:]
     }
 
     private func show(_ message: String, undo: Toast.Undo? = nil, failed: Bool = false) {
@@ -259,7 +306,10 @@ struct TodayView: View {
         case .remove(let ids):
             do {
                 for id in ids where store.entries.contains(where: { $0.id == id }) { try store.deleteEntry(id) }
-                withAnimation(.snappy) { self.toast = nil }
+                withAnimation(.snappy) {
+                    self.toast = nil
+                    suggestionsLogged = suggestionsLogged.filter { !ids.contains($0.value.id) }
+                }
                 Task { await workspace.synchronize() }
             } catch { show("Could not undo. The entries are still logged.", failed: true) }
         case .restoreDeleted:
@@ -390,7 +440,7 @@ struct TodayView: View {
                 let logged = entries.filter { $0.meal == meal }
                 TodayMealCard(meal: meal, entries: logged, energy: byMeal[meal]?.energy ?? 0,
                               repeatable: logged.isEmpty ? store.repeatable(meal, for: date) : nil,
-                              timeZone: timeZone) {
+                              timeZone: timeZone, unit: unit) {
                     actions.clearError()
                     destination = .add(meal)
                 } edit: { entry in
@@ -567,6 +617,7 @@ struct TodayMealCard: View {
     let energy: Double
     let repeatable: MealRepeat?
     let timeZone: TimeZone
+    let unit: MassUnit
     let add: () -> Void
     let edit: (FoodEntry) -> Void
     let repeatMeal: (MealRepeat) -> Void
@@ -632,7 +683,7 @@ struct TodayMealCard: View {
         return layout {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.food.name).font(.exBody).foregroundStyle(Color.exTextPrimary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-                Text(NutritionFormat.portion(entry)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text(NutritionFormat.portion(entry, unit: unit)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 if entry.food.edited == true {
                     Text("Edited nutrition").font(.exSmall).foregroundStyle(Color.exPrimaryText)
                 }
@@ -645,7 +696,7 @@ struct TodayMealCard: View {
         .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(entry.food.name), \(NutritionFormat.portion(entry)), \(TodayNutritionCard.number(entry.nutrients.energy)) calories\(entry.food.edited == true ? ", edited nutrition" : "")")
+        .accessibilityLabel("\(entry.food.name), \(NutritionFormat.portion(entry, unit: unit)), \(TodayNutritionCard.number(entry.nutrients.energy)) calories\(entry.food.edited == true ? ", edited nutrition" : "")")
         .accessibilityHint("Opens the entry to change or delete it")
     }
 

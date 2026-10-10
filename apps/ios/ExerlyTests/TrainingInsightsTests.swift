@@ -211,7 +211,7 @@ final class TrainingInsightsTests: XCTestCase {
         let sessions = (0..<6).map { observationSession(at: base.addingTimeInterval(Double($0 * 5 * 86400)), load: 100) }
         let history = TrainingHistory(sessions: sessions, library: .bundled)
         let model = TrainingObservationsModel()
-        await model.refresh(history: history, now: now, timeZone: zone, unit: .kilograms)
+        await model.refresh(history: history, now: now, timeZone: zone, unit: .pounds)
         XCTAssertEqual(model.through, LocalDate("2026-09-30"))
         XCTAssertFalse(model.isLoading)
         XCTAssertEqual(model.findings.count, 2)
@@ -220,7 +220,7 @@ final class TrainingInsightsTests: XCTestCase {
         let metrics = model.findings.flatMap(\.evidence).compactMap(\.metric)
         XCTAssertFalse(metrics.isEmpty)
         XCTAssertTrue(metrics.allSatisfy { MetricPresentation(metric: $0, history: history, unit: .pounds).status == .verified })
-        await model.refresh(history: TrainingHistory(sessions: Array(sessions.prefix(2)), library: .bundled), now: now, timeZone: zone, unit: .kilograms)
+        await model.refresh(history: TrainingHistory(sessions: Array(sessions.prefix(2)), library: .bundled), now: now, timeZone: zone, unit: .pounds)
         XCTAssertTrue(model.findings.isEmpty)
     }
 
@@ -231,7 +231,7 @@ final class TrainingInsightsTests: XCTestCase {
         }
         let history = TrainingHistory(sessions: sessions, library: .bundled)
         let model = TrainingObservationsModel()
-        await model.refresh(history: history, now: now, timeZone: TimeZone(secondsFromGMT: 0)!, unit: .kilograms)
+        await model.refresh(history: history, now: now, timeZone: TimeZone(secondsFromGMT: 0)!, unit: .pounds)
         let deload = try XCTUnwrap(model.findings.first { $0.kind == .deload })
         XCTAssertEqual(Set(deload.exerciseIDs), ["deadlift", "barbell-bench-press"])
         XCTAssertFalse(deload.evidence.isEmpty)
