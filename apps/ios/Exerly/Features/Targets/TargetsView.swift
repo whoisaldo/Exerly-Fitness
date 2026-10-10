@@ -284,8 +284,11 @@ struct TargetsView: View {
                 TargetsDivider()
                 currentExpenditure(summary.expenditure, plan: plan)
             }
-            Text("The ± is one standard deviation: about a 2 in 3 chance the true value is in the range.")
-                .font(.exSmall).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
+            // Only beside a ± to explain.
+            if plan.basis != nil || summary?.expenditure.isMeasured == true {
+                Text("The ± is one standard deviation: about a 2 in 3 chance the true value is in the range.")
+                    .font(.exSmall).foregroundStyle(Color.exTextMuted).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -328,8 +331,6 @@ struct TargetsView: View {
                 }
                 TargetsDetailRow(title: "Weekdays", value: WeekdayBudget.isEven(plan.weekdayWeights) ? "Even" : "Custom") { open(.edit) }
             }
-            Button { open(.edit) } label: { Label("Edit plan", systemImage: "slider.horizontal.3") }
-                .buttonStyle(ExActionStyle(secondary: true)).accessibilityIdentifier("targets.editPlan")
         }
     }
 
