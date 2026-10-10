@@ -90,6 +90,46 @@ final class LiveActivityUITests: ExerlyUITestCase {
         XCTAssertTrue(wait(activity, for: "active Pull 2/3 resting"), "\(activity.value ?? "")")
     }
 
+    /// Opt-in, as it locks the simulator: rest that ends while the app is
+    /// suspended still leaves the next set one tap away on the Lock Screen.
+    func testTheNextSetLogsFromTheLockScreenAfterRestEnds() async throws {
+        guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
+            throw XCTSkip("Opt-in check on the Lock Screen")
+        }
+        let app = try await signedInWithWeek(prefix: "live-rest-end")
+        let activity = readout(app)
+        tap(app.buttons["today.startWorkout"], in: app)
+        XCTAssertTrue(app.buttons["training.finish"].waitForExistence(timeout: 10))
+        tap(app.buttons["Complete set 1, Deadlift"], in: app)
+        XCTAssertTrue(wait(activity, for: "active Pull 1/3 resting"))
+        // Three minutes of rest after a deadlift, cut to under a minute so it ends while locked.
+        let remaining = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Rest, ")).firstMatch
+        func secondsLeft() -> Int {
+            Int((remaining.label.split(separator: " ").dropFirst().first).map(String.init) ?? "") ?? 0
+        }
+        while secondsLeft() > 50 { tap(app.buttons["Remove 15 seconds of rest"], in: app) }
+        let left = secondsLeft()
+        XCTAssertGreaterThan(left, 20, "Rest must still be running at the lock")
+        lockAndWake()
+        XCTAssertTrue(springboard.buttons["Skip rest"].waitForExistence(timeout: 5), "Resting on the Lock Screen")
+        pause(Double(left) + 5)
+        // Waking the screen again is how a person looks after resting.
+        lockAndWake()
+        captureScreen("live-08-lock-rest-over")
+        let redrawn = !springboard.buttons["Skip rest"].exists
+        add(XCTAttachment(string: "Rest UI \(redrawn ? "cleared" : "still shown at 0:00") after rest ended without the app"))
+        let log = springboard.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Complete set 2, Deadlift")).firstMatch
+        XCTAssertTrue(log.waitForExistence(timeout: 5), "The next set can be logged after rest: \(springboard.debugDescription)")
+        log.tap()
+        pause(3)
+        captureScreen("live-09-lock-logged-after-rest")
+        XCTAssertTrue(springboard.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Complete set 3, Deadlift")).firstMatch
+                        .waitForExistence(timeout: 10), "The activity moved on to set 3")
+        unlock()
+        app.activate()
+        XCTAssertTrue(app.buttons["Reopen set 2, Deadlift"].waitForExistence(timeout: 10), "Set 2 was logged from the Lock Screen")
+    }
+
     // MARK: Helpers
 
     private func readout(_ app: XCUIApplication) -> XCUIElement {
