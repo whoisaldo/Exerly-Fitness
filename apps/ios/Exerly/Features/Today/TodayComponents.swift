@@ -230,13 +230,14 @@ struct TodayMacroLine: View {
     var body: some View {
         let left = TodayNutritionCard.left(progress)
         let eaten = TodayNutritionCard.number(progress.consumed), target = TodayNutritionCard.number(progress.target ?? 0)
+        let name = Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
+        let amount = Text(left.amount).font(.exStatSmall).foregroundStyle(left.over ? Color.exAccent : Color.exTextPrimary)
+        let words = Text(" g \(left.words)").font(.exCaption).foregroundStyle(Color.exTextSecondary)
         VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.exLabel).foregroundStyle(Color.exTextSecondary)
-                Spacer(minLength: ExSpacing.small)
-                let amount = Text(left.amount).font(.exStatSmall).foregroundStyle(left.over ? Color.exAccent : Color.exTextPrimary)
-                let words = Text(" g \(left.words)").font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                Text("\(amount)\(words)").monospacedDigit()
+            // One line where it fits; at the largest sizes on a small phone, one under the other.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) { name; Spacer(minLength: ExSpacing.small); Text("\(amount)\(words)").monospacedDigit() }
+                VStack(alignment: .leading, spacing: 2) { name; Text("\(amount)\(words)").monospacedDigit() }
             }
             ExProgressBar(value: progress.consumed, total: progress.target ?? 0, color: color)
             Text("\(eaten) / \(target) g").font(.exSmall).monospacedDigit().foregroundStyle(Color.exTextMuted)
