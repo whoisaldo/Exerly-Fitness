@@ -289,7 +289,8 @@ struct TodayPressStyle: ButtonStyle {
 }
 
 /// A food logged around this time on other days. The plus logs it again;
-/// once logged it shows a check, and tapping that removes it.
+/// once logged it shows a check, and tapping that removes it. VoiceOver
+/// reaches both from the chip itself, even when its plus is off screen.
 struct TodaySuggestionChip: View {
     let suggestion: FoodSuggestion
     let unit: MassUnit
@@ -301,15 +302,16 @@ struct TodaySuggestionChip: View {
         HStack(spacing: ExSpacing.small) {
             Button(action: open) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(suggestion.food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(1)
+                    Text(suggestion.food.name).font(.exLabel).foregroundStyle(Color.exTextPrimary).lineLimit(2)
                     Text("\(portion) · \(energy) kcal").font(.exSmall).foregroundStyle(Color.exTextSecondary).lineLimit(1)
                 }
-                .frame(maxWidth: 170, minHeight: 44, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(suggestion.food.name), \(portion), \(energy) calories")
             .accessibilityHint("Opens the portion before logging")
+            .accessibilityAction(named: logged ? "Undo" : "Log \(portion)", log)
             Button(action: log) {
                 Image(systemName: logged ? "checkmark" : "plus").font(.system(size: 15, weight: .bold))
                     .contentTransition(.symbolEffect(.replace))
@@ -323,6 +325,7 @@ struct TodaySuggestionChip: View {
             .accessibilityIdentifier("today.suggestion.log.\(suggestion.food.foodID)")
         }
         .padding(.leading, ExSpacing.item).padding(.trailing, 2).padding(.vertical, 2)
+        .frame(maxHeight: .infinity)
         .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5) }
     }

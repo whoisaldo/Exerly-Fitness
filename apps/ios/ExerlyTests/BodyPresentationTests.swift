@@ -45,14 +45,16 @@ final class BodyPresentationTests: XCTestCase {
         XCTAssertEqual(pounds.lowerBound, 44.1, accuracy: 1e-9)
         XCTAssertEqual(pounds.upperBound, 881.8, accuracy: 1e-9)
         XCTAssertEqual(WeightRuler.range(for: .kilograms), 20...400)
-        XCTAssertEqual(WeightRuler.nudged(184.6, by: 1, unit: .pounds, range: pounds), 184.8)
+        XCTAssertEqual(WeightRuler.nudged(184.6, by: 1, unit: .pounds, range: pounds), 184.7)
+        // 160.2 is five steps down from 160.7, not out of reach between 0.2 lb ticks.
+        XCTAssertEqual(WeightRuler.nudged(160.7, by: -5, unit: .pounds, range: pounds), 160.2)
         // A typed value between ticks moves to its neighbour, not a whole step past it.
-        XCTAssertEqual(WeightRuler.nudged(184.5, by: 1, unit: .pounds, range: pounds), 184.6)
-        XCTAssertEqual(WeightRuler.nudged(184.5, by: -1, unit: .pounds, range: pounds), 184.4)
+        XCTAssertEqual(WeightRuler.nudged(184.55, by: 1, unit: .pounds, range: pounds), 184.6)
+        XCTAssertEqual(WeightRuler.nudged(184.55, by: -1, unit: .pounds, range: pounds), 184.5)
         XCTAssertEqual(WeightRuler.nudged(72.3, by: 1, unit: .kilograms, range: 20...400), 72.4)
         XCTAssertEqual(WeightRuler.nudged(72.3, by: -3, unit: .kilograms, range: 20...400), 72)
         XCTAssertEqual(WeightRuler.nudged(400, by: 1, unit: .kilograms, range: 20...400), 400)
-        XCTAssertEqual(WeightRuler.snapped(184.71, unit: .pounds, range: pounds), 184.8)
+        XCTAssertEqual(WeightRuler.snapped(184.76, unit: .pounds, range: pounds), 184.8)
         XCTAssertEqual(WeightRuler.snapped(5, unit: .kilograms, range: 20...400), 20)
     }
 

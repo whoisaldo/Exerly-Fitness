@@ -73,7 +73,8 @@ final class NutritionPlatePresentationTests: XCTestCase {
         XCTAssertEqual(saved.first?.food.source, .usda)
         XCTAssertEqual(saved.first?.date, draft.date)
         XCTAssertEqual(saved.first?.meal, "Dinner")
-        XCTAssertEqual(saved.first?.loggedAt, time)
+        XCTAssertEqual(saved.first?.loggedAt, store.usualTime(of: "Dinner", on: draft.date, timeZone: .current),
+                       "A time no one set follows the meal")
         XCTAssertEqual(draft.save(), saved)
         XCTAssertEqual(store.entries.count, 2)
         XCTAssertFalse(draft.add(food), "A saved draft cannot append an unsaved row")

@@ -37,7 +37,7 @@ struct WorkoutHistoryRow: View {
     let library: ExerlyCore.ExerciseLibrary
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(session.name).font(.exH3)
+            Text(TrainingFormat.title(of: session).name).font(.exH3)
             Text(TrainingFormat.date(session)).font(.exCaption).foregroundStyle(Color.exTextSecondary)
             Text(session.exercises.compactMap { library.exercise($0.exerciseID)?.name }.joined(separator: " · "))
                 .font(.exCaption).foregroundStyle(Color.exTextSecondary)
@@ -61,7 +61,7 @@ struct WorkoutDetailView: View {
                     Section {
                         ExCard(accent: true) {
                         ExEyebrow("Completed session", color: .exPrimaryText)
-                        Text(session.name).font(.exH2)
+                        Text(TrainingFormat.title(of: session).name).font(.exH2)
                         Text(TrainingFormat.date(session))
                         if let zone = TrainingFormat.zoneNote(session.timeZone, account: accountTimeZone) {
                             Text(zone).font(.exCaption).foregroundStyle(Color.exTextSecondary)
@@ -98,7 +98,7 @@ struct WorkoutDetailView: View {
                     Section {
                         Button("Delete workout", role: .destructive) { deleting = true }.frame(minHeight: 44)
                     }
-                }.navigationTitle(session.name).navigationBarTitleDisplayMode(.inline)
+                }.navigationTitle(TrainingFormat.title(of: session).name).navigationBarTitleDisplayMode(.inline)
             } else { ContentUnavailableView("Workout not found", systemImage: "dumbbell") }
         }
         .confirmationDialog("Delete this workout?", isPresented: $deleting, titleVisibility: .visible) {

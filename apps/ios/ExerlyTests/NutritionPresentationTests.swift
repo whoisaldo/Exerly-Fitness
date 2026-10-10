@@ -36,8 +36,32 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(NutritionFormat.portion(one, unit: .pounds), FoodFormat.portion(portion, unit: .pounds))
         let two = try store.log(food, serving: banana, quantity: 2, on: date, meal: "Snacks")
         XCTAssertEqual(NutritionFormat.portion(two, unit: .kilograms), "2 × 1 banana · 252 g")
+        let half = try store.log(food, serving: banana, quantity: 0.5, on: date, meal: "Snacks")
+        XCTAssertEqual(NutritionFormat.portion(half, unit: .kilograms), "0.5 banana · 63 g", "Not 0.5 × 1 banana")
+        let recipe = Serving("1 serving", grams: 298)
+        let stew = ExerlyCore.Food(name: "Beef chili", per100g: NutrientAmounts([.energy: 128]), servings: [recipe])
+        let bowl = try store.log(stew, serving: recipe, quantity: 0.5, on: date, meal: "Dinner")
+        XCTAssertEqual(NutritionFormat.portion(bowl, unit: .pounds), "0.5 serving · 5.3 oz")
+        let pot = try store.log(stew, serving: recipe, quantity: 2, on: date, meal: "Dinner")
+        XCTAssertEqual(NutritionFormat.portion(pot, unit: .kilograms), "2 servings · 596 g")
         let weighed = try store.log(food, grams: 150, on: date, meal: "Snacks")
         XCTAssertEqual(NutritionFormat.portion(weighed, unit: .pounds), "150 g")
+    }
+
+    func testANamedServingStartsAtOneOnlyWhileTheAmountIsADefault() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-10"))
+        let onion = ExerlyCore.Food(name: "Synthetic onion", per100g: NutrientAmounts([.energy: 40]),
+                                    servings: [Serving("1 slice", grams: 15), Serving("1 whole", grams: 148)])
+        let draft = NutritionEntryDraft(store: store, food: onion, date: date, meal: "Dinner", preferredUnit: .kilograms)
+        XCTAssertTrue(draft.amountIsDefault)
+        XCTAssertTrue(draft.selectMeasure(.grams))
+        XCTAssertTrue(draft.amountIsDefault, "Converting the default leaves it a default")
+        draft.amount.text = "100"
+        XCTAssertFalse(draft.amountIsDefault, "An amount the person entered")
+        let logged = try store.log(onion, grams: 50, on: date, meal: "Dinner")
+        let again = NutritionEntryDraft(store: store, food: onion, date: date, meal: "Dinner", repeating: logged, preferredUnit: .kilograms)
+        XCTAssertFalse(again.amountIsDefault, "An amount logged before isn't a default")
     }
 
     func testExplicitLabelPortionReplacesInvalidInputAndPersistsWithoutChangingTheDefault() async throws {
@@ -524,6 +548,24 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertNotNil(store.food(food.id)?.archivedAt)
     }
 
+    func testChoosingAnotherMealMovesATimeNoOneSet() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let zone = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        let date = try XCTUnwrap(LocalDate("2026-10-10"))
+        let food = ExerlyCore.Food(name: "Synthetic chili", per100g: NutrientAmounts([.energy: 128]))
+        let morning = Date(timeIntervalSince1970: 1_791_637_260) // 9:01 AM in New York
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Breakfast", now: morning, timeZone: zone)
+        draft.meal = "Dinner"
+        XCTAssertEqual(draft.loggedAt, store.usualTime(of: "Dinner", on: date, timeZone: zone))
+        draft.meal = "Breakfast"
+        XCTAssertEqual(draft.loggedAt, morning, "Back to the meal it opened with, back to its time")
+        // A time the person set stays.
+        let chosen = morning.addingTimeInterval(-3600)
+        draft.loggedAt = chosen
+        draft.meal = "Lunch"
+        XCTAssertEqual(draft.loggedAt, chosen)
+    }
+
     func testEntryMetadataEditUsesItsSnapshotAndKeepsExactPortion() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))
@@ -532,6 +574,7 @@ final class NutritionPresentationTests: XCTestCase {
         // Imported records can have a separately precise gram amount.
         entry.grams = 40.123456789
         try store.saveEntry(entry)
+        entry = try XCTUnwrap(store.entries.first { $0.id == entry.id })
         food.name = "Updated library oats"
         food.per100g[.energy] = 999
         try store.saveFood(food)
@@ -544,8 +587,8 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(saved.food, entry.food)
         XCTAssertEqual(saved.grams, entry.grams)
         XCTAssertEqual(saved.quantity, entry.quantity)
-        XCTAssertEqual(saved.loggedAt, entry.loggedAt)
         XCTAssertEqual(saved.meal, "Lunch")
+        XCTAssertEqual(saved.loggedAt, store.usualTime(of: "Lunch", on: date, timeZone: .current), "An untouched time follows the meal")
     }
 
     func testServingPreviewMatchesTheSavedEntryWithoutInventingUnknownNutrients() throws {

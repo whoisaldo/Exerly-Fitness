@@ -682,3 +682,88 @@ nutrients read the same way: "16 g to go" or "2,091 mg left" first (a limit
 passed is in the warning colour), then "8.9 / 25 g", counted to the bound the
 standing refers to, then the completeness line. VoiceOver hears the same
 order, "57 grams left, 75 of 132 grams eaten".
+
+## 2026-10-10: Fixes from the fourth code-blind usability run
+
+- **An untouched time follows the meal.** Choosing another meal for an entry,
+  or for a meal being built, moves an "Eaten at" no one set to that meal's usual
+  time: the median time of its first food over the last 28 days, when it was
+  logged on the day it counts for on at least 3 of them, else 8:00, 12:30,
+  18:30 or 15:00 (the times Health export already used). Going back to the
+  first meal restores its time, and a time the person set stays.
+- **A remembered amount ignores corrections.** Changing a logged entry's amount
+  marks it `amountChanged`, an optional field on the entry that syncs as it is.
+  The amount one tap logs comes from the latest entry as it was logged, so
+  halving tonight's chili doesn't make half a bowl the recipe's default. A food
+  whose every entry was corrected starts from its default again. "0.5 × 1
+  serving" reads "0.5 serving", and two "2 servings"; "2 × 1 banana" stays rather
+  than guess at a plural.
+- **Ingredients ask for their amount.** In food search for a recipe or a meal
+  being built, a food the person has logged still comes in at that amount in
+  one tap. Any other opens a portion step first, with the keypad on the amount
+  and every serving the food has. Add confirms it and Cancel leaves it out.
+  Swiping the step away keeps the food at its default, marked "Check the
+  amount", and Save or Log meal opens that amount before going on. While a
+  new food's amount is still its default, a named serving's chip means one of
+  it ("1 whole" is one onion, not 15 g in wholes); once an amount is entered,
+  or for one logged before, every chip converts and keeps the weight. After an
+  add the search clears for the next food.
+- **The chili's data was real.** USDA FNDDS gives raw ground beef only "1 cup",
+  canned tomatoes "1 whole" and "1 cup" (no can), and onions "1 slice", "1 ring",
+  "1 cup" and "1 whole" (148 g, a medium). Its "Tomatoes, canned, cooked" counts
+  fat added in cooking (3.04 g per 100 g). The fixture serves that table as it
+  is, so no fixture data changed. Open Food Facts foods carry only their label
+  serving; offering the package as a serving is left for later.
+- **One amount keypad.** Focusing an amount selects it, as does a new amount
+  arriving while it's focused (a preset, a step or another measure), so the
+  first digit replaces it. Delete with the caret before every digit takes the
+  last one. The keypad's own button hides it and is an icon, so the screen's
+  Done, Add or Save is the only one.
+- **Search falls back to most of the words.** Generic foods need every word;
+  when none has them all, the foods with the most of them, at least half, rank
+  by the same rules, so "diced tomatoes canned" finds canned tomatoes. Foods on
+  the device match each word anywhere in the name or brand instead of the whole
+  phrase, with the same fallback at more than half: they're listed above the
+  database, and "ground beef" shouldn't offer ground turkey first. The
+  simulator fixtures that ran this build serve claude/next's API, so the
+  database half shows only in the API's tests until it lands.
+- **A workout cut short leaves its day next.** A session does its program day
+  once at least half of the day's planned working sets are done; until then the
+  program doesn't advance and the day doesn't count toward its progress.
+  Offering the choice at every finish was the alternative. A rule the finish
+  prompt states ("2 of 16 sets are done, less than half, so Pull stays your next
+  workout") decides the common case without a question and needs no new field.
+  The API's `next_workout` and program progress follow the same rule. The
+  prompt gains a Cancel with no cancel role, which a popover would hide.
+- **Workouts go by their day.** Recent workouts, history, the finish summary,
+  Today and the workout's spoken label show a planned session by its day
+  ("Pull"), as older sessions already were named.
+- **A set's checkmark is drawn.** The checkmark symbol showed up inside every
+  set's button as an image read "Selected", even hidden and with the button
+  ignoring its children. A drawn checkmark that looks the same carries nothing,
+  so only a done set's button is selected. It pops with a spring instead of the
+  symbol's bounce.
+- **Weigh-ins step by 0.1** lb or kg, on the ruler and the ± buttons, so any
+  reading a scale shows is a few taps away. The ruler marks half pounds as it
+  marks half kilograms.
+- **A waiting check-in shows on Today**, in a banner above the day's numbers,
+  not inside them, and opens Targets, where it comes first. Its numbers are
+  dated ("As of Oct 4, your expenditure was about…", "…in the week to Oct 4"):
+  they stop the day before the check-in, so they can differ from Today's current
+  estimate.
+- **Log again stays out of a meal already logged.** Once the meal its chips log
+  into has food, the row isn't shown; a second usual breakfast offered beside
+  the first is how the tester logged breakfast twice. Chips are sized so two and
+  a clear part of a third show, snap as the row scrolls, and carry their log or
+  undo action for VoiceOver even when the + is off screen.
+- **Today's tab goes back to today.** Tapping it while it shows returns it to
+  today, at the top.
+- **Meals have a "…" menu** with Copy and Save as recipe beside the +; the long
+  press stays. A recipe belongs to a meal it was made from (its foods are that
+  meal's on a day in the last 14) or was logged to. That meal's Add food lists
+  it first, under "Usual for lunch", and the empty meal on Today offers it in
+  one tap. Food search's menu says "Log a meal" (several foods, logged now) and
+  "Create a recipe" (kept to log again), each with a line saying so.
+- **Progress's section picker is a bar.** Each tab scrolls under it, with the
+  system's edge effect and an inset that starts content below it, instead of
+  being cut off at its edge.

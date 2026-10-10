@@ -30,7 +30,7 @@ struct WeightRuler: View {
                 guard tickValue >= range.lowerBound - step / 2, tickValue <= range.upperBound + step / 2 else { continue }
                 let x = middle + (CGFloat(tick) - offset) * spacing
                 let whole = index % ticksPerUnit == 0
-                let half = unit == .kilograms && index % (ticksPerUnit / 2) == 0
+                let half = index % (ticksPerUnit / 2) == 0
                 let height: CGFloat = whole ? 26 : half ? 17 : 10
                 var line = Path()
                 line.move(to: CGPoint(x: x, y: baseline - height))

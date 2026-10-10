@@ -79,6 +79,13 @@ test('generic foods are found without Open Food Facts, and credited only when sh
   const nothing = await api.get('/v1/foods/search?q=zzqx', { token: user.token });
   assert.deepEqual(nothing.body.foods, []);
   assert.match(nothing.body.attribution, /Open Food Facts/);
+
+  // No generic food has every word; the closest come back instead of nothing.
+  const closest = await api.get('/v1/foods/search?q=diced%20tomatoes%20canned', {
+    token: user.token,
+  });
+  assert.equal(closest.status, 200);
+  assert.equal(closest.body.foods[0].name, 'Tomatoes, canned, cooked');
 });
 
 test('a barcode is one Food, or a clear not found, busy or unavailable', async () => {

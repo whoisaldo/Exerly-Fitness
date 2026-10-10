@@ -36,8 +36,15 @@ enum FoodFormat {
         let measure = NutritionPortionMeasure.saved(serving, food: food)
         let shown = count.formatted(.number.precision(.fractionLength(0...2)))
         if !measure.symbol.isEmpty { return "\(shown) \(measure.symbol)" }
-        let name = count == 1 ? serving.name : "\(shown) × \(serving.name)"
-        return statesWeight(serving.name) ? name : "\(name) · \(weight(grams, unit: unit))"
+        if statesWeight(serving.name) { return count == 1 ? serving.name : "\(shown) × \(serving.name)" }
+        // Half of "1 serving" reads "0.5 serving", and two "2 servings"; two of
+        // "1 banana" stay "2 × 1 banana" rather than guess at a plural.
+        var name = count == 1 ? serving.name : "\(shown) × \(serving.name)"
+        if count != 1, serving.name.hasPrefix("1 "), serving.name.dropFirst(2).first?.isLetter == true {
+            let noun = String(serving.name.dropFirst(2))
+            if count < 1 { name = "\(shown) \(noun)" } else if noun == "serving" { name = "\(shown) servings" }
+        }
+        return "\(name) · \(weight(grams, unit: unit))"
     }
 
     /// A weight in the person's units.

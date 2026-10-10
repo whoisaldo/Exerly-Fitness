@@ -6,6 +6,8 @@ struct TodayHostView: View {
     let unit: MassUnit
     let timeZone: TimeZone
     @Binding var link: URL?
+    /// Taps on the Today tab while it shows.
+    var reselected = 0
     let showTraining: () -> Void
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var auth: AuthViewModel
@@ -14,7 +16,8 @@ struct TodayHostView: View {
         Group {
             if let workspace = account.training, workspace.accountID == accountID,
                let api = auth.accountAPI, api.accountID == accountID {
-                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, link: $link, showTraining: showTraining)
+                TodayView(workspace: workspace, api: api, unit: unit, timeZone: timeZone, link: $link, reselected: reselected,
+                          showTraining: showTraining)
                     .id(workspace.identity)
             } else if account.openingError != nil {
                 ContentUnavailableView {
@@ -39,8 +42,11 @@ struct TodayView: View {
     let timeZone: TimeZone
     /// Scan barcode or Weigh in from a control or intent, opened once on today.
     @Binding var link: URL?
+    /// Taps on the Today tab while it shows: each returns to today, at the top.
+    let reselected: Int
     let showTraining: () -> Void
     @State private var date: LocalDate
+    @State private var scroll = ScrollPosition(edge: .top)
     @State private var openedOn: LocalDate
     @State private var destination: Destination?
     /// Targets push, as they do from Profile.
@@ -51,10 +57,13 @@ struct TodayView: View {
     @State private var plan: WorkoutPlan?
     /// "Log again" as it stood when the screen opened, so chips don't move
     /// under a finger as foods are logged. Refreshed on a new day, on
-    /// returning to the app and on pull to refresh.
+    /// returning to the app and on pull to refresh. Empty once the current
+    /// meal has food.
     @State private var suggested: [FoodSuggestion]?
     /// Entries logged from those chips, by food.
     @State private var suggestionsLogged: [String: FoodEntry] = [:]
+    /// This week's check-in when it waits for a decision, refreshed with "Log again".
+    @State private var checkIn: TargetsCheckInCard.State?
     @State private var backgrounded = false
     @StateObject private var actions: NutritionDiaryActions
     @EnvironmentObject private var dailySync: SyncEngine
@@ -97,12 +106,13 @@ struct TodayView: View {
     }
 
     init(workspace: TrainingWorkspace, api: AccountAPI, unit: MassUnit, timeZone: TimeZone, link: Binding<URL?>,
-         showTraining: @escaping () -> Void) {
+         reselected: Int = 0, showTraining: @escaping () -> Void) {
         self.workspace = workspace
         self.api = api
         self.unit = unit
         self.timeZone = timeZone
         _link = link
+        self.reselected = reselected
         self.showTraining = showTraining
         _date = State(initialValue: LocalDate(Date(), in: timeZone))
         _openedOn = State(initialValue: LocalDate(Date(), in: timeZone))
@@ -133,6 +143,7 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Review changes")
                 }
+                checkInBanner
                 TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { showsTargets = true },
                                    pinned: store.nutrientDays(store.pinnedNutrients(today: today), on: date)) { showsGoals = true }
                 quickActions
@@ -153,6 +164,7 @@ struct TodayView: View {
             .padding(.top, ExSpacing.small)
             .padding(.bottom, ExSpacing.major)
         }
+        .scrollPosition($scroll)
         .scrollIndicators(.hidden)
         .exScrollEdges()
         .background(Color.exBackground)
@@ -194,13 +206,18 @@ struct TodayView: View {
             NavigationStack { NutrientGoalsView(workspace: workspace, timeZone: timeZone) { showsGoals = false } }
                 .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         }
-        .onAppear { if suggested == nil { refreshSuggestions() } }
+        .onChange(of: showsTargets) { _, shown in if !shown { refreshCheckIn() } }
+        .onAppear { if suggested == nil { refreshSuggestions() } else { refreshCheckIn() } }
         .task {
             await workspace.synchronize()
             // Synced history can change the chips; not once one was used.
-            if suggestionsLogged.isEmpty { refreshSuggestions() }
+            if suggestionsLogged.isEmpty { refreshSuggestions() } else { refreshCheckIn() }
         }
         .onChange(of: date) { _, _ in refreshSuggestions() }
+        .onChange(of: reselected) {
+            date = today
+            withAnimation(.snappy) { scroll.scrollTo(edge: .top) }
+        }
         .task(id: link) { openLink() }
         .task(id: planKey) { plan = isToday ? workspace.nextWorkout(bodyweight: bodyweight, unit: unit) : nil }
         .onChange(of: scenePhase) { _, phase in
@@ -287,9 +304,16 @@ struct TodayView: View {
                             } log: {
                                 if let logged { unlog(logged) } else { log(suggestion) }
                             }
+                            // Two chips and a clear part of the next, so the row reads as one that scrolls.
+                            .containerRelativeFrame(.horizontal, count: typeSize.isAccessibilitySize ? 5 : 7,
+                                                    span: typeSize.isAccessibilitySize ? 4 : 3, spacing: ExSpacing.small)
                         }
-                    }.padding(.horizontal, ExSpacing.page)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .scrollTargetLayout()
                 }
+                .contentMargins(.horizontal, ExSpacing.page, for: .scrollContent)
+                .scrollTargetBehavior(.viewAligned)
                 .scrollIndicators(.hidden)
                 .padding(.horizontal, -ExSpacing.page)
             }
@@ -323,8 +347,53 @@ struct TodayView: View {
     }
 
     private func refreshSuggestions() {
-        suggested = store.suggestions(at: .now, timeZone: timeZone, limit: 10)
+        // Once the meal the chips log into has food, its usual foods would log it twice.
+        let mealLogged = store.entries(on: today).contains { $0.meal == currentMeal }
+        suggested = mealLogged ? [] : store.suggestions(at: .now, timeZone: timeZone, limit: 10)
         suggestionsLogged = [:]
+        refreshCheckIn()
+    }
+
+    private func refreshCheckIn() {
+        let state = store.plan(on: today).map {
+            TargetsCheckInCard.State.current(plan: $0, today: today, store: store, agent: workspace.agent, unit: unit)
+        }
+        checkIn = state?.needsDecision == true ? state : nil
+    }
+
+    /// A check-in waiting for a decision, one tap from Targets, where it comes first.
+    @ViewBuilder private var checkInBanner: some View {
+        if isToday, let checkIn {
+            let (title, detail): (String, String) = switch checkIn {
+            case .due(let review, _, let proposed):
+                ("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))",
+                 "New targets to review: \(TargetsFormat.kcal(proposed.averageDay?.energy ?? 0)) kcal a day")
+            case .cannotKeepGoal(let review):
+                ("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))", "Your goal no longer fits. Review it.")
+            default: ("Weekly check-in", "Review it")
+            }
+            Button { showsTargets = true } label: {
+                HStack(spacing: ExSpacing.item) {
+                    Image(systemName: "calendar.badge.checkmark").font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.exPrimaryText).frame(width: 36, height: 36)
+                        .background(Color.exPrimary.opacity(0.14), in: Circle()).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                        Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.exCaption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
+                        .accessibilityHidden(true)
+                }
+                .padding(ExSpacing.item)
+                .background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("Opens the check-in")
+            .accessibilityIdentifier("today.checkIn")
+        }
     }
 
     private func show(_ message: String, undo: Toast.Undo? = nil, failed: Bool = false) {
@@ -376,7 +445,7 @@ struct TodayView: View {
     @ViewBuilder private var training: some View {
         let done = workspace.store.history.sessions.filter { $0.localDate == date && $0.endedAt != nil }
         if let session = workspace.store.activeSession, isToday {
-            trainingCard(eyebrow: "Workout in progress", title: session.name,
+            trainingCard(eyebrow: "Workout in progress", title: TrainingFormat.title(of: session).name,
                          detail: "\(session.exercises.flatMap(\.sets).filter(\.isCompleted).count) of \(session.exercises.flatMap(\.sets).count) sets done",
                          started: session.startedAt) {
                 Button("Resume", action: showTraining).buttonStyle(ExActionStyle()).accessibilityIdentifier("today.resumeWorkout")
@@ -384,12 +453,12 @@ struct TodayView: View {
         } else if !done.isEmpty {
             ForEach(done) { session in
                 let summary = workspace.store.summary(of: session)
-                trainingCard(eyebrow: "Workout done", title: session.name,
+                trainingCard(eyebrow: "Workout done", title: TrainingFormat.title(of: session).name,
                              detail: "\(summary.workingSets) working \(summary.workingSets == 1 ? "set" : "sets") · \(TodayNutritionCard.number(summary.tonnage.total(in: unit))) \(unit == .kilograms ? "kg" : "lb") volume",
                              icon: "checkmark.circle.fill") { EmptyView() }
             }
         } else if isToday, let plan {
-            trainingCard(eyebrow: plan.isDeload ? "Deload workout" : "Today's workout", title: plan.name,
+            trainingCard(eyebrow: plan.isDeload ? "Deload workout" : "Today's workout", title: TrainingFormat.title(plan.name, planned: true).name,
                          detail: planDetail(plan)) {
                 let layout = typeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(spacing: ExSpacing.small)) : AnyLayout(HStackLayout(spacing: ExSpacing.small))
@@ -486,6 +555,9 @@ struct TodayView: View {
                 let logged = entries.filter { $0.meal == meal }
                 TodayMealCard(meal: meal, entries: logged, energy: byMeal[meal]?.energy ?? 0,
                               repeatable: logged.isEmpty ? store.repeatable(meal, for: date) : nil,
+                              recipes: logged.isEmpty ? store.recipes(for: meal, through: date).prefix(2).compactMap {
+                                  store.quickPortion(for: $0, unit: unit)
+                              } : [],
                               timeZone: timeZone, unit: unit) {
                     actions.clearError()
                     destination = .add(meal)
@@ -494,9 +566,20 @@ struct TodayView: View {
                     destination = .edit(entry)
                 } repeatMeal: { repeated in
                     apply(repeated)
+                } logRecipe: { portion in
+                    log(portion, to: meal)
                 } copy: { destination = .copy(meal) } saveAsRecipe: { destination = .recipe(meal) }
             }
         }
+    }
+
+    private func log(_ recipe: QuickPortion, to meal: String) {
+        do {
+            let entry = try store.log(recipe, on: date, meal: meal)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            show("Logged \(recipe.food.name) to \(meal)", undo: .remove([entry.id]))
+            Task { await workspace.synchronize() }
+        } catch { show("Could not log \(recipe.food.name). Try again.", failed: true) }
     }
 
     private func apply(_ repeated: MealRepeat) {
@@ -660,18 +743,21 @@ struct TodayView: View {
     }
 }
 
-/// One meal: its foods and calories, a plus to add, and a one-tap repeat
-/// of the last time it was logged when it's empty.
+/// One meal: its foods and calories, a plus to add, and when it's empty a
+/// one-tap repeat of the last time it was logged and its recipes.
 struct TodayMealCard: View {
     let meal: String
     let entries: [FoodEntry]
     let energy: Double
     let repeatable: MealRepeat?
+    /// Recipes made from this meal (`NutritionStore.recipes(for:through:)`), each as one tap logs it.
+    let recipes: [QuickPortion]
     let timeZone: TimeZone
     let unit: MassUnit
     let add: () -> Void
     let edit: (FoodEntry) -> Void
     let repeatMeal: (MealRepeat) -> Void
+    let logRecipe: (QuickPortion) -> Void
     let copy: () -> Void
     let saveAsRecipe: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -684,6 +770,12 @@ struct TodayMealCard: View {
                 if !entries.isEmpty {
                     Text("\(TodayNutritionCard.number(energy)) kcal").font(.exLabel).monospacedDigit()
                         .foregroundStyle(Color.exTextSecondary)
+                    Menu { mealActions } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.exTextSecondary)
+                            .frame(width: 32, height: 32).frame(width: 44, height: 44).contentShape(Circle())
+                    }
+                    .accessibilityLabel("\(meal) options")
+                    .accessibilityIdentifier("today.mealMenu.\(meal.lowercased())")
                 }
                 Button(action: add) {
                     Image(systemName: "plus").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.exPrimaryText)
@@ -720,14 +812,37 @@ struct TodayMealCard: View {
                 .accessibilityLabel("Repeat \(meal) from \(sourceName(repeatable.source)), \(repeatable.entries.count) foods, \(TodayNutritionCard.number(repeatable.energy)) calories")
                 .accessibilityIdentifier("today.repeat.\(meal.lowercased())")
             }
+            ForEach(recipes) { recipe in
+                let portion = FoodFormat.portion(recipe, unit: unit)
+                let kcal = TodayNutritionCard.number(recipe.nutrients.energy)
+                Button { logRecipe(recipe) } label: {
+                    HStack(spacing: ExSpacing.small) {
+                        Image(systemName: "frying.pan").font(.footnote.weight(.semibold)).accessibilityHidden(true)
+                        Text("Log \(recipe.food.name) · \(portion) · \(kcal) kcal")
+                            .font(.exCaption.weight(.semibold)).lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(Color.exPrimaryText)
+                    .padding(.horizontal, ExSpacing.item).frame(minHeight: 40)
+                    .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(TodayPressStyle())
+                .padding(.horizontal, ExSpacing.item).padding(.bottom, ExSpacing.item)
+                .accessibilityLabel("Log \(recipe.food.name) to \(meal), \(portion), \(kcal) calories")
+                .accessibilityIdentifier("today.recipe.\(meal.lowercased())")
+            }
         }
         .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5) }
-        .contextMenu {
-            if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
-            if entries.contains(where: { $0.food.unweighed != true }) {
-                Button("Save as recipe", systemImage: "frying.pan", action: saveAsRecipe).accessibilityIdentifier("today.saveRecipe")
-            }
+        .contextMenu { mealActions }
+    }
+
+    /// In the meal's "…" menu, and on a long press.
+    @ViewBuilder private var mealActions: some View {
+        if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
+        if entries.contains(where: { $0.food.unweighed != true }) {
+            Button("Save as recipe", systemImage: "frying.pan", action: saveAsRecipe).accessibilityIdentifier("today.saveRecipe")
         }
     }
 

@@ -77,6 +77,28 @@ import Testing
         #expect(close(nutrition.summary(on: monday).totals[.calcium], serving[.calcium] ?? 0))
     }
 
+    @Test func aMealSavedAsARecipeIsOfferedForThatMeal() throws {
+        let nutrition = try store()
+        let friday = monday.adding(days: 4)
+        let lunch = [try nutrition.log(Foods.oats, grams: 80, on: friday, meal: "Lunch"),
+                     try nutrition.log(Foods.chicken, grams: 150, on: friday, meal: "Lunch")]
+        try nutrition.log(Foods.milk, grams: 250, on: friday, meal: "Dinner")
+        var work = Food.recipe(from: lunch, name: "Work lunch")
+        try nutrition.saveFood(work)
+        let bowl = porridge()
+        try nutrition.saveFood(bowl)
+        let saturday = friday.adding(days: 1)
+        #expect(nutrition.recipes(for: "Lunch", through: saturday).map(\.name) == ["Work lunch"])
+        #expect(nutrition.recipes(for: "Dinner", through: saturday).isEmpty, "Made of lunch's foods, not dinner's")
+        #expect(nutrition.recipes(for: "Lunch", through: saturday.adding(days: 15)).isEmpty, "Only recent meals")
+        // A recipe logged to a meal belongs to it too.
+        try nutrition.log(bowl, serving: bowl.recipeServing, on: friday, meal: "Breakfast")
+        #expect(nutrition.recipes(for: "Breakfast", through: saturday).map(\.name) == ["Porridge"])
+        work.archivedAt = Fixture.instant()
+        try nutrition.saveFood(work)
+        #expect(nutrition.recipes(for: "Lunch", through: saturday).isEmpty, "Archived recipes aren't offered")
+    }
+
     @Test func aMealBecomesOneServingOfItsWeighedEntries() throws {
         let nutrition = try store()
         try nutrition.log(Foods.oats, serving: Foods.oats.servings[0], quantity: 2, on: monday, meal: "Breakfast")

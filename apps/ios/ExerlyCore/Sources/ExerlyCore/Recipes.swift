@@ -76,3 +76,19 @@ extension Food {
         }, servingCount: 1)
     }
 }
+
+extension NutritionStore {
+    /// Saved recipes that belong to `meal`: ones made of the foods logged to
+    /// it on a day in the `days` up to `date`, as saving a meal as a recipe
+    /// makes them, or ones logged to it in that time. So a meal saved as a
+    /// recipe is offered where it was eaten.
+    public func recipes(for meal: String, through date: LocalDate, days: Int = 14) -> [Food] {
+        let recent = entries.filter { $0.meal == meal && $0.date <= date && $0.date >= date.adding(days: -days) }
+        let meals = Set(Dictionary(grouping: recent.filter { $0.food.unweighed != true }, by: \.date).values.map { Set($0.map(\.food.foodID)) })
+        let logged = Set(recent.map(\.food.foodID))
+        return foods.filter { food in
+            guard food.source == .recipe, food.archivedAt == nil, let ingredients = food.ingredients, !ingredients.isEmpty else { return false }
+            return logged.contains(food.id) || meals.contains(Set(ingredients.map(\.food.foodID)))
+        }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+}

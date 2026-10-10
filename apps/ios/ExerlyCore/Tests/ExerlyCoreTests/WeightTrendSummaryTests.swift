@@ -123,7 +123,7 @@ import Testing
         #expect(WeightTrend.suggestedReading(latest: .lb(180), trend: nil, unit: .kilograms) == 81.6)
         #expect(WeightTrend.suggestedReading(latest: nil, trend: 80.04, unit: .kilograms) == 80)
         #expect(WeightTrend.suggestedReading(latest: nil, trend: nil, unit: .kilograms) == nil)
-        #expect(WeightTrend.step(for: .kilograms) == 0.1 && WeightTrend.step(for: .pounds) == 0.2)
+        #expect(WeightTrend.step(for: .kilograms) == 0.1 && WeightTrend.step(for: .pounds) == 0.1)
     }
 
     @Test func movingAWeighInToAnotherDayKeepsItsLocalClockTime() throws {

@@ -19,6 +19,8 @@ struct ActiveWorkoutView: View {
     var gym: GymProfile?
     /// Program targets by slot ID, for the "3 × 5–8 · 2 RIR" line.
     var targets: [UUID: SlotTarget] = [:]
+    /// The program the session is a day of, to say whether finishing does that day.
+    var program: Program?
     var onFinish: (TrainingStore.FinishedSession) -> Void = { _ in }
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var focus: TrainingCell?
@@ -137,8 +139,10 @@ struct ActiveWorkoutView: View {
                     // Attached to the button so its popover points at Finish.
                     .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
                         Button("Save workout") { finish() }
+                        // No cancel role: a popover leaves those out, and this one should show.
+                        Button("Cancel") {}.accessibilityIdentifier("training.cancelFinish")
                     } message: {
-                        Text("\(summary.completedSets) of \(summary.totalSets) sets are done. Sets you didn't complete are removed.")
+                        Text(finishMessage(summary))
                     }
             }
         }
@@ -422,6 +426,18 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
+    }
+
+    /// How many sets are done, and for a program day whether it counts as
+    /// done (see `ProgramSchedule.completes`) or stays next.
+    private func finishMessage(_ summary: WorkoutSummary) -> String {
+        let sets = "\(summary.completedSets) of \(summary.totalSets) sets are done"
+        let removed = "Sets you didn't complete are removed."
+        guard let program, let live = store.activeSession else { return "\(sets). \(removed)" }
+        let day = TrainingFormat.title(of: live).name
+        return ProgramSchedule.completes(live, of: program)
+            ? "\(sets), so \(day) counts as done. \(removed)"
+            : "\(sets), less than half, so \(day) stays your next workout. \(removed)"
     }
 
     private func finish() {

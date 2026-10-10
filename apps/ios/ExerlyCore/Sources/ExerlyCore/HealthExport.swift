@@ -168,13 +168,7 @@ public struct HealthFoodRecord: HealthRecord {
     /// logged late, or moved to another day, lands on its own day in Health.
     public static func eatenAt(_ entry: FoodEntry, timeZone: TimeZone) -> Date {
         if LocalDate(entry.loggedAt, in: timeZone) == entry.date { return entry.loggedAt }
-        let (hour, minute) = switch entry.meal.lowercased() {
-        case "breakfast": (8, 0)
-        case "lunch": (12, 30)
-        case "dinner": (18, 30)
-        case "snacks", "snack": (15, 0)
-        default: (12, 0)
-        }
+        let (hour, minute) = NutritionStore.typicalTime(of: entry.meal)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let date = entry.date

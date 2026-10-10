@@ -438,36 +438,7 @@ struct TargetsView: View {
     // MARK: Check-in
 
     private func checkInState(_ plan: NutritionPlan, today: LocalDate) -> TargetsCheckInCard.State {
-        guard plan.mode != .manual else { return .manual }
-        let proposals = workspace.agent.proposals
-        let weekStart = today.startOfWeek(firstWeekday: plan.checkInDay)
-        var excluded: UUID?
-        // This week's check-in, once filed: decided, or pending from another device.
-        if let latest = NutritionCheckIn.latest(in: proposals), let proposed = NutritionCheckIn.proposedPlan(latest),
-           proposed.startDate >= weekStart {
-            if latest.status == .pending {
-                excluded = latest.id
-            } else if latest.status != .accepted || plan.id == proposed.id {
-                let review = try? store.checkIn(today: today, existing: proposals, unit: unit)
-                return .decided(latest, proposed: proposed, before: store.plan(before: proposed),
-                                canUndo: latest.status == .accepted,
-                                next: review.map { NutritionCheckIn.nextDate(plan: store.checkInPlan(on: today) ?? plan, review: $0) }
-                                    ?? weekStart.adding(days: 7))
-            }
-        }
-        guard let review = try? store.checkIn(today: today, existing: proposals.filter { $0.id != excluded }, unit: unit) else {
-            return .scheduled(weekStart.adding(days: 7))
-        }
-        let next = NutritionCheckIn.nextDate(plan: store.checkInPlan(on: today) ?? plan, review: review)
-        switch review.outcome {
-        case .proposed:
-            guard let proposal = review.proposal, let proposed = NutritionCheckIn.proposedPlan(proposal) else { return .scheduled(next) }
-            return .due(review, workspace.agent.proposal(proposal.id) ?? proposal, proposed: proposed)
-        case .notEnoughData: return .waiting(review)
-        case .unchanged: return .unchanged(review, next: next.adding(days: 7))
-        case .cannotKeepGoal: return .cannotKeepGoal(review)
-        case .notDue, .manual: return .scheduled(next)
-        }
+        .current(plan: plan, today: today, store: store, agent: workspace.agent, unit: unit)
     }
 
     private var checkInActions: TargetsCheckInCard.Actions {

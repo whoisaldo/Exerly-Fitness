@@ -37,6 +37,28 @@ final class RecipePresentationTests: XCTestCase {
         XCTAssertFalse(draft.add(saved), "A recipe can't include itself")
     }
 
+    func testAnIngredientLeftAtItsDefaultMustBeCheckedBeforeSaving() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let onion = ExerlyCore.Food(name: "Synthetic onion", per100g: NutrientAmounts([.energy: 40]),
+                                    servings: [Serving("1 slice", grams: 15), Serving("1 whole", grams: 148)])
+        let draft = RecipeDraft(store: store, unit: .kilograms)
+        draft.name = "Synthetic chili"
+        let chosen = try NutritionStore.preview(oats, grams: 500)
+        XCTAssertTrue(draft.add(oats, amount: .chosen(chosen, oats.snapshot)))
+        XCTAssertEqual(draft.rows.first?.ingredient.grams, 500, "The amount chosen in the portion step")
+        XCTAssertTrue(draft.add(onion, amount: .unchecked))
+        XCTAssertEqual(draft.rows.last?.ingredient.serving?.name, "1 slice", "Its default, the first serving")
+        XCTAssertEqual(draft.rows.last?.food?.servings.count, 2, "With every serving, for the portion step")
+        let unchecked = try XCTUnwrap(draft.unchecked)
+        XCTAssertNil(draft.save())
+        XCTAssertEqual(draft.errors, ["Check the amount of Synthetic onion before saving. It came in at a default."])
+        XCTAssertNil(store.food(draft.preview?.id ?? ""))
+        // Looking at it, even without a change, checks it.
+        draft.update(unchecked.id, to: try NutritionStore.preview(onion, serving: onion.servings[1], quantity: 1), food: onion.snapshot)
+        XCTAssertNil(draft.unchecked)
+        XCTAssertNotNil(draft.save())
+    }
+
     func testEditingKeepsTheSavedRecipesIdentityAndRefusesAStaleDraft() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         var recipe = ExerlyCore.Food.recipe(name: "Synthetic porridge", ingredients: [RecipeIngredient(food: oats.snapshot, grams: 80)],

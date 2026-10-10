@@ -325,7 +325,7 @@ function activeProgram(ws) {
 function programProgress(ws, program) {
   const done = new Set(
     ws.history.sessions
-      .filter((s) => s.program?.programID === program.id)
+      .filter((s) => progression.completes(program, s))
       .map((s) => `${s.program.cycle}/${s.program.dayID}`)
   ).size;
   const total = progression.trainingDays(program).length * program.cycles;

@@ -57,14 +57,21 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         tap(app.buttons["Complete set 2, Barbell Bench Press"], in: app)
         XCTAssertTrue(app.buttons["Reopen set 2, Barbell Bench Press"].waitForExistence(timeout: 5))
 
+        // Two of fifteen sets: the prompt says the day stays next, and can be cancelled.
+        tap(app.buttons["training.finish"], in: app)
+        let staysNext = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Upper A stays your next workout")).firstMatch
+        XCTAssertTrue(staysNext.waitForExistence(timeout: 5), app.debugDescription)
+        tap(app.buttons["Cancel"].firstMatch, in: app)
+        XCTAssertTrue(app.buttons["Save workout"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["training.finish"].isHittable, "Still in the workout")
         tap(app.buttons["training.finish"], in: app)
         tap(app.buttons["Save workout"], in: app)
         XCTAssertTrue(app.buttons["training.summaryDone"].waitForExistence(timeout: 10))
         tap(app.buttons["training.summaryDone"], in: app)
-        // Train says the workout is done, with the program's next day behind it.
+        // Train says the workout is done; cut short, its day is still the one to do.
         XCTAssertTrue(app.staticTexts["training.doneName"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["training.startToday"].exists)
-        XCTAssertEqual(app.buttons["training.startNext"].label, "Start next: Lower A", "The program moves on to the next day")
+        XCTAssertEqual(app.buttons["training.startNext"].label, "Start next: Upper A", "Under half the sets leaves the day next")
     }
 
     /// Only done sets read as selected. The workout's last set starts no
@@ -76,6 +83,7 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         let second = app.buttons["Complete set 2, Deadlift"]
         XCTAssertTrue(second.waitForExistence(timeout: 5))
         XCTAssertFalse(second.isSelected, "A set not yet done isn't selected")
+        XCTAssertFalse(second.images["Selected"].exists, "Nor does its checkmark read as Selected")
 
         tap(app.buttons["Complete set 1, Deadlift"], in: app)
         XCTAssertTrue(app.buttons["Reopen set 1, Deadlift"].waitForExistence(timeout: 5))

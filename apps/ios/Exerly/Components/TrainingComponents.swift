@@ -183,9 +183,11 @@ struct TrainingKeypad: View {
                 Text(title).font(.system(size: 14, weight: .medium)).foregroundStyle(Color.exTextSecondary)
                     .lineLimit(1).minimumScaleFactor(0.8).accessibilityHidden(true)
                 Spacer()
-                Button("Done", action: done).font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.exPrimaryText).frame(minWidth: 60, minHeight: 44).contentShape(Rectangle())
-                    .accessibilityIdentifier("exerly.keypadDone")
+                Button(action: done) {
+                    Image(systemName: "keyboard.chevron.compact.down").font(.system(size: 18, weight: .semibold))
+                        .frame(minWidth: 60, minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
+                    .accessibilityLabel("Hide keypad").accessibilityIdentifier("exerly.keypadDone")
             }
             HStack(spacing: 6) {
                 VStack(spacing: 6) {

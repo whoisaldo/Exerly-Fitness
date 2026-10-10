@@ -2086,7 +2086,10 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "nutrition-plate-empty")
         tap(app.buttons["Choose foods"], in: app)
         tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        // Never logged, so it asks for its amount; its default is fine.
+        tap(app.buttons["nutrition.pickPortionConfirm"], in: app)
         tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        tap(app.buttons["nutrition.pickPortionConfirm"], in: app)
         capture(app, "nutrition-plate-selection")
         tap(app.buttons["nutrition.reviewPlate"], in: app)
         tap(plateRow(powder, in: app), in: app)
@@ -2119,7 +2122,8 @@ final class ProductionUITests: ExerlyUITestCase {
         replace(app.textFields["nutrition.barcodeDigits"], with: "0012345678905", in: app)
         dismissKeyboard(app)
         tap(app.buttons["nutrition.lookupBarcode"], in: app)
-        XCTAssertTrue(app.navigationBars["Choose foods"].waitForExistence(timeout: 10), "A found barcode goes straight onto the meal")
+        tap(app.buttons["nutrition.pickPortionConfirm"], in: app)
+        XCTAssertTrue(app.navigationBars["Choose foods"].waitForExistence(timeout: 10), "A found barcode goes onto the meal at the amount chosen")
         tap(app.buttons["nutrition.reviewPlate"], in: app)
         XCTAssertTrue(plateRow("off:0012345678905", in: app).exists)
         capture(app, "nutrition-plate-barcode-added")
@@ -2142,7 +2146,10 @@ final class ProductionUITests: ExerlyUITestCase {
         openBuildMeal(in: app)
         tap(app.buttons["Choose foods"], in: app)
         tap(app.buttons["nutrition.platePick.\(powder)"], in: app)
+        // Never logged, so it asks for its amount; its default is fine.
+        tap(app.buttons["nutrition.pickPortionConfirm"], in: app)
         tap(app.buttons["nutrition.platePick.\(liquid)"], in: app)
+        tap(app.buttons["nutrition.pickPortionConfirm"], in: app)
         tap(app.buttons["nutrition.reviewPlate"], in: app)
         for (id, title, measure) in [(powder, "Amount (oz)", "ounces"), (liquid, "Amount (fl oz)", "fluidOunces")] {
             tap(plateRow(id, in: app), in: app)
@@ -2477,7 +2484,10 @@ final class ProductionUITests: ExerlyUITestCase {
         dismissKeyboard(app)
         tap(app.buttons["nutrition.saveFood"], in: app)
         tap(app.buttons["nutrition.libraryLog"], in: app)
-        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "75")
+        // Correcting the entry didn't change the amount the food starts at: its default.
+        XCTAssertEqual(app.textFields["Amount (g)"].value as? String, "100")
+        replace(app.textFields["Amount (g)"], with: "75", in: app)
+        dismissKeyboard(app)
         tap(app.buttons["nutrition.saveEntry"], in: app)
         tap(app.buttons["Profile"], in: app)
         tap(app.buttons["profile.sync"], in: app)

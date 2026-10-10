@@ -53,8 +53,9 @@ struct ActiveWorkoutAccessory: View {
 
     private func label(session: WorkoutSession, summary: WorkoutSummary, resting: RestTimer?, now: Date) -> String {
         let sets = "\(summary.completedSets) of \(summary.totalSets) sets done"
-        if let resting { return "\(session.name), resting, \(Int(resting.remaining(at: now).rounded())) seconds left, \(sets)" }
+        let name = TrainingFormat.title(of: session).name
+        if let resting { return "\(name), resting, \(Int(resting.remaining(at: now).rounded())) seconds left, \(sets)" }
         let minutes = Int(now.timeIntervalSince(session.startedAt) / 60)
-        return "\(session.name), \(minutes) minutes, \(sets)"
+        return "\(name), \(minutes) minutes, \(sets)"
     }
 }

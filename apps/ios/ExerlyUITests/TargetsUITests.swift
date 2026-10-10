@@ -225,6 +225,28 @@ final class TargetsUITests: ExerlyUITestCase {
 
     private static func grouped(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
 
+    /// A check-in waiting for a decision shows on Today, outside the day's
+    /// numbers, and opens in one tap; its numbers say what day they're as of.
+    func testAWaitingCheckInShowsOnTodayAndOpensInOneTap() async throws {
+        let (app, _) = try await signedInWithCheckIn(prefix: "targets-today")
+        let banner = app.buttons["today.checkIn"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 30), app.debugDescription)
+        XCTAssertTrue(banner.label.hasPrefix("Weekly check-in"), banner.label)
+        tapCount = 0
+        tap(banner, in: app)
+        XCTAssertEqual(tapCount, 1)
+        let accept = app.buttons["targets.checkIn.accept"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 10), "The check-in comes first in Targets")
+        let dated = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "As of ")).firstMatch
+        XCTAssertTrue(dated.exists, "The expenditure says the day it's as of")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", " in the week to ")).firstMatch.exists)
+        capture(app, "today-checkin-open")
+        tap(accept, in: app)
+        XCTAssertTrue(app.buttons["targets.checkIn.undo"].waitForExistence(timeout: 5))
+        tap(app.navigationBars.buttons["Today"], in: app)
+        XCTAssertTrue(banner.waitForNonExistence(timeout: 5), "Decided, it leaves Today")
+    }
+
     /// An account with eight weeks of logs and weigh-ins, and a coached plan
     /// from two weeks ago whose check-in falls today, started from a guess
     /// of expenditure well under what the logs show.

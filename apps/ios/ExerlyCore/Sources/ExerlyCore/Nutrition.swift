@@ -213,6 +213,10 @@ public struct FoodEntry: Sendable, Codable, Hashable, Identifiable {
     /// The serving it was entered in, and how many.
     public var serving: Serving?
     public var quantity: Double?
+    /// True once its amount was changed after it was logged. A food's
+    /// remembered amount comes from entries as logged, so correcting one
+    /// entry doesn't change what the next tap logs.
+    public var amountChanged: Bool?
 
     public init(id: UUID = UUID(), date: LocalDate, meal: String, loggedAt: Date, food: FoodSnapshot, grams: Double,
                 serving: Serving? = nil, quantity: Double? = nil) {

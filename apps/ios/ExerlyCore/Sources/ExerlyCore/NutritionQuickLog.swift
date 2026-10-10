@@ -33,7 +33,7 @@ public struct QuickPortion: Sendable, Hashable, Identifiable {
 
 extension NutritionStore {
     /// The portion one tap logs for `food`. With history, the amount last
-    /// logged for it; a saved food uses its current label, and a repeated
+    /// logged for it (see `rememberedEntry`); a saved food uses its current label, and a repeated
     /// corrected snapshot keeps its mark, as the portion editor does.
     /// Without history, one of its first named serving (a recipe's serving
     /// when it has none). Failing that, a plain amount in the person's units:
@@ -42,13 +42,15 @@ extension NutritionStore {
     /// a whole portion.
     public func quickPortion(for food: Food, unit: MassUnit = .kilograms) -> QuickPortion? {
         let label = self.food(food.id) ?? food
-        if let last = lastWeighedEntry(food.id) {
+        if let last = rememberedEntry(for: food.id) {
             var snapshot = label.snapshot
             if last.food.edited == true, last.food.per100g == snapshot.per100g { snapshot.edited = true }
             return QuickPortion(food: snapshot, grams: last.grams, serving: last.serving, quantity: last.quantity,
                                 repeated: true)
         }
-        guard !entries.contains(where: { $0.food.foodID == food.id }) else { return nil }
+        // Only ever logged whole; one whose amounts were all corrected starts again from its default.
+        let logged = entries.filter { $0.food.foodID == food.id }
+        guard logged.isEmpty || logged.contains(where: { $0.food.unweighed != true }) else { return nil }
         let (serving, quantity) = Self.defaultPortion(label, unit: unit)
         guard let amount = try? Self.preview(label, grams: serving == nil ? quantity : nil, serving: serving,
                                              quantity: serving == nil ? nil : quantity) else { return nil }
@@ -76,7 +78,15 @@ extension NutritionStore {
         var result: [QuickPortion] = []
         for snapshot in recentFoods(limit: limit) where snapshot.unweighed != true {
             let saved = food(snapshot.foodID)
-            guard saved?.archivedAt == nil, let last = lastWeighedEntry(snapshot.foodID) else { continue }
+            guard saved?.archivedAt == nil else { continue }
+            guard let last = rememberedEntry(for: snapshot.foodID) else {
+                // Every amount it was logged at was corrected later: its default.
+                var label = Food(id: snapshot.foodID, name: snapshot.name, brand: snapshot.brand, source: snapshot.source,
+                                 per100g: snapshot.per100g)
+                label.volume = snapshot.volume
+                if let portion = quickPortion(for: saved ?? label) { result.append(portion) }
+                continue
+            }
             var food = saved?.snapshot ?? last.food
             if saved != nil, last.food.edited == true, last.food.per100g == food.per100g { food.edited = true }
             result.append(QuickPortion(food: food, grams: last.grams, serving: last.serving,
@@ -92,8 +102,11 @@ extension NutritionStore {
                                quantity: portion.quantity, days: 0), on: date, meal: meal, at: time)
     }
 
-    private func lastWeighedEntry(_ foodID: String) -> FoodEntry? {
-        entries.last { $0.food.foodID == foodID && $0.food.unweighed != true }
+    /// The latest weighed entry of a food at the amount it was logged at:
+    /// the amount one tap logs it at again. Entries whose amount was changed
+    /// later are skipped.
+    public func rememberedEntry(for foodID: String) -> FoodEntry? {
+        entries.last { $0.food.foodID == foodID && $0.food.unweighed != true && $0.amountChanged != true }
     }
 }
 

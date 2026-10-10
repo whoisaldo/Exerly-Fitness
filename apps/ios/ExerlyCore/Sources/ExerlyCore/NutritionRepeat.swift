@@ -54,6 +54,39 @@ extension NutritionStore {
         }
     }
 
+    /// When `meal` is usually eaten on `date`: the median time of day of its
+    /// first entry, over the 28 days before, when it was logged on the day it
+    /// counts for on at least 3 of them; otherwise a typical time for it.
+    public func usualTime(of meal: String, on date: LocalDate, timeZone: TimeZone) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        var first: [LocalDate: Date] = [:]
+        for entry in entries where entry.meal == meal && entry.date < date && entry.date >= date.adding(days: -28)
+            && LocalDate(entry.loggedAt, in: timeZone) == entry.date {
+            first[entry.date] = min(first[entry.date] ?? entry.loggedAt, entry.loggedAt)
+        }
+        var (hour, minute) = Self.typicalTime(of: meal)
+        if first.count >= 3 {
+            let minutes = first.values.map { calendar.component(.hour, from: $0) * 60 + calendar.component(.minute, from: $0) }.sorted()
+            let median = minutes[minutes.count / 2]
+            (hour, minute) = (median / 60, median % 60)
+        }
+        return calendar.date(from: DateComponents(year: date.year, month: date.month, day: date.day, hour: hour, minute: minute))!
+            .roundedToMilliseconds
+    }
+
+    /// A typical hour and minute for a meal: breakfast 8:00, lunch 12:30,
+    /// dinner 18:30, snacks 15:00, and noon for any other.
+    public nonisolated static func typicalTime(of meal: String) -> (hour: Int, minute: Int) {
+        switch meal.lowercased() {
+        case "breakfast": (8, 0)
+        case "lunch": (12, 30)
+        case "dinner": (18, 30)
+        case "snacks", "snack": (15, 0)
+        default: (12, 0)
+        }
+    }
+
     /// The latest day before `date`, within `days`, with entries in `meal`
     /// (or any entries, for the whole day), and those entries.
     public func repeatable(_ meal: String?, for date: LocalDate, within days: Int = 7) -> MealRepeat? {

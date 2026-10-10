@@ -33,13 +33,13 @@ struct ProgressView_: View {
     private var timeZone: TimeZone { TimeZone(identifier: auth.currentUser?.timezone ?? "UTC") ?? .gmt }
 
     var body: some View {
-        VStack(spacing: 0) {
-            tabPicker
-            tabContent
-        }
-        .background(Color.exBackground)
-        .navigationTitle("Progress")
-        .navigationBarTitleDisplayMode(.inline)
+        // A bar, not a row above the content: each tab scrolls under it, inset
+        // to start below it, instead of being cut off at its edge.
+        tabContent
+            .safeAreaBar(edge: .top) { tabPicker }
+            .background(Color.exBackground)
+            .navigationTitle("Progress")
+            .navigationBarTitleDisplayMode(.inline)
     }
 
     private var tabPicker: some View {
@@ -61,6 +61,7 @@ struct ProgressView_: View {
                 ExSegmentedControl(values: ProgressTab.allCases, selection: $selectedTab) { $0.title }
             }
         }.padding(.horizontal, ExSpacing.page).padding(.vertical, ExSpacing.small)
+            .accessibilityElement(children: .contain).accessibilityIdentifier("progress.sections")
     }
 
     @ViewBuilder

@@ -41,6 +41,9 @@ const foods = table.foods.map(([fdcId, name, category, values, portions]) => {
   };
 });
 
+/** Whether a word in `list` starts with `word`, so "tomato" finds "tomatoes". */
+const matches = (list, word) => list.some((w) => w.startsWith(word));
+
 const sameWords = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
 
 /**
@@ -77,33 +80,48 @@ function toFood(food, now) {
  * Generic foods matching every word of `query`, best first: foods the query
  * names (see `naming`), then foods whose first part holds more of it, whole
  * words before prefixes, plain forms ("raw", "NFS") before prepared ones,
- * then the shortest descriptions.
+ * then the shortest descriptions. When no food has every word, the foods
+ * with the most of them, at least half, ranked the same way by the words
+ * they have: "diced tomatoes canned" finds "Tomatoes, canned".
  */
 function search(query, limit = 20, { now = new Date() } = {}) {
   const wanted = words(query).map(singular);
   if (!wanted.length) return [];
+  let ranked = rank((food) => wanted.every((word) => matches(food.words, word)) && wanted);
+  if (!ranked.length && wanted.length > 1) {
+    const enough = Math.ceil(wanted.length / 2);
+    ranked = rank((food) => {
+      const found = wanted.filter((word) => matches(food.words, word));
+      return found.length >= enough && found;
+    });
+  }
+  return ranked.slice(0, limit).map(({ food }) => toFood(food, now));
+}
+
+/** Foods `matched` accepts, by the query words it finds in each, best first; see `search`. */
+function rank(matched) {
   const ranked = [];
   for (const food of foods) {
-    const matches = (list, word) => list.some((w) => w.startsWith(word));
-    if (!wanted.every((word) => matches(food.words, word))) continue;
+    const found = matched(food);
+    if (!found) continue;
     ranked.push({
       food,
       rank: [
-        Math.min(naming(food, wanted), 9),
-        wanted.filter((word) => !matches(food.parts[0], word)).length,
-        -wanted.filter((word) => food.words.includes(word)).length,
+        -found.length,
+        Math.min(naming(food, found), 9),
+        found.filter((word) => !matches(food.parts[0], word)).length,
+        -found.filter((word) => food.words.includes(word)).length,
         food.plain ? 0 : 1,
         food.name.length,
         food.fdcId,
       ],
     });
   }
-  ranked.sort((a, b) => {
+  return ranked.sort((a, b) => {
     for (let i = 0; i < a.rank.length; i++)
       if (a.rank[i] !== b.rank[i]) return a.rank[i] - b.rank[i];
     return 0;
   });
-  return ranked.slice(0, limit).map(({ food }) => toFood(food, now));
 }
 
 const byFdcID = new Map(foods.map((food) => [food.fdcId, food]));

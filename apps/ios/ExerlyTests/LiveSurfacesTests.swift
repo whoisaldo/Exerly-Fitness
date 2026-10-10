@@ -191,15 +191,18 @@ final class LiveSurfacesTests: XCTestCase {
         XCTAssertEqual(active.name, "Upper A")
         XCTAssertEqual(active.totalSets, 5)
 
-        var set = try XCTUnwrap(workspace.store.activeSession?.exercises.first?.sets.first)
-        set.primary = Effort(reps: 8, load: .lb(135))
-        try workspace.store.updateSet(set, in: XCTUnwrap(workspace.store.activeSession?.exercises.first?.id))
-        try workspace.store.completeSet(set.id)
+        // The bench press's three sets: over half the day, so the program moves on.
+        let bench = try XCTUnwrap(workspace.store.activeSession?.exercises.first)
+        for var set in bench.sets {
+            set.primary = Effort(reps: 8, load: .lb(135))
+            try workspace.store.updateSet(set, in: bench.id)
+            try workspace.store.completeSet(set.id)
+        }
         try workspace.store.finishSession()
         snapshot = writer.snapshot(at: now)
         let next = WidgetSnapshot.PlannedWorkout(name: "Lower A", program: "Strength foundations", isDeload: false,
                                                  exercises: [.init(name: "Deadlift", sets: 3)])
-        XCTAssertEqual(snapshot.workout(at: now), .done(.init(name: "Upper A", workingSets: 1, until: day.end), next: next))
+        XCTAssertEqual(snapshot.workout(at: now), .done(.init(name: "Upper A", workingSets: 3, until: day.end), next: next))
         XCTAssertEqual(snapshot.workout(at: day.end), .planned(next), "Tomorrow shows the next workout")
         XCTAssertNil(snapshot.day(at: snapshot.days[1].end), "Past tomorrow the widget asks for the app")
     }

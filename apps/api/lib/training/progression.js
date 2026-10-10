@@ -221,14 +221,34 @@ function targetFor(program, slot, cycle) {
   };
 }
 
-/** The next training day after the latest session from this program, or null when done. */
+/**
+ * Whether a session did its day of the program: at least half the day's
+ * planned working sets are done, as ExerlyCore's ProgramSchedule.completes.
+ * A session of a day since removed counts.
+ */
+function completes(program, session) {
+  const ref = session.program;
+  if (ref?.programID !== program.id) return false;
+  const day = program.days.find((d) => d.id === ref.dayID);
+  if (!day) return true;
+  const planned = day.slots.reduce(
+    (sum, slot) => sum + targetFor(program, slot, ref.cycle).sets,
+    0
+  );
+  const done = session.exercises
+    .flatMap((exercise) => exercise.sets)
+    .filter((set) => set.completedAt != null && set.kind !== 'warmUp').length;
+  return done * 2 >= planned;
+}
+
+/** The next training day after the latest session that did a day of this program, or null when done. */
 function nextPosition(program, sessions) {
   const days = trainingDays(program);
   if (days.length === 0) return null;
   const last = [...sessions]
     .sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt) || (a.id < b.id ? -1 : 1))
     .reverse()
-    .find((s) => s.program?.programID === program.id);
+    .find((s) => completes(program, s));
   const index = last ? days.findIndex((d) => d.id === last.program.dayID) : -1;
   if (!last || index === -1) return { day: days[0], cycle: 0, isDeload: isDeload(program, 0) };
   let cycle = last.program.cycle;
@@ -246,6 +266,7 @@ module.exports = {
   repsToFailure,
   defaultIncrements,
   targetFor,
+  completes,
   nextPosition,
   trainingDays,
   isDeload,

@@ -37,8 +37,8 @@ struct NutritionEntryEditor: View {
         self.onSaved = onSaved
         _libraryActions = StateObject(wrappedValue: NutritionLibraryActions(store: workspace.nutrition))
         _draft = StateObject(wrappedValue: NutritionEntryDraft(store: workspace.nutrition, food: food,
-            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id },
-            preferredUnit: unit))
+            date: date, meal: meal, editing: editing, repeating: workspace.nutrition.entries.last { $0.food.foodID == food.id && $0.amountChanged != true },
+            preferredUnit: unit, timeZone: timeZone))
     }
 
     var body: some View {
@@ -151,7 +151,7 @@ struct NutritionEntryEditor: View {
 
     @ViewBuilder private var amount: some View {
         VStack(alignment: .leading, spacing: ExSpacing.item) {
-            NutritionMeasureChips(draft: draft, unit: unit) { typing = false }
+            NutritionMeasureChips(draft: draft, unit: unit)
             ExQuantityControl(title: draft.measure.amountTitle, text: $draft.amount.text, step: draft.measure.step,
                               presets: draft.measure.presets, unit: draft.measure.symbol)
                 .focused($typing).accessibilityIdentifier("nutrition.amount")
