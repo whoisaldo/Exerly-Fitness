@@ -43,6 +43,13 @@ import Testing
         #expect(IntakeRange.quarter.barDays == 1 && IntakeRange.year.barDays == 7)
     }
 
+    @Test func thisMonthRunsFromTheFirstThroughToday() {
+        #expect(IntakeRange.thisMonth.span(today: monday) == LocalDate("2026-10-01")!...monday)
+        let first = LocalDate("2026-11-01")!
+        #expect(IntakeRange.thisMonth.span(today: first) == first...first, "On the 1st, just today")
+        #expect(IntakeRange.thisMonth.barDays == 1)
+    }
+
     @Test func daysCountAsTheStoreCountsThem() throws {
         let nutrition = try week()
         let series = nutrition.intakeSeries(from: monday, through: monday.adding(days: 6))

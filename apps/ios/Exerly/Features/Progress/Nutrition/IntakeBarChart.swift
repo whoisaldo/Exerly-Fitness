@@ -140,7 +140,7 @@ struct IntakeBarChart: View {
         let style = Date.FormatStyle(timeZone: BodyDates.utc)
         return switch range {
         case .yesterday, .week: style.weekday(.abbreviated)
-        case .month, .quarter: style.month(.abbreviated).day()
+        case .thisMonth, .month, .quarter: style.month(.abbreviated).day()
         case .year: style.month(.abbreviated)
         }
     }

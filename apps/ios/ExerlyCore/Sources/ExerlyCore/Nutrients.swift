@@ -55,6 +55,16 @@ public enum Nutrient: String, Sendable, Codable, Hashable, CaseIterable, CodingK
         }
     }
 
+    /// Listed in every nutrient summary, reported or not: energy and the
+    /// macros, fiber, sugars, saturated fat, and the vitamins and minerals.
+    /// The rest appear once a food reports them or a goal names them.
+    public var isStandard: Bool {
+        switch group {
+        case .energy, .macros, .vitamins, .minerals: true
+        default: self == .fiber || self == .sugars || self == .saturatedFat
+        }
+    }
+
     public var name: String {
         switch self {
         case .energy: "Energy"

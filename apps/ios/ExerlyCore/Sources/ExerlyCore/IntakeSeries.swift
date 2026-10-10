@@ -3,23 +3,23 @@ import Foundation
 /// The spans Progress → Nutrition offers. Each ends yesterday, the last day
 /// that can be finished; today belongs to the diary.
 public enum IntakeRange: String, Sendable, Hashable, CaseIterable, Identifiable {
-    case yesterday, week, month, quarter, year
+    case yesterday, week, thisMonth, month, quarter, year
 
     public var id: String { rawValue }
 
-    public var days: Int {
-        switch self {
-        case .yesterday: 1
-        case .week: 7
-        case .month: 30
-        case .quarter: 91
-        case .year: 365
-        }
-    }
-
-    /// The span's first day through yesterday.
+    /// The span: a number of whole days through yesterday, or for this
+    /// month, the calendar month so far including today.
     public func span(today: LocalDate) -> ClosedRange<LocalDate> {
         let end = today.adding(days: -1)
+        let days: Int
+        switch self {
+        case .thisMonth: return LocalDate(year: today.year, month: today.month, day: 1)!...today
+        case .yesterday: days = 1
+        case .week: days = 7
+        case .month: days = 30
+        case .quarter: days = 91
+        case .year: days = 365
+        }
         return end.adding(days: -(days - 1))...end
     }
 

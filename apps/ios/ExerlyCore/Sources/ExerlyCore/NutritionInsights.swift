@@ -23,7 +23,8 @@ public struct NutrientOverview: Sendable, Hashable {
     /// Days that count: those with entries not marked partial, and fasting days.
     public var days: Int
     public var entries: Int
-    /// Every nutrient with an amount or a goal, in catalog order.
+    /// Every nutrient with an amount or a goal, and the standard ones even
+    /// when nothing reported them, in catalog order.
     public var rows: [Row]
 }
 
@@ -57,7 +58,7 @@ extension NutritionStore {
         let rows = Nutrient.allCases.compactMap { nutrient -> NutrientOverview.Row? in
             let observed = counted.filter { intake[$0]?[nutrient] != nil }
             let goal = counted.last.flatMap { date in plan(on: date)?.goal(for: nutrient, on: date) }
-            guard !observed.isEmpty || goal != nil else { return nil }
+            guard !observed.isEmpty || goal != nil || nutrient.isStandard else { return nil }
             let total = counted.reduce(0.0) { $0 + (intake[$1]?[nutrient] ?? 0) }
             var goalTotal = 0.0, goalIntake = 0.0
             for date in counted {
