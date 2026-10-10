@@ -2,6 +2,17 @@ import Foundation
 import Testing
 @testable import ExerlyCore
 
+@Suite struct LocalDateSpacingTests {
+    @Test func evenlySpacedDaysIncludeBothEnds() {
+        let start = LocalDate("2026-09-16")!
+        #expect(LocalDate.evenlySpaced(from: start, through: LocalDate("2026-10-10")!, count: 4)
+            == ["2026-09-16", "2026-09-24", "2026-10-02", "2026-10-10"].map { LocalDate($0)! })
+        #expect(LocalDate.evenlySpaced(from: LocalDate("2026-10-07")!, through: LocalDate("2026-10-09")!, count: 4)
+            == ["2026-10-07", "2026-10-08", "2026-10-09"].map { LocalDate($0)! }, "No more marks than days")
+        #expect(LocalDate.evenlySpaced(from: start, through: start, count: 4) == [start])
+    }
+}
+
 @Suite struct MassTests {
     @Test func keepsTheEnteredValueAndUnit() throws {
         let mass = Mass(225, .pounds)

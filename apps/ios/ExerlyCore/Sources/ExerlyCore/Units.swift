@@ -130,6 +130,15 @@ public struct LocalDate: Sendable, Hashable, Comparable, Codable, CustomStringCo
         Self.calendar.dateComponents([.day], from: utcMidnight, to: other.utcMidnight).day!
     }
 
+    /// Up to `count` days from `start` through `end`, evenly spaced and
+    /// including both, so a chart's axis covers all of its data.
+    public static func evenlySpaced(from start: LocalDate, through end: LocalDate, count: Int) -> [LocalDate] {
+        let span = start.days(until: end)
+        guard count > 1, span > 0 else { return [start] }
+        let steps = min(count - 1, span)
+        return (0...steps).map { start.adding(days: Int((Double(span * $0) / Double(steps)).rounded())) }
+    }
+
     public var weekday: Weekday {
         Weekday(rawValue: Self.calendar.component(.weekday, from: utcMidnight))!
     }

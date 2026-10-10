@@ -1,8 +1,8 @@
 import ExerlyCore
 import SwiftUI
 
-/// Progress → Training: training per week, stall and fatigue signals, sets
-/// per muscle against Exerly's ranges, each main lift's estimated 1RM, and
+/// Progress → Training: training per week, stall and fatigue signals, each
+/// main lift's estimated 1RM, sets per muscle against Exerly's ranges, and
 /// recent records, over a chosen span. Every number comes from ExerlyCore.
 struct TrainingInsightsView: View {
     let workspace: TrainingWorkspace?
@@ -75,8 +75,8 @@ private struct TrainingInsightsScreen: View {
             } else {
                 TrainingConsistencyCard(report: report, unit: unit, span: report.span)
                 TrainingSignalsSection(signals: report.signals, store: workspace.store, unit: unit, timeZone: timeZone, span: report.span)
-                MuscleVolumeSection(report: report, library: workspace.store.library)
                 LiftsSection(report: report, store: workspace.store, unit: unit, timeZone: timeZone)
+                MuscleVolumeSection(report: report, library: workspace.store.library)
                 RecordsSection(records: report.records, span: report.span, library: workspace.store.library, unit: unit, today: today)
                 footnote(report)
             }

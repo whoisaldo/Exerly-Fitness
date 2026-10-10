@@ -279,10 +279,8 @@ struct ExChoiceChips<Value: Hashable>: View {
         if typeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: ExSpacing.small) { choices }
         } else {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: ExSpacing.small) { choices }
-                ScrollView(.horizontal) { HStack(spacing: ExSpacing.small) { choices } }.scrollIndicators(.hidden)
-            }
+            // Chips that don't fit on one line wrap, so none is cut off at the edge.
+            ExFlowLayout(spacing: ExSpacing.small) { choices }
         }
     }
 
@@ -295,6 +293,49 @@ struct ExChoiceChips<Value: Hashable>: View {
                     .background(selection == value ? Color.exActionFill : Color.exSurface2, in: Capsule())
             }.buttonStyle(.plain).accessibilityAddTraits(selection == value ? .isSelected : [])
         }
+    }
+}
+
+/// Lays its children out left to right, starting a new line when the next
+/// one doesn't fit, like words in a paragraph.
+struct ExFlowLayout: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let lines = lines(subviews, width: proposal.width ?? .infinity)
+        let width = lines.map { line in line.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, line.count - 1)) }.max() ?? 0
+        let height = lines.map { $0.map(\.height).max() ?? 0 }.reduce(0, +) + spacing * CGFloat(max(0, lines.count - 1))
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var index = 0, y = bounds.minY
+        for line in lines(subviews, width: bounds.width) {
+            var x = bounds.minX
+            let height = line.map(\.height).max() ?? 0
+            for size in line {
+                subviews[index].place(at: CGPoint(x: x, y: y + (height - size.height) / 2), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+                index += 1
+            }
+            y += height + spacing
+        }
+    }
+
+    /// Each child's ideal size, grouped into lines no wider than `width`.
+    private func lines(_ subviews: Subviews, width: CGFloat) -> [[CGSize]] {
+        var lines: [[CGSize]] = [[]]
+        var used: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if !lines[lines.count - 1].isEmpty, used + spacing + size.width > width {
+                lines.append([])
+                used = 0
+            }
+            used += (lines[lines.count - 1].isEmpty ? 0 : spacing) + size.width
+            lines[lines.count - 1].append(size)
+        }
+        return lines
     }
 }
 

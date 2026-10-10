@@ -438,6 +438,17 @@ private struct LiftChart: View {
         sessions.compactMap { session in metric.value(session, unit: unit).map { (session, $0) } }
     }
 
+    private var firstDay: LocalDate { sessions.first?.date ?? LocalDate(Date(), in: BodyDates.utc) }
+    private var lastDay: LocalDate { sessions.last?.date ?? firstDay }
+
+    /// The first session's noon to the last's; a day either side when they share one.
+    private var xDomain: ClosedRange<Date> {
+        firstDay == lastDay ? BodyDates.anchor(firstDay.adding(days: -1))...BodyDates.anchor(lastDay.adding(days: 1))
+            : BodyDates.anchor(firstDay)...BodyDates.anchor(lastDay)
+    }
+
+    private var axisDays: [LocalDate] { LocalDate.evenlySpaced(from: firstDay, through: lastDay, count: 4) }
+
     var body: some View {
         let points = points
         let values = points.map(\.value) + [trend?.startValue, trend?.endValue].compactMap { $0.map { Mass.kg($0).value(in: unit) } }
@@ -474,9 +485,13 @@ private struct LiftChart: View {
             }
         }
         .chartYScale(domain: max(0, low - pad)...(high + pad))
+        .chartXScale(domain: xDomain)
         .chartXAxis {
-            AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
-                AxisValueLabel(format: InsightFormat.axisFormat(span), centered: false).font(.exSmall).foregroundStyle(Color.exTextMuted)
+            // Marks from the first session to the last, so every point has a date under the span.
+            AxisMarks(values: axisDays.map(BodyDates.anchor)) { value in
+                AxisValueLabel(format: InsightFormat.axisFormat(span), centered: false,
+                               anchor: value.index == 0 ? .topLeading : value.index == value.count - 1 ? .topTrailing : .top)
+                    .font(.exSmall).foregroundStyle(Color.exTextMuted)
             }
         }
         .chartYAxis {
