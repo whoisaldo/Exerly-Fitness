@@ -498,3 +498,31 @@ group, and `EXERLY_APP_GROUP` for ExerlyWidgets' Release configuration. The
 extension has its own App ID and App Store profile, provisioned through the API
 (`node apps/ios/scripts/asc.mjs provision widgets`), and `release.sh` signs and
 checks both.
+
+## 2026-10-10: Logging without opening Exerly
+
+Every logging action is an App Intent, listed in Shortcuts and Spotlight, said to
+the assistant through `ExerlyShortcuts`, and four of them are Control Center and
+Lock Screen controls.
+
+- Log weight, Quick add, Log a food, Repeat a meal and Calories left live in the
+  app and run in its process, launched in the background if needed. Like the
+  Live Activity buttons, they go through the open screens' workspace, or open
+  the account's own, change it without suspending and close it. A change made
+  that way syncs, and reaches Health through its ledger, when Exerly next opens,
+  as one made offline does. Each makes the same store call as its screen. They
+  require an unlocked device, since they read and write food and body data.
+- Repeat a meal fills only an empty meal, as Today's button does, so a second
+  run can't log the meal twice. Log a food's servings count the food's serving
+  when it was last logged by one, else multiples of the usual amount.
+- Search foods, Scan a barcode, Weigh in and Start workout open the app. They
+  live in `Shared` so the widget extension's controls can use them, and the
+  system runs them in the app after bringing it forward. They hand the app the
+  same `exerly://` link a widget would, followed once the account is open. A
+  control can't open a custom-scheme URL through `OpenURLIntent`, and Xcode 26.2
+  records only `static let supportedModes: IntentModes = .foreground` in the
+  intents' metadata: `.foreground(.immediate)` or a computed property is
+  recorded as a background intent, and the app doesn't open.
+- The controls read nothing from the App Group, so they ship ungated.
+- The search intent is "Search foods" so it doesn't read like "Log a food" in
+  Shortcuts; its control keeps the tab's name, "Log food".
