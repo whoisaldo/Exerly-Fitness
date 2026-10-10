@@ -144,7 +144,7 @@ class ExerlyUITestCase: XCTestCase {
         for _ in 0..<24 where !element.exists {
             let bar = frontNavigationBar(in: app)
             let home = app.tabBars.firstMatch
-            let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
+            let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0, sectionBarBottom(in: app) + 16)
             let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
             let height = max(80, bottom - top)
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (top + height * 0.16) / app.frame.height))
@@ -222,7 +222,7 @@ class ExerlyUITestCase: XCTestCase {
             // The compact date controls sit just below the navigation bar.
             // A 56-point exclusion zone made the helper scroll a fully visible
             // control repeatedly. Check its center below the actual bar.
-            let upperEdge = bar.exists ? bar.frame.maxY + 12 : 40
+            let upperEdge = max(bar.exists ? bar.frame.maxY + 12 : 40, sectionBarBottom(in: app) + 12)
             if visibleFrame(element) && element.frame.midY > upperEdge && element.frame.midY < lowerEdge && element.isHittable { return }
             // A full-screen swipe can jump from below the SE's tab bar to
             // above its navigation bar. Short drags avoid that oscillation.
@@ -240,6 +240,12 @@ class ExerlyUITestCase: XCTestCase {
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
+    }
+    /// The bottom of Progress's section picker, a bar the tabs scroll under,
+    /// or zero elsewhere. Content under it isn't tappable.
+    func sectionBarBottom(in app: XCUIApplication) -> CGFloat {
+        let sections = app.otherElements["progress.sections"]
+        return sections.exists && sections.isHittable ? sections.frame.maxY : 0
     }
     /// The navigation bar a person sees on top: the last one that takes
     /// taps. Bars of screens under a sheet stay in the hierarchy.

@@ -710,3 +710,6 @@ is left alone.
   it first, under "Usual for lunch", and the empty meal on Today offers it in
   one tap. Food search's menu says "Log a meal" (several foods, logged now) and
   "Create a recipe" (kept to log again), each with a line saying so.
+- **Progress's section picker is a bar.** Each tab scrolls under it, with the
+  system's edge effect and an inset that starts content below it, instead of
+  being cut off at its edge.
