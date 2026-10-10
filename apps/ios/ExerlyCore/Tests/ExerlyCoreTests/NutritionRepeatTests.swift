@@ -40,6 +40,22 @@ import Testing
         }
     }
 
+    @Test func aMealsUsualTimeIsWhenItsFirstFoodIsUsuallyLogged() throws {
+        let nutrition = try store()
+        #expect(nutrition.usualTime(of: "Dinner", on: friday, timeZone: newYork) == at(friday, 18, 30), "A typical time without history")
+        #expect(nutrition.usualTime(of: "Second breakfast", on: friday, timeZone: newYork) == at(friday, 12))
+        // Dinner's first food at 19:10, 19:40 and 20:05; a side logged later doesn't count.
+        for (days, hour, minute) in [(1, 19, 10), (2, 19, 40), (3, 20, 5)] {
+            let day = friday.adding(days: -days)
+            try nutrition.log(Foods.chicken, grams: 150, on: day, meal: "Dinner", at: at(day, hour, minute))
+            try nutrition.log(Foods.oats, grams: 40, on: day, meal: "Dinner", at: at(day, 22))
+        }
+        // Logged the next morning, so it says nothing about when dinner is eaten.
+        try nutrition.log(Foods.chicken, grams: 150, on: friday.adding(days: -4), meal: "Dinner", at: at(friday.adding(days: -3), 8))
+        #expect(nutrition.usualTime(of: "Dinner", on: friday, timeZone: newYork) == at(friday, 19, 40))
+        #expect(nutrition.usualTime(of: "Breakfast", on: friday, timeZone: newYork) == at(friday, 8))
+    }
+
     @Test func aHabitOverridesTheClock() throws {
         let nutrition = try store()
         // Lunch logged around 10:15 on three recent days: an early luncher.

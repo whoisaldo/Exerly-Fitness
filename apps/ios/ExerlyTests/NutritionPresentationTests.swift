@@ -524,6 +524,24 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertNotNil(store.food(food.id)?.archivedAt)
     }
 
+    func testChoosingAnotherMealMovesATimeNoOneSet() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let zone = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        let date = try XCTUnwrap(LocalDate("2026-10-10"))
+        let food = ExerlyCore.Food(name: "Synthetic chili", per100g: NutrientAmounts([.energy: 128]))
+        let morning = Date(timeIntervalSince1970: 1_791_637_260) // 9:01 AM in New York
+        let draft = NutritionEntryDraft(store: store, food: food, date: date, meal: "Breakfast", now: morning, timeZone: zone)
+        draft.meal = "Dinner"
+        XCTAssertEqual(draft.loggedAt, store.usualTime(of: "Dinner", on: date, timeZone: zone))
+        draft.meal = "Breakfast"
+        XCTAssertEqual(draft.loggedAt, morning, "Back to the meal it opened with, back to its time")
+        // A time the person set stays.
+        let chosen = morning.addingTimeInterval(-3600)
+        draft.loggedAt = chosen
+        draft.meal = "Lunch"
+        XCTAssertEqual(draft.loggedAt, chosen)
+    }
+
     func testEntryMetadataEditUsesItsSnapshotAndKeepsExactPortion() throws {
         let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
         let date = try XCTUnwrap(LocalDate("2026-10-06"))
@@ -544,8 +562,8 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(saved.food, entry.food)
         XCTAssertEqual(saved.grams, entry.grams)
         XCTAssertEqual(saved.quantity, entry.quantity)
-        XCTAssertEqual(saved.loggedAt, entry.loggedAt)
         XCTAssertEqual(saved.meal, "Lunch")
+        XCTAssertEqual(saved.loggedAt, store.usualTime(of: "Lunch", on: date, timeZone: .current), "An untouched time follows the meal")
     }
 
     func testServingPreviewMatchesTheSavedEntryWithoutInventingUnknownNutrients() throws {

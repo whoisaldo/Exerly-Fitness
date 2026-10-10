@@ -25,7 +25,8 @@ struct NutritionPlateView: View {
         self.actions = actions
         self.onLogged = onLogged
         self.onLoggedEntries = onLoggedEntries
-        _draft = StateObject(wrappedValue: NutritionPlateDraft(store: workspace.nutrition, date: date, meal: meal, unit: unit))
+        _draft = StateObject(wrappedValue: NutritionPlateDraft(store: workspace.nutrition, date: date, meal: meal, unit: unit,
+                                                               timeZone: timeZone))
     }
 
     var body: some View {

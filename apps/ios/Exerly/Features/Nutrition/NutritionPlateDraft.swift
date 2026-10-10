@@ -24,20 +24,37 @@ final class NutritionPlateDraft: ObservableObject {
     @Published private(set) var progress: DayProgress?
     @Published private(set) var error: String?
     @Published var date: LocalDate
-    @Published var meal: String
+    /// Choosing another meal moves a time no one has set to that meal's usual time.
+    @Published var meal: String { didSet { if meal != oldValue { followMeal() } } }
     @Published var loggedAt: Date
     let unit: MassUnit
     private let store: NutritionStore
     private let previewDate: LocalDate
+    private let timeZone: TimeZone
+    private let initialMeal: String
+    private let initialTime: Date
+    private var suggestedTime: Date
     private var saved: [FoodEntry]?
 
-    init(store: NutritionStore, date: LocalDate, meal: String, unit: MassUnit = .pounds, now: Date = Date()) {
+    init(store: NutritionStore, date: LocalDate, meal: String, unit: MassUnit = .pounds, now: Date = Date(),
+         timeZone: TimeZone = .current) {
         self.store = store
         self.date = date
         self.meal = meal
         self.unit = unit
         self.previewDate = date
+        self.timeZone = timeZone
+        initialMeal = meal
         loggedAt = now.roundedToMilliseconds
+        initialTime = now.roundedToMilliseconds
+        suggestedTime = now.roundedToMilliseconds
+    }
+
+    private func followMeal() {
+        guard loggedAt == suggestedTime else { return }
+        let meal = meal.trimmingCharacters(in: .whitespacesAndNewlines)
+        loggedAt = meal == initialMeal ? initialTime : store.usualTime(of: meal, on: date, timeZone: timeZone)
+        suggestedTime = loggedAt
     }
 
     @discardableResult

@@ -149,12 +149,16 @@ final class NutritionEntryDraft: ObservableObject {
     @Published var amount: NutritionNumberField
     @Published private(set) var measure: NutritionPortionMeasure
     @Published var date: LocalDate
-    @Published var meal: String
+    /// Choosing another meal moves a time no one has set to that meal's usual time.
+    @Published var meal: String { didSet { if meal != oldValue { followMeal() } } }
     @Published var loggedAt: Date
     @Published private(set) var snapshot: FoodSnapshot
     @Published private(set) var errors: [String] = []
     let food: ExerlyCore.Food
     private let store: NutritionStore
+    private let timeZone: TimeZone
+    /// The time last set for the person rather than by them.
+    private var suggestedTime: Date
     private var original: FoodEntry?
     private let entryID: UUID
     private let initialAmount: NutritionNumberField
@@ -176,9 +180,11 @@ final class NutritionEntryDraft: ObservableObject {
     }
 
     init(store: NutritionStore, food: ExerlyCore.Food, date: LocalDate, meal: String,
-         editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date(), preferredUnit: MassUnit = .pounds) {
+         editing: FoodEntry? = nil, repeating: FoodEntry? = nil, now: Date = Date(), preferredUnit: MassUnit = .pounds,
+         timeZone: TimeZone = .current) {
         self.store = store
         self.preferredUnit = preferredUnit
+        self.timeZone = timeZone
         var loggingFood = editing.map { $0.food.foodForLogging(serving: $0.serving) } ?? food
         if let editing, let saved = store.food(editing.food.foodID) {
             for serving in saved.servings where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
@@ -227,6 +233,14 @@ final class NutritionEntryDraft: ObservableObject {
         initialMeal = editing?.meal ?? meal
         loggedAt = editing?.loggedAt ?? now.roundedToMilliseconds
         initialTime = editing?.loggedAt ?? now.roundedToMilliseconds
+        suggestedTime = editing?.loggedAt ?? now.roundedToMilliseconds
+    }
+
+    private func followMeal() {
+        guard loggedAt == suggestedTime else { return }
+        let meal = meal.trimmingCharacters(in: .whitespacesAndNewlines)
+        loggedAt = meal == initialMeal ? initialTime : store.usualTime(of: meal, on: date, timeZone: timeZone)
+        suggestedTime = loggedAt
     }
 
     var hasChanges: Bool {

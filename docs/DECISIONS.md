@@ -628,3 +628,12 @@ is left alone.
   no weight, so they are left out.
 - The saved-foods CSV gains cooked weight, serving count, ingredients and
   preparation, which it dropped.
+
+## 2026-10-10: Fixes from the fourth code-blind usability run
+
+- **An untouched time follows the meal.** Choosing another meal for an entry,
+  or for a meal being built, moves an "Eaten at" no one set to that meal's usual
+  time: the median time of its first food over the last 28 days, when it was
+  logged on the day it counts for on at least 3 of them, else 8:00, 12:30,
+  18:30 or 15:00 (the times Health export already used). Going back to the
+  first meal restores its time, and a time the person set stays.
