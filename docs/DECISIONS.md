@@ -692,3 +692,8 @@ is left alone.
 - **Weigh-ins step by 0.1** lb or kg, on the ruler and the ± buttons, so any
   reading a scale shows is a few taps away. The ruler marks half pounds as it
   marks half kilograms.
+- **A waiting check-in shows on Today**, in a banner above the day's numbers,
+  not inside them, and opens Targets, where it comes first. Its numbers are
+  dated ("As of Oct 4, your expenditure was about…", "…in the week to Oct 4"):
+  they stop the day before the check-in, so they can differ from Today's current
+  estimate.

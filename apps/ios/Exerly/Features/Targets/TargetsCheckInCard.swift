@@ -161,15 +161,19 @@ struct TargetsCheckInCard: View {
             : "From \(TargetsFormat.kcal(before)) to \(TargetsFormat.kcal(after)) grams")
     }
 
+    /// The check-in's numbers, dated: they stop the day before the check-in,
+    /// so they can differ from today's estimate on Today.
     private func evidence(_ review: NutritionCheckIn.Review) -> some View {
         VStack(alignment: .leading, spacing: ExSpacing.small) {
             ExEyebrow("Why")
             if let estimate = review.estimate {
-                evidenceRow("flame", "Your expenditure is about \(BodyFormat.kcal(estimate.expenditure)) kcal a day, likely "
+                let day = TargetsFormat.shortDate(estimate.date, today: today)
+                evidenceRow("flame", "As of \(day), your expenditure was about \(BodyFormat.kcal(estimate.expenditure)) kcal a day, likely "
                     + "\(BodyFormat.kcal(estimate.expenditure - estimate.expenditureError)) to "
                     + "\(BodyFormat.kcal(estimate.expenditure + estimate.expenditureError)).")
+                    .accessibilityIdentifier("targets.checkIn.expenditure")
                 if let change = review.weekChange {
-                    evidenceRow("chart.line.downtrend.xyaxis", "Trend weight \(movement(change)) this week. "
+                    evidenceRow("chart.line.downtrend.xyaxis", "Trend weight \(movement(change)) in the week to \(day). "
                         + "The goal is \(goalMovement(trend: estimate.trend)) a week.")
                 }
             }
@@ -380,6 +384,43 @@ struct TargetsCheckInCard: View {
             .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
             Button("Let Exerly coach my targets", action: actions.coach).buttonStyle(ExActionStyle(secondary: true))
                 .accessibilityIdentifier("targets.checkIn.coach")
+        }
+    }
+}
+
+extension TargetsCheckInCard.State {
+    /// This week's check-in for `plan`: due, decided, waiting for data or
+    /// scheduled. Today shows it when it needs a decision, Targets always.
+    @MainActor static func current(plan: NutritionPlan, today: LocalDate, store: NutritionStore, agent: AgentStore,
+                                   unit: MassUnit) -> Self {
+        guard plan.mode != .manual else { return .manual }
+        let proposals = agent.proposals
+        let weekStart = today.startOfWeek(firstWeekday: plan.checkInDay)
+        var excluded: UUID?
+        // This week's check-in, once filed: decided, or pending from another device.
+        if let latest = NutritionCheckIn.latest(in: proposals), let proposed = NutritionCheckIn.proposedPlan(latest),
+           proposed.startDate >= weekStart {
+            if latest.status == .pending {
+                excluded = latest.id
+            } else if latest.status != .accepted || plan.id == proposed.id {
+                let review = try? store.checkIn(today: today, existing: proposals, unit: unit)
+                return .decided(latest, proposed: proposed, before: store.plan(before: proposed),
+                                canUndo: latest.status == .accepted,
+                                next: review.map { NutritionCheckIn.nextDate(plan: plan, review: $0) } ?? weekStart.adding(days: 7))
+            }
+        }
+        guard let review = try? store.checkIn(today: today, existing: proposals.filter { $0.id != excluded }, unit: unit) else {
+            return .scheduled(weekStart.adding(days: 7))
+        }
+        let next = NutritionCheckIn.nextDate(plan: plan, review: review)
+        switch review.outcome {
+        case .proposed:
+            guard let proposal = review.proposal, let proposed = NutritionCheckIn.proposedPlan(proposal) else { return .scheduled(next) }
+            return .due(review, agent.proposal(proposal.id) ?? proposal, proposed: proposed)
+        case .notEnoughData: return .waiting(review)
+        case .unchanged: return .unchanged(review, next: next.adding(days: 7))
+        case .cannotKeepGoal: return .cannotKeepGoal(review)
+        case .notDue, .manual: return .scheduled(next)
         }
     }
 }

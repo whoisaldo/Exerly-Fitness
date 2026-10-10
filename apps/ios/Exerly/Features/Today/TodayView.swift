@@ -53,6 +53,8 @@ struct TodayView: View {
     @State private var suggested: [FoodSuggestion]?
     /// Entries logged from those chips, by food.
     @State private var suggestionsLogged: [String: FoodEntry] = [:]
+    /// This week's check-in when it waits for a decision, refreshed with "Log again".
+    @State private var checkIn: TargetsCheckInCard.State?
     @State private var backgrounded = false
     @StateObject private var actions: NutritionDiaryActions
     @EnvironmentObject private var dailySync: SyncEngine
@@ -131,6 +133,7 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Review changes")
                 }
+                checkInBanner
                 TodayNutritionCard(progress: store.progress(on: date), onSetTargets: date < today ? nil : { showsTargets = true })
                 quickActions
                 if isToday { suggestions }
@@ -187,11 +190,12 @@ struct TodayView: View {
         .navigationDestination(isPresented: $showsTargets) {
             TargetsView(workspace: workspace, unit: unit, timeZone: timeZone)
         }
-        .onAppear { if suggested == nil { refreshSuggestions() } }
+        .onChange(of: showsTargets) { _, shown in if !shown { refreshCheckIn() } }
+        .onAppear { if suggested == nil { refreshSuggestions() } else { refreshCheckIn() } }
         .task {
             await workspace.synchronize()
             // Synced history can change the chips; not once one was used.
-            if suggestionsLogged.isEmpty { refreshSuggestions() }
+            if suggestionsLogged.isEmpty { refreshSuggestions() } else { refreshCheckIn() }
         }
         .onChange(of: date) { _, _ in refreshSuggestions() }
         .task(id: link) { openLink() }
@@ -318,6 +322,49 @@ struct TodayView: View {
     private func refreshSuggestions() {
         suggested = store.suggestions(at: .now, timeZone: timeZone, limit: 10)
         suggestionsLogged = [:]
+        refreshCheckIn()
+    }
+
+    private func refreshCheckIn() {
+        let state = store.plan(on: today).map {
+            TargetsCheckInCard.State.current(plan: $0, today: today, store: store, agent: workspace.agent, unit: unit)
+        }
+        checkIn = state?.needsDecision == true ? state : nil
+    }
+
+    /// A check-in waiting for a decision, one tap from Targets, where it comes first.
+    @ViewBuilder private var checkInBanner: some View {
+        if isToday, let checkIn {
+            let (title, detail): (String, String) = switch checkIn {
+            case .due(let review, _, let proposed):
+                ("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))",
+                 "New targets to review: \(TargetsFormat.kcal(proposed.averageDay?.energy ?? 0)) kcal a day")
+            case .cannotKeepGoal(let review):
+                ("Weekly check-in · \(TargetsFormat.shortDate(review.date, today: today))", "Your goal no longer fits. Review it.")
+            default: ("Weekly check-in", "Review it")
+            }
+            Button { showsTargets = true } label: {
+                HStack(spacing: ExSpacing.item) {
+                    Image(systemName: "calendar.badge.checkmark").font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.exPrimaryText).frame(width: 36, height: 36)
+                        .background(Color.exPrimary.opacity(0.14), in: Circle()).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
+                        Text(detail).font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.exCaption.weight(.semibold)).foregroundStyle(Color.exTextMuted)
+                        .accessibilityHidden(true)
+                }
+                .padding(ExSpacing.item)
+                .background(Color.exPrimary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("Opens the check-in")
+            .accessibilityIdentifier("today.checkIn")
+        }
     }
 
     private func show(_ message: String, undo: Toast.Undo? = nil, failed: Bool = false) {
