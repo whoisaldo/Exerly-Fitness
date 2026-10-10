@@ -479,7 +479,9 @@ extension ExerlyUITestCase {
         return calendar.date(byAdding: .minute, value: minute, to: calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day)!)!
     }
 
-    /// PUTs every document, a dozen at a time, so a month of history seeds in seconds.
+    /// PUTs every document, a dozen at a time, so a month of history seeds in
+    /// seconds. Parallel writes can collide in the server's database, which
+    /// rolls one back with a 500; that one is sent again.
     static func putAll(_ documents: [(kind: String, id: String, payload: [String: Any])], fixture: String, token: String) async throws {
         let requests = try documents.map { document -> (URL, Data) in
             (URL(string: "\(fixture)/v1/documents/\(document.kind)/\(document.id)")!,
@@ -497,13 +499,17 @@ extension ExerlyUITestCase {
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                     request.setValue("isolated-simulator", forHTTPHeaderField: "X-Test-Fixture")
                     request.setValue(zone, forHTTPHeaderField: "X-Timezone")
-                    request.setValue(UUID().uuidString, forHTTPHeaderField: "Idempotency-Key")
                     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    let (data, response) = try await URLSession.shared.data(for: request)
-                    let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                    guard (200..<300).contains(status) else {
-                        throw NSError(domain: "Seed", code: status, userInfo: [NSLocalizedDescriptionKey:
-                            "\(url.path): \(String(data: data, encoding: .utf8) ?? "")"])
+                    for attempt in 1...5 {
+                        request.setValue(UUID().uuidString, forHTTPHeaderField: "Idempotency-Key")
+                        let (data, response) = try await URLSession.shared.data(for: request)
+                        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                        if (200..<300).contains(status) { return }
+                        guard status >= 500, attempt < 5 else {
+                            throw NSError(domain: "Seed", code: status, userInfo: [NSLocalizedDescriptionKey:
+                                "\(url.path): \(String(data: data, encoding: .utf8) ?? "")"])
+                        }
+                        try await Task.sleep(for: .milliseconds(100 * attempt))
                     }
                 }
                 return true
