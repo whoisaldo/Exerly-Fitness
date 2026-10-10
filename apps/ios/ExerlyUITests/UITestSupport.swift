@@ -431,9 +431,13 @@ class ExerlyUITestCase: XCTestCase {
         tapCount += 1
     }
 
-    /// The calorie target Today shows, read from the ring's spoken value.
+    /// The calorie target Today shows, read from the ring's spoken value. The
+    /// ring appears once the plan has synced, which a busy machine can delay;
+    /// a failed query would stop XCTest delivering any later events.
     func targetEnergy(_ app: XCUIApplication) -> Double? {
-        let value = app.descendants(matching: .any)["nutrition.targetEnergy"].value as? String ?? ""
+        let ring = app.descendants(matching: .any)["nutrition.targetEnergy"]
+        guard ring.waitForExistence(timeout: 20) else { return nil }
+        let value = ring.value as? String ?? ""
         guard let range = value.range(of: #"eaten of ([0-9,]+)"#, options: .regularExpression) else { return nil }
         let digits = value[range].filter(\.isNumber)
         return Double(String(digits))
