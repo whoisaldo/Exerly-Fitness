@@ -142,7 +142,7 @@ class ExerlyUITestCase: XCTestCase {
         // A full-app swipe starts inside the saved-account banner at large
         // text sizes on SE. Keep upward-list navigation in the visible list too.
         for _ in 0..<24 where !element.exists {
-            let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
+            let bar = frontNavigationBar(in: app)
             let home = app.tabBars.firstMatch
             let top = max(bar.exists ? bar.frame.maxY + 16 : 48, scrollViewport(in: app)?.minY ?? 0)
             let bottom = min(home.exists && home.isHittable ? home.frame.minY - 18 : app.frame.height - 38, fixedFooterTop(in: app))
@@ -194,14 +194,21 @@ class ExerlyUITestCase: XCTestCase {
             // Native search fields can belong to the navigation bar itself.
             // They are already visible above the scrolling content's top edge.
             if visibleFrame(element), element.elementType == .searchField, element.isHittable { return }
-            // A system keyboard covers the content under it, and a drag that
-            // starts on it swipe-types into the focused field. Keypad keys
-            // are what a person taps there, so they don't count.
+            // A keyboard or Exerly's keypad covers the content under it, and a
+            // drag that starts on the system keyboard swipe-types into the
+            // focused field. Keypad keys are what a person taps there.
             let keypadKey = element.identifier.hasPrefix("exerly.keypad") || element.identifier.hasPrefix("training.keypad")
-            let keyboardTop = keypadKey ? .infinity : (try? app.keyboards.firstMatch.snapshot())?.frame.minY ?? .infinity
+            let keyboardTop = keypadKey ? .infinity : self.keyboardTop(in: app)
+            // Under a keyboard with a Done key, put the keyboard away, as a
+            // person would, instead of scrolling content that can't move far enough.
+            if keyboardTop.isFinite, visibleFrame(element), element.frame.midY > keyboardTop - 10,
+               app.buttons["exerly.keypadDone"].exists || app.buttons["Done"].firstMatch.exists || app.buttons["Hide keyboard"].firstMatch.exists {
+                dismissKeyboard(app)
+                continue
+            }
             let lowerEdge = min(visibleFrame(home) && home.isHittable ? home.frame.minY - 10 : app.frame.height - 30,
                                 fixedFooterTop(in: app), keyboardTop - 10)
-            let bar = app.navigationBars.allElementsBoundByAccessibilityElement.last ?? app.navigationBars.firstMatch
+            let bar = frontNavigationBar(in: app)
             // The saved-account notice is outside the navigation stack. Its
             // Retry button is already visible above the bar; scrolling the
             // diary cannot move it into the list's bounds.
@@ -230,6 +237,12 @@ class ExerlyUITestCase: XCTestCase {
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (down ? high : low) / app.frame.height))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
+    }
+    /// The navigation bar a person sees on top: the last one that takes
+    /// taps. Bars of screens under a sheet stay in the hierarchy.
+    func frontNavigationBar(in app: XCUIApplication) -> XCUIElement {
+        let bars = app.navigationBars.allElementsBoundByAccessibilityElement
+        return bars.last(where: { $0.exists && $0.isHittable }) ?? bars.last ?? app.navigationBars.firstMatch
     }
     func fixedFooterTop(in app: XCUIApplication) -> CGFloat {
         // Stacked sheets can expose the scroll view underneath. Never start a
@@ -271,10 +284,7 @@ class ExerlyUITestCase: XCTestCase {
         // XCTest can call a partly obscured SwiftUI field hittable while its
         // tap point falls in the keyboard toolbar. Reveal the whole field
         // before switching focus, as a person scrolling the editor would.
-        // Read the keyboard once: a keyboard that is animating away can exist
-        // for one query and be gone for the next, which fails the test.
-        if field.exists, let keyboard = try? app.keyboards.firstMatch.snapshot(),
-           field.frame.maxY > keyboard.frame.minY - 50 {
+        if field.exists, field.frame.maxY > keyboardTop(in: app) - 50 {
             dismissKeyboard(app)
         }
         tap(field, in: app)
@@ -309,6 +319,18 @@ class ExerlyUITestCase: XCTestCase {
             }
             XCTAssertTrue(matchesExpectedValue(), "Expected '\(text)', found '\(field.value as? String ?? "unavailable")'")
         }
+    }
+    /// The top of the system keyboard or Exerly's keypad, whichever is up.
+    /// Each is read once: one animating away can exist for one query and be
+    /// gone for the next, which fails the test. Checking existence first
+    /// avoids the snapshot's retries when neither is up.
+    func keyboardTop(in app: XCUIApplication) -> CGFloat {
+        var top = CGFloat.infinity
+        let keyboard = app.keyboards.firstMatch
+        if keyboard.exists, let frame = (try? keyboard.snapshot())?.frame { top = frame.minY }
+        let keypadDone = app.buttons["exerly.keypadDone"]
+        if keypadDone.exists, let frame = (try? keypadDone.snapshot())?.frame { top = min(top, frame.minY) }
+        return top
     }
     /// Returns once an element reports the same frame twice in a row, or is gone.
     func waitUntilStill(_ element: XCUIElement, timeout: TimeInterval = 3) {
