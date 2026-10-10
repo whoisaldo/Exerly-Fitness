@@ -56,6 +56,17 @@ struct AuthPulse: View {
 
 /// A sign-in field: a symbol, the field, and for passwords a show button.
 /// The field's accessibility label is its title.
+/// Whether sign-in fields offer password autofill. UI tests sign in without
+/// it: the system's offer to save the synthetic password can arrive late,
+/// from outside the app, and cover whatever the test taps next.
+private let offersAutofill: Bool = {
+    #if DEBUG
+    !ProcessInfo.processInfo.arguments.contains("--ui-testing")
+    #else
+    true
+    #endif
+}()
+
 struct AuthField<Field: Hashable>: View {
     enum Kind { case name, email, password, newPassword }
 
@@ -122,7 +133,7 @@ struct AuthField<Field: Hashable>: View {
                 .textContentType(.name).textInputAutocapitalization(.words).autocorrectionDisabled()
         case .email:
             TextField(title, text: $text, prompt: prompt)
-                .textContentType(.username).keyboardType(.emailAddress)
+                .textContentType(offersAutofill ? .username : nil).keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
         case .password, .newPassword:
             Group {
@@ -131,7 +142,7 @@ struct AuthField<Field: Hashable>: View {
             }
             // A new password gets no content type: the system's strong-password
             // sheet replaces what the person typed and can't be dismissed in tests.
-            .textContentType(kind == .newPassword ? nil : .password)
+            .textContentType(kind == .newPassword || !offersAutofill ? nil : .password)
             .textInputAutocapitalization(.never).autocorrectionDisabled()
         }
     }
