@@ -289,6 +289,9 @@ public struct WeightEntry: Sendable, Codable, Hashable, Identifiable {
         /// Read from Apple Health. Its ID is the Health sample's, and Health
         /// stays its source of truth, so it isn't written back there.
         case appleHealth
+        /// Imported from MacroFactor's export. Its ID comes from the export's
+        /// row, so importing the file again adds nothing.
+        case macroFactor
     }
 
     public var id: UUID
