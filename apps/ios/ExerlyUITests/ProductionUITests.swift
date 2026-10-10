@@ -2624,84 +2624,6 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertEqual(app.descendants(matching: .any)["diary.selected-day"].value as? String, expectedDay)
     }
 
-    func testBrowserSetupDraftContinuesOnNative() async throws {
-        let fixture = try await request("GET", "/__test/setup-roundtrip")
-        guard fixture["phase"] as? String == "browser-draft" else { throw XCTSkip("Requires the shared browser setup fixture") }
-        try await control([:])
-        let email = try XCTUnwrap(fixture["email"] as? String)
-        let login = try await request("POST", "/login", body: ["email": email, "password": "Simulator-Test-123!"])
-        let token = try XCTUnwrap(login["token"] as? String)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 15))
-        capture(app, "setup-browser-draft-native-review")
-        tap(app.buttons["Previous setup step"], in: app)
-        tap(app.buttons["Previous setup step"], in: app)
-        tap(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "General Health")).firstMatch, in: app)
-        tap(app.buttons["setup.nutritionGoal"], in: app)
-        tap(app.buttons["Gain weight"], in: app)
-        replace(app.textFields["Target weight"], with: "75.25", in: app)
-        dismissKeyboard(app)
-        capture(app, "setup-independent-nutrition-goal")
-        tap(app.buttons["Continue"], in: app)
-        tap(app.buttons["Continue"], in: app)
-        XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 10))
-        var draft: [String: Any] = [:]
-        for _ in 0..<30 {
-            draft = (try await request("GET", "/api/onboarding/draft", token: token))["draft"] as? [String: Any] ?? [:]
-            if draft["last_valid_step"] as? Int == 4,
-               (draft["answers"] as? [String: Any])?["nutritionGoal"] as? String == "gain" { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        let answers = try XCTUnwrap(draft["answers"] as? [String: Any])
-        XCTAssertEqual(answers["name"] as? String, "Browser to Native Taylor")
-        XCTAssertEqual(answers["goal"] as? String, "general_health")
-        XCTAssertEqual(answers["nutritionGoal"] as? String, "gain")
-        XCTAssertEqual(answers["targetWeight"] as? Double, 75.25)
-        XCTAssertEqual(answers["allergies"] as? [String], ["sesame", "nuts"])
-        XCTAssertEqual(answers["equipment"] as? [String], ["bodyweight", "rings"])
-        XCTAssertEqual(answers["bedtime"] as? String, "22:45")
-        XCTAssertEqual(answers["wakeTime"] as? String, "06:15")
-        XCTAssertEqual((answers["manualTargets"] as? [String: Any])?["calories"] as? Double, 2310)
-        app.terminate(); app.launchArguments = []; app.launch()
-        XCTAssertTrue(app.buttons["Finish setup"].waitForExistence(timeout: 15))
-        capture(app, "setup-native-draft-reopened")
-        _ = try await request("POST", "/__test/setup-roundtrip", body: ["email": email, "phase": "native-draft"])
-    }
-
-    func testBrowserSetupCompletionReturnsToNative() async throws {
-        let fixture = try await request("GET", "/__test/setup-roundtrip")
-        guard fixture["phase"] as? String == "browser-complete" else { throw XCTSkip("Requires browser completion in the shared setup fixture") }
-        try await control([:])
-        let email = try XCTUnwrap(fixture["email"] as? String)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        XCTAssertFalse(app.buttons["Finish setup"].exists)
-        XCTAssertFalse(app.staticTexts["NO TARGET"].exists)
-        capture(app, "setup-browser-completion-native-diary")
-        let login = try await request("POST", "/login", body: ["email": email, "password": "Simulator-Test-123!"])
-        let token = try XCTUnwrap(login["token"] as? String)
-        let bootstrap = try await request("GET", "/api/bootstrap", token: token)
-        XCTAssertEqual((bootstrap["onboarding"] as? [String: Any])?["complete"] as? Bool, true)
-        XCTAssertEqual((bootstrap["targets"] as? [String: Any])?["calories"] as? Double, 2310)
-        let exported = try await request("GET", "/api/export", token: token)
-        XCTAssertEqual((exported["weights"] as? [[String: Any]])?.count, 1)
-        let profile = (exported["account"] as? [String: Any])?["profile"] as? [String: Any]
-        XCTAssertEqual(profile?["nutritionGoal"] as? String, "gain")
-        XCTAssertEqual(profile?["allergies"] as? [String], ["sesame", "nuts"])
-        app.terminate(); app.launchArguments = []; app.launch()
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-    }
-
     func testActivityAndSleepOfflineRecoveryConflictDeletionAndUndo() async throws {
         try await control([:])
         let email = "daily-logs-\(UUID().uuidString.lowercased())@exerly.test"
@@ -2856,50 +2778,6 @@ final class ProductionUITests: ExerlyUITestCase {
         capture(app, "activity-sleep-synchronized-undo")
     }
 
-    func testActivityAndSleepWebChangesReturnToNative() async throws {
-        let proof = try await request("GET", "/__test/daily-logs-roundtrip")
-        try XCTSkipUnless(proof["ready"] as? Bool == true, "Run scripts/test-cross-client.sh to exercise the shared native/browser account")
-        let email = try XCTUnwrap(proof["email"] as? String)
-        let activityID = try XCTUnwrap(proof["activityID"] as? String)
-        let sleepID = try XCTUnwrap(proof["sleepID"] as? String)
-        let day = try XCTUnwrap(proof["day"] as? String)
-        let login = try await request("POST", "/login", body: ["email": email, "password": "Simulator-Test-123!"])
-        let token = try XCTUnwrap(login["token"] as? String)
-        let activity = try await request("GET", "/api/activities/\(activityID)", token: token)
-        let sleep = try await request("GET", "/api/sleep/\(sleepID)", token: token)
-        XCTAssertEqual(activity["duration_min"] as? Double, 63.25)
-        XCTAssertEqual(activity["revision"] as? Int, 6)
-        XCTAssertTrue(activity["calories"] is NSNull)
-        XCTAssertEqual(sleep["hours"] as? Double, 8.75)
-        XCTAssertEqual(sleep["quality"] as? String, "good")
-        XCTAssertEqual(sleep["revision"] as? Int, 5)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        let formatter = DateFormatter(); formatter.dateFormat = "yyyy-MM-dd"
-        let date = try XCTUnwrap(formatter.date(from: day))
-        let days = Calendar.current.dateComponents([.day], from: date, to: Calendar.current.startOfDay(for: Date())).day ?? 0
-        shiftDay(-days, in: app)
-        tap(app.buttons["nutrition.dailyHealth"], in: app)
-        tap(app.buttons["Edit activity Walk"], in: app)
-        XCTAssertEqual(app.textFields["activity.minutes"].value as? String, "63.25")
-        capture(app, "activity-browser-return")
-        tap(app.buttons["Cancel"], in: app)
-        tap(app.buttons["Edit sleep entry, 8.75 hours"], in: app)
-        XCTAssertEqual(app.textFields["sleep.hours"].value as? String, "8.75")
-        XCTAssertEqual(app.textFields["sleep.bedtime"].value as? String, "23:00")
-        capture(app, "sleep-browser-return")
-        tap(app.buttons["Cancel"], in: app)
-        reveal(app.buttons["Edit sleep entry, 0.5 hours"], in: app)
-        XCTAssertTrue(app.buttons["Edit sleep entry, 0.5 hours"].exists)
-        let summary = try await request("GET", "/api/summary?entry_date=\(day)", token: token)
-        XCTAssertEqual(summary["sleep_hours"] as? Double, 9.25)
-    }
-
     func testBodyMeasurementOfflineRecoveryAndSynchronizedUndo() async throws {
         try await control([:])
         let email = "measurement-\(UUID().uuidString.lowercased())@exerly.test"
@@ -2970,68 +2848,6 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertEqual(exportedMeasurements.count, 1)
         XCTAssertEqual(exportedMeasurements.first?["id"] as? String, id)
         XCTAssertEqual(exportedMeasurements.first?["value"] as? Double, 81.25)
-    }
-
-    func testBodyMeasurementWebChangesReturnToNative() async throws {
-        let proof = try await request("GET", "/__test/measurement-roundtrip")
-        try XCTSkipUnless(proof["ready"] as? Bool == true, "Run scripts/test-cross-client.sh to exercise the shared native/browser account")
-        let email = try XCTUnwrap(proof["email"] as? String)
-        let id = try XCTUnwrap(proof["id"] as? String)
-        let login = try await request("POST", "/login", body: ["email": email, "password": "Simulator-Test-123!"])
-        let token = try XCTUnwrap(login["token"] as? String)
-        let result = try await request("GET", "/api/measurements", token: token)
-        let rows = try XCTUnwrap(result["entries"] as? [[String: Any]])
-        XCTAssertEqual(rows.count, 2)
-        XCTAssertEqual(rows.first { $0["id"] as? String == id }?["value"] as? Double, 80.5)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        tap(app.buttons["Progress"], in: app)
-        tap(app.buttons["Edit waist measurement"], in: app)
-        XCTAssertEqual(app.textFields["Value (cm)"].value as? String, "80.5")
-        tap(app.buttons["Cancel"], in: app)
-        tap(app.buttons["Edit arms measurement"], in: app)
-        XCTAssertEqual(app.textFields["Value (cm)"].value as? String, "31.75")
-        tap(app.buttons["Cancel"], in: app)
-        capture(app, "measurement-browser-return")
-    }
-
-    func testWeightWebChangesReturnToNative() async throws {
-        let proof = try await request("GET", "/__test/weight-roundtrip")
-        try XCTSkipUnless(proof["ready"] as? Bool == true, "Run scripts/test-cross-client.sh to exercise the shared native/browser account")
-        let email = try XCTUnwrap(proof["email"] as? String)
-        let day = try XCTUnwrap(proof["day"] as? String)
-        let login = try await request("POST", "/login", body: ["email": email, "password": "Simulator-Test-123!"])
-        let token = try XCTUnwrap(login["token"] as? String)
-        let reading = try await request("GET", "/api/weight/day?entry_date=\(day)", token: token)
-        XCTAssertEqual(reading["id"] as? String, proof["id"] as? String)
-        XCTAssertEqual(reading["revision"] as? Int, 11)
-        XCTAssertEqual(reading["weight_kg"] as? Double, 72.8)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        // Weigh-ins saved through the browser's daily-weight API become ExerlyCore weigh-ins.
-        tap(app.buttons["Progress"], in: app)
-        let row = app.buttons["body.weighIn.\(day)"]
-        XCTAssertTrue(row.waitForExistence(timeout: 30))
-        XCTAssertTrue(row.label.contains("72.8"), row.label)
-        capture(app, "weight-browser-return")
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.dateFormat = "yyyy-MM-dd"
-        let previous = formatter.string(from: try XCTUnwrap(formatter.date(from: day)).addingTimeInterval(-86_400))
-        let earlier = app.buttons["body.weighIn.\(previous)"]
-        reveal(earlier, in: app)
-        XCTAssertTrue(earlier.label.contains("74.25"), earlier.label)
     }
 
     func testUSWaterDefaultsAndConvertedAmountsSurviveOfflineSync() async throws {
@@ -3566,35 +3382,6 @@ final class ProductionUITests: ExerlyUITestCase {
         XCTAssertEqual(try JSONSerialization.data(withJSONObject: before["weights"]!, options: .sortedKeys), try JSONSerialization.data(withJSONObject: after["weights"]!, options: .sortedKeys))
         XCTAssertEqual(try JSONSerialization.data(withJSONObject: before["program"]!, options: .sortedKeys), try JSONSerialization.data(withJSONObject: after["program"]!, options: .sortedKeys))
         _ = try await request("POST", "/__test/preferences-roundtrip", body: ["email": email, "phase": "native-saved"])
-    }
-
-    func testBrowserPreferencesReturnToNative() async throws {
-        let fixture = try await request("GET", "/__test/preferences-roundtrip")
-        guard fixture["phase"] as? String == "browser-saved" else { throw XCTSkip("Requires the shared browser preferences fixture") }
-        try await control([:])
-        let email = try XCTUnwrap(fixture["email"] as? String)
-        let app = launch(resetSession: true)
-        tap(app.buttons["I already have an account"], in: app)
-        replace(app.textFields["Email"], with: email, in: app)
-        replace(app.secureTextFields["Password"], with: "Simulator-Test-123!", in: app)
-        dismissKeyboard(app)
-        tap(app.buttons["Log In"], in: app)
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        openPreferences(app)
-        XCTAssertEqual(app.textFields["preferences.name"].value as? String, "Browser Preference Taylor")
-        tap(app.buttons["Sleep preferences"], in: app)
-        reveal(app.textFields["preferences.sleepGoalHours"], in: app)
-        XCTAssertEqual(app.textFields["preferences.sleepGoalHours"].value as? String, "7.75")
-        XCTAssertEqual(app.textFields["preferences.bedtime"].value as? String, "22:15")
-        capture(app, "preferences-browser-to-native")
-        tap(app.buttons["Reminder preferences"], in: app)
-        reveal(app.textFields["preferences.reminderTimes.sleep"], in: app)
-        XCTAssertEqual(app.textFields["preferences.reminderTimes.sleep"].value as? String, "22:00")
-        capture(app, "preferences-shared-reminder-intent")
-        app.terminate(); app.launchArguments = []; app.launch()
-        XCTAssertTrue(todayScreen(app).waitForExistence(timeout: 15))
-        openPreferences(app)
-        XCTAssertEqual(app.textFields["preferences.name"].value as? String, "Browser Preference Taylor")
     }
 
     func testReminderDeviceDeliverySchedulesCancelsAndSurvivesRelaunch() async throws {

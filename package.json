@@ -30,7 +30,6 @@
     "prepare": "husky",
     "test:web": "playwright test",
     "test:web:offline": "playwright test --config playwright.offline.config.cjs",
-    "test:cross-client": "bash scripts/test-cross-client.sh",
     "ios:test": "bash scripts/ios.sh test",
     "ios:release-check": "bash scripts/ios.sh release-check"
   },

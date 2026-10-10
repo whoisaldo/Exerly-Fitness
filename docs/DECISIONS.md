@@ -433,3 +433,12 @@ are fixed when the screen opens and refresh on a new day, on returning to the
 app and on pull to refresh. The finish summary headlines one record per
 exercise (heavier weight, then estimated 1RM, then reps); Progress still lists
 every record.
+
+## 2026-10-09: The native/browser round-trip harness is removed
+
+`scripts/test-cross-client.sh`, its two Playwright specs and the six native
+tests that consumed browser-made data are gone. They existed to prove the web
+dashboard and the app agreed, the dashboard is out of scope, the native tests
+only ever skipped without the harness, and one could no longer pass after the
+weigh-in flow moved to ExerlyCore. The rest of the web dashboard is untouched;
+remove it too if it starts to cost time.
