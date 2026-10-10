@@ -119,7 +119,9 @@ struct AuthField<Field: Hashable>: View {
                 if revealed { TextField(title, text: $text, prompt: prompt) }
                 else { SecureField(title, text: $text, prompt: prompt) }
             }
-            .textContentType(kind == .newPassword ? .newPassword : .password)
+            // A new password gets no content type: the system's strong-password
+            // sheet replaces what the person typed and can't be dismissed in tests.
+            .textContentType(kind == .newPassword ? nil : .password)
             .textInputAutocapitalization(.never).autocorrectionDisabled()
         }
     }
@@ -183,12 +185,15 @@ struct AuthPage<Content: View>: View {
                 .frame(maxWidth: 480, alignment: .leading)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, ExSpacing.section)
-                .padding(.top, 64)
+                .padding(.top, ExSpacing.small)
                 .padding(.bottom, ExSpacing.major)
             }
             .scrollDismissesKeyboard(.interactively)
             .scrollIndicators(.hidden)
-            AuthBackButton(action: onBack)
+            .scrollEdgeEffectStyle(.soft, for: .top)
+            .safeAreaBar(edge: .top, alignment: .leading) {
+                AuthBackButton(action: onBack)
+            }
         }
     }
 }

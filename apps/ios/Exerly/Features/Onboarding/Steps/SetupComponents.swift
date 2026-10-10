@@ -1,6 +1,11 @@
 import ExerlyCore
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Why the page can't move on yet, shown beside its button.
+    @Entry var setupError: String?
+}
+
 /// A setup page: a title, one line on why it's asked, the questions, and a
 /// pinned button that moves on.
 struct SetupPage<Content: View>: View {
@@ -14,6 +19,7 @@ struct SetupPage<Content: View>: View {
     var busy: String?
     let perform: () -> Void
     @ViewBuilder var content: Content
+    @Environment(\.setupError) private var error
 
     var body: some View {
         ScrollView {
@@ -39,6 +45,14 @@ struct SetupPage<Content: View>: View {
         .exScrollEdges()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: ExSpacing.small) {
+                if let error {
+                    Label(error, systemImage: "exclamationmark.circle.fill")
+                        .font(.exLabel).foregroundStyle(Color.exError)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("setup.error")
+                        .transition(.opacity)
+                }
                 if let busy { ProgressView(busy).font(.exCaption) }
                 if showsAction {
                     Button(action: perform) { Text(action) }
@@ -53,6 +67,7 @@ struct SetupPage<Content: View>: View {
             .padding(.bottom, ExSpacing.small)
             .frame(maxWidth: .infinity)
             .background(Color.exBackground)
+            .animation(.snappy, value: error)
         }
     }
 }
@@ -196,13 +211,14 @@ struct SetupNumberField: View {
     var width: CGFloat = 96
     let commit: (Double?) -> Void
     @State private var text = ""
+    @State private var selection: TextSelection?
     @FocusState private var focused: Bool
     @ScaledMetric(relativeTo: .title2) private var scaledWidth: CGFloat = 96
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: ExSpacing.tight) {
-            TextField(label, text: $text, prompt: Text("0").foregroundColor(.exTextMuted))
+            TextField(label, text: $text, selection: $selection, prompt: Text("0").foregroundColor(.exTextMuted))
                 .keyboardType(integer ? .numberPad : .decimalPad)
                 .font(.exStatMedium).monospacedDigit()
                 .foregroundStyle(Color.exTextPrimary)
@@ -235,7 +251,10 @@ struct SetupNumberField: View {
             commit(UserEnteredNumber.parse(new))
         }
         .onChange(of: focused) { _, isFocused in
-            if !isFocused { text = Self.format(value, digits: integer ? 0 : digits) }
+            if isFocused {
+                // Typing replaces the number, as in a picker.
+                DispatchQueue.main.async { selection = TextSelection(range: text.startIndex..<text.endIndex) }
+            } else { text = Self.format(value, digits: integer ? 0 : digits) }
         }
     }
 
