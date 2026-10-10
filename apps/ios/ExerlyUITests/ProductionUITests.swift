@@ -1055,8 +1055,8 @@ final class ProductionUITests: ExerlyUITestCase {
         replace(app.textFields["set.deadlift.1.reps"], with: "5", in: app)
         dismissKeyboard(app)
         tap(incomplete, in: app)
+        // Every set is done, so Finish saves without asking.
         tap(app.buttons["training.finish"], in: app)
-        tap(app.buttons["Save workout"], in: app)
         tap(app.buttons["training.summaryDone"], in: app)
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 10))
         tap(app.buttons["program.nextWorkout"], in: app)
@@ -1707,6 +1707,8 @@ final class ProductionUITests: ExerlyUITestCase {
         tap(app.buttons["exerly.keypadDone"], in: app)
         replace(app.textFields["set.barbell-bench-press.1.reps"], with: "8", in: app)
         dismissKeyboard(app)
+        // A workout's last open set starts no rest, so give this one a second set.
+        tap(app.buttons["training.addSet.barbell-bench-press"], in: app)
         try await control(["offline": true, "disconnect": true])
         tap(app.buttons["Complete set 1, Barbell Bench Press"], in: app)
         reveal(app.buttons["Skip rest"], in: app)
