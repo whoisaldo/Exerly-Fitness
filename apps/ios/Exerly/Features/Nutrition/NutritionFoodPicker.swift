@@ -450,17 +450,13 @@ struct NutritionFoodPicker: View {
             .compactMap { food in store.quickPortion(for: food, unit: unit).map { FoodPickerItem(portion: $0, food: food) } }
     }
 
-    /// Foods already on this device that match the search: history first,
-    /// then saved foods. They need no connection.
+    /// Foods already on this device that match the search (see
+    /// `FoodSearch`): history first, then saved foods. They need no connection.
     private var localMatches: [FoodPickerItem] {
-        let term = trimmedQuery
-        func matches(_ name: String, _ brand: String?) -> Bool {
-            name.localizedCaseInsensitiveContains(term) || (brand?.localizedCaseInsensitiveContains(term) ?? false)
-        }
         var seen = Set<String>()
-        let history = store.recentPortions(limit: 200).filter { matches($0.food.name, $0.food.brand) }.map(item)
-        let saved = savedItems { matches($0.name, $0.brand) }
-        return (history + saved).filter { seen.insert($0.id).inserted }.prefix(12).map { $0 }
+        let foods = (store.recentPortions(limit: 200).map(item) + savedItems { _ in true }).filter { seen.insert($0.id).inserted }
+        return FoodSearch.matching(foods, query: trimmedQuery) { "\($0.portion.food.name) \($0.portion.food.brand ?? "")" }
+            .prefix(12).map { $0 }
     }
 
     // MARK: Actions

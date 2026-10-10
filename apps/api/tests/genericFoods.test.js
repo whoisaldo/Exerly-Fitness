@@ -55,3 +55,17 @@ test('search puts the food the query names first', () => {
   assert.deepEqual(generic.search('  ', 5), []);
   assert.equal(generic.search('chicken', 7).length, 7);
 });
+
+test('without a food that has every word, the foods with most of them come first', () => {
+  // No generic food says "diced": canned tomatoes have the other two words.
+  assert.deepEqual(
+    generic.search('diced tomatoes canned', 2, { now }).map((food) => food.name),
+    ['Tomatoes, canned, cooked', 'Tomatoes, canned, reduced sodium, cooked']
+  );
+  assert.equal(first('tomatoes canned'), 'Tomatoes, canned, cooked', 'An exact match is unchanged');
+  assert.equal(first('zzqx banana'), 'Banana, raw');
+  // At least half the words: one word of three isn't a match.
+  assert.deepEqual(generic.search('zzqx qqzz banana', 5), []);
+  // A food with every word still wins over ones with most of them.
+  assert.equal(first('kidney beans canned'), 'Kidney beans, from canned, fat added');
+});

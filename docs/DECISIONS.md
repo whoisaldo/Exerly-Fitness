@@ -665,3 +665,11 @@ is left alone.
   first digit replaces it. Delete with the caret before every digit takes the
   last one. The keypad's own button hides it and is an icon, so the screen's
   Done, Add or Save is the only one.
+- **Search falls back to most of the words.** Generic foods need every word;
+  when none has them all, the foods with the most of them, at least half, rank
+  by the same rules, so "diced tomatoes canned" finds canned tomatoes. Foods on
+  the device match each word anywhere in the name or brand instead of the whole
+  phrase, with the same fallback at more than half: they're listed above the
+  database, and "ground beef" shouldn't offer ground turkey first. The
+  simulator fixtures that ran this build serve claude/next's API, so the
+  database half shows only in the API's tests until it lands.
