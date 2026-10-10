@@ -704,3 +704,9 @@ is left alone.
   undo action for VoiceOver even when the + is off screen.
 - **Today's tab goes back to today.** Tapping it while it shows returns it to
   today, at the top.
+- **Meals have a "…" menu** with Copy and Save as recipe beside the +; the long
+  press stays. A recipe belongs to a meal it was made from (its foods are that
+  meal's on a day in the last 14) or was logged to. That meal's Add food lists
+  it first, under "Usual for lunch", and the empty meal on Today offers it in
+  one tap. Food search's menu says "Log a meal" (several foods, logged now) and
+  "Create a recipe" (kept to log again), each with a line saying so.

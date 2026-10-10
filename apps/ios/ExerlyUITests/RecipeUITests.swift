@@ -224,6 +224,35 @@ final class RecipeUITests: ExerlyUITestCase {
         XCTAssertTrue(app.buttons["recipe.ingredient.\(kitchen.oats.id)"].label.contains("15 g"))
     }
 
+    /// The meal's "…" menu saves it as a recipe, which the meal then offers.
+    func testTheMealMenuSavesARecipeThatTheMealThenOffers() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "recipe-menu")
+        _ = try await seedKitchen(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        let menu = app.buttons["today.mealMenu.breakfast"]
+        reveal(menu, in: app)
+        XCTAssertEqual(menu.label, "Breakfast options", "A visible menu on the meal, not only a long press")
+        tapCount = 0
+        tap(menu, in: app)
+        tap(app.buttons["Save as recipe"], in: app)
+        XCTAssertTrue(app.navigationBars["New recipe"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.descendants(matching: .any)["recipe.name"].typeText("Work breakfast")
+        tap(app.buttons["recipe.save"], in: app)
+        XCTAssertEqual(tapCount, 3, "The meal's menu, Save as recipe, Save")
+        XCTAssertTrue(app.staticTexts["Saved Work breakfast to your recipes"].waitForExistence(timeout: 5))
+
+        tap(app.buttons["nutrition.add.breakfast"], in: app)
+        let usual = app.descendants(matching: .any)["nutrition.group.suggested"]
+        XCTAssertTrue(usual.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Usual for breakfast"].exists)
+        XCTAssertTrue(usual.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Work breakfast")).firstMatch.exists,
+                      "Breakfast offers the recipe made from it")
+        capture(app, "recipe-menu-offered")
+    }
+
     func testSavingAMealAsARecipeTakesThreeTaps() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "recipe-meal")

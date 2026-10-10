@@ -226,7 +226,9 @@ struct NutritionFoodPicker: View {
             if shelf.suggested.isEmpty && shelf.recent.isEmpty {
                 emptyMessage("Your foods come back here", "Search, scan or quick add your first food. Next time it's one tap away, with the amount you had.")
             } else {
-                if !shelf.suggested.isEmpty { group(suggestedTitle, shelf.suggested, id: "suggested") }
+                if !shelf.suggested.isEmpty {
+                    group(shelf.hasRecipes ? "Usual for \(meal.lowercased())" : suggestedTitle, shelf.suggested, id: "suggested")
+                }
                 if !shelf.recent.isEmpty { group("Recent", shelf.recent, id: "recent") }
             }
         case .favorites:
@@ -304,10 +306,15 @@ struct NutritionFoodPicker: View {
         if !picking {
             ToolbarItem(placement: .primaryAction) {
                 Menu("More ways to log", systemImage: "ellipsis") {
-                    Button("Build a meal from several foods", systemImage: "plus.rectangle.on.rectangle") { buildingMeal = true }
-                        .accessibilityIdentifier("nutrition.buildMeal")
-                    Button("Create a recipe", systemImage: "frying.pan") { creatingRecipe = true }
-                        .accessibilityIdentifier("nutrition.newRecipe")
+                    // A meal is logged once; a recipe is kept to log again.
+                    Button { buildingMeal = true } label: {
+                        Label("Log a meal", systemImage: "plus.rectangle.on.rectangle")
+                        Text("Several foods at once, logged now")
+                    }.accessibilityIdentifier("nutrition.buildMeal")
+                    Button { creatingRecipe = true } label: {
+                        Label("Create a recipe", systemImage: "frying.pan")
+                        Text("Kept to log by serving or weight")
+                    }.accessibilityIdentifier("nutrition.newRecipe")
                 }.accessibilityIdentifier("nutrition.moreFoodOptions")
             }
         }
@@ -422,9 +429,14 @@ struct NutritionFoodPicker: View {
                 FoodPickerItem(portion: QuickPortion(suggestion),
                                food: store.food(suggestion.food.foodID) ?? suggestion.food.foodForLogging(serving: suggestion.serving))
             }
-        let suggestedIDs = Set(suggested.map(\.id))
+        // Recipes made from this meal, such as one saved from it, come first.
+        let recipes = store.recipes(for: meal, through: date).compactMap { food in
+            store.quickPortion(for: food, unit: unit).map { FoodPickerItem(portion: $0, food: food) }
+        }
+        let shelved = recipes + suggested.filter { item in !recipes.contains { $0.id == item.id } }
+        let suggestedIDs = Set(shelved.map(\.id))
         let recent = store.recentPortions(limit: 30).filter { !suggestedIDs.contains($0.id) }.map(item)
-        shelf = FoodShelf(suggested: suggested, recent: recent)
+        shelf = FoodShelf(suggested: shelved, recent: recent, hasRecipes: !recipes.isEmpty)
         // Checks stay only for entries still logged on this day.
         justLogged = justLogged.compactMapValues { entries in
             let kept = entries.filter { entry in entry.date == date && store.entries.contains { $0.id == entry.id } }
@@ -630,6 +642,7 @@ private enum AskOutcome { case added, cancelled }
 private struct FoodShelf {
     var suggested: [FoodPickerItem] = []
     var recent: [FoodPickerItem] = []
+    var hasRecipes = false
 }
 
 private struct LoggedConfirmation: Identifiable {

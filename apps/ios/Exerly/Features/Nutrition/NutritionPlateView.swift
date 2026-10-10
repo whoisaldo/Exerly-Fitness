@@ -90,7 +90,7 @@ struct NutritionPlateView: View {
                         .padding(ExSpacing.page).background(Color.exBackground)
                 }
             }
-            .navigationTitle("Build a meal").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Log a meal").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if draft.rows.isEmpty { dismiss() } else { discarding = true } }

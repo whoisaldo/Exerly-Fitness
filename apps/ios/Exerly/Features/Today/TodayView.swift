@@ -548,6 +548,9 @@ struct TodayView: View {
                 let logged = entries.filter { $0.meal == meal }
                 TodayMealCard(meal: meal, entries: logged, energy: byMeal[meal]?.energy ?? 0,
                               repeatable: logged.isEmpty ? store.repeatable(meal, for: date) : nil,
+                              recipes: logged.isEmpty ? store.recipes(for: meal, through: date).prefix(2).compactMap {
+                                  store.quickPortion(for: $0, unit: unit)
+                              } : [],
                               timeZone: timeZone, unit: unit) {
                     actions.clearError()
                     destination = .add(meal)
@@ -556,9 +559,20 @@ struct TodayView: View {
                     destination = .edit(entry)
                 } repeatMeal: { repeated in
                     apply(repeated)
+                } logRecipe: { portion in
+                    log(portion, to: meal)
                 } copy: { destination = .copy(meal) } saveAsRecipe: { destination = .recipe(meal) }
             }
         }
+    }
+
+    private func log(_ recipe: QuickPortion, to meal: String) {
+        do {
+            let entry = try store.log(recipe, on: date, meal: meal)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            show("Logged \(recipe.food.name) to \(meal)", undo: .remove([entry.id]))
+            Task { await workspace.synchronize() }
+        } catch { show("Could not log \(recipe.food.name). Try again.", failed: true) }
     }
 
     private func apply(_ repeated: MealRepeat) {
@@ -719,18 +733,21 @@ struct TodayView: View {
     }
 }
 
-/// One meal: its foods and calories, a plus to add, and a one-tap repeat
-/// of the last time it was logged when it's empty.
+/// One meal: its foods and calories, a plus to add, and when it's empty a
+/// one-tap repeat of the last time it was logged and its recipes.
 struct TodayMealCard: View {
     let meal: String
     let entries: [FoodEntry]
     let energy: Double
     let repeatable: MealRepeat?
+    /// Recipes made from this meal (`NutritionStore.recipes(for:through:)`), each as one tap logs it.
+    let recipes: [QuickPortion]
     let timeZone: TimeZone
     let unit: MassUnit
     let add: () -> Void
     let edit: (FoodEntry) -> Void
     let repeatMeal: (MealRepeat) -> Void
+    let logRecipe: (QuickPortion) -> Void
     let copy: () -> Void
     let saveAsRecipe: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -743,6 +760,12 @@ struct TodayMealCard: View {
                 if !entries.isEmpty {
                     Text("\(TodayNutritionCard.number(energy)) kcal").font(.exLabel).monospacedDigit()
                         .foregroundStyle(Color.exTextSecondary)
+                    Menu { mealActions } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.exTextSecondary)
+                            .frame(width: 32, height: 32).frame(width: 44, height: 44).contentShape(Circle())
+                    }
+                    .accessibilityLabel("\(meal) options")
+                    .accessibilityIdentifier("today.mealMenu.\(meal.lowercased())")
                 }
                 Button(action: add) {
                     Image(systemName: "plus").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.exPrimaryText)
@@ -779,14 +802,37 @@ struct TodayMealCard: View {
                 .accessibilityLabel("Repeat \(meal) from \(sourceName(repeatable.source)), \(repeatable.entries.count) foods, \(TodayNutritionCard.number(repeatable.energy)) calories")
                 .accessibilityIdentifier("today.repeat.\(meal.lowercased())")
             }
+            ForEach(recipes) { recipe in
+                let portion = FoodFormat.portion(recipe, unit: unit)
+                let kcal = TodayNutritionCard.number(recipe.nutrients.energy)
+                Button { logRecipe(recipe) } label: {
+                    HStack(spacing: ExSpacing.small) {
+                        Image(systemName: "frying.pan").font(.footnote.weight(.semibold)).accessibilityHidden(true)
+                        Text("Log \(recipe.food.name) · \(portion) · \(kcal) kcal")
+                            .font(.exCaption.weight(.semibold)).lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(Color.exPrimaryText)
+                    .padding(.horizontal, ExSpacing.item).frame(minHeight: 40)
+                    .background(Color.exPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(TodayPressStyle())
+                .padding(.horizontal, ExSpacing.item).padding(.bottom, ExSpacing.item)
+                .accessibilityLabel("Log \(recipe.food.name) to \(meal), \(portion), \(kcal) calories")
+                .accessibilityIdentifier("today.recipe.\(meal.lowercased())")
+            }
         }
         .background(Color.exSurface1, in: RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: ExRadius.card, style: .continuous).strokeBorder(Color.exBorder.opacity(0.5), lineWidth: 0.5) }
-        .contextMenu {
-            if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
-            if entries.contains(where: { $0.food.unweighed != true }) {
-                Button("Save as recipe", systemImage: "frying.pan", action: saveAsRecipe).accessibilityIdentifier("today.saveRecipe")
-            }
+        .contextMenu { mealActions }
+    }
+
+    /// In the meal's "…" menu, and on a long press.
+    @ViewBuilder private var mealActions: some View {
+        if !entries.isEmpty { Button("Copy \(meal)", systemImage: "doc.on.doc", action: copy) }
+        if entries.contains(where: { $0.food.unweighed != true }) {
+            Button("Save as recipe", systemImage: "frying.pan", action: saveAsRecipe).accessibilityIdentifier("today.saveRecipe")
         }
     }
 

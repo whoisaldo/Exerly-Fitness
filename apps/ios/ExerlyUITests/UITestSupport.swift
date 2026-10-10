@@ -424,11 +424,9 @@ class ExerlyUITestCase: XCTestCase {
     }
 
     /// Opens a meal's actions with a long press on its name.
+    /// The "…" menu on a meal's header.
     func openMealActions(_ meal: String, in app: XCUIApplication) {
-        let title = todayScreen(app).staticTexts[meal]
-        reveal(title, in: app)
-        title.press(forDuration: 1.0)
-        tapCount += 1
+        tap(app.buttons["today.mealMenu.\(meal.lowercased())"], in: app)
     }
 
     /// The calorie target Today shows, read from the ring's spoken value. The
