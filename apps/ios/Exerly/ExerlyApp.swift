@@ -45,6 +45,7 @@ struct ExerlyApp: App {
         #else
         container = try? ModelContainer(for: schema, migrationPlan: ExerlyMigrationPlan.self)
         #endif
+        HealthSync.shared.registerAtLaunch()
     }
 
     var body: some Scene {
