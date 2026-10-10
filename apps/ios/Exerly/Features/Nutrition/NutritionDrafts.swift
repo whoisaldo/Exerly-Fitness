@@ -146,7 +146,11 @@ final class NutritionFoodDraft: ObservableObject {
 
 @MainActor
 final class NutritionEntryDraft: ObservableObject {
-    @Published var amount: NutritionNumberField
+    @Published var amount: NutritionNumberField { didSet { if !convertingAmount { amountIsDefault = false } } }
+    /// True while a new food's amount is still its default, before the
+    /// person enters one: choosing a named serving then means one of it.
+    private(set) var amountIsDefault: Bool
+    private var convertingAmount = false
     @Published private(set) var measure: NutritionPortionMeasure
     @Published var date: LocalDate
     /// Choosing another meal moves a time no one has set to that meal's usual time.
@@ -186,9 +190,12 @@ final class NutritionEntryDraft: ObservableObject {
         self.preferredUnit = preferredUnit
         self.timeZone = timeZone
         var loggingFood = editing.map { $0.food.foodForLogging(serving: $0.serving) } ?? food
-        if let editing, let saved = store.food(editing.food.foodID) {
-            for serving in saved.servings where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
-            for serving in saved.recipePortions where !loggingFood.servings.contains(serving) { loggingFood.servings.append(serving) }
+        if let editing {
+            // The food it came from, saved or just found, offers its other servings.
+            let sources = [food] + [store.food(editing.food.foodID)].compactMap { $0 }
+            for serving in sources.flatMap({ $0.servings + $0.recipePortions }) where !loggingFood.servings.contains(serving) {
+                loggingFood.servings.append(serving)
+            }
         }
         self.food = loggingFood
         original = editing
@@ -219,6 +226,7 @@ final class NutritionEntryDraft: ObservableObject {
         let field = NutritionNumberField(entered)
         amount = field
         initialAmount = field
+        amountIsDefault = previous == nil
         let serving = measure.portion(in: loggingFood)
         let preview = try? NutritionStore.preview(loggingFood, grams: serving == nil ? entered : nil,
                                                   serving: serving, quantity: serving == nil ? nil : entered)
@@ -281,7 +289,9 @@ final class NutritionEntryDraft: ObservableObject {
             anchor = PortionAnchor(measure: selected, amount: field, grams: portion.grams,
                                    serving: portion.serving, quantity: portion.quantity)
             measure = selected
+            convertingAmount = true
             amount = field
+            convertingAmount = false
             return true
         } catch { errors = NutritionDraftError.messages(error); return false }
     }
@@ -307,7 +317,9 @@ final class NutritionEntryDraft: ObservableObject {
                                        serving: serving, quantity: quantity)
             }
             measure = selected
+            convertingAmount = true
             amount = field
+            convertingAmount = false
             return true
         } catch { errors = NutritionDraftError.messages(error); return false }
     }

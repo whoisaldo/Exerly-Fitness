@@ -80,7 +80,7 @@ struct RecipeEditor: View {
                             onSaved(food)
                             Task { await workspace.synchronize() }
                             dismiss()
-                        }
+                        } else if let row = draft.unchecked { editingRow = row }
                     }.fontWeight(.semibold).disabled(!draft.canSave).accessibilityIdentifier("recipe.save")
                 }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { nameFocused = false; hideKeyboard() } }
@@ -95,10 +95,16 @@ struct RecipeEditor: View {
                 NutritionFoodPicker(workspace: workspace, api: api, date: LocalDate(.now, in: timeZone), meal: "Recipe",
                                     timeZone: timeZone, unit: draft.unit, actions: actions, onLogged: {},
                                     pickedCount: draft.rows.count, pickedFoodIDs: Set(draft.rows.map(\.ingredient.food.foodID)),
-                                    onPick: { draft.add($0) ? draft.rows.count : nil }, pickError: { draft.errors.first },
+                                    onPick: { draft.add($0, amount: $1) ? draft.rows.count : nil }, pickError: { draft.errors.first },
                                     pickingInto: "recipe")
             }
-            .sheet(item: $editingRow) { row in RecipeIngredientEditor(store: workspace.nutrition, recipe: draft, row: row) }
+            .sheet(item: $editingRow) { row in
+                FoodPortionStep(store: workspace.nutrition, food: row.food ?? workspace.nutrition.food(row.ingredient.food.foodID)
+                                    ?? row.entry.food.foodForLogging(serving: row.ingredient.serving),
+                                editing: row.entry, unit: draft.unit, title: "Ingredient", confirm: "Done", identifier: "recipe.ingredient",
+                                removeTitle: "Remove from recipe", onRemove: { draft.remove(row.id) },
+                                onConfirm: { amount, food in draft.update(row.id, to: amount, food: food) })
+            }
             .sheet(isPresented: $discarding) {
                 NutritionConfirmation(title: draft.isNew ? "Discard this recipe?" : "Discard recipe changes?",
                                       message: "Nothing you logged changes either way.", confirm: "Discard",
@@ -111,7 +117,9 @@ struct RecipeEditor: View {
     private var ingredients: some View {
         Section {
             ForEach(draft.rows) { row in
-                Button { hideKeyboard(); editingRow = row } label: { RecipeIngredientRow(ingredient: row.ingredient, unit: draft.unit) }
+                Button { hideKeyboard(); editingRow = row } label: {
+                    RecipeIngredientRow(ingredient: row.ingredient, unit: draft.unit, unchecked: !row.checked)
+                }
                     .buttonStyle(.plain).accessibilityIdentifier("recipe.ingredient.\(row.ingredient.food.foodID)")
                     .accessibilityAction(named: "Remove") { draft.remove(row.id) }
             }
@@ -133,7 +141,7 @@ struct RecipeEditor: View {
             }
         } footer: {
             if draft.rows.isEmpty {
-                Text("Search, scan or pick foods you've logged. Each comes in at the amount you last had; tap one to change it.")
+                Text("Search, scan or pick foods you've logged. Foods you've had come in at your usual amount; others ask for one.")
             }
         }
     }
@@ -211,6 +219,8 @@ struct RecipeTotals: View {
 struct RecipeIngredientRow: View {
     let ingredient: RecipeIngredient
     let unit: MassUnit
+    /// At a default amount no one has looked at yet.
+    var unchecked = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -222,6 +232,10 @@ struct RecipeIngredientRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(ingredient.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                 Text(amount).font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                if unchecked {
+                    Label("Check the amount", systemImage: "exclamationmark.circle.fill")
+                        .font(.exCaption.weight(.semibold)).foregroundStyle(Color.exWarning)
+                }
             }
             if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
             Text("\(FoodFormat.kcal(ingredient.nutrients[.energy])) kcal").font(.exLabel).monospacedDigit()
@@ -229,58 +243,8 @@ struct RecipeIngredientRow: View {
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(ingredient.food.name), \(amount), \(FoodFormat.kcal(ingredient.nutrients[.energy])) kilocalories")
-    }
-}
-
-/// One ingredient's amount, in grams or any of its servings.
-private struct RecipeIngredientEditor: View {
-    @ObservedObject var recipe: RecipeDraft
-    let row: RecipeDraft.Row
-    @StateObject private var draft: NutritionEntryDraft
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    init(store: NutritionStore, recipe: RecipeDraft, row: RecipeDraft.Row) {
-        self.recipe = recipe
-        self.row = row
-        let entry = row.entry
-        _draft = StateObject(wrappedValue: NutritionEntryDraft(store: store, food: entry.food.foodForLogging(serving: entry.serving),
-            date: entry.date, meal: entry.meal, editing: entry, preferredUnit: recipe.unit))
-    }
-
-    var body: some View {
-        NavigationStack {
-            ExScreen {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(row.ingredient.food.name).font(.exH3).foregroundStyle(Color.exTextPrimary).accessibilityAddTraits(.isHeader)
-                    if let origin = FoodFormat.origin(of: row.ingredient.food) {
-                        Text(origin).font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    }
-                }
-                FoodPortionSummary(amounts: (try? draft.preview())?.nutrients)
-                NutritionMeasureChips(draft: draft, unit: recipe.unit)
-                ExQuantityControl(title: draft.measure.amountTitle, text: $draft.amount.text, step: draft.measure.step,
-                                  presets: draft.measure.presets, unit: draft.measure.symbol, identifier: "recipe.ingredientAmount")
-                ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
-                Button("Remove from recipe", systemImage: "trash", role: .destructive) { recipe.remove(row.id); dismiss() }
-                    .font(.exLabel).frame(minHeight: 44).accessibilityIdentifier("recipe.removeIngredient")
-            }
-            .navigationTitle("Ingredient").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        if draft.reviewNutrition() != nil, let amount = try? draft.preview() {
-                            recipe.update(row.id, to: amount, food: draft.snapshot)
-                            dismiss()
-                        }
-                    }.fontWeight(.semibold).accessibilityIdentifier("recipe.applyIngredient")
-                }
-            }
-        }
-        .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.custom(FoodSheetDetent.self), .large])
-        .presentationDragIndicator(.visible)
+        .accessibilityLabel("\(ingredient.food.name), \(amount), \(FoodFormat.kcal(ingredient.nutrients[.energy])) kilocalories"
+                            + (unchecked ? ", amount not checked yet" : ""))
     }
 }
 

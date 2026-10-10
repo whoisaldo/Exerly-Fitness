@@ -347,6 +347,7 @@ struct ExQuantityControl: View {
     var unit = ""
     var identifier = ""
     var integer = false
+    var focusOnAppear = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -392,7 +393,8 @@ struct ExQuantityControl: View {
     }
 
     private var quantityField: some View {
-        ExNumericTextField(title: title, text: $text, placeholder: "0", integer: integer, centered: true, identifier: identifier)
+        ExNumericTextField(title: title, text: $text, placeholder: "0", integer: integer, centered: true, identifier: identifier,
+                           focusOnAppear: focusOnAppear)
             .frame(minHeight: 52)
     }
 

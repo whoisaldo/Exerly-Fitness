@@ -644,3 +644,24 @@ is left alone.
   whose every entry was corrected starts from its default again. "0.5 × 1
   serving" reads "0.5 serving", and two "2 servings"; "2 × 1 banana" stays rather
   than guess at a plural.
+- **Ingredients ask for their amount.** In food search for a recipe or a meal
+  being built, a food the person has logged still comes in at that amount in
+  one tap. Any other opens a portion step first, with the keypad on the amount
+  and every serving the food has. Add confirms it and Cancel leaves it out.
+  Swiping the step away keeps the food at its default, marked "Check the
+  amount", and Save or Log meal opens that amount before going on. While a
+  new food's amount is still its default, a named serving's chip means one of
+  it ("1 whole" is one onion, not 15 g in wholes); once an amount is entered,
+  or for one logged before, every chip converts and keeps the weight. After an
+  add the search clears for the next food.
+- **The chili's data was real.** USDA FNDDS gives raw ground beef only "1 cup",
+  canned tomatoes "1 whole" and "1 cup" (no can), and onions "1 slice", "1 ring",
+  "1 cup" and "1 whole" (148 g, a medium). Its "Tomatoes, canned, cooked" counts
+  fat added in cooking (3.04 g per 100 g). The fixture serves that table as it
+  is, so no fixture data changed. Open Food Facts foods carry only their label
+  serving; offering the package as a serving is left for later.
+- **One amount keypad.** Focusing an amount selects it, as does a new amount
+  arriving while it's focused (a preset, a step or another measure), so the
+  first digit replaces it. Delete with the caret before every digit takes the
+  last one. The keypad's own button hides it and is an icon, so the screen's
+  Done, Add or Save is the only one.

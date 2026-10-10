@@ -3,6 +3,8 @@ import UIKit
 
 /// Uses the text field's selection, paste and hardware-keyboard behavior.
 /// The keypad only inserts characters; the draft validates their meaning.
+/// Focusing the field, or a new value arriving while it's focused, selects
+/// the whole number, so the first digit replaces it.
 struct ExNumericTextField: UIViewRepresentable {
     let title: String
     @Binding var text: String
@@ -10,6 +12,8 @@ struct ExNumericTextField: UIViewRepresentable {
     var integer = false
     var centered = false
     var identifier = ""
+    /// Opens the keypad once the screen has settled, for a screen that asks for this number.
+    var focusOnAppear = false
     @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -37,12 +41,20 @@ struct ExNumericTextField: UIViewRepresentable {
         ])
         field.inputView = input
         updateUIView(field, context: context)
+        if focusOnAppear {
+            // After a sheet's presentation, which would otherwise drop the focus.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak field] in field?.becomeFirstResponder() }
+        }
         return field
     }
 
     func updateUIView(_ field: UITextField, context: Context) {
         context.coordinator.parent = self
-        if field.text != text { field.text = text }
+        if field.text != text {
+            field.text = text
+            // A preset, a step or a new measure replaced the number being edited.
+            if field.isFirstResponder { Coordinator.selectAll(field) }
+        }
         field.attributedPlaceholder = NSAttributedString(string: placeholder.isEmpty ? title : placeholder,
                                                          attributes: [.foregroundColor: UIColor(Color.exTextSecondary)])
         field.accessibilityLabel = title
@@ -68,6 +80,10 @@ struct ExNumericTextField: UIViewRepresentable {
             coordinator?.changed(field)
         }, delete: { [weak field, weak coordinator] in
             guard let field else { return }
+            // With the caret before every digit, Delete would do nothing; it takes the last digit instead.
+            if let caret = field.selectedTextRange, caret.isEmpty, caret.start == field.beginningOfDocument {
+                field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
+            }
             field.deleteBackward()
             coordinator?.changed(field)
         }, done: { [weak field] in field?.resignFirstResponder() })
@@ -81,6 +97,15 @@ struct ExNumericTextField: UIViewRepresentable {
         init(_ parent: ExNumericTextField) { self.parent = parent }
 
         @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
+
+        func textFieldDidBeginEditing(_ field: UITextField) {
+            // After the tap that focused the field has placed its caret.
+            DispatchQueue.main.async { Self.selectAll(field) }
+        }
+
+        static func selectAll(_ field: UITextField) {
+            field.selectedTextRange = field.textRange(from: field.beginningOfDocument, to: field.endOfDocument)
+        }
     }
 }
 
@@ -99,9 +124,12 @@ struct ExNumericKeypad: View {
                 Text(title).font(.system(size: 14, weight: .medium)).foregroundStyle(Color.exTextSecondary)
                     .lineLimit(1).accessibilityHidden(true)
                 Spacer()
-                Button("Done", action: done).font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.exPrimaryText).frame(minWidth: 60, minHeight: 44).contentShape(Rectangle())
-                    .accessibilityIdentifier("exerly.keypadDone")
+                // Not "Done": a sheet's own Done or Save, which applies the number, is the only one.
+                Button(action: done) {
+                    Image(systemName: "keyboard.chevron.compact.down").font(.system(size: 18, weight: .semibold))
+                        .frame(minWidth: 60, minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain).foregroundStyle(Color.exPrimaryText)
+                    .accessibilityLabel("Hide keypad").accessibilityIdentifier("exerly.keypadDone")
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                 ForEach(1...9, id: \.self) { value in key(String(value)) { insert(String(value)) } }

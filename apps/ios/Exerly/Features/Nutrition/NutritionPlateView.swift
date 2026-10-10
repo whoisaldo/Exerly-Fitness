@@ -104,15 +104,15 @@ struct NutritionPlateView: View {
                             onLoggedEntries?(entries)
                             Task { await workspace.synchronize() }
                             dismiss()
-                        }
+                        } else if let row = draft.unchecked { editing = row }
                     }.fontWeight(.semibold).disabled(draft.rows.isEmpty).accessibilityIdentifier("nutrition.savePlate")
                 }
             }
             .sheet(isPresented: $choosingFood) {
                 NutritionFoodPicker(workspace: workspace, api: api, date: draft.date, meal: draft.meal,
                                     timeZone: timeZone, unit: draft.unit, actions: actions, onLogged: {},
-                                    pickedCount: draft.rows.count, pickedFoodIDs: Set(draft.rows.map { $0.food.id }), onPick: { food in
-                                        draft.add(food) ? draft.rows.count : nil
+                                    pickedCount: draft.rows.count, pickedFoodIDs: Set(draft.rows.map { $0.food.id }), onPick: { food, amount in
+                                        draft.add(food, amount: amount) ? draft.rows.count : nil
                                     }, pickError: { draft.error })
             }
             .sheet(item: $editing) { row in
@@ -143,7 +143,12 @@ struct NutritionPlateView: View {
                     Text(row.food.name).font(.exBodyMedium).foregroundStyle(Color.exTextPrimary)
                     Text(NutritionFormat.portion(row.entry(on: draft.date, meal: draft.meal, at: draft.loggedAt), unit: draft.unit))
                         .font(.exCaption).foregroundStyle(Color.exTextSecondary)
-                    Text("Edit portion").font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                    if row.checked {
+                        Text("Edit portion").font(.exCaption).foregroundStyle(Color.exPrimaryText)
+                    } else {
+                        Label("Check the amount", systemImage: "exclamationmark.circle.fill")
+                            .font(.exCaption.weight(.semibold)).foregroundStyle(Color.exWarning)
+                    }
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityIdentifier("nutrition.plateRow.\(row.food.id).\(row.id)")
             Button("Remove \(row.food.name)", systemImage: "minus.circle") { draft.remove(row) }

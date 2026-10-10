@@ -5,6 +5,16 @@ import SwiftUI
 /// logged; as the root of the search tab it stays and confirms each log.
 enum FoodPickerPresentation { case sheet, tab }
 
+/// The amount a food picked for a recipe or a meal arrives at.
+enum FoodPickAmount {
+    /// The amount the person logs it at, or its default when they never have.
+    case usual
+    /// One they just chose in the portion step.
+    case chosen(LoggedAmount, FoodSnapshot)
+    /// Its default, which they left without choosing; it stays marked until checked.
+    case unchecked
+}
+
 struct NutritionFoodPicker: View {
     let workspace: TrainingWorkspace
     let api: AccountAPI
@@ -13,7 +23,7 @@ struct NutritionFoodPicker: View {
     let unit: MassUnit
     @ObservedObject var actions: NutritionDiaryActions
     let onLogged: () -> Void
-    let onPick: ((ExerlyCore.Food) -> Int?)?
+    let onPick: ((ExerlyCore.Food, FoodPickAmount) -> Int?)?
     let pickError: () -> String?
     let presentation: FoodPickerPresentation
     /// What picked foods go into: a meal or a recipe.
@@ -24,6 +34,11 @@ struct NutritionFoodPicker: View {
     @State private var scope = FoodListScope.recent
     @State private var shelf = FoodShelf()
     @State private var selectedFood: ExerlyCore.Food?
+    /// A picked food without a usual amount, whose amount is being asked,
+    /// and how that step ended: nil while it's open or once swiped away.
+    @State private var asking: ExerlyCore.Food?
+    @State private var askedFood: ExerlyCore.Food?
+    @State private var askOutcome: AskOutcome?
     @State private var createdFood: ExerlyCore.Food?
     @State private var creating = false
     @State private var creatingRecipe = false
@@ -49,7 +64,8 @@ struct NutritionFoodPicker: View {
 
     init(workspace: TrainingWorkspace, api: AccountAPI, date: LocalDate, meal: String,
          timeZone: TimeZone, unit: MassUnit, actions: NutritionDiaryActions, onLogged: @escaping () -> Void,
-         startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [], onPick: ((ExerlyCore.Food) -> Int?)? = nil,
+         startsWithBarcode: Bool = false, pickedCount: Int = 0, pickedFoodIDs: Set<String> = [],
+         onPick: ((ExerlyCore.Food, FoodPickAmount) -> Int?)? = nil,
          pickError: @escaping () -> String? = { nil }, presentation: FoodPickerPresentation = .sheet, pickingInto: String = "meal") {
         self.workspace = workspace
         self.api = api
@@ -123,6 +139,14 @@ struct NutritionFoodPicker: View {
                 NutritionEntryEditor(workspace: workspace, food: food, date: date, meal: meal,
                                      timeZone: timeZone, unit: unit, actions: actions) { sheetLogged = (sheetLogged ?? []) + [$0] }
             }
+            .sheet(item: $asking, onDismiss: finishAsking) { food in
+                FoodPortionStep(store: store, food: food, unit: unit, title: "Add to \(pickingInto)", confirm: "Add", asking: true,
+                                identifier: "nutrition.pickPortion", onCancel: { askOutcome = .cancelled },
+                                onConfirm: { amount, snapshot in
+                                    askOutcome = .added
+                                    pick(food, .chosen(amount, snapshot))
+                                })
+            }
         }
         .onAppear(perform: refresh)
         .task {
@@ -143,7 +167,8 @@ struct NutritionFoodPicker: View {
     @ViewBuilder private var header: some View {
         if picking {
             VStack(alignment: .leading, spacing: ExSpacing.small) {
-                Text("Tap foods to add them, then review portions.").font(.exCaption).foregroundStyle(Color.exTextSecondary)
+                Text("Foods you've had come in at your usual amount. Others ask for one.")
+                    .font(.exCaption).foregroundStyle(Color.exTextSecondary)
                 if let selectionError { Text(selectionError).font(.exCaption).foregroundStyle(Color.exError) }
             }
         } else {
@@ -341,11 +366,11 @@ struct NutritionFoodPicker: View {
         let logged = !picking && justLogged[item.id] != nil
         let name = item.portion.food.name
         return FoodQuickRow(name: name, detail: detail, amounts: item.portion.nutrients,
-                            openHint: picking ? "Adds a portion. You can adjust it in the meal review." : "Opens the portion to adjust it",
+                            openHint: picking ? "Adds it to the \(pickingInto)" : "Opens the portion to adjust it",
                             openIdentifier: "nutrition.\(picking ? "platePick" : "food").\(item.id)",
                             open: { hideKeyboard(); if picking { select(item.food) } else { selectedFood = item.food } },
                             add: FoodAddButton(done: picking ? addedIDs.contains(item.id) : logged,
-                                               label: picking ? "Add \(name) to the meal" : logged ? "Logged \(name). Undo" : "Log \(portion) of \(name) to \(meal)",
+                                               label: picking ? "Add \(name) to the \(pickingInto)" : logged ? "Logged \(name). Undo" : "Log \(portion) of \(name) to \(meal)",
                                                identifier: "nutrition.\(picking ? "plateAdd" : "quickLog").\(item.id)") {
                                 if picking { select(item.food) } else if logged { unlog(item) } else { quickLog(item) }
                             })
@@ -547,9 +572,33 @@ struct NutritionFoodPicker: View {
         select(createdFood)
     }
 
+    /// A food with an amount the person logs it at joins in one tap; any
+    /// other asks for its amount first.
     private func select(_ food: ExerlyCore.Food) {
-        guard let onPick else { selectedFood = food; return }
-        if let count = onPick(food) {
+        guard onPick != nil else { selectedFood = food; return }
+        if store.quickPortion(for: food, unit: unit)?.repeated == false {
+            hideKeyboard()
+            askOutcome = nil
+            askedFood = food
+            asking = food
+        } else { pick(food, .usual) }
+    }
+
+    /// The portion step closed. Swiped away, the food still joins at its
+    /// default, marked to check. Once it's in, the search clears for the next food.
+    private func finishAsking() {
+        guard let food = askedFood else { return }
+        askedFood = nil
+        if askOutcome == nil { pick(food, .unchecked) }
+        if askOutcome != .cancelled {
+            query = ""
+            searchFocused = true
+        }
+    }
+
+    private func pick(_ food: ExerlyCore.Food, _ amount: FoodPickAmount) {
+        guard let onPick else { return }
+        if let count = onPick(food, amount) {
             pickedCount = count
             addedIDs.insert(food.id)
             selectionError = nil
@@ -579,6 +628,8 @@ struct FoodPickerItem: Identifiable {
     let food: ExerlyCore.Food
     var id: String { portion.id }
 }
+
+private enum AskOutcome { case added, cancelled }
 
 private struct FoodShelf {
     var suggested: [FoodPickerItem] = []

@@ -9,6 +9,11 @@ final class RecipeDraft: ObservableObject {
     struct Row: Identifiable, Equatable {
         let id: UUID
         var ingredient: RecipeIngredient
+        /// The food it was added from, with every named serving; the
+        /// snapshot keeps only the one used.
+        var food: ExerlyCore.Food?
+        /// False while it sits at a default amount no one has looked at.
+        var checked = true
 
         /// The ingredient as a diary entry, so the portion editor can open it.
         var entry: FoodEntry {
@@ -78,17 +83,24 @@ final class RecipeDraft: ObservableObject {
         return food
     }
 
-    /// Adds a food at the portion one tap would log it: the amount last
-    /// logged, or its first serving.
+    /// Adds a food at the amount chosen for it, or else at the portion one
+    /// tap would log it: the amount the person logs it at, or its default.
+    /// A default left unchecked stays marked until they look at it.
     @discardableResult
-    func add(_ food: ExerlyCore.Food) -> Bool {
+    func add(_ food: ExerlyCore.Food, amount: FoodPickAmount = .usual) -> Bool {
         guard food.id != template.id else { errors = ["A recipe can't include itself."]; return false }
-        guard let portion = store.quickPortion(for: food, unit: unit) else {
+        let ingredient: RecipeIngredient
+        var checked = true
+        if case .chosen(let amount, let snapshot) = amount {
+            ingredient = RecipeIngredient(food: snapshot, grams: amount.grams, serving: amount.serving, quantity: amount.quantity)
+        } else if let portion = store.quickPortion(for: food, unit: unit) {
+            ingredient = RecipeIngredient(food: portion.food, grams: portion.grams, serving: portion.serving, quantity: portion.quantity)
+            if case .unchecked = amount { checked = false }
+        } else {
             errors = ["\(food.name) has no weight, so it can't be an ingredient."]
             return false
         }
-        rows.append(Row(id: UUID(), ingredient: RecipeIngredient(food: portion.food, grams: portion.grams,
-                                                                 serving: portion.serving, quantity: portion.quantity)))
+        rows.append(Row(id: UUID(), ingredient: ingredient, food: food, checked: checked))
         errors = []
         return true
     }
@@ -96,7 +108,11 @@ final class RecipeDraft: ObservableObject {
     func update(_ id: UUID, to amount: LoggedAmount, food: FoodSnapshot) {
         guard let index = rows.firstIndex(where: { $0.id == id }) else { return }
         rows[index].ingredient = RecipeIngredient(food: food, grams: amount.grams, serving: amount.serving, quantity: amount.quantity)
+        rows[index].checked = true
     }
+
+    /// The first ingredient still at a default amount, to look at before saving.
+    var unchecked: Row? { rows.first { !$0.checked } }
 
     func remove(_ id: UUID) { rows.removeAll { $0.id == id } }
 
@@ -105,6 +121,10 @@ final class RecipeDraft: ObservableObject {
     @discardableResult
     func save(locale: Locale = .current) -> ExerlyCore.Food? {
         errors = []
+        if let unchecked {
+            errors = ["Check the amount of \(unchecked.ingredient.food.name) before saving. It came in at a default."]
+            return nil
+        }
         guard store.food(template.id) == original else {
             errors = ["This recipe changed while you were editing. Your draft is still here. Reopen the recipe to review the latest version."]
             return nil

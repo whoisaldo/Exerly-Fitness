@@ -105,6 +105,125 @@ final class RecipeUITests: ExerlyUITestCase {
         XCTAssertTrue(bowl.label.hasSuffix("1 serving · 225 g, 282 calories"), bowl.label)
     }
 
+    /// My foods in the picker on top, when another picker is open beneath it.
+    private func showMyFoodsOnTop(_ app: XCUIApplication) {
+        let scopes = app.descendants(matching: .any).matching(identifier: "nutrition.listScope")
+        tap(scopes.element(boundBy: scopes.count - 1).buttons["My foods"], in: app)
+    }
+
+    /// Saved foods with named servings that were never logged.
+    private func seedPantry(token: String) async throws -> (onion: SeedFood, beans: SeedFood) {
+        let onion = SeedFood(name: "Synthetic onion", per100g: ["energy": 40, "protein": 1.1, "carbohydrate": 9.3, "fat": 0.1])
+        let beans = SeedFood(name: "Synthetic kidney beans", per100g: ["energy": 135, "protein": 8.7, "carbohydrate": 24.7, "fat": 0.6])
+        for (food, servings) in [(onion, [["name": "1 slice", "grams": 15.0], ["name": "1 whole", "grams": 148.0]]),
+                                 (beans, [["name": "1 can", "grams": 260.0]])] {
+            let payload: [String: Any] = ["id": food.id, "name": food.name, "source": "custom", "per100g": food.per100g,
+                                          "servings": servings, "favorite": false, "createdAt": "2026-10-01T12:00:00.000Z"]
+            _ = try await request("PUT", "/v1/documents/saved_food/\(food.id)", body: ["base_revision": 0, "payload": payload], token: token)
+        }
+        return (onion, beans)
+    }
+
+    /// A food never logged asks for its amount as it's added, with the keypad
+    /// up and every serving it has; a usual food still joins in one tap. One
+    /// left at its default is marked, and Save asks for it first.
+    func testAnIngredientNeverLoggedAsksForItsAmountWithItsServings() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "recipe-ask")
+        let kitchen = try await seedKitchen(token: person.token)
+        let pantry = try await seedPantry(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        showMyFoods(app)
+        tap(app.buttons["nutrition.createRecipeRow"], in: app)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.descendants(matching: .any)["recipe.name"].typeText("Synthetic chili")
+        tap(app.buttons["recipe.addIngredients"], in: app)
+
+        tapCount = 0
+        tap(app.buttons["nutrition.plateAdd.\(kitchen.oats.id)"], in: app)
+        XCTAssertEqual(app.buttons["nutrition.reviewPlate"].label, "Review recipe · 1 food", "A usual food joins in one tap")
+        XCTAssertFalse(app.buttons["nutrition.pickPortionConfirm"].exists)
+
+        showMyFoodsOnTop(app)
+        tap(app.buttons["nutrition.plateAdd.\(pantry.onion.id)"], in: app)
+        let add = app.buttons["nutrition.pickPortionConfirm"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "A food never logged asks for its amount")
+        XCTAssertTrue(app.buttons["exerly.keypadDone"].waitForExistence(timeout: 5), "With the keypad up")
+        let whole = app.buttons["nutrition.measure.serving.1 whole.148.0"]
+        XCTAssertTrue(whole.exists, "Every serving the food has, not just its first")
+        tap(whole, in: app)
+        XCTAssertEqual(app.textFields["Number of servings"].value as? String, "1", "One whole onion, not 15 g in wholes")
+        capture(app, "recipe-ask-onion")
+        tap(add, in: app)
+        XCTAssertEqual(app.buttons["nutrition.reviewPlate"].label, "Review recipe · 2 foods")
+        XCTAssertEqual(tapCount, 5, "+ for oats; My foods, + for the onion, 1 whole, Add")
+
+        // Swiped away, the beans still join at their default, marked to check.
+        showMyFoodsOnTop(app)
+        tap(app.buttons["nutrition.plateAdd.\(pantry.beans.id)"], in: app)
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        let bar = app.navigationBars["Add to recipe"]
+        bar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
+        XCTAssertTrue(add.waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["nutrition.reviewPlate"].label, "Review recipe · 3 foods")
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        let onionRow = app.buttons["recipe.ingredient.\(pantry.onion.id)"]
+        XCTAssertTrue(onionRow.label.contains("1 whole"), onionRow.label)
+        let beansRow = app.buttons["recipe.ingredient.\(pantry.beans.id)"]
+        reveal(beansRow, in: app)
+        XCTAssertTrue(beansRow.label.hasSuffix("amount not checked yet"), beansRow.label)
+        capture(app, "recipe-ask-unchecked")
+        tap(app.buttons["recipe.save"], in: app)
+        let done = app.buttons["recipe.ingredientConfirm"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "Save opens the unchecked amount first")
+        tap(done, in: app)
+        XCTAssertFalse(app.buttons["recipe.ingredient.\(pantry.beans.id)"].label.contains("not checked"))
+        tap(app.buttons["recipe.save"], in: app)
+        XCTAssertTrue(app.buttons["nutrition.saveEntry"].waitForExistence(timeout: 10), "Saved, it opens to log")
+    }
+
+    /// Focusing an amount selects it, so digits replace it; Delete takes the
+    /// last digit even with the caret at the start; and with the keypad up
+    /// the sheet's Done is the only Done.
+    func testTheAmountKeypadTypesOverTheAmountWithOneDone() async throws {
+        try await control([:])
+        let person = try await createAccount(prefix: "recipe-keypad")
+        let kitchen = try await seedKitchen(token: person.token)
+        let app = launch(resetSession: true)
+        signIn(app, email: person.email)
+        tap(app.buttons["nutrition.addFood"], in: app)
+        showMyFoods(app)
+        tap(app.buttons["nutrition.createRecipeRow"], in: app)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.descendants(matching: .any)["recipe.name"].typeText("Synthetic oats")
+        tap(app.buttons["recipe.addIngredients"], in: app)
+        tap(app.buttons["nutrition.plateAdd.\(kitchen.oats.id)"], in: app)
+        tap(app.buttons["nutrition.reviewPlate"], in: app)
+        tap(app.buttons["recipe.ingredient.\(kitchen.oats.id)"], in: app)
+
+        let amount = app.textFields["recipe.ingredientAmount"]
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
+        XCTAssertEqual(amount.value as? String, "80")
+        tapCount = 0
+        tap(amount, in: app)
+        XCTAssertTrue(app.buttons["Hide keypad"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "Done")).count, 1, "One Done: the sheet's")
+        tap(app.buttons["exerly.keypad.1"], in: app)
+        tap(app.buttons["exerly.keypad.5"], in: app)
+        tap(app.buttons["exerly.keypad.0"], in: app)
+        XCTAssertEqual(amount.value as? String, "150", "The first digit replaced 80")
+        // The caret before every digit: Delete still removes the last one.
+        amount.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap()
+        tap(app.buttons["exerly.keypad.delete"], in: app)
+        XCTAssertEqual(amount.value as? String, "15")
+        tap(app.buttons["recipe.ingredientConfirm"], in: app)
+        XCTAssertEqual(tapCount, 6, "The amount, three digits, Delete and Done: no clearing first")
+        XCTAssertTrue(app.buttons["recipe.ingredient.\(kitchen.oats.id)"].label.contains("15 g"))
+    }
+
     func testSavingAMealAsARecipeTakesThreeTaps() async throws {
         try await control([:])
         let person = try await createAccount(prefix: "recipe-meal")
@@ -161,7 +280,7 @@ final class RecipeUITests: ExerlyUITestCase {
         XCTAssertEqual(energy(app), "297 kilocalories")
         tap(app.buttons["recipe.ingredient.\(kitchen.oats.id)"], in: app)
         replace(app.textFields["recipe.ingredientAmount"], with: "160", in: app)
-        tap(app.buttons["recipe.applyIngredient"], in: app)
+        tap(app.buttons["recipe.ingredientConfirm"], in: app)
         XCTAssertEqual(energy(app), "449 kilocalories", "Twice the oats: 897.8 kcal over 450 g, 225 g a serving")
         tap(app.buttons["recipe.save"], in: app)
         XCTAssertEqual(tapCount, 9, "Profile, Foods & recipes, the recipe, actions, Edit, the oats, their amount, Done, Save")
@@ -258,7 +377,7 @@ final class RecipeUITests: ExerlyUITestCase {
         revealAbove(milk, in: app)
         tap(milk, in: app)
         capture(app, "after-09-ingredient")
-        tap(app.buttons["recipe.applyIngredient"], in: app)
+        tap(app.buttons["recipe.ingredientConfirm"], in: app)
         tap(app.buttons["recipe.save"], in: app)
         XCTAssertTrue(app.buttons["nutrition.saveEntry"].waitForExistence(timeout: 10))
         capture(app, "after-10-recipe-portion")

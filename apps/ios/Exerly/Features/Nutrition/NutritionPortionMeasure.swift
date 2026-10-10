@@ -82,40 +82,42 @@ enum NutritionPortionMeasure: Hashable {
 }
 
 /// Grams, ounces, volumes and the food's own servings as chips. Switching
-/// converts the amount and keeps its weight; the presets below it set whole
-/// servings. A label serving chosen while the amount is invalid starts at one.
+/// converts the amount and keeps its weight, except that while a new food's
+/// amount is still its default, a named serving starts at one of it. The
+/// presets below set whole servings.
 struct NutritionMeasureChips: View {
     @ObservedObject var draft: NutritionEntryDraft
     let unit: MassUnit
-    var onChoose: () -> Void = {}
 
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: ExSpacing.small) {
-                ForEach(draft.availableMeasures, id: \.self) { measure in
-                    let selected = measure == draft.measure
-                    Button {
-                        onChoose()
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        guard !selected else { return }
-                        if !draft.selectMeasure(measure), case .serving(let serving) = measure,
-                           draft.publishedServings.contains(serving) {
-                            draft.selectPortion(serving)
-                        }
-                    } label: {
-                        Text(title(measure)).font(.exLabel.weight(selected ? .semibold : .medium))
-                            .padding(.horizontal, 14).frame(minHeight: 34)
-                            .foregroundStyle(selected ? Color.white : Color.exTextSecondary)
-                            .background(selected ? Color.exActionFill : Color.exSurface2, in: Capsule())
-                            .frame(minHeight: 44).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
-                        .accessibilityLabel(label(measure))
-                        .accessibilityAddTraits(selected ? .isSelected : [])
-                        .accessibilityIdentifier("nutrition.measure.\(measure.identifier)")
-                }
+        // Wrapped, so every serving the food has is in view.
+        ExFlowLayout(spacing: ExSpacing.small) {
+            ForEach(draft.availableMeasures, id: \.self) { measure in
+                let selected = measure == draft.measure
+                Button {
+                    // The keypad stays up: the new amount arrives selected, ready to type over.
+                    guard !selected else { return }
+                    if case .serving(let serving) = measure, serving.name != ExerlyCore.Food.wholeRecipe,
+                       draft.amountIsDefault, draft.publishedServings.contains(serving) {
+                        // From a default, "1 whole" means one whole, not the same weight in wholes.
+                        draft.selectPortion(serving)
+                    } else if !draft.selectMeasure(measure), case .serving(let serving) = measure,
+                              draft.publishedServings.contains(serving) {
+                        draft.selectPortion(serving)
+                    }
+                } label: {
+                    Text(title(measure)).font(.exLabel.weight(selected ? .semibold : .medium))
+                        .padding(.horizontal, 14).frame(minHeight: 34)
+                        .foregroundStyle(selected ? Color.white : Color.exTextSecondary)
+                        .background(selected ? Color.exActionFill : Color.exSurface2, in: Capsule())
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                    .accessibilityLabel(label(measure))
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                    .accessibilityIdentifier("nutrition.measure.\(measure.identifier)")
             }
-        }.scrollIndicators(.hidden).scrollClipDisabled()
-            .sensoryFeedback(.selection, trigger: draft.measure)
+        }
+        .sensoryFeedback(.selection, trigger: draft.measure)
     }
 
     private func title(_ measure: NutritionPortionMeasure) -> String {

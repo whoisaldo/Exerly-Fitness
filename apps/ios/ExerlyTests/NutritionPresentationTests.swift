@@ -48,6 +48,22 @@ final class NutritionPresentationTests: XCTestCase {
         XCTAssertEqual(NutritionFormat.portion(weighed, unit: .pounds), "150 g")
     }
 
+    func testANamedServingStartsAtOneOnlyWhileTheAmountIsADefault() throws {
+        let store = try NutritionStore(persistence: InMemoryTrainingPersistence())
+        let date = try XCTUnwrap(LocalDate("2026-10-10"))
+        let onion = ExerlyCore.Food(name: "Synthetic onion", per100g: NutrientAmounts([.energy: 40]),
+                                    servings: [Serving("1 slice", grams: 15), Serving("1 whole", grams: 148)])
+        let draft = NutritionEntryDraft(store: store, food: onion, date: date, meal: "Dinner", preferredUnit: .kilograms)
+        XCTAssertTrue(draft.amountIsDefault)
+        XCTAssertTrue(draft.selectMeasure(.grams))
+        XCTAssertTrue(draft.amountIsDefault, "Converting the default leaves it a default")
+        draft.amount.text = "100"
+        XCTAssertFalse(draft.amountIsDefault, "An amount the person entered")
+        let logged = try store.log(onion, grams: 50, on: date, meal: "Dinner")
+        let again = NutritionEntryDraft(store: store, food: onion, date: date, meal: "Dinner", repeating: logged, preferredUnit: .kilograms)
+        XCTAssertFalse(again.amountIsDefault, "An amount logged before isn't a default")
+    }
+
     func testExplicitLabelPortionReplacesInvalidInputAndPersistsWithoutChangingTheDefault() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
