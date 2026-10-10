@@ -16,11 +16,11 @@ mkdir -p "$OUT"
 if [[ -n "${TESTS:-}" ]]; then
   cp "$TESTS" "$OUT/all.txt"
 else
-  for file in "$ROOT"/apps/ios/ExerlyUITests/*.swift; do
-    class="$(sed -n 's/^\(final \)\{0,1\}class \([A-Za-z]*\): ExerlyUITestCase.*/\2/p' "$file" | head -1)"
-    [[ -n "$class" ]] || continue
-    sed -n 's/^    func \(test[A-Za-z0-9_]*\)(.*/\1/p' "$file" | sed "s#^#ExerlyUITests/$class/#"
-  done > "$OUT/all.txt"
+  # A file can hold more than one test class; each method belongs to the class above it.
+  awk 'FNR == 1 { class = "" }
+       match($0, /^(final )?class [A-Za-z]+: ExerlyUITestCase/) { split(substr($0, RSTART, RLENGTH), w, /[ :]+/); class = w[w[1] == "final" ? 3 : 2] }
+       class != "" && match($0, /^    func test[A-Za-z0-9_]*\(/) { print "ExerlyUITests/" class "/" substr($0, RSTART + 9, RLENGTH - 10) }' \
+    "$ROOT"/apps/ios/ExerlyUITests/*.swift > "$OUT/all.txt"
 fi
 count=$#
 pids=()
