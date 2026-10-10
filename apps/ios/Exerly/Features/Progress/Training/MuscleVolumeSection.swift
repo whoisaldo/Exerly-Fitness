@@ -3,11 +3,12 @@ import ExerlyCore
 import SwiftUI
 
 /// Average hard sets a week for each muscle, ranked, against Exerly's weekly
-/// range. Muscles under their range are named at the top.
+/// range. Muscles under their range are named at the top; the list shows the
+/// top six until "Show all".
 struct MuscleVolumeSection: View {
     let report: TrainingInsights.Report
     let library: ExerlyCore.ExerciseLibrary
-    @State private var showsOthers = false
+    @State private var showsAll = false
     @State private var opened: TrainingInsights.MuscleLoad?
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .body) private var valueWidth: CGFloat = 40
@@ -15,6 +16,7 @@ struct MuscleVolumeSection: View {
 
     private var ranged: [TrainingInsights.MuscleLoad] { report.muscles.filter { $0.range != nil } }
     private var others: [TrainingInsights.MuscleLoad] { report.muscles.filter { $0.range == nil } }
+    private static let collapsedCount = 6
 
     /// One axis for every row, so bar lengths compare honestly.
     private var scale: Double {
@@ -28,29 +30,30 @@ struct MuscleVolumeSection: View {
             ExCard {
                 summary
                 VStack(spacing: typeSize.isAccessibilitySize ? ExSpacing.item : 2) {
-                    ForEach(ranged, id: \.muscle) { row($0) }
+                    ForEach(showsAll ? ranged : Array(ranged.prefix(Self.collapsedCount)), id: \.muscle) { row($0) }
                 }
                 legend
-                if !others.isEmpty {
-                    Button { withAnimation(.snappy) { showsOthers.toggle() } } label: {
+                if showsAll && !others.isEmpty {
+                    Text("Without a range: mostly trained by compound lifts. Exerly sets no target for them.")
+                        .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
+                    VStack(spacing: typeSize.isAccessibilitySize ? ExSpacing.item : 2) {
+                        ForEach(others, id: \.muscle) { row($0) }
+                    }
+                }
+                // Shown whenever a muscle is hidden: ranked past the top six, or without a range.
+                if ranged.count > Self.collapsedCount || !others.isEmpty {
+                    Button { withAnimation(.snappy) { showsAll.toggle() } } label: {
                         HStack {
-                            Text(showsOthers ? "Hide muscles without a range" : "\(others.count) more muscles without a range")
+                            Text(showsAll ? "Show fewer" : "Show all \(report.muscles.count) muscles")
                                 .font(.exLabel).foregroundStyle(Color.exPrimaryText)
                             Spacer()
                             Image(systemName: "chevron.down").font(.caption.weight(.semibold))
-                                .rotationEffect(.degrees(showsOthers ? 180 : 0)).foregroundStyle(Color.exPrimaryText)
+                                .rotationEffect(.degrees(showsAll ? 180 : 0)).foregroundStyle(Color.exPrimaryText)
                                 .accessibilityHidden(true)
                         }.frame(minHeight: 44).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityIdentifier("training.muscles.others")
-                    if showsOthers {
-                        Text("Mostly trained by compound lifts. Exerly sets no target for them.")
-                            .font(.exCaption).foregroundStyle(Color.exTextSecondary).fixedSize(horizontal: false, vertical: true)
-                        VStack(spacing: typeSize.isAccessibilitySize ? ExSpacing.item : 2) {
-                            ForEach(others, id: \.muscle) { row($0) }
-                        }
-                    }
+                    .accessibilityIdentifier("training.muscles.showAll")
                 }
             }
         }

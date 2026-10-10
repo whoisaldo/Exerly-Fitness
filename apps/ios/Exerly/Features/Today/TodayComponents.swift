@@ -122,7 +122,7 @@ struct TodayNutritionCard: View {
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.content))
                     : AnyLayout(HStackLayout(alignment: .center, spacing: ExSpacing.page))
                 layout {
-                    ring
+                    ringButton
                     VStack(spacing: ExSpacing.item) {
                         TodayMacroLine(title: "Protein", progress: progress.protein, color: .exPrimaryText)
                         TodayMacroLine(title: "Carbs", progress: progress.carbohydrate, color: .exAccent)
@@ -155,6 +155,29 @@ struct TodayNutritionCard: View {
         .accessibilityAction(named: "Open targets") { onSetTargets?() }
     }
 
+    /// The ring opens targets, so it is a real button: it says so to
+    /// VoiceOver and gives under a finger.
+    @ViewBuilder private var ringButton: some View {
+        let energy = progress.energy
+        let over = (energy.over ?? 0) > 0
+        let spoken = "\(Self.number(energy.consumed)) eaten of \(Self.number(energy.target ?? 0)). "
+            + "\(Self.number(over ? energy.over ?? 0 : energy.remaining ?? 0)) \(over ? "over" : "left")."
+        if let onSetTargets {
+            Button(action: onSetTargets) { ring }
+                .buttonStyle(TodayPressStyle())
+                .accessibilityLabel("Calories")
+                .accessibilityValue(spoken)
+                .accessibilityHint("Opens targets")
+                .accessibilityIdentifier("nutrition.targetEnergy")
+        } else {
+            ring
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Calories")
+                .accessibilityValue(spoken)
+                .accessibilityIdentifier("nutrition.targetEnergy")
+        }
+    }
+
     private var ring: some View {
         let energy = progress.energy
         let over = (energy.over ?? 0) > 0
@@ -176,10 +199,7 @@ struct TodayNutritionCard: View {
             }.padding(14)
         }
         .frame(width: ringSize, height: ringSize)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Calories")
-        .accessibilityValue("\(Self.number(energy.consumed)) eaten of \(Self.number(energy.target ?? 0)). \(Self.number(over ? energy.over ?? 0 : energy.remaining ?? 0)) \(over ? "over" : "left").")
-        .accessibilityIdentifier("nutrition.targetEnergy")
+        .contentShape(Circle())
     }
 
     static func number(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }

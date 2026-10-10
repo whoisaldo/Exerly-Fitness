@@ -70,6 +70,11 @@ final class TrainingInsightsUITests: ExerlyUITestCase {
             limits.tap()
         }
         let hamstrings = app.buttons["training.muscle.hamstrings"]
+        let showAll = app.buttons["training.muscles.showAll"]
+        if !hamstrings.exists, showAll.exists {
+            scrollAboveTabBar(showAll, in: app)
+            showAll.tap()
+        }
         scrollAboveTabBar(hamstrings, in: app)
         hamstrings.tap()
         XCTAssertTrue(app.descendants(matching: .any)["muscle.weeks"].waitForExistence(timeout: 5))

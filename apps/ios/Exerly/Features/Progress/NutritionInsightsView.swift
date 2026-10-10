@@ -16,9 +16,10 @@ struct NutritionInsightsView: View {
     }
 }
 
-/// Progress → Nutrition: a span ending yesterday, how many of its days count
-/// as known intake, calories and macros against their targets, the foods
-/// behind them, when they were eaten, and every nutrient against its goal.
+/// Progress → Nutrition: a span ending yesterday, or this month so far, how
+/// many of its days count as known intake, calories and macros against their
+/// targets, the foods behind them, when they were eaten, and every nutrient
+/// against its goal.
 private struct NutritionInsightsContent: View {
     @ObservedObject var workspace: TrainingWorkspace
     let timeZone: TimeZone
@@ -32,7 +33,7 @@ private struct NutritionInsightsContent: View {
         let series = store.intakeSeries(from: span.lowerBound, through: span.upperBound)
         ScrollView {
             VStack(alignment: .leading, spacing: ExSpacing.page) {
-                rangePicker
+                rangePicker(today: today)
                 coverage(series, store: store, today: today)
                 if series.countedDays > 0 {
                     let overview = store.overview(from: span.lowerBound, through: span.upperBound)
@@ -62,7 +63,7 @@ private struct NutritionInsightsContent: View {
     // MARK: Range
 
     @ViewBuilder
-    private var rangePicker: some View {
+    private func rangePicker(today: LocalDate) -> some View {
         if typeSize.isAccessibilitySize {
             Picker("Span", selection: $range) {
                 ForEach(IntakeRange.allCases) { Text(IntakeFormat.spoken($0)).tag($0) }
@@ -72,7 +73,7 @@ private struct NutritionInsightsContent: View {
             HStack(spacing: 2) {
                 ForEach(IntakeRange.allCases) { option in
                     Button { withAnimation(.snappy) { range = option } } label: {
-                        Text(IntakeFormat.title(option)).font(.exLabel).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(IntakeFormat.title(option, today: today)).font(.exLabel).lineLimit(1).minimumScaleFactor(0.8)
                             .fixedSize(horizontal: option == .yesterday, vertical: false)
                             .foregroundStyle(option == range ? Color.white : Color.exTextSecondary)
                             .padding(.horizontal, 8)
@@ -84,7 +85,7 @@ private struct NutritionInsightsContent: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(IntakeFormat.spoken(option))
                     .accessibilityAddTraits(option == range ? .isSelected : [])
-                    .accessibilityIdentifier("nutrition.range.\(IntakeFormat.title(option))")
+                    .accessibilityIdentifier("nutrition.range.\(option == .thisMonth ? "thisMonth" : IntakeFormat.title(option, today: today))")
                 }
             }
             .padding(.horizontal, 3)

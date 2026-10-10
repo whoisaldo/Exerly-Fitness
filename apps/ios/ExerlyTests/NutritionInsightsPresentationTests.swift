@@ -42,8 +42,10 @@ final class NutritionInsightsPresentationTests: XCTestCase {
     }
 
     func testRangesHaveShortTitlesAndSpokenNames() {
-        XCTAssertEqual(IntakeRange.allCases.map(IntakeFormat.title), ["Yesterday", "1W", "1M", "3M", "1Y"])
+        let today = LocalDate("2026-10-10")!
+        XCTAssertEqual(IntakeRange.allCases.map { IntakeFormat.title($0, today: today) }, ["Yesterday", "1W", "Oct", "1M", "3M", "1Y"])
         XCTAssertEqual(IntakeFormat.spoken(.quarter), "3 months")
+        XCTAssertEqual(IntakeFormat.spoken(.thisMonth), "This month")
         XCTAssertEqual(IntakeFormat.name(.energy), "Calories")
         XCTAssertEqual(IntakeFormat.name(.carbohydrate, short: true), "Carbs")
         XCTAssertEqual(IntakeFormat.group(.macros), IntakeFormat.group(.energy))

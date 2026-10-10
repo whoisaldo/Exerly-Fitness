@@ -59,6 +59,21 @@ import Testing
         #expect(!overview.rows.contains { $0.nutrient == .water }, "No amount and no goal")
     }
 
+    @Test func theOverviewListsTheStandardNutrientsEvenWithoutAGoalOrAReport() throws {
+        let nutrition = try store()
+        try nutrition.log(milk, grams: 300, on: monday, meal: "Breakfast")
+        let overview = nutrition.overview(from: monday, through: monday)
+        let listed = Set(overview.rows.map(\.nutrient))
+        for nutrient in [Nutrient.energy, .protein, .carbohydrate, .fat, .fiber, .sugars, .saturatedFat, .sodium, .potassium,
+                         .calcium, .iron, .vitaminC, .vitaminD, .folate, .zinc] {
+            #expect(listed.contains(nutrient), "\(nutrient)")
+        }
+        let fiber = try #require(overview.rows.first { $0.nutrient == .fiber })
+        #expect(fiber.observedDays == 0 && fiber.goal == nil, "Listed as not reported, with no plan for a goal")
+        #expect(!listed.contains(.leucine) && !listed.contains(.caffeine), "Others wait until a food reports them")
+        #expect(overview.rows.map(\.nutrient) == Nutrient.allCases.filter(listed.contains), "In catalog order")
+    }
+
     @Test func timingUsesTheHourEatenAndCountsEntriesWithoutOne() throws {
         let nutrition = try store()
         let eight = Fixture.instant(minutes: 8 * 60)

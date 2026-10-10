@@ -33,6 +33,9 @@ public final class TrainingStore {
     public private(set) var restTimer: RestTimer?
     /// Change with `setRestPolicy(_:)`, which saves it.
     public private(set) var restPolicy: RestPolicy
+    /// The rest the workout's last set earned but didn't start, since nothing
+    /// was left to do. Adding a set or an exercise starts it after all.
+    @ObservationIgnored private var heldRest: RestTimer?
 
     @ObservationIgnored let persistence: TrainingPersistence
     @ObservationIgnored private let now: () -> Date
@@ -96,12 +99,16 @@ public final class TrainingStore {
     @discardableResult
     public func addExercise(_ exerciseID: ExerciseID, at index: Int? = nil) throws -> UUID {
         let previous = history.lastPerformance(of: exerciseID)
-        return try edit { try $0.addExercise(exerciseID, at: index, previous: previous, library: library) }
+        let id = try edit { try $0.addExercise(exerciseID, at: index, previous: previous, library: library) }
+        try resumeHeldRest()
+        return id
     }
 
     @discardableResult
     public func addSet(to performedID: UUID, kind: SetKind? = nil) throws -> UUID {
-        try edit { try $0.addSet(to: performedID, kind: kind) }
+        let id = try edit { try $0.addSet(to: performedID, kind: kind) }
+        try resumeHeldRest()
+        return id
     }
 
     public func updateSet(_ set: PerformedSet, in performedID: UUID, propagate: Bool = false) throws {
@@ -109,17 +116,20 @@ public final class TrainingStore {
     }
 
     /// Completes a set and starts the rest timer the policy picks, saving both
-    /// as one unit.
+    /// as one unit. The workout's last set starts none, and stops one that's
+    /// running: there's nothing left to rest for.
     public func completeSet(_ setID: UUID) throws {
         let date = now()
         let (session, _) = try prepare { try $0.completeSet(setID, at: date, library: library) }
-        let timer = RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library))
+        let rest = RestTimer(startedAt: date, duration: restPolicy.rest(after: setID, in: session, library: library))
+        let timer = session.isEverySetCompleted ? nil : rest
         try persistence.performAtomically {
             try persistence.save(session)
-            try persistence.saveValue(JSONEncoder().encode(timer), forKey: Self.restTimerKey)
+            try persistence.saveValue(timer.map { try JSONEncoder().encode($0) }, forKey: Self.restTimerKey)
         }
         activeSession = session
         restTimer = timer
+        heldRest = timer == nil ? rest : nil
     }
 
     public func reopenSet(_ setID: UUID) throws { try edit { try $0.reopenSet(setID) } }
@@ -173,6 +183,7 @@ public final class TrainingStore {
         history = TrainingHistory(sessions: history.sessions + [session], library: library)
         activeSession = nil
         restTimer = nil
+        heldRest = nil
         return FinishedSession(session: session, records: records)
     }
 
@@ -185,6 +196,7 @@ public final class TrainingStore {
         }
         activeSession = nil
         restTimer = nil
+        heldRest = nil
     }
 
     // MARK: Rest
@@ -207,6 +219,15 @@ public final class TrainingStore {
     private func setRestTimer(_ timer: RestTimer?) throws {
         try persistence.saveValue(timer.map { try JSONEncoder().encode($0) }, forKey: Self.restTimerKey)
         restTimer = timer
+        heldRest = nil
+    }
+
+    /// Starts the rest held back after the last set, from when that set was
+    /// completed, unless it has already run out.
+    private func resumeHeldRest() throws {
+        guard let held = heldRest, restTimer == nil else { return }
+        heldRest = nil
+        if !held.isFinished(at: now()) { try setRestTimer(held) }
     }
 
     // MARK: History
@@ -283,6 +304,7 @@ public final class TrainingStore {
                 if endsActive {
                     activeSession = nil
                     restTimer = nil
+                    heldRest = nil
                 }
             } else {
                 if history.session(session.id) != nil { history = TrainingHistory(sessions: others, library: library) }
@@ -299,6 +321,7 @@ public final class TrainingStore {
             if wasActive {
                 activeSession = nil
                 restTimer = nil
+                heldRest = nil
             }
             if history.session(id) != nil {
                 history = TrainingHistory(sessions: history.sessions.filter { $0.id != id }, library: library)

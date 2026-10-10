@@ -67,6 +67,30 @@ final class TrainingFlowUITests: ExerlyUITestCase {
         XCTAssertEqual(app.buttons["training.startNext"].label, "Start next: Lower A", "The program moves on to the next day")
     }
 
+    /// Only done sets read as selected. The workout's last set starts no
+    /// rest, and with every set done Finish saves without asking.
+    func testTheLastSetStartsNoRestAndFinishSavesWithoutAsking() async throws {
+        let app = try await signedInWithWeek(prefix: "train-last-set")
+        tap(app.buttons["today.startWorkout"], in: app)
+        XCTAssertTrue(app.buttons["training.finish"].waitForExistence(timeout: 10))
+        let second = app.buttons["Complete set 2, Deadlift"]
+        XCTAssertTrue(second.waitForExistence(timeout: 5))
+        XCTAssertFalse(second.isSelected, "A set not yet done isn't selected")
+
+        tap(app.buttons["Complete set 1, Deadlift"], in: app)
+        XCTAssertTrue(app.buttons["Reopen set 1, Deadlift"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Reopen set 1, Deadlift"].isSelected, "A done set is selected")
+        XCTAssertTrue(app.buttons["Skip rest"].waitForExistence(timeout: 5), "Sets still to do get a rest")
+        tap(app.buttons["Complete set 2, Deadlift"], in: app)
+        tap(app.buttons["Complete set 3, Deadlift"], in: app)
+        XCTAssertTrue(app.buttons["Reopen set 3, Deadlift"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Skip rest"].exists, "The workout's last set leaves nothing to rest for")
+
+        tap(app.buttons["training.finish"], in: app)
+        XCTAssertTrue(app.buttons["training.summaryDone"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["Save workout"].exists)
+    }
+
     func testDesignTrainingCapture() async throws {
         guard ProcessInfo.processInfo.environment["EXERLY_DESIGN_CAPTURE"] == "1" else {
             throw XCTSkip("Opt-in visual review of the training flow")

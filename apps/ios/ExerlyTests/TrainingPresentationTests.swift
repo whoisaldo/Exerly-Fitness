@@ -40,6 +40,8 @@ final class TrainingPresentationTests: XCTestCase {
         var set = try XCTUnwrap(alice.store.activeSession?.exercises.first?.sets.first)
         set.primary = Effort(reps: 6, load: .kg(40))
         try alice.store.updateSet(set, in: exercise)
+        // A second set to come, so the first one's rest runs.
+        try alice.store.addSet(to: exercise)
         try alice.store.completeSet(set.id)
 
         let bob = try TrainingWorkspace(accountID: "bob", root: root)

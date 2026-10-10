@@ -123,7 +123,13 @@ struct ActiveWorkoutView: View {
                 .accessibilityAddTraits(.isHeader)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { focus = nil; finishing = true } label: {
+                Button {
+                    // A value still being typed is saved first, as completing a set does.
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    focus = nil
+                    // With every set done there's nothing to warn about.
+                    if store.activeSession?.isEverySetCompleted == true { finish() } else { finishing = true }
+                } label: {
                     Text("Finish").fontWeight(.semibold).foregroundStyle(.white)
                 }
                     .buttonStyle(.glassProminent).tint(Color.exActionFill)
@@ -132,8 +138,7 @@ struct ActiveWorkoutView: View {
                     .confirmationDialog("Finish this workout?", isPresented: $finishing, titleVisibility: .visible) {
                         Button("Save workout") { finish() }
                     } message: {
-                        Text(summary.completedSets == summary.totalSets ? "All \(summary.totalSets) sets are done."
-                             : "\(summary.completedSets) of \(summary.totalSets) sets are done. Sets you didn't complete are removed.")
+                        Text("\(summary.completedSets) of \(summary.totalSets) sets are done. Sets you didn't complete are removed.")
                     }
             }
         }

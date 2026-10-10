@@ -10,6 +10,7 @@ struct WeighInSheet: View {
     let timeZone: TimeZone
     private let editing: WeightEntry?
     private let onDeleted: (WeightEntry) -> Void
+    private let onSaved: (WeightEntry) -> Void
     private let initialValue: Double
 
     @Environment(\.dismiss) private var dismiss
@@ -27,18 +28,20 @@ struct WeighInSheet: View {
 
     private enum Field { case weight, bodyFat }
 
-    init(workspace: TrainingWorkspace, unit: MassUnit, timeZone: TimeZone) {
-        self.init(workspace: workspace, unit: unit, timeZone: timeZone, editing: nil)
+    /// `onSaved` gets a new weigh-in once it's saved, for a confirmation with Undo.
+    init(workspace: TrainingWorkspace, unit: MassUnit, timeZone: TimeZone, onSaved: @escaping (WeightEntry) -> Void = { _ in }) {
+        self.init(workspace: workspace, unit: unit, timeZone: timeZone, editing: nil, onSaved: onSaved)
     }
 
     /// `editing` opens a saved weigh-in; `date` starts a new one on another day.
     init(workspace: TrainingWorkspace, unit: MassUnit, timeZone: TimeZone, editing: WeightEntry?, date: LocalDate? = nil,
-         onDeleted: @escaping (WeightEntry) -> Void = { _ in }) {
+         onDeleted: @escaping (WeightEntry) -> Void = { _ in }, onSaved: @escaping (WeightEntry) -> Void = { _ in }) {
         self.workspace = workspace
         self.unit = unit
         self.timeZone = timeZone
         self.editing = editing
         self.onDeleted = onDeleted
+        self.onSaved = onSaved
         let latest = workspace.nutrition.weights.last
         let start = editing.map { ($0.weight.value(in: unit) * 100).rounded() / 100 }
             ?? WeightTrend.suggestedReading(latest: latest?.weight, trend: nil, unit: unit)
@@ -321,6 +324,7 @@ struct WeighInSheet: View {
     private func save() {
         if typing != nil, !commit() { return }
         let store = workspace.nutrition
+        var logged: WeightEntry?
         do {
             if var entry = editing {
                 if value != initialValue { entry.weight = Mass((value * 100).rounded() / 100, unit) }
@@ -333,7 +337,7 @@ struct WeighInSheet: View {
             } else {
                 let now = Date()
                 let at = date == LocalDate(now, in: timeZone) ? now : WeightTrend.instant(on: date, timeOf: now, in: timeZone)
-                try store.logWeight(Mass((value * 100).rounded() / 100, unit), bodyFat: bodyFat, at: at, timeZone: timeZone)
+                logged = try store.logWeight(Mass((value * 100).rounded() / 100, unit), bodyFat: bodyFat, at: at, timeZone: timeZone)
             }
         } catch {
             self.error = BodyFormat.message(error)
@@ -343,6 +347,7 @@ struct WeighInSheet: View {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         let workspace = workspace
         Task { await workspace.synchronize() }
+        if let logged { onSaved(logged) }
         dismiss()
     }
 

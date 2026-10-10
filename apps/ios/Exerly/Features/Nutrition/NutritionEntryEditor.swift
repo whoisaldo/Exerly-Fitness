@@ -62,6 +62,14 @@ struct NutritionEntryEditor: View {
                     ExChoiceChips(values: meals, selection: $draft.meal) { $0 }
                         .accessibilityIdentifier("nutrition.meal")
                     details
+                    if let amount = preview {
+                        ExCard {
+                            ExSectionHeading("Nutrients in this portion")
+                            NutritionAmountsView(amounts: amount.nutrients)
+                        }
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("nutrition.portionNutrients")
+                    }
                     if !draft.errors.isEmpty || actions.error != nil || libraryActions.error != nil {
                         ExCard {
                             ForEach(draft.errors, id: \.self) { Text($0).foregroundStyle(Color.exError) }
@@ -169,10 +177,6 @@ struct NutritionEntryEditor: View {
                     .font(.exLabel).accessibilityIdentifier("nutrition.eatenAt")
             }
             Divider().overlay(Color.exBorder.opacity(0.3))
-            if let amount = preview {
-                DisclosureGroup("All portion nutrients") { NutritionAmountsView(amounts: amount.nutrients) }
-                    .font(.exLabel)
-            }
             if draft.snapshot.unweighed != true { editNutritionButton }
             DisclosureGroup("About this food") {
                 VStack(alignment: .leading, spacing: ExSpacing.small) {

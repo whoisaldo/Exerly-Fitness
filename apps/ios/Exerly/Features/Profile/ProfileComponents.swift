@@ -340,22 +340,39 @@ struct ProfileControlRow<Control: View>: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let layout = typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ExSpacing.small))
-            : AnyLayout(HStackLayout(spacing: ExSpacing.item))
-        layout {
-            if !typeSize.isAccessibilitySize {
-                Image(systemName: icon).font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.exPrimaryText)
-                    .frame(width: 32, height: 32)
-                    .background(Color.exPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    .accessibilityHidden(true)
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: ExSpacing.small) { label; control }
+            } else {
+                // The control keeps its labels on one line beside the title,
+                // or moves under it when there isn't room for both.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: ExSpacing.item) {
+                        badge
+                        label
+                        Spacer(minLength: ExSpacing.small)
+                        control.fixedSize()
+                    }
+                    VStack(alignment: .leading, spacing: ExSpacing.small) {
+                        HStack(spacing: ExSpacing.item) { badge; label }
+                        control
+                    }
+                }
             }
-            Text(title).font(.exBody).foregroundStyle(Color.exTextPrimary).accessibilityHidden(true)
-            if !typeSize.isAccessibilitySize { Spacer(minLength: ExSpacing.small) }
-            control
         }
         .padding(.horizontal, ExSpacing.item).padding(.vertical, ExSpacing.small)
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+    }
+
+    private var badge: some View {
+        Image(systemName: icon).font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.exPrimaryText)
+            .frame(width: 32, height: 32)
+            .background(Color.exPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .accessibilityHidden(true)
+    }
+
+    private var label: some View {
+        Text(title).font(.exBody).foregroundStyle(Color.exTextPrimary).accessibilityHidden(true)
     }
 }

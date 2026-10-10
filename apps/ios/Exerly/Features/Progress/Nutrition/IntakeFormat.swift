@@ -3,10 +3,12 @@ import SwiftUI
 
 /// Amounts, spans and hours as Progress → Nutrition writes and speaks them.
 enum IntakeFormat {
-    static func title(_ range: IntakeRange) -> String {
+    /// The span picker's label; this month is its short name, "Oct".
+    static func title(_ range: IntakeRange, today: LocalDate) -> String {
         switch range {
         case .yesterday: "Yesterday"
         case .week: "1W"
+        case .thisMonth: BodyDates.anchor(today).formatted(Date.FormatStyle(timeZone: BodyDates.utc).month(.abbreviated))
         case .month: "1M"
         case .quarter: "3M"
         case .year: "1Y"
@@ -17,6 +19,7 @@ enum IntakeFormat {
         switch range {
         case .yesterday: "Yesterday"
         case .week: "1 week"
+        case .thisMonth: "This month"
         case .month: "1 month"
         case .quarter: "3 months"
         case .year: "1 year"

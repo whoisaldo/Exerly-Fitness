@@ -4,6 +4,9 @@ import SwiftUI
 /// The Profile tab: who you are and your body numbers, your plan, then
 /// everything else grouped by what you'd come here to do.
 struct ProfileView: View {
+    /// Changes each time the tab is entered from another one; the screen
+    /// returns to its top, as tabs do.
+    var entered = 0
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var account: AppAccountWorkspace
     @EnvironmentObject private var dailySync: SyncEngine
@@ -13,6 +16,7 @@ struct ProfileView: View {
     @State private var showChangePassword = false
     @State private var changingUnits = false
     @State private var unitsError: String?
+    @State private var position = ScrollPosition(edge: .top)
 
     private var user: UserDTO? { authVM.currentUser }
     private var accountID: String { user?.id ?? "" }
@@ -52,6 +56,9 @@ struct ProfileView: View {
             .padding(.top, ExSpacing.small)
             .padding(.bottom, ExSpacing.major)
         }
+        .scrollPosition($position)
+        // Animated, so the large title comes back as it does when scrolling up by hand.
+        .onChange(of: entered) { _, _ in withAnimation(.snappy) { position.scrollTo(edge: .top) } }
         .scrollIndicators(.hidden)
         .exScrollEdges()
         .background(Color.exBackground)

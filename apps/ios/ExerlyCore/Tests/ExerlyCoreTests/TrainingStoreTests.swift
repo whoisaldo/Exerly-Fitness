@@ -31,6 +31,7 @@ import Testing
         try store.startSession(name: "Lower", bodyweight: .kg(80), timeZone: Fixture.utc)
         let squat = try store.addExercise("back-squat")
         let first = try #require(store.activeSession?.exercises[0].sets[0].id)
+        let second = try store.addSet(to: squat)
         try log(store, first, reps: 5, kg: 100, rir: 2)
         #expect(persistence.sessions.values.first?.exercises[0].sets[0].isCompleted == true)
 
@@ -38,9 +39,10 @@ import Testing
         #expect(store.restTimer?.duration == 180)
         #expect(store.restTimer?.startedAt == clock.now)
 
+        // The last set leaves nothing to rest for, so the timer stops.
         clock.advance(minutes: 3)
-        let second = try store.addSet(to: squat)
         try log(store, second, reps: 5, kg: 100, rir: 1)
+        #expect(store.restTimer == nil)
 
         clock.advance(minutes: 30)
         let summary = try store.finishSession()
@@ -128,7 +130,8 @@ import Testing
         let clock = Clock()
         let store = try makeStore(clock: clock)
         try store.startSession(name: "Arms", bodyweight: nil)
-        try store.addExercise("dumbbell-curl")
+        let curl = try store.addExercise("dumbbell-curl")
+        try store.addSet(to: curl)
         try log(store, store.activeSession!.exercises[0].sets[0].id, reps: 12, kg: 14)
         #expect(store.restTimer?.duration == 90)
         try store.extendRest(by: 30)
@@ -137,6 +140,40 @@ import Testing
         #expect(store.restTimer == nil)
         try store.startRest(seconds: 45)
         #expect(store.restTimer == RestTimer(startedAt: clock.now, duration: 45))
+    }
+
+    @Test func theLastSetHoldsItsRestUntilMoreWorkIsAdded() throws {
+        let clock = Clock()
+        let store = try makeStore(clock: clock)
+        try store.startSession(name: "Arms", bodyweight: nil)
+        let curl = try store.addExercise("dumbbell-curl")
+        try log(store, store.activeSession!.exercises[0].sets[0].id, reps: 12, kg: 14)
+        #expect(store.activeSession?.isEverySetCompleted == true)
+        #expect(store.restTimer == nil, "Nothing is left to rest for")
+
+        // Adding a set means there is: the rest runs from when the last set ended.
+        clock.advance(minutes: 0.5)
+        let next = try store.addSet(to: curl)
+        #expect(store.restTimer == RestTimer(startedAt: clock.now.addingTimeInterval(-30), duration: 90))
+        #expect(store.activeSession?.isEverySetCompleted == false)
+
+        // A rest that has run out by the time work is added doesn't start.
+        try log(store, next, reps: 12, kg: 14)
+        #expect(store.restTimer == nil)
+        clock.advance(minutes: 2)
+        try store.addExercise("triceps-pushdown")
+        #expect(store.restTimer == nil)
+    }
+
+    @Test func aSkippedRestIsNotBroughtBackByAddingWork() throws {
+        let store = try makeStore()
+        try store.startSession(name: "Arms", bodyweight: nil)
+        let curl = try store.addExercise("dumbbell-curl")
+        try store.addSet(to: curl)
+        try log(store, store.activeSession!.exercises[0].sets[0].id, reps: 12, kg: 14)
+        try store.skipRest()
+        try store.addSet(to: curl)
+        #expect(store.restTimer == nil)
     }
 
     @Test func customExercisesPersistAndCanBeLogged() throws {
