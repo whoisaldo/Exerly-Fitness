@@ -689,3 +689,6 @@ is left alone.
   ignoring its children. A drawn checkmark that looks the same carries nothing,
   so only a done set's button is selected. It pops with a spring instead of the
   symbol's bounce.
+- **Weigh-ins step by 0.1** lb or kg, on the ruler and the ± buttons, so any
+  reading a scale shows is a few taps away. The ruler marks half pounds as it
+  marks half kilograms.

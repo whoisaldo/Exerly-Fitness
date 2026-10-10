@@ -131,10 +131,8 @@ public enum WeightTrend {
 
     // MARK: Entry
 
-    /// The ruler's step: 0.1 kg, or 0.2 lb.
-    public static func step(for unit: MassUnit) -> Double {
-        unit == .pounds ? 0.2 : 0.1
-    }
+    /// The ruler's step: 0.1 kg or 0.1 lb, so any reading a scale shows is a step away.
+    public static func step(for unit: MassUnit) -> Double { 0.1 }
 
     /// What a new weigh-in starts at, in `unit`, to one decimal: the latest
     /// reading as entered when it was in that unit, otherwise converted; the

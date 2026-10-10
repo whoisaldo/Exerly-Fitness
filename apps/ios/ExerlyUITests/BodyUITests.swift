@@ -27,7 +27,7 @@ final class BodyUITests: ExerlyUITestCase {
         XCTAssertEqual(value.label, "Weight, 184.6 pounds", "The sheet starts on the last reading")
         let ruler = app.descendants(matching: .any)["weighIn.ruler"]
         XCTAssertTrue(ruler.exists)
-        // One drag to the left moves the scale up about four ticks of 0.2 lb.
+        // One drag to the left moves the scale up about four ticks of 0.1 lb.
         let start = ruler.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
         start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: -41, dy: 0)), withVelocity: .slow,
                     thenHoldForDuration: 0.1)
