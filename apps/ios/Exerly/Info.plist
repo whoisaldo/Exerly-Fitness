@@ -48,9 +48,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Exerly uses the camera to scan food barcodes and read nutrition labels on your device.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Exerly reads steps and active Calories to show your daily activity. You choose which data to share.</string>
+	<string>Exerly reads weight and body fat to add your scale's weigh-ins to your trend weight, and steps and active energy to show your daily activity. You choose each in Exerly's Apple Health settings.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Exerly saves your workouts to Apple Health to keep all your fitness data in one place.</string>
+	<string>Exerly saves the food, weigh-ins and workouts you choose to Apple Health, and updates or removes them when you edit or delete them in Exerly.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Exerly uses your local network during development to connect to the backend running on your computer.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
